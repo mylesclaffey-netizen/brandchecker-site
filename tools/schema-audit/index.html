@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schema analysis</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MC2SEO">
+<meta property="og:url" content="https://brandchecker.eu/tools/schema-audit/">
+<meta property="og:title" content="Schema Analysis — Free SEO Tool | MC2SEO">
+<meta property="og:description" content="What structured data a page actually carries, what's missing, and where the markup claims something the page doesn't actually say. Free, no signup.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta name="twitter:title" content="Schema Analysis — Free SEO Tool | MC2SEO">
+<meta name="twitter:description" content="What structured data a page actually carries, what's missing, and where the markup claims something the page doesn't actually say. Free, no signup.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2335c48d'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:600px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  input:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:12px}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer;margin-top:6px}
+  .submit:hover{background:#5c68f2}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+  .empty{font-size:12.5px;color:var(--muted)}
+
+  #results{display:none;margin-top:30px}
+  .backbtn{font-size:14px;color:var(--you);background:none;border:0;cursor:pointer;margin-bottom:16px;
+        font-family:'IBM Plex Mono',monospace}
+
+  .summary{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:20px}
+  .summary.clean{border-color:var(--ok)}
+  .summary.issues{border-color:var(--warn)}
+  .summary .headline{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px}
+  .summary .sub{font-size:12px;color:var(--muted)}
+
+  .typerow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+  .typechip{font-family:'Space Grotesk',sans-serif;font-size:11.5px;font-weight:700;
+        background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 13px;color:var(--ink)}
+
+  .findlist{display:flex;flex-direction:column;gap:8px}
+  .findrow{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:12px 14px;display:flex;gap:10px}
+  .findrow.error{border-color:var(--bad)}
+  .findrow.warn{border-color:var(--warn)}
+  .findrow .badge{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+        padding:3px 8px;border-radius:20px;flex:none;height:fit-content}
+  .findrow.error .badge{color:var(--bad);background:rgba(232,105,95,.12)}
+  .findrow.warn .badge{color:var(--warn);background:rgba(224,169,58,.12)}
+  .findrow .msg{font-size:12.5px;line-height:1.5}
+  .findrow .msg .type{color:var(--muted);font-size:10.5px;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}
+
+  .foot{font-size:10px;color:var(--muted);margin-top:20px;line-height:1.5}
+  .foot a{color:var(--you)}
+
+  .share{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+  .sharelabel{font-size:11px;color:var(--muted)}
+  .sharebtn{font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;color:var(--ink);
+      background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 13px;cursor:pointer;
+      text-decoration:none;display:inline-block}
+  .sharebtn:hover{border-color:var(--you);color:var(--you)}
+  .sharebtn.copied{border-color:var(--ok);color:var(--ok)}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate" style="display:none">
+    <p class="eyebrow">Free tool · no access code needed</p>
+    <h1>You need an access code</h1>
+    <p class="lede">This tool runs on a personal link. Open the link you were sent — it carries your code — or type the code below.</p>
+    <div class="field" style="max-width:280px"><label for="manual">Access code</label>
+      <input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="submit" id="enter" type="button" style="max-width:280px">Continue</button>
+    <p class="after" style="text-align:left;max-width:280px">Don't have one? <a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>
+  </div>
+
+  <div id="form">
+    <p class="eyebrow">Free tool · no access code needed</p>
+    <h1>Schema analysis</h1>
+    <p class="lede">What structured data a page actually carries, what's missing for the kind of page it is, and — more usefully — where the markup claims something the page doesn't actually say.</p>
+
+    <div class="field"><label for="url">Page URL</label><input id="url" type="text" placeholder="https://yoursite.com/product-page" value="https://"></div>
+    <button class="submit" id="go" type="button">Analyze page</button>
+    <p class="after">Reads the page directly — nothing is crawled beyond this one URL, nothing changed on your site.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <button class="backbtn" id="back">&larr; New page</button>
+    <p class="eyebrow restag">Schema analysis</p>
+    <h1 id="rTitle" style="font-size:20px">Checking…</h1>
+    <p id="rRedirect" class="lede" style="display:none;margin-bottom:16px"></p>
+    <div id="out"></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+
+const $ = id => document.getElementById(id);
+const PREFILL_U = new URLSearchParams(location.search).get('u');
+if (PREFILL_U) { const f = document.getElementById('url'); if (f) f.value = PREFILL_U; }
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+
+function renderShare(inputUrl){
+  const shareUrl = location.origin + location.pathname + '?url=' + encodeURIComponent(inputUrl);
+  const text = encodeURIComponent(shareUrl);
+  return '<div class="share"><span class="sharelabel">Share this report:</span>' +
+    '<a class="sharebtn" href="https://wa.me/?text=' + text + '" target="_blank" rel="noopener">WhatsApp</a>' +
+    '<a class="sharebtn" href="mailto:?subject=' + encodeURIComponent('SEO report') + '&body=' + text + '">Email</a>' +
+    '<button class="sharebtn" id="copyShare" type="button" onclick="copyShareLink(\'' + shareUrl.replace(/'/g, "\\'") + '\')">Copy link</button></div>';
+}
+function copyShareLink(url){
+  navigator.clipboard?.writeText(url).then(() => {
+    const btn = $('copyShare');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+$('go').onclick = run;
+$('url').onkeydown = e => { if (e.key === 'Enter') run(); };
+$('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; };
+
+async function run(){
+  const url = $('url').value.trim();
+  if (!url || url === 'https://'){
+    $('go').textContent = 'Add a page URL first';
+    setTimeout(() => $('go').textContent = 'Analyze page', 2000);
+    return;
+  }
+
+  $('go').disabled = true;
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = 'Checking…';
+  $('out').innerHTML = '<p class="empty">Reading the page and checking its structured data…</p>';
+  window.scrollTo(0,0);
+
+  let d;
+  try {
+    const res = await fetch(API + '/schema-audit', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, url })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  $('go').disabled = false;
+
+  if (d.error){
+    $('rTitle').textContent = url;
+    $('rRedirect').style.display = 'none';
+    $('out').innerHTML = '<p class="err">' + esc(d.error) + '</p>';
+    return;
+  }
+  $('rTitle').textContent = d.page_title || d.url;
+  if (d.redirected_from){
+    $('rRedirect').textContent = 'Redirected from ' + d.redirected_from + ' to ' + d.url;
+    $('rRedirect').style.display = 'block';
+  } else {
+    $('rRedirect').style.display = 'none';
+  }
+  $('out').innerHTML = renderResults(d) + renderShare(url);
+}
+
+function renderResults(d){
+  const errors = d.findings.filter(f => f.severity === 'error').length;
+  const warns = d.findings.filter(f => f.severity === 'warn').length;
+  const clean = d.schemas_found.length && !d.findings.length;
+
+  const headline = !d.schemas_found.length
+    ? 'No structured data found'
+    : clean
+    ? d.schemas_found.length + ' schema type' + (d.schemas_found.length === 1 ? '' : 's') + ' found — nothing to flag'
+    : errors
+    ? errors + ' likely error' + (errors === 1 ? '' : 's') + (warns ? ', ' + warns + ' warning' + (warns === 1 ? '' : 's') : '')
+    : warns + ' thing' + (warns === 1 ? '' : 's') + ' worth a look';
+
+  const summaryClass = !d.schemas_found.length || warns || errors ? 'issues' : 'clean';
+  const sub = d.og_type ? 'Page type signal (og:type): ' + d.og_type : 'Checked just now';
+
+  let html = '<div class="summary ' + summaryClass + '"><div class="headline">' + esc(headline) + '</div><div class="sub">' + esc(sub) + '</div></div>';
+
+  if (d.schemas_found.length){
+    html += '<div class="typerow">' + d.schemas_found.map(t => '<span class="typechip">' + esc(t) + '</span>').join('') + '</div>';
+  }
+
+  if (d.findings.length){
+    html += '<div class="findlist">' + d.findings.map(f =>
+      '<div class="findrow ' + f.severity + '"><span class="badge">' + (f.severity === 'error' ? 'Error' : 'Warning') + '</span>' +
+      '<div class="msg"><span class="type">' + esc(f.type) + '</span>' + esc(f.message) + '</div></div>'
+    ).join('') + '</div>';
+  } else if (d.schemas_found.length) {
+    html += '<p class="empty">No issues found — every schema block has its key fields, and the claims in it (FAQ questions, prices) actually show up on the page.</p>';
+  }
+
+  html += '<p class="foot">Checks JSON-LD structured data specifically — the format Google recommends and by far the most common today. Doesn\'t currently check older microdata or RDFa markup. Need to add schema instead of just checking it? Try the <a href="/tools/schema-builder/?k=' + encodeURIComponent(CODE) + '">schema builder</a> or <a href="/tools/llms-txt/?k=' + encodeURIComponent(CODE) + '">llms.txt generator</a>.</p>';
+
+  return html;
+}
+
+
+const SHARED_URL = new URLSearchParams(location.search).get('url') || '';
+if (SHARED_URL) { $('url').value = SHARED_URL; run(); }
+</script>
+</body>
+</html>

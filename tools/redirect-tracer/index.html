@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redirect tracer</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MC2SEO">
+<meta property="og:url" content="https://brandchecker.eu/tools/redirect-tracer/">
+<meta property="og:title" content="Redirect Tracer — Free SEO Tool | MC2SEO">
+<meta property="og:description" content="Paste any URL to see exactly where it redirects — every hop, every status code, all the way to the final destination. Free, no signup.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta name="twitter:title" content="Redirect Tracer — Free SEO Tool | MC2SEO">
+<meta name="twitter:description" content="Paste any URL to see exactly where it redirects — every hop, every status code, all the way to the final destination. Free, no signup.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236e7bff'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0b0d13;--card:#171c28;--ink:#f4f5f9;--muted:#9aa3ba;--line:#2a3244;
+        --you:#7c87ff;--ok:#3ecf95;--warn:#f0b84f;--bad:#f37b70;--gold:#ffdc72}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.65;padding:32px 20px 70px;font-size:16px}
+  .wrap{max-width:680px;margin:0 auto}
+  .eyebrow{font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500}
+  .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:38px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.1;margin:10px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:16px;color:var(--muted);margin-bottom:28px;line-height:1.65}
+  label{display:block;font-size:13.5px;color:var(--muted);margin-bottom:7px;font-weight:500}
+  input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--ink);
+        background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:15px 17px}
+  input:focus{outline:2.5px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:18px}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:16px;padding:18px;cursor:pointer;margin-top:8px;
+          transition:transform .12s ease,background .15s ease}
+  .submit:hover{background:#8b95ff;transform:translateY(-1px)}
+  .submit:active{transform:translateY(0)}
+  .submit[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+  .after{font-size:12.5px;color:var(--muted);text-align:center;margin-top:14px;line-height:1.6}
+  .err{color:var(--bad);font-size:14px;padding:16px;border:1.5px solid var(--line);border-radius:14px}
+  .empty{font-size:14px;color:var(--muted)}
+
+  .modes{display:flex;gap:10px;margin-bottom:24px}
+  .mode{flex:1;font:13.5px 'IBM Plex Mono',monospace;font-weight:500;color:var(--muted);background:var(--card);
+      border:1.5px solid var(--line);border-radius:12px;padding:12px 12px;cursor:pointer;text-align:center;
+      transition:background .15s ease,color .15s ease,border-color .15s ease}
+  .mode[aria-pressed=true]{background:var(--you);border-color:var(--you);color:#fff}
+
+  #results{display:none;margin-top:34px}
+  .backbtn{font-size:15px;color:var(--you);background:none;border:0;cursor:pointer;margin-bottom:20px;
+        font-family:'IBM Plex Mono',monospace;font-weight:500}
+
+  .summary{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:20px;margin-bottom:24px}
+  .summary .headline{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;margin-bottom:6px;word-break:break-all}
+  .summary .sub{font-size:13.5px;color:var(--muted);word-break:break-all}
+  .summary .sub.ok{color:var(--ok)} .summary .sub.warn{color:var(--warn)} .summary .sub.bad{color:var(--bad)}
+  .summary.good{border-color:var(--ok)}
+  .summary.bad .headline{color:var(--bad)}
+
+  .chain{position:relative;padding-left:28px}
+  .hop{position:relative;padding-bottom:20px}
+  .hop:last-child{padding-bottom:0}
+  .hop::before{content:'';position:absolute;left:-21px;top:5px;width:10px;height:10px;border-radius:50%;
+      background:var(--line);border:2px solid var(--muted)}
+  .hop.final::before{background:var(--you);border-color:var(--you)}
+  .hop::after{content:'';position:absolute;left:-16px;top:17px;bottom:-3px;width:1px;background:var(--line)}
+  .hop:last-child::after{display:none}
+  .hop .status{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;display:inline-block;margin-right:8px}
+  .hop .status.s2{color:var(--ok)} .hop .status.s3{color:var(--warn)} .hop .status.s4,.hop .status.s5{color:var(--bad)}
+  .hop .url{font-size:14px;color:var(--ink);word-break:break-all}
+  .hop .tag{font-size:11px;color:var(--muted);margin-left:6px}
+
+  .vrow{background:var(--card);border:1.5px solid var(--line);border-radius:16px;
+        padding:16px 18px;margin-bottom:12px;display:flex;gap:16px;align-items:center}
+  .vrow.flag-broken,.vrow.flag-loop,.vrow.flag-too_many_hops,.vrow.flag-wrong_destination,.vrow.flag-duplicate_canonical{border-color:var(--bad)}
+  .vrow .vlabel{width:104px;flex:none}
+  .vrow .vlabel .proto{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700}
+  .vrow .vdetail{flex:1;min-width:0}
+  .vrow .vurl{font-size:13.5px;color:var(--muted);word-break:break-all}
+  .vrow .vurl .arrow{color:var(--you);margin:0 4px}
+  .vrow .vurl .final{color:var(--ink)}
+  .vbadge{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;flex:none}
+  .vbadge.canonical{color:var(--ok)}
+  .vbadge.ok{color:var(--ok)}
+  .vbadge.chain{color:var(--warn)}
+  .vbadge.broken,.vbadge.loop,.vbadge.too_many_hops,.vbadge.wrong_destination,.vbadge.duplicate_canonical{color:var(--bad)}
+
+  .foot{font-size:11.5px;color:var(--muted);margin-top:24px;line-height:1.6}
+
+  .share{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:24px;padding-top:20px;border-top:1.5px solid var(--line)}
+  .sharelabel{font-size:13px;color:var(--muted)}
+  .sharebtn{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:var(--ink);
+      background:var(--card);border:1.5px solid var(--line);border-radius:20px;padding:8px 15px;cursor:pointer;
+      text-decoration:none;display:inline-block}
+  .sharebtn:hover{border-color:var(--you);color:var(--you)}
+  .sharebtn.copied{border-color:var(--ok);color:var(--ok)}
+
+  .sidenav{margin-top:36px;padding-top:20px;border-top:1.5px solid var(--line);
+       display:flex;flex-direction:column;gap:13px}
+  .sidenav-link{font-size:13.5px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="form">
+    <p class="eyebrow">Free tool · no access code needed</p>
+    <h1>Redirect tracer</h1>
+    <p class="lede" id="lede">Paste any URL to see exactly where it redirects — every hop, every status code, all the way to the final destination.</p>
+
+    <div class="modes">
+      <button class="mode" id="modeUrl" type="button" aria-pressed="true">Single URL</button>
+      <button class="mode" id="modeDomain" type="button" aria-pressed="false">Homepage variants</button>
+    </div>
+
+    <div class="field" id="fieldUrl"><label for="url">URL</label><input id="url" type="text" placeholder="bit.ly/example or yoursite.com/old-page"></div>
+    <div class="field" id="fieldDomain" style="display:none"><label for="domain">Domain</label><input id="domain" type="text" placeholder="example.com"></div>
+
+    <button class="submit" id="go" type="button">Trace redirect</button>
+    <p class="after" id="afterText">One live check, no login required. For checking many URLs at once during a site migration, see the <a href="/tools/redirect-check/" style="color:var(--you)">Redirect map validator</a> instead.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <button class="backbtn" id="back">&larr; New check</button>
+    <p class="eyebrow restag">Redirect tracer</p>
+    <h1 id="rTitle" style="font-size:20px">Checking…</h1>
+    <div id="out"></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const $ = id => document.getElementById(id);
+const PREFILL_U = new URLSearchParams(location.search).get('u');
+if (PREFILL_U) { const f = document.getElementById('url'); if (f) f.value = PREFILL_U; }
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+let mode = 'url'; // 'url' | 'domain'
+
+const COPY = {
+  url: {
+    lede: 'Paste any URL to see exactly where it redirects — every hop, every status code, all the way to the final destination.',
+    button: 'Trace redirect',
+    after: 'One live check, no login required. For checking many URLs at once during a site migration, see the <a href="/tools/redirect-check/" style="color:var(--you)">Redirect map validator</a> instead.'
+  },
+  domain: {
+    lede: 'A domain has four homepage addresses — http, https, with and without www. A well-configured site sends all four to one canonical URL in a single redirect. This checks whether yours does.',
+    button: 'Check canonicalization',
+    after: 'Four live checks, no login required. Checks the homepage only — for path-by-path redirects, use Single URL above or the <a href="/tools/redirect-check/" style="color:var(--you)">Redirect map validator</a>.'
+  }
+};
+
+function setMode(next){
+  mode = next;
+  $('modeUrl').setAttribute('aria-pressed', mode === 'url');
+  $('modeDomain').setAttribute('aria-pressed', mode === 'domain');
+  $('fieldUrl').style.display = mode === 'url' ? 'block' : 'none';
+  $('fieldDomain').style.display = mode === 'domain' ? 'block' : 'none';
+  $('lede').textContent = COPY[mode].lede;
+  $('go').textContent = COPY[mode].button;
+  $('afterText').innerHTML = COPY[mode].after;
+}
+
+$('modeUrl').onclick = () => setMode('url');
+$('modeDomain').onclick = () => setMode('domain');
+$('go').onclick = run;
+$('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; };
+$('url').onkeydown = e => { if (e.key === 'Enter') run(); };
+$('domain').onkeydown = e => { if (e.key === 'Enter') run(); };
+
+async function run(){
+  if (mode === 'url') return runUrl();
+  return runDomain();
+}
+
+async function runUrl(){
+  const url = $('url').value.trim();
+  if (!url){ flashGo('Enter a URL first'); return; }
+
+  startCheck('Following redirects…');
+
+  let d;
+  try {
+    const res = await fetch(API + '/redirect-trace', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  finishCheck(d, url, renderUrlResult);
+}
+
+async function runDomain(){
+  const domain = $('domain').value.trim();
+  if (!domain){ flashGo('Enter a domain first'); return; }
+
+  startCheck('Checking all four homepage variants…');
+
+  let d;
+  try {
+    const res = await fetch(API + '/canonical-check', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  finishCheck(d, d.domain || domain, renderDomainResult);
+}
+
+function startCheck(msg){
+  $('go').disabled = true;
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = 'Checking…';
+  $('out').innerHTML = '<p class="empty">' + esc(msg) + '</p>';
+  window.scrollTo(0,0);
+}
+
+function finishCheck(d, title, renderer){
+  $('go').disabled = false;
+  if (d.error){
+    $('rTitle').textContent = 'Not checked';
+    $('out').innerHTML = '<p class="err">' + esc(d.error) + '</p>';
+    return;
+  }
+  $('rTitle').textContent = title;
+  $('out').innerHTML = renderer(d) + renderShare();
+}
+
+function renderShare(){
+  const params = mode === 'domain'
+    ? 'mode=domain&domain=' + encodeURIComponent($('domain').value.trim())
+    : 'mode=url&url=' + encodeURIComponent($('url').value.trim());
+  const shareUrl = location.origin + location.pathname + '?' + params;
+  const text = encodeURIComponent(shareUrl);
+  return '<div class="share"><span class="sharelabel">Share this report:</span>' +
+    '<a class="sharebtn" href="https://wa.me/?text=' + text + '" target="_blank" rel="noopener">WhatsApp</a>' +
+    '<a class="sharebtn" href="mailto:?subject=' + encodeURIComponent('SEO report') + '&body=' + text + '">Email</a>' +
+    '<button class="sharebtn" id="copyShare" type="button" onclick="copyShareLink(\'' + shareUrl.replace(/'/g, "\\'") + '\')">Copy link</button></div>';
+}
+function copyShareLink(url){
+  navigator.clipboard?.writeText(url).then(() => {
+    const btn = $('copyShare');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+function flashGo(msg){
+  const original = COPY[mode].button;
+  $('go').textContent = msg;
+  setTimeout(() => $('go').textContent = original, 2000);
+}
+
+function statusClass(status){
+  if (!status) return 's5';
+  if (status < 300) return 's2';
+  if (status < 400) return 's3';
+  return 's5';
+}
+
+/* ---- Single URL mode ---- */
+
+function renderUrlResult(d){
+  const n = d.hops.length;
+  let headline, subCls, sub;
+
+  if (d.flags.includes('no_redirect')){
+    headline = 'No redirect — resolves directly';
+    subCls = d.final_status && d.final_status < 400 ? 'ok' : 'bad';
+    sub = 'Responded ' + d.final_status + ' immediately, no hops';
+  } else if (d.flags.includes('loop')){
+    headline = 'Redirect loop detected';
+    subCls = 'bad';
+    sub = 'This chain redirects back on itself and never resolves';
+  } else if (d.flags.includes('too_many_hops')){
+    headline = 'Too many redirects (10+)';
+    subCls = 'bad';
+    sub = 'Stopped tracing after 10 hops — likely broken';
+  } else if (d.flags.includes('unreachable')){
+    headline = 'Could not reach this URL';
+    subCls = 'bad';
+    sub = 'The server did not respond';
+  } else if (d.flags.includes('broken')){
+    headline = n + ' redirect' + (n === 1 ? '' : 's') + ', ends in an error';
+    subCls = 'bad';
+    sub = 'Final response: ' + d.final_status;
+  } else {
+    headline = n + ' redirect' + (n === 1 ? '' : 's') + ' to final destination';
+    subCls = 'ok';
+    sub = 'Final response: ' + d.final_status;
+  }
+
+  let html = '<div class="summary"><div class="headline">' + esc(d.final) + '</div>' +
+    '<div class="sub ' + subCls + '">' + esc(headline) + ' · ' + esc(sub) + '</div></div>';
+
+  html += '<div class="chain">';
+  html += '<div class="hop"><span class="status s2">start</span><span class="url">' + esc(d.input) + '</span></div>';
+  d.hops.forEach(h => {
+    html += '<div class="hop"><span class="status ' + statusClass(h.status) + '">' + h.status + '</span>' +
+      '<span class="url">' + esc(h.to) + '</span></div>';
+  });
+  if (!d.flags.includes('loop') && !d.flags.includes('too_many_hops') && !d.flags.includes('unreachable')){
+    html += '<div class="hop final"><span class="status ' + statusClass(d.final_status) + '">' + (d.final_status ?? '?') + '</span>' +
+      '<span class="url">' + esc(d.final) + '</span><span class="tag">final</span></div>';
+  }
+  html += '</div>';
+
+  html += '<p class="foot">Each hop is a real, live HTTP response — not cached. Redirect type matters: 301/308 tells search engines the move is permanent, 302/307 says it might not be.</p>';
+  return html;
+}
+
+/* ---- Homepage variants mode ---- */
+
+const LABELS = { http: 'http://', 'http+www': 'http://www.', https: 'https://', 'https+www': 'https://www.' };
+const FLAG_TEXT = {
+  canonical: 'Canonical',
+  ok: 'OK — 1 hop',
+  chain: 'Redirect chain',
+  broken: 'Broken',
+  loop: 'Loop',
+  too_many_hops: 'Too many hops',
+  wrong_destination: "Doesn't converge",
+  duplicate_canonical: 'Serves directly too'
+};
+
+function renderDomainResult(d){
+  const bad = d.variants.filter(v => !['canonical', 'ok'].includes(v.flags[0]));
+  const headline = d.all_good
+    ? 'All 4 variants converge correctly'
+    : bad.length + ' of 4 variant' + (bad.length === 1 ? " doesn't" : "s don't") + ' resolve cleanly';
+  const sub = d.canonical
+    ? 'Canonical destination: ' + d.canonical
+    : 'Could not determine a canonical destination';
+
+  let html = '<div class="summary ' + (d.all_good ? 'good' : 'bad') + '"><div class="headline">' + esc(headline) + '</div>' +
+    '<div class="sub">' + esc(sub) + '</div></div>';
+
+  html += d.variants.map(renderVariantRow).join('');
+  html += '<p class="foot">Ideal state: exactly one variant serves the homepage directly (0 hops — that\'s the canonical) and the other three redirect straight to it in exactly 1 hop. Extra hops (e.g. www stripped in a separate step from the https upgrade) cost crawl budget and page speed even when the end result looks fine in a browser.</p>';
+  return html;
+}
+
+function renderVariantRow(v){
+  const flag = v.flags[0];
+  const chainHtml = v.error
+    ? '<span class="final">' + esc(v.start) + ' did not resolve</span>'
+    : v.hops === 0
+    ? '<span class="final">' + esc(v.final) + '</span>'
+    : esc(v.start) + '<span class="arrow">→</span>' + (v.hops > 1 ? v.hops + ' hops' + '<span class="arrow">→</span>' : '') + '<span class="final">' + esc(v.final) + '</span>';
+
+  return '<div class="vrow flag-' + flag + '"><div class="vlabel"><span class="proto">' + esc(LABELS[v.label] ?? v.label) + '</span></div>' +
+    '<div class="vdetail"><div class="vurl">' + chainHtml + '</div></div>' +
+    '<span class="vbadge ' + flag + '">' + esc(FLAG_TEXT[flag] ?? flag) + '</span></div>';
+}
+
+const SHARED_MODE = new URLSearchParams(location.search).get('mode') || '';
+const SHARED_DOMAIN = new URLSearchParams(location.search).get('domain') || '';
+const SHARED_URL = new URLSearchParams(location.search).get('url') || '';
+if (SHARED_MODE === 'domain' && SHARED_DOMAIN) {
+  setMode('domain');
+  $('domain').value = SHARED_DOMAIN;
+  run();
+} else if (SHARED_URL) {
+  $('url').value = SHARED_URL;
+  run();
+}
+</script>
+</body>
+</html>

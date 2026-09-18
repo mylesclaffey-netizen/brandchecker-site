@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local rank grid check</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23FFFF00'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--card2:#171b26;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5}
+
+  /* ---- two-pane app shell: persistent sidebar + full map, not a form-then-results swap ---- */
+  .app{display:flex;height:100vh;overflow:hidden}
+  .sidebar{width:380px;flex-shrink:0;background:var(--card);border-right:1px solid var(--line);
+       padding:22px;overflow-y:auto}
+  .map-wrap{flex:1;position:relative;background:var(--paper)}
+  /* .map-box needs its own stacking context (position:relative is enough —
+     it doesn't need a z-index) so Leaflet's internal panes, which carry
+     their own explicit z-index values (tile pane, marker pane, etc.), stay
+     contained inside it instead of comparing directly against .below-map's
+     z-index:auto in the shared .map-wrap stacking context and painting over
+     it — #map itself has z-index:auto, so without this, it doesn't trap
+     its own children's stacking. This was already fixed for the mobile
+     layout below; missing it here meant the AI Overview / grid summary
+     cards could render fully present in the DOM while being invisibly
+     covered by the map on desktop. */
+  /* height:100% too, not just position:relative — #map fills .map-box via
+     inset:0, and .map-box has no in-flow content of its own (every child
+     is absolutely positioned), so without an explicit height it collapses
+     to 0 and takes #map down with it. .map-wrap is flex:1 inside a
+     height:100vh row, so 100% here resolves to the full available height. */
+  .map-box{position:relative;height:100%}
+  #map{position:absolute;inset:0}
+
+  .brand{display:flex;align-items:center;gap:11px;margin-bottom:22px}
+  .brand-mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--you),#8b95ff);
+       display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;
+       font-weight:700;font-size:11px;color:#fff;flex-shrink:0}
+  .brand h1{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;letter-spacing:-.01em;color:var(--gold)}
+  .brand p{font-size:11px;color:var(--muted);margin-top:1px}
+
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h2{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+     text-transform:uppercase;color:var(--muted);margin:22px 0 12px}
+  h2:first-of-type{margin-top:0}
+  .lede{font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:18px}
+
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input,select{width:100%;font-family:'IBM Plex Mono',monospace;font-size:13.5px;color:var(--ink);
+        background:var(--card2);border:1px solid var(--line);border-radius:7px;padding:10px 11px}
+  input:focus,select:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:12px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  .ac-wrap{position:relative}
+  .ac-list{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--card2);
+       border:1px solid var(--line);border-radius:8px;overflow-y:auto;z-index:20;
+       max-height:220px;display:none;box-shadow:0 10px 24px rgba(0,0,0,.5)}
+  .ac-list.show{display:block}
+  .ac-item{padding:9px 11px;font-size:12.5px;cursor:pointer;border-top:1px solid var(--line)}
+  .ac-item:first-child{border-top:none}
+  .ac-item:hover,.ac-item.active{background:var(--you);color:#fff}
+  .ac-item .sub{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+  .ac-item:hover .sub,.ac-item.active .sub{color:rgba(255,255,255,.8)}
+  .ac-badge{font-size:10.5px;color:var(--ok);margin:-6px 0 12px;display:none}
+  .ac-badge.show{display:block}
+
+  .cap{font-size:10.5px;color:var(--muted);margin-top:-4px;margin-bottom:14px}
+  .aio-check{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);margin-bottom:14px}
+  .aio-check input{width:auto;accent-color:var(--you)}
+  .aio-check span{color:#5c6474;font-size:10.5px}
+  .aio-text{font-size:12.5px;color:var(--ink);line-height:1.65;margin-bottom:14px}
+  .aio-mentioned{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ok);
+       background:rgba(53,196,141,.12);border:1px solid rgba(53,196,141,.3);border-radius:20px;
+       padding:5px 12px;margin-bottom:14px}
+  .aio-sources{list-style:none;display:flex;flex-direction:column;gap:0}
+  .aio-sources li{font-size:12px;color:var(--ink);padding:9px 0;border-top:1px solid var(--line)}
+  .aio-sources li:first-child{border-top:none;padding-top:0}
+  .aio-sources .domain{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+  .aio-empty{font-size:12px;color:var(--muted);line-height:1.5}
+
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:14.5px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:13px;cursor:pointer}
+  .submit:hover{background:#5c68f2}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:10.5px;color:var(--muted);text-align:center;margin-top:9px}
+
+  .btn-secondary{width:100%;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;
+       background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:8px;
+       padding:11px;cursor:pointer;margin-top:8px}
+  .btn-secondary:hover{border-color:var(--you)}
+  /* Draws the eye to "Download image" right after a scan finishes — a
+     quick shake plus a fill to the accent colour, a few times, not forever,
+     and stops the moment it's actually clicked. */
+  @keyframes btnPulse{
+    0%,100%{transform:translateX(0);background:var(--card2);border-color:var(--line);
+         color:var(--ink);box-shadow:0 0 0 0 rgba(110,123,255,.6)}
+    4%{transform:translateX(-5px)}
+    8%{transform:translateX(5px)}
+    12%{transform:translateX(-4px)}
+    16%{transform:translateX(4px)}
+    20%{transform:translateX(-2px)}
+    24%{transform:translateX(0)}
+    45%{background:var(--you);border-color:var(--you);color:#fff;
+        box-shadow:0 0 0 9px rgba(110,123,255,0)}
+    75%{background:var(--card2);border-color:var(--line);color:var(--ink)}
+  }
+  .btn-secondary.attn{animation:btnPulse 1.3s ease-in-out 4}
+  @media (prefers-reduced-motion:reduce){ .btn-secondary.attn{animation:none} }
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .stat{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:10px 6px;text-align:center}
+  .stat b{display:block;font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700}
+  .stat span{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .verdict-text{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:10px}
+  .rating-line{font-size:12.5px;color:var(--gold);margin:-2px 0 12px}
+  .rating-line span{color:var(--muted)}
+
+  .legend-list{list-style:none;display:flex;flex-direction:column;gap:6px}
+  .legend-list li{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted)}
+  .legend-list i{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+
+  .sidenav{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+
+  .gate .field{max-width:280px}
+
+  /* ---- floating overlays on the map ---- */
+  .progress{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);
+       background:rgba(18,21,29,.96);border:1px solid var(--line);border-radius:10px;
+       padding:12px 16px;z-index:30;width:300px;display:none}
+  .progress.show{display:block}
+  .progress .line{display:flex;justify-content:space-between;gap:12px;font-size:12.5px}
+  .progress .clock{color:var(--muted);font-variant-numeric:tabular-nums}
+  .track{height:3px;background:var(--line);border-radius:2px;margin-top:10px;overflow:hidden}
+  .track i{display:block;height:100%;width:0;background:var(--you);transition:width .5s ease}
+  .banner{position:absolute;top:18px;left:50%;transform:translateX(-50%);background:#7f1d1d;color:#fff;
+       padding:10px 16px;border-radius:8px;z-index:30;font-size:12.5px;max-width:80%;display:none}
+  .banner.show{display:block}
+
+  /* ---- grid summary card + legend, below the map ---- */
+  /* Anchored to the bottom via margin-top:auto on whichever card is first,
+     not justify-content:flex-end — flex-end pushes overflowing content
+     past the container's TOP edge, and browsers don't reliably let you
+     scroll back up to it (confirmed: overflow-y:auto never registered any
+     scrollable range in that state), so a longer-than-usual AI Overview
+     could render entirely above the visible area with no way to reach it.
+     margin-top:auto still hugs the bottom when content is short, but
+     collapses to 0 and scrolls normally from the top once content grows
+     past the available height. */
+  .below-map{position:absolute;left:0;right:0;bottom:0;top:0;overflow-y:auto;padding:22px;
+       pointer-events:none;display:flex;flex-direction:column}
+  .below-map .inner{pointer-events:auto;max-width:420px;background:rgba(18,21,29,.97);
+       border:1px solid var(--line);border-radius:12px;padding:20px;display:none;margin-top:12px}
+  .below-map .inner.show{display:block}
+  #aioCard.show{margin-top:auto}
+  .below-map:not(:has(#aioCard.show)) #gridCard{margin-top:auto}
+  .subhead{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;
+       text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+  .gridbox{display:grid;gap:6px;margin:0 0 4px}
+  .cell{aspect-ratio:1;border-radius:7px;display:flex;align-items:center;justify-content:center;
+        font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#fff;
+        background:var(--muted);cursor:default;position:relative}
+  .cell.ok{background:var(--ok)} .cell.warn{background:var(--warn);color:#1a1408}
+  .cell.bad{background:var(--bad)} .cell.err{background:var(--line);color:var(--muted);font-size:11px}
+  .cell:hover .tip{display:block}
+  .tip{display:none;position:absolute;bottom:110%;left:50%;transform:translateX(-50%);
+       background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:7px 9px;
+       font-size:10.5px;color:var(--ink);white-space:nowrap;z-index:2;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+
+  .pin{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;
+       color:#fff;font-family:'Space Grotesk',sans-serif;font-size:11.5px;font-weight:700;
+       border:2px solid rgba(255,255,255,.85);box-shadow:0 1px 4px rgba(0,0,0,.5);background:var(--muted)}
+  .pin.ok{background:var(--ok)} .pin.warn{background:var(--warn);color:#1a1408}
+  .pin.bad{background:var(--bad)} .pin.err{background:var(--line);color:var(--muted);font-size:10px}
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+  .leaflet-popup-content{font-family:'IBM Plex Mono',monospace;font-size:12px;margin:9px 12px}
+  .leaflet-popup-content b{font-family:'Space Grotesk',sans-serif;color:var(--gold)}
+  .leaflet-container a.leaflet-popup-close-button{color:var(--muted)}
+
+  .foot{font-size:10px;color:var(--muted);margin-top:14px;line-height:1.5}
+
+  @media (max-width:860px){
+    .app{flex-direction:column;height:auto;overflow:visible}
+    .sidebar{width:100%;border-right:0;border-bottom:1px solid var(--line);overflow-y:visible}
+    /* #map stays absolute (needed for Leaflet to size correctly) but is now
+       scoped to its own relatively-positioned box instead of filling
+       .map-wrap, so the grid card below can sit in normal flow after it —
+       an absolutely-positioned sibling otherwise always paints above a
+       static one regardless of DOM order, which hid the card entirely. */
+    .map-wrap{height:auto;display:block}
+    .map-box{height:70vh}
+    .below-map{position:static;padding:16px;pointer-events:auto}
+    .below-map .inner{max-width:none}
+  }
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+
+    <div class="brand">
+      <div class="brand-mark">MC2</div>
+      <div>
+        <h1>Local rank grid check</h1>
+        <p>MC2SEO free tool</p>
+      </div>
+    </div>
+
+    <div id="gate" style="display:none">
+      <p class="eyebrow">Free tool</p>
+      <h2 style="margin-top:14px">You need an access code</h2>
+      <p class="lede">This tool runs on a personal link. Open the link you were sent — it carries your code — or type the code below.</p>
+      <div class="field"><label for="manual">Access code</label>
+        <input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+      <button class="submit" id="enter" type="button">Continue</button>
+      <p class="after">Don't have one? <a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>
+    </div>
+
+    <form id="scanForm">
+      <p class="lede">One keyword, a grid of points across the city, checked against Google Maps results at every one.</p>
+
+      <div class="field"><label for="city">City</label>
+        <select id="city">
+          <option value="prague">Prague</option>
+          <option value="dublin">Dublin</option>
+          <option value="hamburg">Hamburg</option>
+          <option value="belfast">Belfast</option>
+        </select>
+      </div>
+
+      <div class="field ac-wrap">
+        <label for="biz">Business name</label>
+        <input id="biz" type="text" placeholder="e.g. Café Savoy" autocomplete="off">
+        <div class="ac-list" id="acList"></div>
+      </div>
+      <p class="ac-badge" id="acBadge">✓ Matched to Google's own listing — exact match, not a name guess</p>
+
+      <div class="field"><label for="kw">Keyword</label><input id="kw" type="text" placeholder="e.g. coffee shop"></div>
+
+      <div class="row2">
+        <div class="field"><label for="size">Grid size</label>
+          <select id="size">
+            <option value="5">5 × 5</option>
+            <option value="7">7 × 7</option>
+          </select>
+        </div>
+        <div class="field"><label for="spacing">Spacing</label>
+          <select id="spacing">
+            <option value="1">1 km</option>
+            <option value="1.5" selected>1.5 km</option>
+            <option value="2">2 km</option>
+          </select>
+        </div>
+      </div>
+      <p class="cap" id="cap"></p>
+
+      <div class="field"><label for="centerMode">Grid centre</label>
+        <select id="centerMode">
+          <option value="city">City centre</option>
+          <option value="business">Company location</option>
+        </select>
+      </div>
+      <p class="cap" id="centerCap" style="display:none">Estimated from the business name and city — accuracy depends on how well the business is listed publicly. Falls back to the city centre if it can't be found.</p>
+
+      <label class="aio-check"><input type="checkbox" id="checkAio" checked> Also check Google's AI Overview <span>+1 search</span></label>
+
+      <button class="submit" id="go" type="button">Check my rankings</button>
+      <p class="after">Usually under 20 seconds.</p>
+    </form>
+
+    <div id="summary" style="display:none">
+      <h2>Results</h2>
+      <p class="verdict-text" id="verdictText"></p>
+      <p class="rating-line" id="ratingLine" style="display:none"></p>
+      <div class="stats">
+        <div class="stat"><b id="statAvg">–</b><span>Avg rank</span></div>
+        <div class="stat"><b id="statCov">–</b><span>Coverage</span></div>
+        <div class="stat"><b id="statTop3">–</b><span>In top 3</span></div>
+      </div>
+      <button class="btn-secondary" id="download" type="button">Download image</button>
+    </div>
+
+    <h2>Rank legend</h2>
+    <ul class="legend-list">
+      <li><i style="background:var(--ok)"></i>Top 3</li>
+      <li><i style="background:var(--warn)"></i>4–10</li>
+      <li><i style="background:var(--bad)"></i>11+</li>
+      <li><i style="background:var(--muted)"></i>Not found</li>
+    </ul>
+    <p class="foot" id="foot"></p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </aside>
+
+  <main class="map-wrap">
+    <div class="map-box">
+      <div id="map"></div>
+      <div class="progress" id="progress">
+        <div class="line"><span id="stage">Scanning the grid…</span><span class="clock" id="clock">0:00</span></div>
+        <div class="track"><i id="bar"></i></div>
+      </div>
+      <div class="banner" id="banner"></div>
+    </div>
+    <div class="below-map">
+      <div class="inner" id="aioCard">
+        <p class="subhead">Google AI Overview</p>
+        <div id="aioBody"></div>
+      </div>
+      <div class="inner" id="gridCard">
+        <p class="subhead">Grid summary</p>
+        <div class="gridbox" id="gridbox"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+const REPORT_ID = new URLSearchParams(location.search).get('id') || '';
+const CITY_NAMES = { prague: 'Prague', dublin: 'Dublin', hamburg: 'Hamburg', belfast: 'Belfast' };
+const CITY_CENTERS = { prague: [50.0755, 14.4378], dublin: [53.3498, -6.2603], hamburg: [53.5511, 9.9937], belfast: [54.5973, -5.9301] };
+
+const $ = id => document.getElementById(id);
+
+// --- Business-name autocomplete (Google Places "Autocomplete Data API") ----
+// Renders suggestions in our own list (not Google's default widget) so it
+// matches the page's theme exactly. Deliberately never calls Place Details —
+// the tool only needs place_id, which every prediction already carries — so
+// there's no "session-closing" call to bundle against; cost is the flat
+// per-request Autocomplete-Only rate (~$2.83/1000 requests as of 2026),
+// not the free-with-a-Details-call session pricing. See CLAUDE.md for setup.
+//
+// Put a Google Maps API key here, restricted in Google Cloud Console to:
+//   - HTTP referrers: https://brandchecker.eu/*
+//   - API restriction: Places API (New)
+// Leave blank and the field just behaves as a plain text input — nothing
+// else on the page depends on this being set.
+const GOOGLE_PLACES_KEY = 'AIzaSyBgbllzncdzD9xG3ZhJMnyQtWxb5hKp440';
+
+let placesLib = null, sessionToken = null, selectedPlaceId = '';
+let acItems = [], acActive = -1, acDebounce;
+// { location, rating, userRatingCount } for whichever place is currently
+// selected — fetched once per pick (see loadPlaceInfo), reused by both the
+// "Company location" grid-centring and the rating/review display, rather
+// than re-fetching per use.
+let selectedPlaceInfo = null;
+const AC_BADGE_DEFAULT = '✓ Matched to Google’s own listing — exact match, not a name guess';
+
+function loadGoogleMaps(){
+  if (!GOOGLE_PLACES_KEY || window.__gmapsLoading) return;
+  window.__gmapsLoading = true;
+  const s = document.createElement('script');
+  s.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_PLACES_KEY + '&libraries=places&loading=async&v=weekly';
+  s.async = true;
+  document.head.appendChild(s);
+}
+loadGoogleMaps();
+
+async function ensurePlacesLib(){
+  if (placesLib) return placesLib;
+  if (!window.google?.maps?.importLibrary) return null;
+  placesLib = await google.maps.importLibrary('places');
+  return placesLib;
+}
+
+function newSession(){
+  if (placesLib) sessionToken = new placesLib.AutocompleteSessionToken();
+}
+
+// Biases suggestions toward whichever city is currently selected — a bare
+// business name search would otherwise return matches from anywhere.
+function cityBias(){
+  const c = CITY_CENTERS[$('city').value] || CITY_CENTERS.prague;
+  return { west: c[1] - 0.35, east: c[1] + 0.35, north: c[0] + 0.25, south: c[0] - 0.25 };
+}
+
+function closeSuggestions(){
+  $('acList').classList.remove('show');
+  $('acList').innerHTML = '';
+  acItems = [];
+  acActive = -1;
+}
+
+function highlightActive(){
+  [...$('acList').children].forEach((el, i) => el.classList.toggle('active', i === acActive));
+}
+
+function renderSuggestions(suggestions){
+  const list = $('acList');
+  list.innerHTML = '';
+  acItems = suggestions;
+  acActive = -1;
+  if (!suggestions.length){ list.classList.remove('show'); return; }
+  suggestions.forEach((s, i) => {
+    const p = s.placePrediction;
+    const el = document.createElement('div');
+    el.className = 'ac-item';
+    const main = p.mainText?.text ?? p.text.text;
+    const sub = p.secondaryText?.text ?? '';
+    el.innerHTML = '<span>' + main + '</span>' + (sub ? '<span class="sub">' + sub + '</span>' : '');
+    el.onmousedown = e => { e.preventDefault(); pickSuggestion(i); };
+    list.appendChild(el);
+  });
+  list.classList.add('show');
+}
+
+function pickSuggestion(i){
+  const p = acItems[i]?.placePrediction;
+  if (!p) return;
+  $('biz').value = p.mainText?.text ?? p.text.text;
+  selectedPlaceId = p.placeId;
+  selectedPlaceInfo = null;
+  $('acBadge').textContent = AC_BADGE_DEFAULT;
+  $('acBadge').classList.add('show');
+  closeSuggestions();
+  loadPlaceInfo(p.placeId);
+}
+
+// One Place Details (New) call per selected business, requesting location
+// together with rating/userRatingCount. Combining them costs no more than
+// rating alone would — Google bills a fetchFields call at the highest tier
+// among the fields requested, and rating/userRatingCount are already
+// Enterprise-tier (unlike location, which is the cheaper Essentials tier on
+// its own) — so folding location in here is free precision, not an extra
+// cost. Enterprise tier: 1,000 free requests/month, then ~$1.51–$20/1000
+// depending on volume. This call runs straight from the browser to Google
+// (it has to, for the referrer-restricted public key to work), so nothing
+// stops it from running past that free tier on its own — /grid/place-lookup
+// is a real, server-tracked monthly counter that gates it first, capped
+// just under Google's own limit, so the tool can never accidentally cross
+// into paid usage here. If the cap's been hit, this just quietly skips —
+// "Company location" falls back to its existing name-based geocoding, and
+// the rating badge simply doesn't appear.
+async function loadPlaceInfo(placeId){
+  try {
+    const permRes = await fetch(API + '/grid/place-lookup', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE })
+    });
+    const perm = await permRes.json();
+    if (!perm.allowed) return;
+
+    const lib = await ensurePlacesLib();
+    if (!lib) return;
+    const place = new lib.Place({ id: placeId });
+    await place.fetchFields({ fields: ['location', 'rating', 'userRatingCount'] });
+    if (placeId !== selectedPlaceId) return; // user picked something else while this was in flight
+    selectedPlaceInfo = {
+      location: place.location ? { lat: place.location.lat(), lng: place.location.lng() } : null,
+      rating: place.rating ?? null,
+      userRatingCount: place.userRatingCount ?? null
+    };
+    if (selectedPlaceInfo.rating != null){
+      $('acBadge').textContent = AC_BADGE_DEFAULT + ' — ★' + selectedPlaceInfo.rating.toFixed(1) +
+        (selectedPlaceInfo.userRatingCount ? ' (' + selectedPlaceInfo.userRatingCount.toLocaleString() + ' reviews)' : '');
+    }
+  } catch (e) { /* rating/location just won't be available — everything else still works */ }
+}
+
+async function onBizInput(){
+  selectedPlaceId = '';
+  selectedPlaceInfo = null;
+  $('acBadge').classList.remove('show');
+  clearTimeout(acDebounce);
+  const q = $('biz').value.trim();
+  if (q.length < 2){ closeSuggestions(); return; }
+  acDebounce = setTimeout(async () => {
+    const lib = await ensurePlacesLib();
+    if (!lib) return; // no key configured yet — plain text entry still works fine
+    if (!sessionToken) newSession();
+    try {
+      const { suggestions } = await lib.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+        input: q, sessionToken, locationRestriction: cityBias(), includedPrimaryTypes: ['establishment']
+      });
+      renderSuggestions(suggestions || []);
+    } catch (e) {
+      closeSuggestions(); // fails open: typed text still submits as a plain name match
+    }
+  }, 300);
+}
+
+$('biz').addEventListener('input', onBizInput);
+$('biz').addEventListener('keydown', e => {
+  if (!acItems.length) return;
+  if (e.key === 'ArrowDown'){ e.preventDefault(); acActive = Math.min(acActive + 1, acItems.length - 1); highlightActive(); }
+  else if (e.key === 'ArrowUp'){ e.preventDefault(); acActive = Math.max(acActive - 1, 0); highlightActive(); }
+  else if (e.key === 'Enter' && acActive >= 0){ e.preventDefault(); pickSuggestion(acActive); }
+  else if (e.key === 'Escape'){ closeSuggestions(); }
+});
+document.addEventListener('click', e => { if (!e.target.closest('.ac-wrap')) closeSuggestions(); });
+// A different city invalidates whatever was selected and starts a fresh billing session.
+$('city').addEventListener('change', () => {
+  selectedPlaceId = '';
+  selectedPlaceInfo = null;
+  $('acBadge').classList.remove('show');
+  newSession();
+});
+
+// --- Map --------------------------------------------------------------------
+// Zoom 13 — tight on the city centre rather than the wider metro area/
+// countryside a lower zoom shows before any scan has run.
+const DEFAULT_ZOOM = 13;
+const map = L.map('map', { zoomControl: true }).setView(CITY_CENTERS[$('city').value] || CITY_CENTERS.prague, DEFAULT_ZOOM);
+// CARTO's free anonymous raster tiles now require a signed-up API key
+// (Aug 2026, watermarking unauthenticated requests "API KEY REQUIRED") —
+// swapped to Esri's World Dark Gray Canvas, publicly free, no key. Tile
+// URL order is {z}/{y}/{x} here, not {z}/{x}/{y} like CARTO/OSM. Esri's
+// tiles also send Access-Control-Allow-Origin: * (confirmed live), so
+// crossOrigin:true still keeps the exported-PNG canvas untainted.
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+  attribution: '&copy; Esri', maxZoom: 19, crossOrigin: true
+}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19, crossOrigin: true
+}).addTo(map);
+let markers = [];
+
+$('city').addEventListener('change', () => {
+  map.setView(CITY_CENTERS[$('city').value] || CITY_CENTERS.prague, DEFAULT_ZOOM);
+});
+
+// Defaults the city picker to whichever supported city the visitor is
+// actually closest to, using Cloudflare's free request.cf country code
+// (src/index.js's /geo-locate, already used by pin-check to center its
+// map) — no extra API cost. Ireland -> Dublin, Czechia -> Prague, Germany
+// -> Hamburg. Belfast has no country-code default of its own — GB covers
+// the whole UK, not just Northern Ireland, so defaulting every GB visitor
+// to Belfast would wrongly override London/Manchester/etc. visitors too;
+// any other country (Belfast's own included) leaves the plain default
+// (Prague, the first <option>) alone rather than guessing. Fires the
+// existing 'change' listeners rather than duplicating their session-reset
+// and map-recenter logic.
+const GEO_CITY_BY_COUNTRY = { IE: 'dublin', CZ: 'prague', DE: 'hamburg' };
+async function applyGeoCityDefault(){
+  let d;
+  try {
+    const res = await fetch(API + '/geo-locate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE })
+    });
+    d = await res.json();
+  } catch (e) { return; }
+  const city = GEO_CITY_BY_COUNTRY[d.country];
+  if (!city || $('city').value === city) return;
+  $('city').value = city;
+  $('city').dispatchEvent(new Event('change'));
+}
+
+function updateCap(){
+  const n = Number($('size').value);
+  $('cap').textContent = n + ' × ' + n + ' = ' + (n * n) + ' points checked';
+}
+$('size').addEventListener('change', updateCap);
+updateCap();
+
+$('centerMode').addEventListener('change', () => {
+  $('centerCap').style.display = $('centerMode').value === 'business' ? 'block' : 'none';
+});
+
+function showBanner(msg){
+  $('banner').textContent = msg;
+  $('banner').classList.add('show');
+}
+function hideBanner(){ $('banner').classList.remove('show'); }
+
+$('go').onclick = run;
+
+async function run(){
+  const city = $('city').value;
+  const business = $('biz').value.trim();
+  const keyword = $('kw').value.trim();
+  const gridSize = Number($('size').value);
+  const spacing = Number($('spacing').value);
+
+  if (!business || !keyword){
+    $('go').textContent = !business ? 'Add your business name first' : 'Add a keyword first';
+    setTimeout(() => $('go').textContent = 'Check my rankings', 2000);
+    return;
+  }
+
+  hideBanner();
+  $('go').disabled = true;
+  $('progress').classList.add('show');
+  $('bar').style.width = '0%';
+
+  const start = Date.now();
+  const estMs = gridSize * gridSize * 550; // rough per-point estimate, just to animate the bar
+  const tick = setInterval(() => {
+    const s = Math.floor((Date.now() - start) / 1000);
+    $('clock').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    const pct = Math.min(94, Math.round((Date.now() - start) / estMs * 100));
+    $('bar').style.width = pct + '%';
+  }, 250);
+
+  // selectedPlaceInfo was already fetched when the business was picked from
+  // the dropdown (see loadPlaceInfo) — no need to fetch it again here.
+  const center = ($('centerMode').value === 'business' && selectedPlaceInfo?.location) ? selectedPlaceInfo.location : undefined;
+
+  let data;
+  try {
+    const res = await fetch(API + '/grid', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, keyword, business, place_id: selectedPlaceId, city, grid_size: gridSize, spacing_km: spacing, center_mode: $('centerMode').value, center, check_ai_overview: $('checkAio').checked })
+    });
+    data = await res.json();
+  } catch (e) {
+    data = { error: 'could not reach the API' };
+  }
+
+  clearInterval(tick);
+  $('bar').style.width = '100%';
+  $('go').disabled = false;
+  setTimeout(() => { $('progress').classList.remove('show'); }, 300);
+
+  if (data.error){
+    showBanner(data.error === 'daily budget reached'
+      ? 'This tool has hit today’s data budget. Try again tomorrow, or get in touch and we’ll run it for you.'
+      : data.error);
+    return;
+  }
+
+  // Rating/review count are purely client-side — the backend never sees or
+  // needs them, they're just carried onto the result for showResults() and
+  // downloadImage() to display.
+  if (selectedPlaceInfo?.rating != null){
+    data.place_rating = selectedPlaceInfo.rating;
+    data.place_rating_count = selectedPlaceInfo.userRatingCount;
+  }
+
+  showResults(data);
+}
+
+function bandClass(rank, error){
+  if (error) return 'err';
+  if (rank == null) return '';
+  if (rank <= 3) return 'ok';
+  if (rank <= 10) return 'warn';
+  return 'bad';
+}
+
+// Shared with downloadImage() so the exported image's headline reads exactly
+// like the on-screen sidebar's, not a re-derived approximation of it.
+function verdictText(s){
+  return s.found === 0
+    ? 'Not found anywhere in this grid — outside the map pack across the whole area checked.'
+    : s.found === s.total
+    ? 'Ranking in the map pack at every point checked — averaging position ' + s.avg_rank + '.'
+    : 'Ranking at ' + s.found + ' of ' + s.total + ' points checked, averaging position ' + s.avg_rank + ' where found.';
+}
+
+function pinIcon(text, cls){
+  return L.divIcon({ className: '', html: '<div class="pin ' + cls + '">' + text + '</div>',
+    iconSize: [28, 28], iconAnchor: [14, 14] });
+}
+
+let lastResult = null;
+
+function showResults(d){
+  lastResult = d;
+  const s = d.summary;
+
+  $('summary').style.display = 'block';
+  $('download').classList.remove('attn');
+  void $('download').offsetWidth; // restart the animation even if it's re-triggered before finishing
+  $('download').classList.add('attn');
+  $('verdictText').textContent = verdictText(s);
+  if (d.place_rating != null){
+    $('ratingLine').innerHTML = '★ ' + d.place_rating.toFixed(1) +
+      (d.place_rating_count ? ' <span>· ' + d.place_rating_count.toLocaleString() + ' reviews</span>' : '');
+    $('ratingLine').style.display = 'block';
+  } else {
+    $('ratingLine').style.display = 'none';
+  }
+  $('statAvg').textContent = s.avg_rank ?? '–';
+  $('statCov').textContent = Math.round(s.coverage) + '%';
+  $('statTop3').textContent = Math.round(s.top3_share) + '%';
+
+  map.setView(CITY_CENTERS[d.city] || CITY_CENTERS.prague, DEFAULT_ZOOM);
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+
+  const bounds = [];
+  for (const pt of d.points){
+    const cls = bandClass(pt.rank, pt.error);
+    const label = pt.error ? '!' : (pt.rank == null ? '×' : pt.rank);
+    const marker = L.marker([pt.lat, pt.lng], { icon: pinIcon(label, cls) }).addTo(map);
+    const tip = pt.error ? ('<b>Error</b><br>' + pt.error)
+      : pt.rank == null ? '<b>Not in top 20 here</b>'
+      : ('<b>Rank #' + pt.rank + '</b>' + (pt.matchTitle ? '<br>' + pt.matchTitle : ''));
+    marker.bindPopup(tip);
+    markers.push(marker);
+    bounds.push([pt.lat, pt.lng]);
+  }
+  map.invalidateSize();
+  if (bounds.length) map.fitBounds(bounds, { padding: [40, 40] });
+
+  const box = $('gridbox');
+  box.style.gridTemplateColumns = 'repeat(' + d.grid_size + ', 1fr)';
+  box.style.maxWidth = (d.grid_size * 46) + 'px';
+  box.innerHTML = '';
+  for (const pt of d.points){
+    const cell = document.createElement('div');
+    cell.className = 'cell ' + bandClass(pt.rank, pt.error);
+    if (pt.error) {
+      cell.textContent = '!';
+      cell.innerHTML += '<span class="tip">' + pt.error + '</span>';
+    } else {
+      cell.textContent = pt.rank == null ? '×' : pt.rank;
+      const tip = pt.rank == null ? 'Not in top 20 here' : ('#' + pt.rank + (pt.matchTitle ? ' · ' + pt.matchTitle : ''));
+      cell.innerHTML += '<span class="tip">' + tip + '</span>';
+    }
+    box.appendChild(cell);
+  }
+  $('gridCard').classList.add('show');
+
+  renderAiOverview(d.ai_overview);
+
+  $('foot').textContent = (d.center_source === 'business_fallback'
+    ? 'Couldn’t pinpoint "' + d.business + '" precisely, so the grid is centred on ' + d.city_name + ' instead. '
+    : '') +
+    'Each point checks Google Maps results for the keyword at that exact coordinate. ' +
+    'Rankings move; treat this as a snapshot.';
+}
+
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// AI Overview content is real web text from Google/DataForSEO, not something
+// we control — always escaped before insertion. Grid-check has no website
+// field to domain-match against (unlike rank-check), so "mentioned" here is
+// a best-effort name match the server already computed — labelled as such,
+// not presented as a guarantee.
+function renderAiOverview(aio){
+  const card = $('aioCard');
+  const body = $('aioBody');
+  if (!aio){ card.classList.remove('show'); return; }
+  card.classList.add('show');
+
+  if (aio.error){
+    body.innerHTML = '<p class="aio-empty">Could not check: ' + escapeHtml(aio.error) + '</p>';
+    return;
+  }
+  if (!aio.present){
+    body.innerHTML = '<p class="aio-empty">No AI Overview shown for this search.</p>';
+    return;
+  }
+
+  let html = '';
+  if (aio.mentioned) html += '<span class="aio-mentioned">✓ Your business name appears to be mentioned</span>';
+  if (aio.asynchronous && !aio.text && !(aio.sources || []).length){
+    html += '<p class="aio-empty">An AI Overview was shown, but its content loads asynchronously and wasn’t available in this check.</p>';
+  }
+  if (aio.text) html += '<p class="aio-text">' + escapeHtml(aio.text) + '</p>';
+  if (aio.sources && aio.sources.length){
+    html += '<p class="subhead" style="margin-bottom:8px">Companies &amp; sources cited</p><ul class="aio-sources">';
+    for (const s of aio.sources){
+      const label = s.title || s.domain || s.url || 'Unknown source';
+      html += '<li>' + escapeHtml(label) + (s.domain ? '<span class="domain">' + escapeHtml(s.domain) + '</span>' : '') + '</li>';
+    }
+    html += '</ul>';
+  }
+  body.innerHTML = html || '<p class="aio-empty">An AI Overview was shown, but no readable content or sources came back.</p>';
+}
+
+// Draws the same rank grid onto an offscreen canvas — no screenshot library,
+// so the exported PNG is pixel-crisp and independent of page zoom/scroll —
+// with the business, city and grid details baked into the image itself so
+// it's self-explanatory once downloaded and shared on its own.
+const CELL_COLORS = { ok: '#35c48d', warn: '#e0a93a', bad: '#e8695f', err: '#242c3d', '': '#8b93a7' };
+const CELL_TEXT = { warn: '#1a1408' };
+
+// Greedy word-wrap: splits `text` into lines no wider than `maxWidth` at the
+// current ctx.font. Falls back to leaving an unbreakable single word wider
+// than maxWidth on its own line rather than truncating it.
+function wrapText(ctx, text, maxWidth){
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (const word of words){
+    const test = line ? line + ' ' + word : word;
+    if (ctx.measureText(test).width > maxWidth && line){
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+// Renders the current on-screen map (tiles + pins) onto its own square
+// canvas at `targetSize` — cropped from whatever #map's live on-screen size
+// and pan/zoom happen to be, not stretched to fit. #map is a wide flex-1
+// panel on screen, but the grid below it is always N×N (square); a crop
+// (centered, no distortion) rather than a squash keeps street/water shapes
+// correct while making the two blocks in the exported image match each
+// other's shape instead of one being noticeably wider than the other. Uses
+// plain DOM geometry (getBoundingClientRect) for tile positions rather than
+// Leaflet internals, so it's robust across Leaflet versions. Markers are
+// L.divIcon (styled <div>s, not <img>s) so they can't be drawn directly —
+// redrawn here as plain circles matching their on-map style instead.
+// Returns null (rather than throwing) if anything about the snapshot fails,
+// so a map/CORS hiccup degrades to the grid-only export that already
+// worked, instead of breaking the download entirely.
+async function snapshotMap(d, targetSize){
+  try {
+    const mapEl = document.getElementById('map');
+    const mapRect = mapEl.getBoundingClientRect();
+    if (!mapRect.width || !mapRect.height) return null;
+
+    const cropSide = Math.min(mapRect.width, mapRect.height);
+    const cropOffsetX = (mapRect.width - cropSide) / 2;
+    const cropOffsetY = (mapRect.height - cropSide) / 2;
+    const scale = targetSize / cropSide;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = targetSize;
+    canvas.height = targetSize;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0a0c11';
+    ctx.fillRect(0, 0, targetSize, targetSize);
+
+    for (const tile of mapEl.querySelectorAll('img.leaflet-tile-loaded')){
+      const r = tile.getBoundingClientRect();
+      try {
+        ctx.drawImage(tile, (r.left - mapRect.left - cropOffsetX) * scale, (r.top - mapRect.top - cropOffsetY) * scale,
+          r.width * scale, r.height * scale);
+      } catch (e) { /* one bad tile shouldn't sink the whole snapshot */ }
+    }
+
+    for (const pt of d.points){
+      const p = map.latLngToContainerPoint([pt.lat, pt.lng]);
+      const x = (p.x - cropOffsetX) * scale, y = (p.y - cropOffsetY) * scale;
+      const cls = bandClass(pt.rank, pt.error);
+      ctx.beginPath();
+      ctx.arc(x, y, 13 * scale, 0, Math.PI * 2);
+      ctx.fillStyle = CELL_COLORS[cls] ?? CELL_COLORS[''];
+      ctx.fill();
+      ctx.lineWidth = 2 * scale;
+      ctx.strokeStyle = 'rgba(255,255,255,.85)';
+      ctx.stroke();
+
+      ctx.fillStyle = CELL_TEXT[cls] ?? '#ffffff';
+      ctx.font = '700 ' + Math.round(12 * scale) + 'px "Space Grotesk", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pt.error ? '!' : (pt.rank == null ? '×' : String(pt.rank)), x, y + scale);
+    }
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+
+    ctx.fillStyle = 'rgba(0,0,0,.55)';
+    ctx.fillRect(0, targetSize - 16 * scale, targetSize, 16 * scale);
+    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    ctx.font = (10 * scale) + 'px "IBM Plex Mono", monospace';
+    ctx.fillText('© OpenStreetMap © CARTO', 6 * scale, targetSize - 5 * scale);
+
+    // toDataURL/drawImage on the real canvas throws if any tile turned out
+    // to be cross-origin-tainted despite the check above — caught below,
+    // same fallback as any other snapshot failure.
+    canvas.toDataURL();
+    return { canvas, height: targetSize };
+  } catch (e) {
+    return null;
+  }
+}
+
+async function downloadImage(d){
+  if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (e) {} }
+
+  const n = d.grid_size;
+  const cell = 64, gap = 10, pad = 30;
+  const gridPx = n * cell + (n - 1) * gap;
+  const width = gridPx + pad * 2;
+  const contentWidth = gridPx; // text wraps to the grid's own width
+
+  // Measure on a throwaway context first so layout (wrapped line count,
+  // footer height) is known before the real canvas is sized and drawn.
+  const measure = document.createElement('canvas').getContext('2d');
+  const dateStr = new Date(d.created_at || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const detailText = d.keyword + ' · ' + d.city_name + ' · ' + n + '×' + n + ' grid, ' + d.spacing_km + ' km spacing · ' + dateStr;
+  measure.font = '400 11.5px "IBM Plex Mono", monospace';
+  const detailLines = wrapText(measure, detailText, contentWidth);
+  measure.font = '700 22px "Space Grotesk", sans-serif';
+  const titleLines = wrapText(measure, d.keyword, contentWidth);
+
+  // Baseline of the last title line, then explicit gaps down to the subtitle
+  // and from the subtitle to the grid — not "keep adding the title's own
+  // line-height", which left the subtitle's baseline only 2px below where
+  // the *next* title line would have started, so the grid's top edge
+  // landed right on top of the subtitle text instead of below it.
+  const titleLineH = 28;
+  const lastTitleBaseline = pad + 22 + (titleLines.length - 1) * titleLineH;
+  const subtitleBaseline = lastTitleBaseline + 26;
+  const titleH = (subtitleBaseline + 18) - pad; // -> grid starts 18px under the subtitle
+  const footerLineH = 17;
+  const footerH = 22 + footerLineH * detailLines.length + 20; // business name + wrapped detail + byline
+  const gapBelowGrid = 26;
+
+  // Same headline the sidebar shows (verdict line + avg rank/coverage/top-3
+  // boxes) — this used to only exist on-screen, so a downloaded image had
+  // the grid and map but none of the numbers that actually summarise them.
+  const s = d.summary;
+  measure.font = '400 12px "IBM Plex Mono", monospace';
+  const verdictLines = wrapText(measure, verdictText(s), contentWidth);
+  const verdictLineH = 18;
+  const ratingLineH = (d.place_rating != null) ? 20 : 0;
+  const statGap = 8;
+  const statBoxH = 64;
+  const statsBlockH = verdictLines.length * verdictLineH + ratingLineH + 14 + statBoxH + 26;
+
+  // AI Overview — drawn whenever the check was requested (d.ai_overview is
+  // non-null) even when nothing came back, so the downloaded report doesn't
+  // just go silent on it the way an earlier version did — it should read
+  // the same as the on-screen card, which still says "No AI Overview shown"
+  // rather than disappearing.
+  const aioPad = 16;
+  const aioContentWidth = contentWidth - aioPad * 2;
+  let aioLines = [], aioSourceLines = null, aioMentioned = false, aioBlockH = 0;
+  if (d.ai_overview) {
+    const aio = d.ai_overview;
+    const bodyText = aio.error ? ('Could not check: ' + aio.error)
+      : !aio.present ? 'No AI Overview shown for this search.'
+      : (aio.text || (aio.asynchronous ? 'An AI Overview was shown, but its content loads asynchronously and wasn’t available in this check.' : 'An AI Overview was shown, but no readable content came back.'));
+    aioMentioned = Boolean(aio.present && aio.mentioned);
+    measure.font = '400 13px "IBM Plex Mono", monospace';
+    aioLines = wrapText(measure, bodyText, aioContentWidth);
+    if (aio.present && aio.sources && aio.sources.length) {
+      measure.font = '400 11px "IBM Plex Mono", monospace';
+      const sourcesText = 'Sources: ' + aio.sources.map(s => s.domain || s.title || s.url).filter(Boolean).join(', ');
+      aioSourceLines = wrapText(measure, sourcesText, aioContentWidth);
+    }
+    aioBlockH = aioPad + 26 + (aioMentioned ? 24 : 0) + aioLines.length * 18
+      + (aioSourceLines ? 10 + aioSourceLines.length * 15 : 0) + aioPad;
+  }
+  const aioGapBelow = d.ai_overview ? 20 : 0;
+
+  const mapSnap = await snapshotMap(d, contentWidth);
+  const mapGapBelow = mapSnap ? 20 : 0;
+  const mapBlockH = mapSnap ? mapSnap.height + mapGapBelow : 0;
+
+  const height = pad + titleH + statsBlockH + aioBlockH + aioGapBelow + mapBlockH + gridPx + gapBelowGrid + footerH + pad;
+
+  const canvas = document.createElement('canvas');
+  const scale = 2; // export at 2x for a crisp download regardless of screen density
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale);
+
+  ctx.fillStyle = '#0a0c11';
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.fillStyle = '#ffd65c';
+  ctx.font = '700 22px "Space Grotesk", sans-serif';
+  ctx.textBaseline = 'alphabetic';
+  let ty = pad + 22;
+  for (const l of titleLines){ ctx.fillText(l, pad, ty); ty += 28; }
+
+  ctx.fillStyle = '#8b93a7';
+  ctx.font = '400 12px "IBM Plex Mono", monospace';
+  ctx.fillText(d.business + ' · ' + d.city_name, pad, subtitleBaseline);
+
+  ctx.fillStyle = '#8b93a7';
+  ctx.font = '400 12px "IBM Plex Mono", monospace';
+  let vy = pad + titleH + 12;
+  for (const l of verdictLines){ ctx.fillText(l, pad, vy); vy += verdictLineH; }
+
+  if (d.place_rating != null){
+    ctx.font = '400 12.5px "IBM Plex Mono", monospace';
+    const ratingStr = '★ ' + d.place_rating.toFixed(1);
+    ctx.fillStyle = '#ffd65c';
+    ctx.fillText(ratingStr, pad, vy);
+    if (d.place_rating_count){
+      ctx.fillStyle = '#8b93a7';
+      ctx.fillText(' · ' + d.place_rating_count.toLocaleString() + ' reviews', pad + ctx.measureText(ratingStr).width, vy);
+    }
+    vy += ratingLineH;
+  }
+
+  const statsTop = pad + titleH + verdictLines.length * verdictLineH + ratingLineH + 14;
+  const statBoxW = (contentWidth - statGap * 2) / 3;
+  const stats = [
+    { value: s.avg_rank ?? '–', label: 'AVG RANK' },
+    { value: Math.round(s.coverage) + '%', label: 'COVERAGE' },
+    { value: Math.round(s.top3_share) + '%', label: 'IN TOP 3' }
+  ];
+  stats.forEach((stat, i) => {
+    const bx = pad + i * (statBoxW + statGap);
+    ctx.fillStyle = '#171b26';
+    roundRect(ctx, bx, statsTop, statBoxW, statBoxH, 9);
+    ctx.fill();
+    ctx.strokeStyle = '#242c3d';
+    ctx.lineWidth = 1;
+    roundRect(ctx, bx, statsTop, statBoxW, statBoxH, 9);
+    ctx.stroke();
+
+    ctx.fillStyle = '#eceef4';
+    ctx.font = '700 20px "Space Grotesk", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(stat.value), bx + statBoxW / 2, statsTop + statBoxH / 2 - 9);
+
+    ctx.fillStyle = '#8b93a7';
+    ctx.font = '400 9.5px "IBM Plex Mono", monospace';
+    ctx.fillText(stat.label, bx + statBoxW / 2, statsTop + statBoxH / 2 + 13);
+  });
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  if (d.ai_overview) {
+    const aioTop = pad + titleH + statsBlockH;
+    ctx.fillStyle = '#171b26';
+    roundRect(ctx, pad, aioTop, contentWidth, aioBlockH, 12);
+    ctx.fill();
+    ctx.strokeStyle = '#242c3d';
+    ctx.lineWidth = 1;
+    roundRect(ctx, pad, aioTop, contentWidth, aioBlockH, 12);
+    ctx.stroke();
+
+    let ay = aioTop + aioPad + 11;
+    ctx.fillStyle = '#8b93a7';
+    ctx.font = '700 11px "Space Grotesk", sans-serif';
+    ctx.fillText('GOOGLE AI OVERVIEW', pad + aioPad, ay);
+    ay += 26;
+
+    if (aioMentioned) {
+      ctx.fillStyle = '#35c48d';
+      ctx.font = '400 11.5px "IBM Plex Mono", monospace';
+      ctx.fillText('✓ Business name appears to be mentioned', pad + aioPad, ay);
+      ay += 24;
+    }
+
+    ctx.fillStyle = '#eceef4';
+    ctx.font = '400 13px "IBM Plex Mono", monospace';
+    for (const l of aioLines){ ctx.fillText(l, pad + aioPad, ay); ay += 18; }
+
+    if (aioSourceLines) {
+      ay += 10;
+      ctx.fillStyle = '#8b93a7';
+      ctx.font = '400 11px "IBM Plex Mono", monospace';
+      for (const l of aioSourceLines){ ctx.fillText(l, pad + aioPad, ay); ay += 15; }
+    }
+  }
+
+  if (mapSnap) ctx.drawImage(mapSnap.canvas, pad, pad + titleH + statsBlockH + aioBlockH + aioGapBelow, contentWidth, mapSnap.height);
+
+  let y = pad + titleH + statsBlockH + aioBlockH + aioGapBelow + mapBlockH;
+  for (const pt of d.points){
+    const x = pad + pt.col * (cell + gap);
+    const cy = y + pt.row * (cell + gap);
+    const cls = bandClass(pt.rank, pt.error);
+    ctx.fillStyle = CELL_COLORS[cls] ?? CELL_COLORS[''];
+    roundRect(ctx, x, cy, cell, cell, 10);
+    ctx.fill();
+
+    ctx.fillStyle = CELL_TEXT[cls] ?? '#ffffff';
+    ctx.font = '700 20px "Space Grotesk", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const label = pt.error ? '!' : (pt.rank == null ? '×' : String(pt.rank));
+    ctx.fillText(label, x + cell / 2, cy + cell / 2 + 1);
+  }
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  const footY = y + gridPx + gapBelowGrid;
+  ctx.strokeStyle = '#242c3d';
+  ctx.beginPath();
+  ctx.moveTo(pad, footY - 14);
+  ctx.lineTo(width - pad, footY - 14);
+  ctx.stroke();
+
+  ctx.fillStyle = '#eceef4';
+  ctx.font = '500 13px "IBM Plex Mono", monospace';
+  ctx.fillText(d.business, pad, footY + 8);
+
+  ctx.fillStyle = '#8b93a7';
+  ctx.font = '400 11.5px "IBM Plex Mono", monospace';
+  let fy = footY + 26;
+  for (const l of detailLines){ ctx.fillText(l, pad, fy); fy += footerLineH; }
+
+  ctx.fillStyle = '#5c6474';
+  ctx.font = '400 10.5px "IBM Plex Mono", monospace';
+  ctx.fillText('brandchecker.eu/tools/grid-check', pad, fy + 4);
+
+  const url = canvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  const slug = (d.business || 'grid-check').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  a.href = url;
+  a.download = 'grid-check-' + slug + '-' + d.city + '.png';
+  a.click();
+}
+
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+$('download').onclick = async () => {
+  const btn = $('download');
+  btn.classList.remove('attn');
+  if (!lastResult) return;
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Preparing…';
+  try {
+    await downloadImage(lastResult);
+    btn.textContent = 'Downloaded ✓';
+  } catch (e) {
+    btn.textContent = 'Couldn’t generate image';
+  }
+  setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1800);
+};
+
+async function loadSavedScan(id){
+  let data;
+  try {
+    const res = await fetch(API + '/grid/get', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, id })
+    });
+    data = await res.json();
+  } catch (e) { data = { error: 'could not reach the API' }; }
+
+  if (data.error) return;
+  showResults(data);
+  window.scrollTo(0, 0);
+}
+
+if (!CODE){
+  $('scanForm').style.display = 'none';
+  $('gate').style.display = 'block';
+  const go = () => {
+    const v = $('manual').value.trim().toLowerCase().replace(/\s+/g, '');
+    if (v) location.search = '?k=' + encodeURIComponent(v);
+  };
+  $('enter').onclick = go;
+  $('manual').onkeydown = e => { if (e.key === 'Enter') go(); };
+} else if (REPORT_ID){
+  loadSavedScan(REPORT_ID);
+} else {
+  applyGeoCityDefault();
+}
+</script>
+</body>
+</html>

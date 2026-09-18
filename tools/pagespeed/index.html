@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PageSpeed comparison</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23FFFF00'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c;
+        --good:#0cce6b;--avg:#ffa400;--poor:#ff4e42}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:560px;margin:0 auto}
+  .wrap.wide{max-width:920px}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px}
+  fieldset{border:0;margin-bottom:24px}
+  legend{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+         text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .hint{font-size:11.5px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  input:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:12px;position:relative}
+  .row2{display:grid;grid-template-columns:1fr 2fr;gap:8px}
+  .siterow{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px}
+  .siterow .row2{flex:1}
+  .rmbtn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:7px;
+        width:38px;height:38px;flex:none;cursor:pointer;font-size:16px;margin-top:1px}
+  .addbtn{font-size:12px;color:var(--you);background:none;border:1px dashed var(--line);
+        border-radius:7px;padding:9px 14px;cursor:pointer;font-family:'IBM Plex Mono',monospace}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer;margin-top:16px}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px}
+  #results{display:none}
+  .meta{font-size:12px;color:var(--muted);margin-bottom:18px}
+  .backbtn{font-size:14px;color:var(--you);background:none;border:0;cursor:pointer;margin-bottom:16px;
+        font-family:'IBM Plex Mono',monospace}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+
+  .devchips{display:flex;gap:8px;margin-bottom:20px}
+  .chip{font:14px 'IBM Plex Mono',monospace;color:var(--ink);background:var(--card);
+        border:1px solid var(--line);border-radius:20px;padding:8px 14px;cursor:pointer}
+  .chip[aria-pressed=true]{background:var(--you);border-color:var(--you);color:#fff}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-bottom:20px}
+  .pscard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;
+        display:flex;flex-direction:column;align-items:center;text-align:center}
+  .pscard.you{border-color:var(--you);border-width:2px}
+  .pscard .label{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;
+        color:var(--ink);margin-bottom:2px;word-break:break-word}
+  .pscard .siteurl{font-size:10.5px;color:var(--muted);margin-bottom:14px;word-break:break-all}
+  .gauge{position:relative;width:120px;height:120px;margin-bottom:14px}
+  .gauge svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .gauge .track{fill:none;stroke:var(--line);stroke-width:10}
+  .gauge .fill{fill:none;stroke-width:10;stroke-linecap:round;
+        transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1),stroke .3s}
+  .gauge .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+        font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700}
+  .gauge.loading svg{animation:spin 1.1s linear infinite}
+  @keyframes spin{from{transform:rotate(-90deg)}to{transform:rotate(270deg)}}
+  .gauge.loading .fill{stroke-dasharray:78 236;stroke:var(--you)}
+  .vitals{display:flex;flex-direction:column;gap:6px;width:100%}
+  .pill{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;
+        background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:6px 12px}
+  .pill.best{border-color:currentColor}
+  .pill .k{color:var(--muted)}
+  .pill .v{font-weight:700;display:flex;align-items:center;gap:4px}
+  .pill .v .tri{font-size:9px}
+  .field-badge{margin-top:10px;font-size:10px;color:var(--muted);background:var(--paper);
+        border:1px solid var(--line);border-radius:12px;padding:4px 10px}
+  .cardfail{color:var(--bad);font-size:12px;padding:20px 0}
+  .deviceerr{color:var(--bad);font-size:11px;margin:-4px 0 10px;line-height:1.4}
+
+  .diagbtn{width:100%;margin-top:14px;font-size:11.5px;color:var(--you);background:none;
+        border:1px solid var(--line);border-radius:7px;padding:9px 12px;cursor:pointer;
+        font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;gap:4px}
+  .diagbtn::after{content:'▾';font-size:9px;transition:transform .15s}
+  .diagbtn.open::after{transform:rotate(180deg)}
+  .diagcount{color:var(--muted)}
+  .diagpanel{margin-top:10px;text-align:left}
+  .diaglist{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+  .diagitem{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .dtitle{font-size:12px;font-weight:700;color:var(--ink)}
+  .dsave{font-weight:400;color:var(--warn);font-size:11px}
+  .ddesc{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
+  .diagnone{font-size:11.5px;color:var(--ok);padding:8px 0}
+  .copybtn{width:100%;font-size:11.5px;color:var(--ink);background:var(--card);border:1px solid var(--line);
+        border-radius:7px;padding:9px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace}
+
+  .sharebar{display:none;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
+        border-radius:8px;padding:12px 14px;margin-bottom:20px;font-size:12px}
+  .sharebar input{flex:1;background:var(--paper);font-size:11.5px;padding:8px 10px}
+  .sharebar button{flex:none;font-size:11.5px;background:var(--you);color:#fff;border:0;
+        border-radius:6px;padding:8px 14px;cursor:pointer;font-family:'IBM Plex Mono',monospace}
+
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-bottom:18px}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .legend i{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="form">
+    <p class="eyebrow">Free tool · no access code needed</p>
+    <h1>How fast is your site, really?</h1>
+    <p class="lede">Your PageSpeed Insights score next to up to two competitors' — same Lighthouse performance score and Core Web Vitals Google itself uses to judge page experience.</p>
+
+    <fieldset>
+      <legend>Your site</legend>
+      <div class="field"><label for="you-url">URL</label><input id="you-url" type="text" placeholder="https://yoursite.com" value="https://"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Competitors (optional, up to 2)</legend>
+      <div id="competitors"></div>
+      <button class="addbtn" id="addComp" type="button">+ Add a competitor</button>
+    </fieldset>
+
+    <button class="submit" id="go" type="button">Compare PageSpeed</button>
+    <p class="after">Takes 20–40 seconds — real Lighthouse runs, not cached lookups.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <button class="backbtn" id="back">&larr; New comparison</button>
+    <p class="eyebrow restag">PageSpeed comparison</p>
+    <h1 id="rTitle">Comparing…</h1>
+    <div class="devchips" id="devChips"></div>
+    <div class="legend">
+      <span><i style="background:var(--good)"></i>Good</span>
+      <span><i style="background:var(--avg)"></i>Needs improvement</span>
+      <span><i style="background:var(--poor)"></i>Poor</span>
+      <span>▲ best of the group</span>
+    </div>
+    <div class="sharebar" id="sharebar">
+      <span>Share this report:</span>
+      <input id="shareUrl" readonly>
+      <button id="copyShare" type="button">Copy</button>
+    </div>
+    <div class="cards" id="cards"></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+const REPORT_ID = new URLSearchParams(location.search).get('r') || '';
+const MAX_COMPETITORS = 2;
+const R = 50, CIRC = 2 * Math.PI * R;
+
+const $ = id => document.getElementById(id);
+const PREFILL_U = new URLSearchParams(location.search).get('u');
+if (PREFILL_U) { const f = document.getElementById('you-url'); if (f) f.value = PREFILL_U; }
+let device = 'mobile';
+let siteResults = []; // filled as each site's fetch resolves
+let cardEls = [];
+
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function addCompetitorRow(){
+  const rows = $('competitors').children.length;
+  if (rows >= MAX_COMPETITORS) return;
+  const row = document.createElement('div');
+  row.className = 'siterow';
+  row.innerHTML = '<div class="row2">' +
+    '<input type="text" class="comp-label" placeholder="Label (optional)">' +
+    '<input type="text" class="comp-url" placeholder="https://competitor.com" value="https://"></div>' +
+    '<button type="button" class="rmbtn" aria-label="Remove">&times;</button>';
+  row.querySelector('.rmbtn').onclick = () => { row.remove(); $('addComp').style.display = ''; };
+  $('competitors').appendChild(row);
+  if ($('competitors').children.length >= MAX_COMPETITORS) $('addComp').style.display = 'none';
+}
+$('addComp').onclick = addCompetitorRow;
+
+function renderDevChips(){
+  $('devChips').innerHTML = [['mobile','Mobile'],['desktop','Desktop']].map(([v,l]) =>
+    '<button type="button" class="chip" data-dev="' + v + '" aria-pressed="' + (v===device) + '">' + l + '</button>').join('');
+  $('devChips').querySelectorAll('button').forEach(b => b.onclick = () => {
+    device = b.dataset.dev; renderDevChips(); syncAllCards();
+  });
+}
+
+function gaugeColor(score){
+  if (score == null) return 'var(--muted)';
+  if (score >= 90) return 'var(--good)';
+  if (score >= 50) return 'var(--avg)';
+  return 'var(--poor)';
+}
+
+function metricBand(kind, value){
+  if (value == null) return null;
+  if (kind === 'lcp') return value <= 2500 ? 'good' : value <= 4000 ? 'avg' : 'poor';
+  if (kind === 'cls') return value <= 0.1 ? 'good' : value <= 0.25 ? 'avg' : 'poor';
+  if (kind === 'tbt') return value <= 200 ? 'good' : value <= 600 ? 'avg' : 'poor';
+  return null;
+}
+const BAND_COLOR = { good: 'var(--good)', avg: 'var(--avg)', poor: 'var(--poor)', FAST: 'var(--good)', AVERAGE: 'var(--avg)', SLOW: 'var(--poor)' };
+
+function bestIndex(kind){
+  const vals = siteResults.map(s => {
+    if (!s || s.error) return null;
+    const d = s[device];
+    if (!d) return null;
+    return kind === 'score' ? d.score : d[kind]?.value;
+  });
+  const present = vals.map((v,i) => v == null ? null : [v,i]).filter(Boolean);
+  if (present.length < 2) return -1;
+  present.sort((a,b) => kind === 'score' ? b[0]-a[0] : a[0]-b[0]);
+  return present[0][1];
+}
+
+// Numbers count up rather than snapping in — same "let a real result land"
+// feeling as the gauge arc's own CSS transition, which needs the circle's
+// stroke-dashoffset to genuinely change on an existing DOM node (not be
+// baked into a fresh innerHTML string) to fire at all.
+function animateNumber(el, from, to, duration){
+  const start = performance.now();
+  function step(now){
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(from + (to - from) * eased);
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function pillSkeleton(label, kind){
+  return '<div class="pill" data-kind="' + kind + '"><span class="k">' + label + '</span><span class="v"></span></div>';
+}
+
+function skeletonCard(){
+  const div = document.createElement('div');
+  div.className = 'pscard';
+  div.innerHTML = '<div class="gauge loading"><svg viewBox="0 0 120 120">' +
+    '<circle class="track" cx="60" cy="60" r="' + R + '"></circle>' +
+    '<circle class="fill" cx="60" cy="60" r="' + R + '" stroke="var(--muted)" ' +
+    'stroke-dasharray="' + CIRC + '" stroke-dashoffset="' + CIRC + '"></circle>' +
+    '</svg><div class="num"></div></div>';
+  return div;
+}
+
+function readyCardHtml(s, isYou){
+  return '<div class="label">' + esc(s.label) + '</div>' +
+    '<div class="siteurl">' + esc(s.url) + '</div>' +
+    '<p class="deviceerr" style="display:none"></p>' +
+    '<div class="gauge"><svg viewBox="0 0 120 120">' +
+    '<circle class="track" cx="60" cy="60" r="' + R + '"></circle>' +
+    '<circle class="fill" cx="60" cy="60" r="' + R + '" stroke="var(--muted)" ' +
+    'stroke-dasharray="' + CIRC + '" stroke-dashoffset="' + CIRC + '"></circle>' +
+    '</svg><div class="num">0</div></div>' +
+    '<div class="vitals">' + pillSkeleton('LCP','lcp') + pillSkeleton('CLS','cls') + pillSkeleton('TBT','tbt') + '</div>' +
+    '<div class="field-badge" style="display:none"></div>' +
+    (isYou ? '<button type="button" class="diagbtn">Show diagnostics<span class="diagcount"></span></button>' +
+      '<div class="diagpanel" hidden><div class="diaglist"></div>' +
+      '<button type="button" class="copybtn">Copy for a teammate</button></div>' : '');
+}
+
+function diagnosticsText(s, device, d){
+  const items = d.diagnostics ?? [];
+  if (!items.length) return 'PageSpeed diagnostics — ' + s.label + ' (' + s.url + ')\n' + device + ' · score ' + d.score + '\n\nNo major issues found.';
+  const lines = items.map((it, i) => (i + 1) + '. ' + it.title + (it.display ? ' — ' + it.display : '') + '\n   ' + it.description);
+  return 'PageSpeed diagnostics — ' + s.label + ' (' + s.url + ')\n' + device + ' · score ' + d.score + '\n\n' + lines.join('\n\n');
+}
+
+function renderDiagnostics(el, s, device, d){
+  const items = d.diagnostics ?? [];
+  el.querySelector('.diagcount').textContent = items.length ? ' (' + items.length + ')' : '';
+  el.querySelector('.diaglist').innerHTML = items.length
+    ? items.map(it => '<div class="diagitem"><div class="dtitle">' + esc(it.title) +
+        (it.display ? ' <span class="dsave">' + esc(it.display) + '</span>' : '') + '</div>' +
+        '<div class="ddesc">' + esc(it.description) + '</div></div>').join('')
+    : '<p class="diagnone">No major issues found for this device.</p>';
+
+  const copyBtn = el.querySelector('.copybtn');
+  copyBtn.onclick = () => {
+    navigator.clipboard?.writeText(diagnosticsText(s, device, d));
+    copyBtn.textContent = 'Copied';
+    setTimeout(() => copyBtn.textContent = 'Copy for a teammate', 1500);
+  };
+}
+
+function updatePill(el, kind, d, isBest){
+  const pillEl = el.querySelector('.pill[data-kind="' + kind + '"]');
+  const value = d[kind]?.value ?? null;
+  const display = d[kind]?.display ?? '—';
+  const band = metricBand(kind, value);
+  const color = band ? BAND_COLOR[band] : 'var(--muted)';
+  pillEl.classList.toggle('best', isBest);
+  pillEl.style.color = isBest ? color : 'var(--ink)';
+  pillEl.querySelector('.v').style.color = color;
+  pillEl.querySelector('.v').innerHTML = (isBest ? '<span class="tri">▲</span>' : '') + esc(display);
+}
+
+// Mutates each card's existing DOM nodes rather than rebuilding via
+// innerHTML each time, so the gauge's CSS transition and the number
+// count-up genuinely fire — both on first reveal and again for free when
+// the device toggle swaps a card's data.
+function syncAllCards(){
+  const lcpBest = bestIndex('lcp'), clsBest = bestIndex('cls'), tbtBest = bestIndex('tbt');
+  siteResults.forEach((s, i) => {
+    const el = cardEls[i];
+    if (!s) return;
+    if (s.error){
+      el.innerHTML = '<div class="label">' + esc(s.label) + '</div><p class="cardfail">' + esc(s.error) + '</p>';
+      return;
+    }
+    if (!el.dataset.ready){
+      el.dataset.ready = '1';
+      el.classList.toggle('you', i === 0);
+      el.innerHTML = readyCardHtml(s, i === 0);
+      if (i === 0){
+        const diagBtn = el.querySelector('.diagbtn');
+        const panel = el.querySelector('.diagpanel');
+        diagBtn.onclick = () => {
+          panel.hidden = !panel.hidden;
+          diagBtn.classList.toggle('open', !panel.hidden);
+        };
+      }
+    }
+    const d = s[device];
+    const gaugeWrap = el.querySelector('.gauge');
+    const gaugeFill = el.querySelector('.fill');
+    const gaugeNum = el.querySelector('.num');
+    const errEl = el.querySelector('.deviceerr');
+    const diagBtn = el.querySelector('.diagbtn');
+
+    // A device-level failure (PSI's own runtimeError, or the site being
+    // unreachable for that strategy) is distinct from a genuinely bad but
+    // real score — show it as an explicit error, not a misleading "0" with
+    // every metric dashed out.
+    if (d.error){
+      gaugeWrap.classList.remove('loading');
+      gaugeFill.setAttribute('stroke', 'var(--muted)');
+      requestAnimationFrame(() => gaugeFill.setAttribute('stroke-dashoffset', CIRC));
+      gaugeNum.style.color = 'var(--muted)';
+      gaugeNum.textContent = '!';
+      ['lcp','cls','tbt'].forEach(k => updatePill(el, k, {}, false));
+      el.querySelector('.field-badge').style.display = 'none';
+      errEl.textContent = device.charAt(0).toUpperCase() + device.slice(1) + ' result unavailable: ' + d.error;
+      errEl.style.display = 'block';
+      if (diagBtn){ diagBtn.style.display = 'none'; el.querySelector('.diagpanel').hidden = true; }
+      return;
+    }
+    errEl.style.display = 'none';
+    if (diagBtn) diagBtn.style.display = '';
+    if (i === 0) renderDiagnostics(el, s, device, d);
+
+    gaugeWrap.classList.remove('loading');
+    const color = gaugeColor(d.score);
+    const offset = d.score == null ? CIRC : CIRC * (1 - d.score / 100);
+    gaugeFill.setAttribute('stroke', color);
+    requestAnimationFrame(() => gaugeFill.setAttribute('stroke-dashoffset', offset));
+    gaugeNum.style.color = color;
+    animateNumber(gaugeNum, parseInt(gaugeNum.textContent, 10) || 0, d.score ?? 0, 800);
+
+    updatePill(el, 'lcp', d, i === lcpBest);
+    updatePill(el, 'cls', d, i === clsBest);
+    updatePill(el, 'tbt', d, i === tbtBest);
+
+    const fb = el.querySelector('.field-badge');
+    if (d.field_inp){ fb.style.display = 'block'; fb.textContent = 'Real-user INP: ' + d.field_inp.category; }
+    else { fb.style.display = 'none'; }
+  });
+}
+
+async function fetchSite(url, label, i){
+  let d;
+  try {
+    const res = await fetch(API + '/pagespeed/site', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, url, label })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+  if (d.error) { siteResults[i] = { label: label || url, url, error: d.error }; }
+  else { siteResults[i] = d; }
+  syncAllCards();
+}
+
+async function saveReport(){
+  const good = siteResults.filter(s => s && !s.error);
+  if (!good.length) return;
+  let d;
+  try {
+    const res = await fetch(API + '/pagespeed/save', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, report: Date.now().toString(36), sites: good })
+    });
+    d = await res.json();
+  } catch (e) { return; }
+  if (d.id) {
+    const url = location.origin + location.pathname + '?k=' + encodeURIComponent(CODE) + '&r=' + d.id;
+    $('shareUrl').value = url;
+    $('sharebar').style.display = 'flex';
+  }
+}
+
+$('copyShare').onclick = () => {
+  $('shareUrl').select();
+  navigator.clipboard?.writeText($('shareUrl').value);
+  $('copyShare').textContent = 'Copied';
+  setTimeout(() => $('copyShare').textContent = 'Copy', 1500);
+};
+
+$('go').onclick = run;
+$('back').onclick = () => {
+  $('results').style.display = 'none'; $('form').style.display = 'block';
+  document.querySelector('.wrap').classList.remove('wide');
+  history.replaceState(null, '', location.pathname + '?k=' + encodeURIComponent(CODE));
+};
+
+async function run(){
+  const youUrl = $('you-url').value.trim();
+  if (!youUrl || youUrl === 'https://'){
+    $('go').textContent = 'Add your URL first';
+    setTimeout(() => $('go').textContent = 'Compare PageSpeed', 2000);
+    return;
+  }
+
+  const sites = [{ url: youUrl, label: 'You' }];
+  $('competitors').querySelectorAll('.siterow').forEach(row => {
+    const url = row.querySelector('.comp-url').value.trim();
+    const label = row.querySelector('.comp-label').value.trim();
+    if (url && url !== 'https://') sites.push({ url, label: label || url });
+  });
+
+  siteResults = sites.map(() => null);
+  device = 'mobile';
+
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('sharebar').style.display = 'none';
+  document.querySelector('.wrap').classList.toggle('wide', sites.length > 1);
+  $('rTitle').textContent = sites.length > 1 ? 'You vs ' + (sites.length - 1) + ' competitor' + (sites.length > 2 ? 's' : '') : 'Your site';
+  renderDevChips();
+  $('cards').innerHTML = '';
+  cardEls = sites.map(() => { const el = skeletonCard(); $('cards').appendChild(el); return el; });
+  window.scrollTo(0,0);
+
+  await Promise.all(sites.map((s, i) => fetchSite(s.url, s.label, i)));
+  await saveReport();
+}
+
+async function loadSavedReport(id){
+  let d;
+  try {
+    const res = await fetch(API + '/pagespeed/get', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, id })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  if (d.error || !d.sites){ return; }
+  siteResults = d.sites;
+  device = 'mobile';
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  document.querySelector('.wrap').classList.toggle('wide', siteResults.length > 1);
+  $('rTitle').textContent = siteResults.length > 1 ? 'You vs ' + (siteResults.length - 1) + ' competitor' + (siteResults.length > 2 ? 's' : '') : 'Your site';
+  renderDevChips();
+  $('cards').innerHTML = '';
+  cardEls = siteResults.map(() => { const el = skeletonCard(); $('cards').appendChild(el); return el; });
+  syncAllCards();
+  const url = location.origin + location.pathname + '?k=' + encodeURIComponent(CODE) + '&r=' + id;
+  $('shareUrl').value = url;
+  $('sharebar').style.display = 'flex';
+}
+
+if (REPORT_ID){
+  loadSavedReport(REPORT_ID);
+} else {
+  addCompetitorRow();
+}
+</script>
+</body>
+</html>

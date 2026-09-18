@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Google review link generator</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2335c48d'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:600px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  input:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:12px}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer;margin-top:6px}
+  .submit:hover{background:#5c68f2}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+  .empty{font-size:12.5px;color:var(--muted)}
+
+  .ac-wrap{position:relative}
+  .ac-list{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--card);
+       border:1px solid var(--line);border-radius:8px;overflow-y:auto;z-index:20;
+       max-height:220px;display:none;box-shadow:0 10px 24px rgba(0,0,0,.5)}
+  .ac-list.show{display:block}
+  .ac-item{padding:9px 11px;font-size:12.5px;cursor:pointer;border-top:1px solid var(--line)}
+  .ac-item:first-child{border-top:none}
+  .ac-item:hover,.ac-item.active{background:var(--you);color:#fff}
+  .ac-item .sub{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+  .ac-item:hover .sub,.ac-item.active .sub{color:rgba(255,255,255,.8)}
+  .ac-badge{font-size:10.5px;color:var(--ok);margin:-6px 0 12px;display:none}
+  .ac-badge.show{display:block}
+
+  #results{display:none;margin-top:30px}
+  .backbtn{font-size:14px;color:var(--you);background:none;border:0;cursor:pointer;margin-bottom:16px;
+        font-family:'IBM Plex Mono',monospace}
+
+  .summary{background:var(--card);border:1px solid var(--ok);border-radius:10px;padding:16px;margin-bottom:20px}
+  .summary .headline{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px}
+  .summary .sub{font-size:12px;color:var(--muted);word-break:break-all}
+
+  .linkrow{margin-bottom:20px}
+  .linkrow label{font-size:11px;color:var(--muted);margin-bottom:6px}
+  .linkbox{display:flex;gap:8px}
+  .linkbox input{flex:1;font-size:12.5px;color:var(--ink)}
+  .copybtn{font-family:'Space Grotesk',sans-serif;font-size:12.5px;font-weight:700;color:#fff;
+      background:var(--you);border:0;border-radius:7px;padding:0 16px;cursor:pointer;white-space:nowrap}
+  .copybtn:hover{background:#5c68f2}
+  .copybtn.copied{background:var(--ok)}
+  .linknote{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.5}
+
+  .foot{font-size:10px;color:var(--muted);margin-top:20px;line-height:1.5}
+  .foot a{color:var(--you)}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="form">
+    <p class="eyebrow">Free tool · no access code needed</p>
+    <h1>Google review link generator</h1>
+    <p class="lede">A direct link that takes customers straight to the "leave a review" box on your Google Business Profile — one click, no searching. Good for receipts, email signatures, and QR codes.</p>
+
+    <div class="field ac-wrap">
+      <label for="biz">Business name</label>
+      <input id="biz" type="text" placeholder="Start typing your business name…" autocomplete="off">
+      <div class="ac-list" id="acList"></div>
+    </div>
+    <p class="ac-badge" id="acBadge">✓ Matched to Google's own listing</p>
+
+    <button class="submit" id="go" type="button" disabled>Pick a business above first</button>
+    <p class="after">Pick your business from the dropdown — the link needs Google's own listing ID, not just the name.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <button class="backbtn" id="back">&larr; New link</button>
+    <p class="eyebrow restag">Google review link generator</p>
+    <h1 id="rTitle" style="font-size:20px"></h1>
+    <div id="out"></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// Same public, referrer-restricted key and Autocomplete (New) integration
+// as grid-check — restricted in Google Cloud Console to HTTP referrer
+// https://brandchecker.eu/* and Places API (New) only. Unlike grid-check, this
+// tool never calls Place Details — the placeId on every autocomplete
+// prediction is already everything a review link needs, so there's no
+// Enterprise-tier cost or monthly cap to gate here at all.
+const GOOGLE_PLACES_KEY = 'AIzaSyBgbllzncdzD9xG3ZhJMnyQtWxb5hKp440';
+let placesLib = null, sessionToken = null, selectedPlaceId = '', selectedName = '';
+let acItems = [], acActive = -1, acDebounce;
+
+function loadGoogleMaps(){
+  if (!GOOGLE_PLACES_KEY || window.__gmapsLoading) return;
+  window.__gmapsLoading = true;
+  const s = document.createElement('script');
+  s.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_PLACES_KEY + '&libraries=places&loading=async&v=weekly';
+  s.async = true;
+  document.head.appendChild(s);
+}
+loadGoogleMaps();
+
+async function ensurePlacesLib(){
+  if (placesLib) return placesLib;
+  if (!window.google?.maps?.importLibrary) return null;
+  placesLib = await google.maps.importLibrary('places');
+  return placesLib;
+}
+function newSession(){ if (placesLib) sessionToken = new placesLib.AutocompleteSessionToken(); }
+
+function closeSuggestions(){
+  $('acList').classList.remove('show');
+  $('acList').innerHTML = '';
+  acItems = []; acActive = -1;
+}
+function highlightActive(){
+  [...$('acList').children].forEach((el, i) => el.classList.toggle('active', i === acActive));
+}
+function renderSuggestions(suggestions){
+  const list = $('acList');
+  list.innerHTML = '';
+  acItems = suggestions;
+  acActive = -1;
+  if (!suggestions.length){ list.classList.remove('show'); return; }
+  suggestions.forEach((s, i) => {
+    const p = s.placePrediction;
+    const el = document.createElement('div');
+    el.className = 'ac-item';
+    const main = p.mainText?.text ?? p.text.text;
+    const sub = p.secondaryText?.text ?? '';
+    el.innerHTML = '<span>' + esc(main) + '</span>' + (sub ? '<span class="sub">' + esc(sub) + '</span>' : '');
+    el.onmousedown = e => { e.preventDefault(); pickSuggestion(i); };
+    list.appendChild(el);
+  });
+  list.classList.add('show');
+}
+function pickSuggestion(i){
+  const p = acItems[i]?.placePrediction;
+  if (!p) return;
+  selectedName = p.mainText?.text ?? p.text.text;
+  $('biz').value = selectedName;
+  selectedPlaceId = p.placeId;
+  $('acBadge').classList.add('show');
+  closeSuggestions();
+  updateGoButton();
+}
+function updateGoButton(){
+  const ready = !!selectedPlaceId;
+  $('go').disabled = !ready;
+  $('go').textContent = ready ? 'Generate review link' : 'Pick a business above first';
+}
+
+async function onBizInput(){
+  selectedPlaceId = '';
+  $('acBadge').classList.remove('show');
+  updateGoButton();
+  clearTimeout(acDebounce);
+  const q = $('biz').value.trim();
+  if (q.length < 2){ closeSuggestions(); return; }
+  acDebounce = setTimeout(async () => {
+    const lib = await ensurePlacesLib();
+    if (!lib) return;
+    if (!sessionToken) newSession();
+    try {
+      const { suggestions } = await lib.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+        input: q, sessionToken, includedPrimaryTypes: ['establishment']
+      });
+      renderSuggestions(suggestions || []);
+    } catch (e) {
+      closeSuggestions();
+    }
+  }, 300);
+}
+$('biz').addEventListener('input', onBizInput);
+$('biz').addEventListener('keydown', e => {
+  if (!acItems.length) return;
+  if (e.key === 'ArrowDown'){ e.preventDefault(); acActive = Math.min(acActive + 1, acItems.length - 1); highlightActive(); }
+  else if (e.key === 'ArrowUp'){ e.preventDefault(); acActive = Math.max(acActive - 1, 0); highlightActive(); }
+  else if (e.key === 'Enter' && acActive >= 0){ e.preventDefault(); pickSuggestion(acActive); }
+  else if (e.key === 'Escape'){ closeSuggestions(); }
+});
+document.addEventListener('click', e => { if (!e.target.closest('.ac-wrap')) closeSuggestions(); });
+
+$('go').onclick = generate;
+$('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; };
+
+async function generate(){
+  if (!selectedPlaceId) return;
+  $('go').disabled = true;
+
+  const writeUrl = 'https://search.google.com/local/writereview?placeid=' + encodeURIComponent(selectedPlaceId);
+  const reviewsUrl = 'https://search.google.com/local/reviews?placeid=' + encodeURIComponent(selectedPlaceId);
+
+  fetch(API + '/review-link', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: CODE, business_name: selectedName, place_id: selectedPlaceId })
+  }).catch(() => {});
+
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = selectedName;
+  $('out').innerHTML = renderResult(writeUrl, reviewsUrl);
+  window.scrollTo(0,0);
+}
+
+function copyField(id, btnId){
+  const input = $(id);
+  input.select();
+  navigator.clipboard?.writeText(input.value).then(() => {
+    const btn = $(btnId);
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+function renderResult(writeUrl, reviewsUrl){
+  return '<div class="summary"><div class="headline">Link generated</div><div class="sub">Matched to Google\'s own listing for this business</div></div>' +
+    '<div class="linkrow">' +
+      '<label>Leave a review — share this one</label>' +
+      '<div class="linkbox"><input id="writeUrl" type="text" readonly value="' + esc(writeUrl) + '"><button class="copybtn" id="copyWrite" type="button" onclick="copyField(\'writeUrl\',\'copyWrite\')">Copy</button></div>' +
+      '<p class="linknote">Opens straight to the star-rating box on your Google Business Profile.</p>' +
+    '</div>' +
+    '<div class="linkrow">' +
+      '<label>See all reviews</label>' +
+      '<div class="linkbox"><input id="reviewsUrl" type="text" readonly value="' + esc(reviewsUrl) + '"><button class="copybtn" id="copyReviews" type="button" onclick="copyField(\'reviewsUrl\',\'copyReviews\')">Copy</button></div>' +
+      '<p class="linknote">For your own reference, or a "read our reviews" link elsewhere on your site.</p>' +
+    '</div>' +
+    '<p class="foot">Both links are Google\'s own official direct-review URL format — nothing proprietary, they\'ll keep working as long as this business exists on Google. If your business has multiple locations, generate a separate link for each one.</p>';
+}
+</script>
+</body>
+</html>

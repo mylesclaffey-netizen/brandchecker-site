@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brand bidding monitor</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23FFFF00'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:560px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px}
+  fieldset{border:0;margin-bottom:24px}
+  legend{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+         text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .hint{font-size:11.5px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  input:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:12px}
+  .competitors{display:flex;flex-direction:column;gap:12px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font:12.5px 'IBM Plex Mono',monospace;color:var(--ink);background:var(--card);
+        border:1px solid var(--line);border-radius:20px;padding:8px 14px;cursor:pointer}
+  .chip[aria-pressed=true]{background:var(--you);border-color:var(--you);color:#fff}
+  .chip[disabled]{opacity:.4;cursor:not-allowed}
+  .grouplabel{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px}
+  .cap{font-size:11px;color:var(--muted);margin-top:10px}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px}
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  #results{display:none}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin:20px 0}
+  .card p{font-size:13px;color:var(--muted);line-height:1.6}
+  .card a{color:var(--you)}
+  .verdict{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin:24px 0 22px}
+  .verdict p{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:500;line-height:1.4}
+  .verdict .sub{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);font-weight:400;margin-top:8px;line-height:1.6}
+  h2{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;
+     text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+  .market{border-top:1px solid var(--line);padding:18px 0}
+  .market:last-of-type{border-bottom:1px solid var(--line)}
+  .mkhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:12px}
+  .country{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:500}
+  .progress{font-size:10.5px;color:var(--muted);letter-spacing:.04em}
+  .adlist{list-style:none}
+  .ad{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .ad:last-child{border-bottom:0}
+  .ad .domain{font-size:13px}
+  .ad .tag{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-left:8px}
+  .ad.competitor .domain, .ad.other .domain{color:var(--ink);font-weight:500}
+  .ad.competitor .tag{color:var(--bad)}
+  .ad.other .tag{color:var(--warn)}
+  .ad.marketplace, .ad.affiliate, .ad.own{opacity:.55}
+  .ad .seen{font-size:11px;color:var(--muted);white-space:nowrap}
+  .empty{font-size:12px;color:var(--muted);font-style:italic;padding:6px 0}
+  .foot{font-size:10px;color:var(--muted);margin-top:22px;line-height:1.6}
+  .foot b{color:var(--muted);font-weight:600}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="form">
+    <p class="eyebrow">Free tool</p>
+    <h1>Who's bidding on your own name?</h1>
+    <p class="lede">Ten sampled checks per market over the next 24 hours, spread across local business hours on both mobile and desktop. Report arrives by email when it's done.</p>
+
+    <fieldset>
+      <legend>Your brand</legend>
+      <div class="field"><label for="site">Website</label><input id="site" type="text" placeholder="yourcompany.com">
+        <p class="hint" style="margin-top:7px">Used to recognise your own ads apart from everyone else's.</p></div>
+      <div class="field"><label for="brand">Brand name</label><input id="brand" type="text" placeholder="the name people search"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Known competitors (optional)</legend>
+      <p class="hint">Helps classify who's bidding — not required.</p>
+      <div class="competitors">
+        <div class="field"><label for="comp1">Competitor 1</label><input id="comp1" type="text"></div>
+        <div class="field"><label for="comp2">Competitor 2</label><input id="comp2" type="text"></div>
+        <div class="field"><label for="comp3">Competitor 3</label><input id="comp3" type="text"></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Markets</legend>
+      <p class="hint">One market — this runs sampled checks all day in it, so it's not "up to."</p>
+      <p class="grouplabel" style="margin-top:0">English-speaking</p>
+      <div class="chips" id="grpEn"></div>
+      <p class="grouplabel">Rest of Europe</p>
+      <div class="chips" id="grpEu"></div>
+      <p class="cap" id="cap"></p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Email</legend>
+      <div class="field"><label for="email">Email</label><input id="email" type="text" placeholder="you@company.com">
+        <p class="hint" style="margin-top:7px">Required — this is how the report reaches you. No one is present when it finishes 24 hours from now.</p></div>
+    </fieldset>
+
+    <button class="submit" id="go" type="button">Start 24-hour check</button>
+    <p class="after">Report arrives by email tomorrow.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <p class="eyebrow restag">Brand bidding monitor</p>
+    <h1 id="rTitle"></h1>
+    <p class="lede" id="rMeta"></p>
+    <div id="body"></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+
+const MARKETS = [
+  ['United Kingdom','English','en'],['United States','English','en'],
+  ['Canada','English — Quebec searches in French','en'],['Ireland','English','en'],
+  ['Australia','English','en'],['Germany','German','eu'],['France','French','eu'],
+  ['Netherlands','Dutch','eu'],['Switzerland','German — largest of three','eu'],
+  ['Austria','German','eu'],['Spain','Spanish','eu'],['Italy','Italian','eu'],
+  ['Poland','Polish','eu'],['Czechia','Czech','eu'],['Slovakia','Slovak','eu']
+].map(([name,lang,group])=>({name,lang,group}));
+
+const CODE = new URLSearchParams(location.search).get('k') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+const REPORT_ID = new URLSearchParams(location.search).get('report') || '';
+
+const REQUIRED_MARKETS = 1;
+const selected = new Set(['Germany']);
+
+const $ = id => document.getElementById(id);
+
+function noCodeGate(){
+  document.querySelector('.wrap').innerHTML =
+    '<p class="eyebrow">Free tool</p><h1>You need an access code</h1>' +
+    '<p class="lede">This tool runs on a personal link. Open the link you were sent — it ' +
+    'carries your code — or type the code below.</p>' +
+    '<div class="field" style="max-width:280px"><label for="manual">Access code</label>' +
+    '<input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>' +
+    '<button class="submit" id="enter" type="button" style="max-width:280px">Continue</button>' +
+    '<p class="after" style="text-align:left;max-width:280px">Don’t have one? ' +
+    '<a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>';
+
+  const go = () => {
+    const v = document.getElementById('manual').value.trim().toLowerCase().replace(/\s+/g,'');
+    if (v) location.search = '?k=' + encodeURIComponent(v);
+  };
+  document.getElementById('enter').onclick = go;
+  document.getElementById('manual').onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+
+/* ---- submission form ---- */
+
+function renderChips(){
+  for (const g of ['en','eu']){
+    const el = $(g === 'en' ? 'grpEn' : 'grpEu');
+    el.innerHTML = '';
+    for (const m of MARKETS.filter(x => x.group === g)){
+      const b = document.createElement('button');
+      b.className = 'chip'; b.type = 'button'; b.textContent = m.name;
+      const on = selected.has(m.name);
+      b.setAttribute('aria-pressed', String(on));
+      if (!on && selected.size >= REQUIRED_MARKETS) b.disabled = true;
+      b.onclick = () => { on ? selected.delete(m.name) : selected.add(m.name); renderChips(); };
+      el.appendChild(b);
+    }
+  }
+  $('cap').textContent = selected.size + ' of ' + REQUIRED_MARKETS + ' selected';
+}
+
+function competitors(){
+  return [$('comp1').value, $('comp2').value, $('comp3').value].map(v => v.trim()).filter(Boolean);
+}
+
+$('go') && ($('go').onclick = submit);
+
+async function submit(){
+  const site  = $('site').value.trim();
+  const brand = $('brand').value.trim();
+  const email = $('email').value.trim();
+  const comps = competitors();
+  const markets = [...selected];
+
+  if (!site || !brand || !email || markets.length !== REQUIRED_MARKETS){
+    $('go').textContent = !site ? 'Add your website first'
+      : !brand ? 'Add your brand name first'
+      : !email ? 'Add your email first'
+      : 'Pick exactly ' + REQUIRED_MARKETS + (REQUIRED_MARKETS === 1 ? ' market' : ' markets');
+    setTimeout(() => $('go').textContent = 'Start 24-hour check', 2000);
+    return;
+  }
+
+  $('go').disabled = true;
+  $('go').textContent = 'Starting…';
+
+  let d;
+  try {
+    const res = await fetch(API + '/bidding/submit', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ code: CODE, website: site, brand, competitors: comps, email, markets })
+    });
+    d = await res.json();
+  } catch (e) {
+    d = { error: 'could not reach the API' };
+  }
+
+  if (d.error){
+    $('go').disabled = false;
+    $('go').textContent = 'Start 24-hour check';
+    alert(d.error);
+    return;
+  }
+
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+
+  if (d.existing){
+    $('rTitle').textContent = 'Already running';
+    $('rMeta').textContent = d.message;
+    $('body').innerHTML = '<div class="card"><p>Its report will appear at the link below once ready — ' +
+      'bookmark it, or wait for the original email.</p><p style="margin-top:10px"><a href="' + d.report_url + '">' + d.report_url + '</a></p></div>';
+    return;
+  }
+
+  $('rTitle').textContent = brand;
+  $('rMeta').textContent = markets.join(', ') + ' · started ' + new Date().toLocaleString('en-GB',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});
+  $('body').innerHTML = '<div class="card"><p>Sampling started — 10 checks per market over the next 24 hours, ' +
+    'spread across local business hours on both mobile and desktop.</p>' +
+    '<p style="margin-top:10px">The report will be emailed to <b style="color:var(--ink)">' + email + '</b> when it’s ready. ' +
+    'You can also bookmark this link and come back:</p>' +
+    '<p style="margin-top:10px"><a href="' + d.report_url + '">' + d.report_url + '</a></p></div>';
+
+  const preview = buildInstantPreview(d.instant_preview);
+  if (preview) $('body').appendChild(preview);
+}
+
+// A quick first look, shown immediately (submit response) or persisted
+// on the saved report — separate from the real 10-sample-per-market data
+// in r.markets, which is the actual signal this tool reports on.
+function buildInstantPreview(preview){
+  if (!preview) return null;
+  const div = document.createElement('div');
+  div.className = 'card';
+  const ads = [...preview.advertisers].sort((a,b) => STORY_ORDER.indexOf(a.category) - STORY_ORDER.indexOf(b.category));
+  const hasOther = ads.some(a => a.category !== 'own');
+  const label = '<p class="sub" style="margin-bottom:' + (ads.length ? '10px' : '0') + '">Instant preview — one check in ' +
+    preview.market + ', run the moment this started. The full 10-checks-per-market results are the real signal, below (or in the email).</p>';
+  if (!ads.length){
+    div.innerHTML = label;
+    return div;
+  }
+  const items = ads.map(a =>
+    '<li class="ad ' + a.category + '"><span class="domain">' + a.domain + '<span class="tag">' + CATEGORY_LABEL[a.category] + '</span></span></li>'
+  ).join('');
+  const note = hasOther ? '' :
+    '<p class="hint" style="margin-top:10px">Only your own campaign showed up at this exact moment — no other bidders ' +
+    'right now. That’s normal, not a sign anything’s wrong: brand bidding is intermittent, so the 10 checks spread ' +
+    'across the day (below, or in the email) are what actually catch it.</p>';
+  div.innerHTML = label + '<ul class="adlist">' + items + '</ul>' + note;
+  return div;
+}
+
+/* ---- report view ---- */
+
+const CATEGORY_LABEL = {
+  competitor: 'Competitor', other: 'Unidentified — verify this one yourself',
+  marketplace: 'Marketplace', affiliate: 'Affiliate / coupon site', own: 'Your own campaign'
+};
+const STORY_ORDER = ['competitor', 'other', 'affiliate', 'marketplace', 'own'];
+
+async function loadReport(){
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = 'Loading…';
+
+  let r;
+  try {
+    const res = await fetch(API + '/bidding/report', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id: REPORT_ID })
+    });
+    r = await res.json();
+  } catch (e) { r = { error: 'could not reach the API' }; }
+
+  if (r.error){
+    $('rTitle').textContent = 'Report not found';
+    $('rMeta').textContent = '';
+    $('body').innerHTML = '<div class="card"><p>' + r.error + '</p></div>';
+    return;
+  }
+
+  $('rTitle').textContent = r.brand;
+  const collecting = r.status !== 'complete';
+  $('rMeta').textContent = r.markets.map(m => m.market).join(', ') + (collecting ? ' · still collecting' : ' · complete');
+
+  const body = $('body');
+  body.innerHTML = '';
+
+  if (collecting){
+    const notice = document.createElement('div');
+    notice.className = 'card';
+    notice.innerHTML = '<p>Still gathering checks — this page shows what’s in so far. ' +
+      'The full report will be emailed once every market has finished or the 24-hour window closes.</p>';
+    body.appendChild(notice);
+  }
+
+  const preview = buildInstantPreview(r.instant_preview);
+  if (preview) body.appendChild(preview);
+
+  body.appendChild(buildVerdict(r));
+
+  const h2 = document.createElement('h2');
+  h2.textContent = 'By market';
+  body.appendChild(h2);
+
+  for (const m of r.markets) body.appendChild(buildMarketRow(m));
+
+  const foot = document.createElement('p');
+  foot.className = 'foot';
+  foot.innerHTML = 'Numbers below are <b>observed</b>, not exhaustive — "seen in 6 of 10 checks" means exactly that, ' +
+    'not "bidding continuously." Brand bidding is episodic: competitors run campaigns around launches, affiliates ' +
+    'appear around sale periods. A quiet market today doesn’t rule out activity next week.';
+  body.appendChild(foot);
+}
+
+function storyAdvertisers(market){
+  return market.advertisers.filter(a => a.category === 'competitor' || a.category === 'other');
+}
+
+function buildVerdict(r){
+  const div = document.createElement('div');
+  div.className = 'verdict';
+
+  const doneMarkets = r.markets.filter(m => m.samples_done > 0);
+  const allStory = r.markets.flatMap(m => storyAdvertisers(m).map(a => ({...a, market: m.market})));
+
+  if (!doneMarkets.length){
+    div.innerHTML = '<p>No checks have completed yet.</p>';
+    return div;
+  }
+
+  if (allStory.length){
+    const top = [...allStory].sort((a,b) => b.seen - a.seen)[0];
+    div.innerHTML = '<p>' + top.domain + ' was seen bidding on “' + r.brand + '” in ' + top.market +
+      ' — ' + top.seen + ' of ' + (r.markets.find(m=>m.market===top.market)?.samples_done ?? top.of) + ' checks so far.</p>' +
+      '<p class="sub">' + allStory.length + ' advertiser' + (allStory.length===1?'':'s') + ' worth a look across ' +
+      doneMarkets.length + ' market' + (doneMarkets.length===1?'':'s') + ' — see below for the full picture.</p>';
+    return div;
+  }
+
+  const ownSeen = r.markets.some(m => m.advertisers.some(a => a.category === 'own'));
+  if (ownSeen){
+    div.innerHTML = '<p>Nobody else was observed bidding on “' + r.brand + '” — only your own campaign showed up.</p>' +
+      '<p class="sub">Worth checking whether that spend is buying clicks you’d get organically anyway. The safer way to ' +
+      'find out isn’t to switch it off — brand ads also hold the result against marketplaces and resellers — it’s a ' +
+      'holdout: pause it in one market and measure what organic recovers there.</p>';
+  } else {
+    div.innerHTML = '<p>Nobody was observed bidding on “' + r.brand + '”, including you.</p>' +
+      '<p class="sub">Across the checks completed so far, no one showed up in paid results for your own brand name — ' +
+      'not a competitor, not a reseller, not your own campaign either.</p>';
+  }
+  return div;
+}
+
+function buildMarketRow(m){
+  const row = document.createElement('div');
+  row.className = 'market';
+
+  const ads = [...m.advertisers].sort((a,b) => STORY_ORDER.indexOf(a.category) - STORY_ORDER.indexOf(b.category) || b.seen - a.seen);
+
+  row.innerHTML = '<div class="mkhead"><span class="country">' + m.market + '</span>' +
+    '<span class="progress">' + m.samples_done + ' of ' + m.samples_total + ' checks in</span></div>';
+
+  if (!ads.length){
+    const p = document.createElement('p');
+    p.className = 'empty';
+    p.textContent = m.samples_done ? 'No advertisers observed yet.' : 'No checks completed yet.';
+    row.appendChild(p);
+    return row;
+  }
+
+  const ul = document.createElement('ul');
+  ul.className = 'adlist';
+  for (const a of ads){
+    const li = document.createElement('li');
+    li.className = 'ad ' + a.category;
+    li.innerHTML = '<span class="domain">' + a.domain + '<span class="tag">' + CATEGORY_LABEL[a.category] + '</span></span>' +
+      '<span class="seen">' + a.seen + ' of ' + a.of + ' · ' + a.devices.join('+') + '</span>';
+    ul.appendChild(li);
+  }
+  row.appendChild(ul);
+  return row;
+}
+
+/* ---- entry point ---- */
+
+if (REPORT_ID){
+  loadReport();
+} else if (!CODE){
+  noCodeGate();
+} else {
+  renderChips();
+}
+</script>
+</body>
+</html>

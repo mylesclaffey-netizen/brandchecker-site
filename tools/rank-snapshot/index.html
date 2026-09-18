@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rank snapshot</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236e7bff'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:640px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input,select,textarea{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  select{height:42px}
+  textarea{resize:vertical;min-height:120px;line-height:1.7}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:14px}
+  .field .count{font-size:10.5px;color:var(--muted);margin-top:5px;text-align:right}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer;margin-top:6px}
+  .submit:hover{background:#5c68f2}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+  .empty{font-size:12.5px;color:var(--muted)}
+
+  #results{display:none;margin-top:30px}
+  .meta{font-size:12px;color:var(--muted);margin-bottom:18px}
+  .backbtn{font-size:14px;color:var(--you);background:none;border:0;cursor:pointer;margin-bottom:16px;
+        font-family:'IBM Plex Mono',monospace}
+
+  .summary{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:20px}
+  .summary .headline{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px}
+  .summary .sub{font-size:12px;color:var(--muted)}
+
+  .krow{background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:14px 16px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start}
+  .krow.err-row{border-color:var(--bad)}
+  .kw{flex:1;min-width:0}
+  .kw .kwhead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .kw .kwtext{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;word-break:break-word}
+  .kw .vbadge{font-size:10.5px;color:var(--muted);white-space:nowrap}
+  .kw .vbadge .vol{color:var(--ink)}
+  .kw .vbadge .cpc{color:var(--gold)}
+  .kw .note{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.5}
+  .kw .note.ok{color:var(--ok)} .kw .note.warn{color:var(--warn)} .kw .note.bad{color:var(--bad)}
+  .kw .note b{color:var(--ink)}
+  .kw .paalist{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+  .kw .paaq{font-size:11.5px;font-style:italic;color:var(--muted);padding:3px 0;cursor:pointer}
+  .kw .paaq:hover{color:var(--ink)}
+  .pos{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;white-space:nowrap;flex:none}
+  .pos.good{color:var(--ok)} .pos.mid{color:var(--warn)} .pos.none{font-size:13px;color:var(--bad)}
+
+  .foot{font-size:10px;color:var(--muted);margin-top:20px;line-height:1.5}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+        background:var(--ink);color:var(--paper);font-size:12px;font-weight:500;
+        padding:9px 16px;border-radius:20px;opacity:0;pointer-events:none;
+        transition:opacity .18s ease,transform .18s ease;z-index:9}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate" style="display:none">
+    <p class="eyebrow">Heavy token usage</p>
+    <h1>You need an access code</h1>
+    <p class="lede">This tool runs on a personal link. Open the link you were sent — it carries your code — or type the code below.</p>
+    <div class="field" style="max-width:280px"><label for="manual">Access code</label>
+      <input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="submit" id="enter" type="button" style="max-width:280px">Continue</button>
+    <p class="after" style="text-align:left;max-width:280px">Don't have one? <a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>
+  </div>
+
+  <div id="form">
+    <p class="eyebrow">Heavy token usage</p>
+    <h1>Rank snapshot</h1>
+    <p class="lede">Where you actually rank for the keywords you care about — up to 10 at once, in one market, checked live. The flip side of the international rank check: many keywords instead of many countries.</p>
+
+    <div class="row2">
+      <div class="field"><label for="website">Your website</label><input id="website" type="text" placeholder="yoursite.com"></div>
+      <div class="field"><label for="market">Market</label><select id="market"></select></div>
+    </div>
+    <div class="field">
+      <label for="keywords">Keywords — one per line, up to 10</label>
+      <textarea id="keywords" placeholder="car insurance&#10;cheap car insurance&#10;auto insurance quotes"></textarea>
+      <div class="count" id="kwCount">0 / 10</div>
+    </div>
+    <button class="submit" id="go" type="button">Check rankings</button>
+    <p class="after">One live search per keyword, plus real search volume, CPC and People Also Ask — real cost, same as a grid-check scan.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <button class="backbtn" id="back">&larr; New snapshot</button>
+    <p class="eyebrow restag">Rank snapshot</p>
+    <h1 id="rTitle" style="font-size:20px">Checking…</h1>
+    <div id="out"></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">Copied</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+const REPORT_ID = new URLSearchParams(location.search).get('id') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+
+const MARKETS = ['United Kingdom','United States','Canada','Ireland','Australia','Germany','France',
+  'Netherlands','Switzerland','Austria','Spain','Italy','Poland','Czechia','Slovakia'];
+const MAX_KEYWORDS = 10;
+
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const ord = n => { const s=['th','st','nd','rd'], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); };
+
+$('market').innerHTML = MARKETS.map(m => '<option' + (m === 'United States' ? ' selected' : '') + '>' + esc(m) + '</option>').join('');
+
+$('go').onclick = run;
+$('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; };
+$('keywords').addEventListener('input', updateCount);
+$('out').addEventListener('click', e => {
+  const row = e.target.closest('.paaq');
+  if (row) copyText(row.dataset.copy);
+});
+
+let toastTimer = null;
+function showToast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1400);
+}
+function copyText(text){
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast('Copied')).catch(() => showToast(text));
+  } else {
+    showToast(text);
+  }
+}
+function updateCount(){
+  const n = keywordList().length;
+  $('kwCount').textContent = n + ' / ' + MAX_KEYWORDS;
+  $('kwCount').style.color = n > MAX_KEYWORDS ? 'var(--bad)' : 'var(--muted)';
+}
+function keywordList(){
+  return $('keywords').value.split('\n').map(k => k.trim()).filter(Boolean).slice(0, MAX_KEYWORDS);
+}
+
+async function run(){
+  const website = $('website').value.trim();
+  const market = $('market').value;
+  const keywords = keywordList();
+
+  if (!website){
+    $('go').textContent = 'Add your website first';
+    setTimeout(() => $('go').textContent = 'Check rankings', 2000);
+    return;
+  }
+  if (!keywords.length){
+    $('go').textContent = 'Add at least one keyword';
+    setTimeout(() => $('go').textContent = 'Check rankings', 2000);
+    return;
+  }
+
+  $('go').disabled = true;
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = 'Checking…';
+  $('out').innerHTML = '<p class="empty">Running ' + keywords.length + ' live search' + (keywords.length === 1 ? '' : 'es') + ' in ' + market + '…</p>';
+  window.scrollTo(0,0);
+
+  let d;
+  try {
+    const res = await fetch(API + '/rank-snapshot', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, website, market, keywords })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  $('go').disabled = false;
+
+  if (d.error){
+    $('rTitle').textContent = website;
+    $('out').innerHTML = '<p class="err">' + esc(d.error) + '</p>';
+    return;
+  }
+  $('rTitle').textContent = d.website;
+  $('out').innerHTML = renderResults(d);
+  history.replaceState(null, '', '?k=' + encodeURIComponent(CODE) + '&id=' + encodeURIComponent(d.id));
+}
+
+function renderResults(d){
+  const ok = d.results.filter(r => !r.error);
+  const inTop = ok.filter(r => r.in_top).length;
+  const first = ok.filter(r => r.position === 1).length;
+  const headline = inTop + ' of ' + d.results.length + ' keyword' + (d.results.length === 1 ? '' : 's') + ' rank in the top 30, in ' + d.market;
+  const sub = first
+    ? first + ' at #1 · checked just now'
+    : 'None at #1 yet — checked just now';
+
+  let html = '<div class="summary"><div class="headline">' + esc(headline) + '</div><div class="sub">' + esc(sub) + '</div></div>';
+  html += d.results.map(r => renderRow(r, d.website)).join('');
+  html += '<p class="foot">Each row is one live, independent search — not cached from another tool. Position is where ' +
+    esc(d.website) + ' sits among organic results; "above" counts ads, local pack and other elements pushed above it.</p>';
+  return html;
+}
+
+function renderRow(r, website){
+  if (r.error){
+    return '<div class="krow err-row"><div class="kw"><div class="kwtext">' + esc(r.keyword) + '</div>' +
+      '<div class="note bad">' + esc(r.error) + '</div></div></div>';
+  }
+
+  const cls = r.position === null ? 'none' : r.position <= 10 ? 'good' : 'mid';
+  const posHtml = '<div class="pos ' + cls + '">' + (r.position === null ? 'Not in top 30' : '#' + r.position) + '</div>';
+
+  const notes = [];
+  if (r.above && r.above.length) notes.push(['', 'Above you: ' + r.above.join(', ')]);
+  if (r.ai_overview?.present){
+    const a = r.ai_overview;
+    notes.push(a.cited === null
+      ? (a.sources.length
+        ? ['', 'AI Overview cites <b>' + a.sources.map(s=>s.domain ?? s.source).slice(0,2).join('</b>, <b>') + '</b> — can’t confirm domains']
+        : ['', 'AI Overview shown — sources unavailable'])
+      : a.cited
+      ? ['ok', 'Cited in the AI Overview']
+      : ['warn', 'AI Overview cites <b>' + a.sources.map(s=>s.domain ?? s.source ?? 'an unresolved source').slice(0,2).join('</b>, <b>') + '</b> — not you']);
+  }
+  if (r.featured_snippet){
+    notes.push([r.featured_snippet.yours ? 'ok' : '',
+      r.featured_snippet.yours ? 'You hold the featured snippet' : 'Featured snippet held by <b>' + esc(r.featured_snippet.domain) + '</b>']);
+  }
+  if (r.local_pack) notes.push(['', 'Local pack shown for this keyword']);
+  if (!r.in_top && r.top?.[0]) notes.push(['', 'Top result: <b>' + esc(r.top[0].domain) + '</b>']);
+
+  const notesHtml = notes.map(([cls2, txt]) => '<div class="note' + (cls2 ? ' ' + cls2 : '') + '">' + txt + '</div>').join('');
+
+  const vparts = [];
+  if (r.volume) vparts.push('<span class="vol">' + fmtVol(r.volume) + '/mo</span>');
+  if (r.cpc) vparts.push('<span class="cpc">$' + r.cpc.toFixed(2) + ' CPC</span>');
+  const vbadge = vparts.length ? '<span class="vbadge">' + vparts.join(' · ') + '</span>' : '';
+
+  const paaHtml = (r.paa && r.paa.length)
+    ? '<div class="paalist">' + r.paa.map(q =>
+        '<div class="paaq" data-copy="' + esc(q) + '">“' + esc(q) + '”</div>'
+      ).join('') + '</div>'
+    : '';
+
+  return '<div class="krow"><div class="kw"><div class="kwhead"><div class="kwtext">' + esc(r.keyword) + '</div>' + vbadge + '</div>' +
+    notesHtml + paaHtml + '</div>' + posHtml + '</div>';
+}
+
+function fmtVol(n){ return n >= 1000 ? (Math.round(n / 100) / 10) + 'K' : String(n); }
+
+async function loadReport(id){
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = 'Loading…';
+  $('out').innerHTML = '<p class="empty">Loading saved snapshot…</p>';
+
+  let d;
+  try {
+    const res = await fetch(API + '/rank-snapshot/get', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, id })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  if (d.error){
+    $('rTitle').textContent = 'Not found';
+    $('out').innerHTML = '<p class="err">' + esc(d.error) + '</p>';
+    return;
+  }
+  $('rTitle').textContent = d.website;
+  $('out').innerHTML = renderResults(d);
+}
+
+if (!CODE){
+  $('form').style.display = 'none';
+  $('gate').style.display = 'block';
+  const goGate = () => {
+    const v = $('manual').value.trim().toLowerCase().replace(/\s+/g, '');
+    if (v) location.search = '?k=' + encodeURIComponent(v);
+  };
+  $('enter').onclick = goGate;
+  $('manual').onkeydown = e => { if (e.key === 'Enter') goGate(); };
+} else if (REPORT_ID){
+  loadReport(REPORT_ID);
+}
+</script>
+</body>
+</html>

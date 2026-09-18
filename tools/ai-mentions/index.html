@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI brand mentions</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23FFFF00'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:560px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px}
+  fieldset{border:0;margin-bottom:24px}
+  legend{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+         text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .hint{font-size:11.5px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input,textarea,select{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  textarea{resize:vertical;min-height:110px;line-height:1.6}
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:12px;position:relative}
+  .counter{font-size:10.5px;color:var(--muted);text-align:right;margin-top:4px}
+  .counter.over{color:var(--bad)}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px}
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  #results{display:none}
+  .meta{font-size:12px;color:var(--muted);margin-bottom:22px}
+  .backbtn{font-size:11px;color:var(--you);background:none;border:0;cursor:pointer;margin-bottom:16px;
+        font-family:'IBM Plex Mono',monospace}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+  .empty{font-size:13px;color:var(--muted);padding:20px 0;text-align:center}
+
+  .pcard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+  .pcard .prompt{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--ink);
+        margin-bottom:8px;line-height:1.35}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;
+        padding:5px 11px;border-radius:20px;margin-bottom:12px}
+  .badge.hit{background:rgba(53,196,141,.15);color:var(--ok)}
+  .badge.miss{background:rgba(232,105,95,.15);color:var(--bad)}
+  .badge.partial{background:rgba(224,169,58,.15);color:var(--warn)}
+  .answer{font-size:13px;line-height:1.55;color:var(--ink);white-space:pre-wrap;margin-bottom:10px;
+        border-left:2px solid var(--line);padding-left:12px}
+  .answer mark{background:rgba(53,196,141,.28);color:var(--ink);border-radius:3px;padding:0 2px}
+  .subtle-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 5px}
+  .taglist{display:flex;flex-wrap:wrap;gap:6px}
+  .taglist span{font-size:10.5px;background:var(--paper);border:1px solid var(--line);border-radius:12px;
+        padding:4px 9px;color:var(--muted)}
+  .taglist a{color:inherit;text-decoration:none}
+  .taglist a:hover{color:var(--you)}
+  .runrow{font-size:11px;color:var(--muted);margin-top:10px}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="form">
+    <p class="eyebrow">Free tool</p>
+    <h1>Does AI even mention you?</h1>
+    <p class="lede">Ask Gemini the kind of category questions a customer might ask, and see whether your brand shows up — grounded in real, live Google Search results.</p>
+
+    <fieldset>
+      <legend>Brand</legend>
+      <div class="field"><label for="brand">Brand / business name</label><input id="brand" type="text" placeholder="e.g. Café Savoy" maxlength="80"></div>
+      <div class="field">
+        <label for="country">Country (optional)</label>
+        <select id="country"><option value="">No specific country</option></select>
+        <p class="hint" style="margin:6px 0 0">Gemini's grounding tool has no real geo-targeting — this nudges each question toward that market rather than forcing it.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Questions</legend>
+      <div class="field">
+        <label for="prompts">One per line, up to 5</label>
+        <textarea id="prompts" placeholder="best coffee roasters in Prague
+who are the top digital marketing agencies for SaaS companies"></textarea>
+        <p class="counter" id="promptCounter">0 / 5</p>
+      </div>
+      <p class="hint">Each question is asked 3 times — Gemini's grounded answers vary run to run, so a single answer isn't the full picture.</p>
+    </fieldset>
+
+    <button class="submit" id="go" type="button">Check AI mentions</button>
+    <p class="after">Takes a little longer than the other tools — real AI answers, not cached lookups.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <button class="backbtn" id="back">&larr; New check</button>
+    <p class="eyebrow restag">AI brand mentions</p>
+    <h1 id="rTitle"></h1>
+    <p class="meta" id="rMeta"></p>
+    <div id="stage"></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+const REPORT_ID = new URLSearchParams(location.search).get('id') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+const MAX_PROMPTS = 5;
+const MAX_PROMPT_LEN = 200;
+
+const COUNTRIES = [
+  'United Kingdom','United States','Canada','Ireland','Australia','Germany','France',
+  'Netherlands','Switzerland','Austria','Spain','Italy','Poland','Czechia','Slovakia'
+];
+
+const $ = id => document.getElementById(id);
+let reportId = '';
+
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function renderCountries(){
+  $('country').innerHTML = '<option value="">No specific country</option>' +
+    COUNTRIES.map(c => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('');
+}
+
+function currentPrompts(){
+  return $('prompts').value.split('\n').map(p => p.trim()).filter(Boolean).slice(0, MAX_PROMPTS);
+}
+
+function updateCounter(){
+  const n = currentPrompts().length;
+  const over = $('prompts').value.split('\n').some(p => p.trim().length > MAX_PROMPT_LEN);
+  $('promptCounter').textContent = n + ' / ' + MAX_PROMPTS + (over ? ' — a line is over ' + MAX_PROMPT_LEN + ' characters' : '');
+  $('promptCounter').classList.toggle('over', over);
+}
+$('prompts').oninput = updateCounter;
+
+$('go').onclick = run;
+$('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; };
+
+async function run(){
+  const brand = $('brand').value.trim();
+  const prompts = currentPrompts();
+
+  if (!brand || !prompts.length){
+    $('go').textContent = !brand ? 'Add a brand name first' : 'Add at least one question';
+    setTimeout(() => $('go').textContent = 'Check AI mentions', 2000);
+    return;
+  }
+  if (prompts.some(p => p.length > MAX_PROMPT_LEN)){
+    $('go').textContent = 'A question is too long';
+    setTimeout(() => $('go').textContent = 'Check AI mentions', 2000);
+    return;
+  }
+
+  const country = $('country').value;
+  reportId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = brand;
+  $('rMeta').textContent = prompts.length + ' question' + (prompts.length === 1 ? '' : 's') + ' · 3 runs each' +
+    (country ? ' · ' + country : '');
+  $('stage').innerHTML = '<p class="empty">Asking Gemini… this can take a little while.</p>';
+  window.scrollTo(0,0);
+
+  let d;
+  try {
+    const res = await fetch(API + '/ai-mentions', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ code: CODE, report: reportId, brand, prompts, country })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  if (d.error){ $('stage').innerHTML = '<p class="err">' + esc(d.error) + '</p>'; return; }
+  $('stage').innerHTML = d.results.map(r => renderPromptCard(brand, r)).join('');
+}
+
+function highlightBrand(text, brand){
+  if (!text) return '';
+  const escaped = esc(text);
+  const escapedBrand = esc(brand).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (!escapedBrand) return escaped;
+  return escaped.replace(new RegExp('(' + escapedBrand + ')', 'ig'), '<mark>$1</mark>');
+}
+
+function renderPromptCard(brand, r){
+  const cls = r.mentioned_count === 3 ? 'hit' : r.mentioned_count === 0 ? 'miss' : 'partial';
+  const label = r.mentioned_count === 3 ? 'Mentioned every time'
+    : r.mentioned_count === 0 ? 'Not mentioned in any answer'
+    : 'Mentioned in ' + r.mentioned_count + ' of 3 answers';
+
+  const exampleRun = r.runs.find(run => run.text) || r.runs[0];
+  const queries = [...new Set(r.runs.flatMap(run => run.queries || []))].slice(0, 8);
+  const sources = [];
+  const seen = new Set();
+  for (const run of r.runs) for (const s of (run.sources || [])){
+    const key = s.url || s.title;
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    sources.push(s);
+  }
+
+  return '<div class="pcard">' +
+    '<div class="prompt">"' + esc(r.prompt) + '"</div>' +
+    '<div class="badge ' + cls + '">' + label + '</div>' +
+    (exampleRun?.text
+      ? '<div class="answer">' + highlightBrand(exampleRun.text, brand) + '</div>'
+      : '<p class="empty" style="padding:6px 0">No answer text came back.</p>') +
+    (queries.length
+      ? '<p class="subtle-label">Gemini searched for</p><div class="taglist">' +
+        queries.map(q => '<span>' + esc(q) + '</span>').join('') + '</div>'
+      : '') +
+    (sources.length
+      ? '<p class="subtle-label">Cited sources</p><div class="taglist">' +
+        sources.slice(0, 8).map(s => '<span><a href="' + esc(s.url || '#') + '" target="_blank" rel="noopener">' +
+          esc(s.title || s.url || 'source') + '</a></span>').join('') + '</div>'
+      : '') +
+    '<p class="runrow">' + r.runs.map(run => run.mentioned ? '✓' : '·').join(' ') + '</p>' +
+    '</div>';
+}
+
+async function loadSavedReport(id){
+  let d;
+  try {
+    const res = await fetch(API + '/ai-mentions/get', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, id })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  if (d.error || !d.results) return;
+
+  reportId = id;
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = d.brand;
+  $('rMeta').textContent = d.results.length + ' question' + (d.results.length === 1 ? '' : 's') + ' · 3 runs each' +
+    (d.country ? ' · ' + d.country : '');
+  window.scrollTo(0,0);
+  $('stage').innerHTML = d.results.map(r => renderPromptCard(d.brand, r)).join('');
+}
+
+if (!CODE){
+  document.querySelector('.wrap').innerHTML =
+    '<p class="eyebrow">Free tool</p><h1>You need an access code</h1>' +
+    '<p class="lede">This tool runs on a personal link. Open the link you were sent — it ' +
+    'carries your code — or type the code below.</p>' +
+    '<div class="field" style="max-width:280px"><label for="manual">Access code</label>' +
+    '<input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>' +
+    '<button class="submit" id="enter" type="button" style="max-width:280px">Continue</button>' +
+    '<p class="after" style="text-align:left;max-width:280px">Don’t have one? ' +
+    '<a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>';
+
+  const go = () => {
+    const v = document.getElementById('manual').value.trim().toLowerCase().replace(/\s+/g,'');
+    if (v) location.search = '?k=' + encodeURIComponent(v);
+  };
+  document.getElementById('enter').onclick = go;
+  document.getElementById('manual').onkeydown = e => { if (e.key === 'Enter') go(); };
+} else {
+  renderCountries();
+  updateCounter();
+  if (REPORT_ID) loadSavedReport(REPORT_ID);
+}
+</script>
+</body>
+</html>

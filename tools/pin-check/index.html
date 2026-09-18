@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map pin check</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2335c48d'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--card2:#171b26;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5}
+
+  /* ---- two-pane app shell: persistent sidebar + full map, same shape as grid-check ---- */
+  .app{display:flex;height:100vh;overflow:hidden}
+  .sidebar{width:380px;flex-shrink:0;background:var(--card);border-right:1px solid var(--line);
+       padding:22px;overflow-y:auto}
+  .map-wrap{flex:1;position:relative;background:var(--paper)}
+  .map-box{position:relative;height:100%}
+  #map{position:absolute;inset:0}
+
+  .brand{display:flex;align-items:center;gap:11px;margin-bottom:22px}
+  .brand-mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--ok),#5fe0ac);
+       display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;
+       font-weight:700;font-size:11px;color:#06120c;flex-shrink:0}
+  .brand h1{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;letter-spacing:-.01em;color:var(--gold)}
+  .brand p{font-size:11px;color:var(--muted);margin-top:1px}
+
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h2{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+     text-transform:uppercase;color:var(--muted);margin:22px 0 12px}
+  h2:first-of-type{margin-top:0}
+  h3.pointheading{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--gold);
+     margin:20px 0 10px}
+  h3.pointheading:first-child{margin-top:0}
+  .lede{font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:16px}
+
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input,select{width:100%;font-family:'IBM Plex Mono',monospace;font-size:13.5px;color:var(--ink);
+        background:var(--card2);border:1px solid var(--line);border-radius:7px;padding:10px 11px}
+  input:focus,select:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:12px}
+
+  .chips{display:flex;gap:8px;margin-bottom:14px}
+  .chip{font:12px 'IBM Plex Mono',monospace;color:var(--ink);background:var(--card2);
+        border:1px solid var(--line);border-radius:20px;padding:7px 13px;cursor:pointer}
+  .chip[aria-pressed=true]{background:var(--you);border-color:var(--you);color:#fff}
+
+  .siterow{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px}
+  .siterow input{flex:1}
+  .rmbtn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:7px;
+        width:38px;height:38px;flex:none;cursor:pointer;font-size:16px}
+  .findbtn{background:var(--you);border:1px solid var(--you);color:#fff;border-radius:7px;
+        width:44px;height:44px;flex:none;cursor:pointer;font-size:12.5px;font-weight:700;
+        font-family:'IBM Plex Mono',monospace}
+  .findbtn:hover{background:#5c68f2}
+  .findbtn[disabled]{opacity:.5;cursor:not-allowed}
+  .addbtn{font-size:12px;color:var(--you);background:none;border:1px dashed var(--line);
+        border-radius:7px;padding:9px 14px;cursor:pointer;font-family:'IBM Plex Mono',monospace;margin-bottom:14px}
+
+  .coord{font-size:11.5px;color:var(--ok);margin-bottom:12px;display:none}
+  .hint{font-size:11.5px;color:var(--muted);margin-bottom:12px}
+
+  .pointslist{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+  .pointrow{display:flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--line);
+        border-radius:7px;padding:8px 10px}
+  .pointlabel{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;color:var(--ok);
+        flex:none;width:16px}
+  .pointcoord{font-size:11.5px;color:var(--muted);flex:1}
+  .pointrow .rmbtn{width:26px;height:26px;font-size:13px}
+
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:14.5px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:13px;cursor:pointer}
+  .submit:hover{background:#5c68f2}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:10.5px;color:var(--muted);text-align:center;margin-top:9px}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+  .empty{font-size:12.5px}
+
+  .sharebar{display:none;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--line);
+        border-radius:8px;padding:12px 14px;margin-bottom:18px;font-size:12px}
+  .sharebar input{flex:1;background:var(--paper);font-size:11px;padding:8px 10px}
+  .sharebar button{flex:none;font-size:11px;background:var(--you);color:#fff;border:0;
+        border-radius:6px;padding:8px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace}
+
+  .kwresult{margin-bottom:18px}
+  .kwtitle{font-family:'Space Grotesk',sans-serif;font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:8px}
+  .subtle-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 8px}
+  .subtle-label:first-child{margin-top:0}
+  .placelist{display:flex;flex-direction:column;gap:8px}
+  .placecard{background:var(--card2);border:1px solid var(--line);border-radius:10px;
+        padding:11px 13px;display:flex;gap:10px;align-items:flex-start}
+  .placecard.sponsored{border-color:var(--warn)}
+  .placecard .rank{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;
+        color:var(--muted);flex:none;width:24px;text-align:right;padding-top:2px}
+  .placecard .title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px}
+  .placecard .meta2{font-size:11.5px;color:var(--muted);line-height:1.5}
+  .placecard .rating{color:var(--gold)}
+  .adtag{font-size:9px;font-weight:700;text-transform:uppercase;color:var(--warn);
+        border:1px solid var(--warn);border-radius:4px;padding:1px 4px;letter-spacing:.03em}
+  .ptbadge{display:inline-block;font-size:10.5px;color:var(--ink);background:var(--paper);
+        border:1px solid var(--line);border-radius:5px;padding:2px 6px;margin-right:4px}
+
+  .mapspin{width:20px;height:20px;border-radius:50%;background:var(--ok);display:flex;
+        align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;
+        font-weight:700;font-size:10px;color:#06120c;
+        border:2px solid rgba(255,255,255,.85);box-shadow:0 1px 4px rgba(0,0,0,.5);cursor:grab}
+  .mapstiles{filter:brightness(1.35) contrast(.92) saturate(1.1)}
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+
+  .maphint{position:absolute;top:18px;left:50%;transform:translateX(-50%);
+       background:rgba(18,21,29,.96);border:1px solid var(--line);border-radius:10px;
+       padding:9px 16px;z-index:30;font-size:12.5px;color:var(--muted);pointer-events:none}
+
+  .sidenav{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+
+  .gate .field{max-width:280px}
+
+  @media (max-width:860px){
+    .app{flex-direction:column;height:auto;overflow:visible}
+    .sidebar{width:100%;border-right:0;border-bottom:1px solid var(--line);overflow-y:visible}
+    .map-wrap{height:auto;display:block}
+    .map-box{height:60vh}
+  }
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+
+    <div class="brand">
+      <div class="brand-mark">MC2</div>
+      <div>
+        <h1>Map pin check</h1>
+        <p>MC2SEO free tool</p>
+      </div>
+    </div>
+
+    <div id="gate" style="display:none" class="gate">
+      <p class="eyebrow">Free tool</p>
+      <h2 style="margin-top:14px">You need an access code</h2>
+      <p class="lede">This tool runs on a personal link. Open the link you were sent — it carries your code — or type the code below.</p>
+      <div class="field"><label for="manual">Access code</label>
+        <input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+      <button class="submit" id="enter" type="button">Continue</button>
+      <p class="after">Don't have one? <a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>
+    </div>
+
+    <div id="controls">
+      <p class="eyebrow">Free tool</p>
+      <p class="lede">Type an address to jump the pin there, or drop it yourself anywhere on Earth — click the map, or drag once it's placed. Then check up to 5 keywords' local map pack at that exact point. No fixed city list.</p>
+
+      <h2>Location</h2>
+      <div class="chips" id="modeChips"></div>
+      <div class="siterow">
+        <input id="addr" type="text" placeholder="123 Main St, Hamburg — or just a city">
+        <button class="findbtn" id="findAddr" type="button" aria-label="Find on map">Go</button>
+      </div>
+      <p class="err" id="addrErr" style="display:none;padding:8px 0;border:0"></p>
+
+      <div class="pointslist" id="pointsList" style="display:none"></div>
+      <p class="coord" id="coord"></p>
+      <p class="hint" id="hint">Or click anywhere on the map to drop a pin.</p>
+
+      <h2>Keywords</h2>
+      <div class="field"><input id="kw1" type="text" placeholder="coffee shop"></div>
+      <div id="moreKeywords"></div>
+      <button class="addbtn" id="addKw" type="button">+ Add another keyword</button>
+
+      <h2>Language</h2>
+      <div class="field"><select id="lang"></select></div>
+
+      <button class="submit" id="go" type="button" disabled>Drop a pin first</button>
+      <p class="after">~$0.002 per keyword, per point checked.</p>
+    </div>
+
+    <div id="results"></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </aside>
+
+  <div class="map-wrap">
+    <div class="map-box">
+      <div id="map"></div>
+      <div class="maphint" id="mapHint">Click anywhere to drop a pin</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+const REPORT_ID = new URLSearchParams(location.search).get('id') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+
+const $ = id => document.getElementById(id);
+const MAX_KEYWORDS = 5;
+const MAX_POINTS = 3;
+const LANGUAGES = [['en','English'],['de','German'],['fr','French'],['es','Spanish'],['it','Italian'],
+  ['nl','Dutch'],['pl','Polish'],['cs','Czech'],['sk','Slovak']];
+
+let map;
+let points = []; // [{lat,lng,label,marker}] — one entry even in single-point mode
+let multiMode = false;
+let reportId = '';
+
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function renderLanguages(){
+  $('lang').innerHTML = LANGUAGES.map(([v,l]) => '<option value="' + v + '">' + l + '</option>').join('');
+}
+
+function renderModeChips(){
+  $('modeChips').innerHTML =
+    '<button type="button" class="chip" data-mode="single" aria-pressed="' + (!multiMode) + '">Single point</button>' +
+    '<button type="button" class="chip" data-mode="multi" aria-pressed="' + (multiMode) + '">Compare up to 3 points</button>';
+  $('modeChips').querySelectorAll('button').forEach(b => b.onclick = () => setMode(b.dataset.mode === 'multi'));
+}
+
+function setMode(multi){
+  if (multi === multiMode) return;
+  multiMode = multi;
+  // Simplest, least error-prone way to switch: clear existing pins rather
+  // than trying to reconcile "3 points -> 1" or vice versa silently.
+  points.forEach(p => p.marker.remove());
+  points = [];
+  renderModeChips();
+  renderPointsList();
+  updateGoState();
+}
+
+function pinIcon(label){
+  return L.divIcon({ className: '', html: '<div class="mapspin">' + (label || '') + '</div>', iconSize: [22,22], iconAnchor: [11,11] });
+}
+
+function initMap(){
+  map = L.map('map', { zoomControl: true, worldCopyJump: true }).setView([20, 10], 2);
+  // CARTO's free anonymous raster tiles now require a signed-up API key
+  // (they started watermarking unauthenticated requests "API KEY REQUIRED"
+  // in Aug 2026) — swapped to Esri's World Dark Gray Canvas, a long-
+  // standing publicly free ArcGIS basemap that needs no key or signup.
+  // Two layers stacked: Base (fill/roads) + Reference (labels on top),
+  // matching how Esri's own dark-canvas basemap is normally composed.
+  // Note the tile URL order is {z}/{y}/{x} here, not the {z}/{x}/{y}
+  // every other slippy-map provider (CARTO, OSM) uses.
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: '&copy; Esri', maxZoom: 19, className: 'mapstiles'
+  }).addTo(map);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19, className: 'mapstiles'
+  }).addTo(map);
+  map.on('click', e => placePoint(e.latlng.lat, e.latlng.lng));
+}
+
+function relabelPoints(){
+  points.forEach((p, i) => {
+    p.label = String.fromCharCode(65 + i);
+    p.marker.setIcon(pinIcon(points.length > 1 ? p.label : ''));
+  });
+}
+
+function addMarker(lat, lng){
+  const marker = L.marker([lat, lng], { draggable: true, icon: pinIcon() }).addTo(map);
+  const p = { lat, lng, label: '', marker };
+  marker.on('dragend', () => {
+    const ll = marker.getLatLng();
+    p.lat = ll.lat; p.lng = ll.lng;
+    renderPointsList();
+  });
+  return p;
+}
+
+function placePoint(lat, lng, recenter){
+  if (multiMode){
+    if (points.length >= MAX_POINTS){
+      $('addrErr').textContent = 'Remove a point below before adding another (max ' + MAX_POINTS + ').';
+      $('addrErr').style.display = 'block';
+      return;
+    }
+    points.push(addMarker(lat, lng));
+  } else if (points.length){
+    points[0].marker.setLatLng([lat, lng]);
+    points[0].lat = lat; points[0].lng = lng;
+  } else {
+    points = [addMarker(lat, lng)];
+  }
+  relabelPoints();
+  if (recenter) map.setView([lat, lng], 16);
+  $('hint').style.display = 'none';
+  $('mapHint').textContent = multiMode ? 'Click to add another point, or drag a pin to move it' : 'Drag the pin to fine-tune, or click elsewhere to move it';
+  renderPointsList();
+  updateGoState();
+}
+
+function removePoint(i){
+  points[i].marker.remove();
+  points.splice(i, 1);
+  relabelPoints();
+  renderPointsList();
+  updateGoState();
+}
+
+function renderPointsList(){
+  if (!points.length){
+    $('coord').style.display = 'none';
+    $('pointsList').style.display = 'none';
+    $('pointsList').innerHTML = '';
+    $('hint').style.display = 'block';
+    return;
+  }
+  if (!multiMode){
+    $('pointsList').style.display = 'none';
+    $('pointsList').innerHTML = '';
+    $('coord').style.display = 'block';
+    $('coord').textContent = '📍 ' + points[0].lat.toFixed(4) + '°, ' + points[0].lng.toFixed(4) + '°';
+    return;
+  }
+  $('coord').style.display = 'none';
+  $('pointsList').style.display = 'flex';
+  $('pointsList').innerHTML = points.map((p, i) =>
+    '<div class="pointrow"><span class="pointlabel">' + p.label + '</span>' +
+    '<span class="pointcoord">' + p.lat.toFixed(4) + '°, ' + p.lng.toFixed(4) + '°</span>' +
+    '<button type="button" class="rmbtn" data-i="' + i + '" aria-label="Remove point">&times;</button></div>'
+  ).join('');
+  $('pointsList').querySelectorAll('.rmbtn').forEach(b => b.onclick = () => removePoint(Number(b.dataset.i)));
+}
+
+async function findAddress(){
+  const q = $('addr').value.trim();
+  if (!q) return;
+
+  $('findAddr').disabled = true;
+  $('addrErr').style.display = 'none';
+
+  let d;
+  try {
+    const res = await fetch(API + '/pin-check/geocode', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, query: q })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  $('findAddr').disabled = false;
+
+  if (d.error || d.lat == null){
+    $('addrErr').textContent = d.error || 'Couldn’t find that address — try adding a city or country.';
+    $('addrErr').style.display = 'block';
+    return;
+  }
+  placePoint(d.lat, d.lng, true);
+}
+$('findAddr').onclick = findAddress;
+$('addr').onkeydown = e => { if (e.key === 'Enter'){ e.preventDefault(); findAddress(); } };
+
+function addKeywordRow(value){
+  const rows = $('moreKeywords').children.length;
+  if (rows >= MAX_KEYWORDS - 1) return;
+  const row = document.createElement('div');
+  row.className = 'siterow';
+  row.innerHTML = '<input type="text" class="kw-extra" placeholder="espresso bar">' +
+    '<button type="button" class="rmbtn" aria-label="Remove">&times;</button>';
+  if (value) row.querySelector('input').value = value;
+  row.querySelector('input').oninput = updateGoState;
+  row.querySelector('.rmbtn').onclick = () => { row.remove(); $('addKw').style.display = ''; updateGoState(); };
+  $('moreKeywords').appendChild(row);
+  if ($('moreKeywords').children.length >= MAX_KEYWORDS - 1) $('addKw').style.display = 'none';
+}
+$('addKw').onclick = () => addKeywordRow();
+$('kw1').oninput = updateGoState;
+
+function currentKeywords(){
+  const first = $('kw1').value.trim();
+  const extra = [...document.querySelectorAll('.kw-extra')].map(i => i.value.trim());
+  return [first, ...extra].filter(Boolean).slice(0, MAX_KEYWORDS);
+}
+
+function updateGoState(){
+  const kws = currentKeywords();
+  const n = points.length;
+  $('go').disabled = !n || !kws.length;
+  $('go').textContent = !n ? (multiMode ? 'Drop at least one pin first' : 'Drop a pin first')
+    : !kws.length ? 'Add a keyword first'
+    : n > 1 ? 'Check ' + n + ' points' : 'Check this point';
+}
+
+$('go').onclick = run;
+
+async function run(){
+  const keywords = currentKeywords();
+  if (!points.length || !keywords.length) return;
+
+  $('go').disabled = true;
+  const targets = points.map(p => ({ lat: p.lat, lng: p.lng, label: p.label }));
+  const showLabels = targets.length > 1;
+
+  $('results').innerHTML = '<h2>Results</h2><p class="empty" style="color:var(--muted)">Checking ' +
+    keywords.length + (keywords.length === 1 ? ' keyword' : ' keywords') +
+    (showLabels ? ' at ' + targets.length + ' points' : ' at this point') + '…</p>';
+
+  reportId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const languageCode = $('lang').value;
+
+  let outcomes;
+  try {
+    outcomes = await Promise.all(targets.map(async t => {
+      const res = await fetch(API + '/pin-check', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: CODE, keywords, lat: t.lat, lng: t.lng, language_code: languageCode, report: reportId, label: t.label })
+      });
+      const d = await res.json();
+      return { ...t, ...d };
+    }));
+  } catch (e) { outcomes = targets.map(t => ({ ...t, error: 'could not reach the API' })); }
+
+  updateGoState();
+  renderOutcomes(outcomes, showLabels, keywords);
+}
+
+// For each keyword, which businesses turned up in the ORGANIC local pack
+// at every single point checked — not just one location, but consistently
+// visible across the whole area. Sponsored ads are deliberately excluded:
+// those are targeted per-search, so "consistent everywhere" doesn't carry
+// the same competitive-visibility meaning it does for organic placement.
+// Matches business identity by exact-normalized title — Google Maps
+// returns the same listing's title identically across nearby searches, so
+// this doesn't need fuzzy matching.
+function normTitle(s){ return String(s ?? '').toLowerCase().trim().replace(/\s+/g, ' '); }
+
+function computeOverlaps(outcomes, keywords){
+  const validPoints = outcomes.filter(o => !o.error);
+  if (validPoints.length < 2) return [];
+
+  return keywords.map(keyword => {
+    const perPoint = validPoints.map(o => {
+      const kwResult = (o.results || []).find(r => r.keyword === keyword);
+      return { label: o.label, places: (kwResult && !kwResult.error) ? (kwResult.organic || []) : null };
+    });
+    if (perPoint.some(p => p.places === null)) return { keyword, incomplete: true, overlap: [] };
+
+    const [first, ...rest] = perPoint;
+    const overlap = [];
+    for (const place of first.places) {
+      const key = normTitle(place.title);
+      if (!key) continue;
+      if (!rest.every(p => p.places.some(pl => normTitle(pl.title) === key))) continue;
+      overlap.push({
+        title: place.title, rating: place.rating, rating_count: place.rating_count,
+        category: place.category, address: place.address,
+        perPointRank: perPoint.map(p => ({ label: p.label, rank: p.places.find(pl => normTitle(pl.title) === key)?.rank ?? null }))
+      });
+    }
+    return { keyword, incomplete: false, overlap };
+  });
+}
+
+function renderOverlapPlace(p){
+  const badges = p.perPointRank.map(r => '<span class="ptbadge">' + esc(r.label) + ' #' + (r.rank ?? '—') + '</span>').join(' ');
+  return '<div class="placecard">' +
+    '<div class="rank">✓</div>' +
+    '<div><div class="title">' + esc(p.title) + '</div>' +
+    '<div class="meta2">' +
+    (p.rating != null ? '<span class="rating">★ ' + p.rating.toFixed(1) + '</span>' + (p.rating_count ? ' (' + p.rating_count.toLocaleString() + ')' : '') + ' · ' : '') +
+    (p.category ? esc(p.category) + ' · ' : '') + esc(p.address || '') + '</div>' +
+    '<div class="meta2" style="margin-top:5px">' + badges + '</div>' +
+    '</div></div>';
+}
+
+function renderOverlapKeyword(o){
+  if (o.incomplete){
+    return '<div class="kwresult"><p class="kwtitle">“' + esc(o.keyword) + '”</p>' +
+      '<p class="empty" style="color:var(--muted)">Couldn\'t compare — this keyword didn\'t return a result at every point.</p></div>';
+  }
+  if (!o.overlap.length){
+    return '<div class="kwresult"><p class="kwtitle">“' + esc(o.keyword) + '”</p>' +
+      '<p class="empty" style="color:var(--muted)">No business appeared in the local pack at every point checked.</p></div>';
+  }
+  return '<div class="kwresult"><p class="kwtitle">“' + esc(o.keyword) + '” — ' + o.overlap.length +
+    (o.overlap.length === 1 ? ' business' : ' businesses') + ' at every point</p>' +
+    '<div class="placelist">' + o.overlap.map(renderOverlapPlace).join('') + '</div></div>';
+}
+
+function renderOverlapSection(overlaps){
+  if (!overlaps.length) return '';
+  return '<h2>Consistent across all points</h2>' +
+    '<p class="lede" style="margin-bottom:14px">Organic local-pack listings only — sponsored ads aren\'t compared here.</p>' +
+    overlaps.map(renderOverlapKeyword).join('');
+}
+
+function renderOutcomes(outcomes, showLabels, keywords){
+  const overlapHtml = showLabels ? renderOverlapSection(computeOverlaps(outcomes, keywords)) : '';
+  $('results').innerHTML = overlapHtml + outcomes.map(o => renderPointOutcome(o, showLabels)).join('') +
+    '<div class="sharebar" id="sharebar"><input id="shareUrl" readonly><button id="copyShare" type="button">Copy</button></div>';
+  const url = location.origin + location.pathname + '?k=' + encodeURIComponent(CODE) + '&id=' + reportId;
+  $('shareUrl').value = url;
+  $('sharebar').style.display = 'flex';
+  $('copyShare').onclick = () => {
+    $('shareUrl').select();
+    navigator.clipboard?.writeText($('shareUrl').value);
+    $('copyShare').textContent = 'Copied';
+    setTimeout(() => $('copyShare').textContent = 'Copy', 1500);
+  };
+}
+
+function renderPointOutcome(o, showLabels){
+  const heading = showLabels ? '<h3 class="pointheading">Point ' + esc(o.label) + ' — ' + o.lat.toFixed(4) + '°, ' + o.lng.toFixed(4) + '°</h3>' : '';
+  if (o.error) return heading + '<p class="err">' + esc(o.error) + '</p>';
+  return heading + (o.results || []).map(renderKeywordResult).join('');
+}
+
+function renderKeywordResult(r){
+  if (r.error) return '<div class="kwresult"><p class="kwtitle">“' + esc(r.keyword) + '”</p><p class="err">' + esc(r.error) + '</p></div>';
+  const sponsored = r.sponsored ?? [], organic = r.organic ?? [];
+  if (!sponsored.length && !organic.length){
+    return '<div class="kwresult"><p class="kwtitle">“' + esc(r.keyword) + '”</p>' +
+      '<p class="empty" style="color:var(--muted)">No local map pack results at this point.</p></div>';
+  }
+  let html = '<div class="kwresult"><p class="kwtitle">“' + esc(r.keyword) + '”</p>';
+  if (sponsored.length) html += '<p class="subtle-label">Sponsored</p>' + renderPlaceList(sponsored, true);
+  if (organic.length) html += (sponsored.length ? '<p class="subtle-label">Local results</p>' : '') + renderPlaceList(organic, false);
+  return html + '</div>';
+}
+
+function renderPlaceList(places, sponsored){
+  return '<div class="placelist">' + places.map(p =>
+    '<div class="placecard' + (sponsored ? ' sponsored' : '') + '">' +
+    '<div class="rank">' + (sponsored ? '<span class="adtag">Ad</span>' : (p.rank ?? '—')) + '</div>' +
+    '<div><div class="title">' + esc(p.title) + '</div>' +
+    '<div class="meta2">' +
+    (p.rating != null ? '<span class="rating">★ ' + p.rating.toFixed(1) + '</span>' + (p.rating_count ? ' (' + p.rating_count.toLocaleString() + ')' : '') + ' · ' : '') +
+    (p.category ? esc(p.category) + ' · ' : '') +
+    esc(p.address || '') +
+    '</div></div></div>'
+  ).join('') + '</div>';
+}
+
+async function loadSavedReport(id){
+  let data;
+  try {
+    const res = await fetch(API + '/pin-check/get', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, id })
+    });
+    data = await res.json();
+  } catch (e) { data = { error: 'could not reach the API' }; }
+
+  if (data.error || !data.points || !data.points.length) return;
+
+  // Parallel calls can land out of submission order — labels (A/B/C) are
+  // the reliable ordering, not array position as saved.
+  const pts = [...data.points].sort((a, b) => (a.label || '').localeCompare(b.label || ''));
+
+  reportId = id;
+  multiMode = pts.length > 1;
+  renderModeChips();
+
+  points.forEach(p => p.marker.remove());
+  points = pts.map(pt => {
+    const p = addMarker(pt.lat, pt.lng);
+    p.label = pt.label || '';
+    return p;
+  });
+  relabelPoints();
+  renderPointsList();
+
+  if (points.length === 1) map.setView([points[0].lat, points[0].lng], 16);
+  else map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [60, 60] });
+
+  $('kw1').value = data.keywords?.[0] || '';
+  $('moreKeywords').innerHTML = '';
+  (data.keywords || []).slice(1).forEach(addKeywordRow);
+  if (data.language_code) $('lang').value = data.language_code;
+
+  updateGoState();
+
+  const outcomes = pts.map(pt => ({ label: pt.label, lat: pt.lat, lng: pt.lng, results: pt.results, error: pt.error }));
+  renderOutcomes(outcomes, pts.length > 1, data.keywords || []);
+}
+
+if (!CODE){
+  $('controls').style.display = 'none';
+  $('gate').style.display = 'block';
+  const go = () => {
+    const v = $('manual').value.trim().toLowerCase().replace(/\s+/g, '');
+    if (v) location.search = '?k=' + encodeURIComponent(v);
+  };
+  $('enter').onclick = go;
+  $('manual').onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+
+async function centerOnVisitor(){
+  let d;
+  try {
+    const res = await fetch(API + '/geo-locate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE })
+    });
+    d = await res.json();
+  } catch (e) { return; }
+  if (d.lat != null && d.lng != null) map.setView([d.lat, d.lng], 11);
+}
+
+renderLanguages();
+renderModeChips();
+initMap();
+if (CODE && REPORT_ID) loadSavedReport(REPORT_ID);
+else if (CODE) centerOnVisitor();
+</script>
+</body>
+</html>

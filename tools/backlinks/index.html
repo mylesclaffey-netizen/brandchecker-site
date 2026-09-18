@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backlink profile check</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MC2SEO">
+<meta property="og:url" content="https://brandchecker.eu/tools/backlinks/">
+<meta property="og:title" content="Backlink Profile Check | MC2SEO">
+<meta property="og:description" content="Real backlink data: referring domains, total backlinks, dofollow/nofollow split, domain rank, and who's actually linking in.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta name="twitter:title" content="Backlink Profile Check | MC2SEO">
+<meta name="twitter:description" content="Real backlink data: referring domains, total backlinks, dofollow/nofollow split, domain rank, and who's actually linking in.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2335c48d'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:640px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  input:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:14px}
+  .toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-bottom:14px;cursor:pointer;user-select:none}
+  .toggle input{width:auto}
+  #compBox{display:none;margin-bottom:6px}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer;margin-top:6px}
+  .submit:hover{background:#5c68f2}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+  .empty{font-size:12.5px;color:var(--muted)}
+
+  #results{display:none;margin-top:30px}
+  .backbtn{font-size:14px;color:var(--you);background:none;border:0;cursor:pointer;margin-bottom:16px;
+        font-family:'IBM Plex Mono',monospace}
+
+  .sitecard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:14px}
+  .sitecard.you{border-color:var(--ok)}
+  .sitecard .domainrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px}
+  .sitecard .domain{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--muted)}
+  .sitecard.you .domain{color:var(--ok)}
+  .rankbadge{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
+        border:1px solid var(--line);border-radius:20px;padding:3px 9px;white-space:nowrap;flex:none}
+  .rankbadge b{color:var(--ink);font-weight:700}
+  .headline{font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;color:var(--gold);line-height:1.1}
+  .headline .unit{font-size:14px;color:var(--muted);font-weight:500;margin-left:6px}
+  .subline{font-size:11.5px;color:var(--muted);margin-top:4px}
+
+  .distbar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:16px;background:var(--paper)}
+  .distbar span{height:100%}
+  .distlegend{display:flex;flex-wrap:wrap;gap:14px;margin-top:9px;font-size:10.5px;color:var(--muted)}
+  .distlegend .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px}
+
+  .togglebtn{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
+        background:none;border:1px solid var(--line);border-radius:6px;padding:6px 10px;
+        cursor:pointer;margin-top:14px}
+  .togglebtn:hover{color:var(--ink);border-color:var(--muted)}
+
+  .reflist{display:none;margin-top:12px;background:var(--paper);border:1px solid var(--line);border-radius:9px;
+       max-height:280px;overflow-y:auto}
+  .reflist.show{display:block}
+  .refrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;font-size:11.5px;
+       border-bottom:1px solid var(--line)}
+  .refrow:last-child{border-bottom:0}
+  .refrow .rdomain{color:var(--ink);word-break:break-all}
+  .refrow .rmeta{flex:none;color:var(--muted);display:flex;gap:8px}
+
+  .foot{font-size:10px;color:var(--muted);margin-top:20px;line-height:1.5}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="form">
+    <p class="eyebrow" id="eyebrow">Light token usage</p>
+    <h1>Backlink profile check</h1>
+    <p class="lede">Real backlink data, not a guess: how many domains actually link to a site, how many total backlinks, the dofollow/nofollow split, and DataForSEO's own domain rank score — free, no code needed. An access code unlocks the top-20 referring-domains list and competitor comparison.</p>
+
+    <div class="field"><label for="website">Website</label><input id="website" type="text" placeholder="yoursite.com"></div>
+
+    <div id="compUnlocked" style="display:none">
+      <label class="toggle"><input type="checkbox" id="compToggle"> Compare against up to 3 competitors</label>
+      <div id="compBox">
+        <div class="field"><input id="comp1" type="text" placeholder="competitor1.com"></div>
+        <div class="field"><input id="comp2" type="text" placeholder="competitor2.com"></div>
+        <div class="field"><input id="comp3" type="text" placeholder="competitor3.com"></div>
+      </div>
+    </div>
+    <p class="after" id="compLocked" style="text-align:left;display:none">Competitor comparison needs a personal access code. <a href="/#contact" style="color:var(--you)">Ask us for one</a> — or check a single domain free below.</p>
+
+    <button class="submit" id="go" type="button">Check backlinks</button>
+    <p class="after" id="costNote">Real cost per domain, cached 7 days — backlink profiles don't shift day to day.</p>
+    <p class="after" id="freeNote" style="display:none">Free summary — referring domains, total backlinks, dofollow split and domain rank. <a href="/#contact" style="color:var(--you)">Get an access code</a> for the top-20 referring-domains list and competitor comparison.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <button class="backbtn" id="back">&larr; New check</button>
+    <p class="eyebrow restag">Backlink profile check</p>
+    <h1 id="rTitle" style="font-size:20px">Checking…</h1>
+    <div id="out"></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+
+const $ = id => document.getElementById(id);
+const PREFILL_U = new URLSearchParams(location.search).get('u');
+if (PREFILL_U) { const f = document.getElementById('website'); if (f) f.value = PREFILL_U; }
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtNum(n){
+  if (n >= 1000000) return (Math.round(n / 100000) / 10) + 'M';
+  if (n >= 1000) return (Math.round(n / 100) / 10) + 'K';
+  return String(n);
+}
+
+// A code unlocks competitor comparison + the top-referring-domains list
+// (both real extra DataForSEO cost, see worker/src/backlinks.js); without
+// one, a single domain still gets a real, free summary check.
+if (CODE) {
+  $('compUnlocked').style.display = 'block';
+} else {
+  $('eyebrow').textContent = 'Free tool · no access code needed';
+  $('compLocked').style.display = 'block';
+  $('costNote').style.display = 'none';
+  $('freeNote').style.display = 'block';
+}
+
+$('compToggle').addEventListener('change', e => { $('compBox').style.display = e.target.checked ? 'block' : 'none'; });
+$('out').addEventListener('click', e => {
+  const btn = e.target.closest('.togglebtn');
+  if (btn) {
+    const list = document.getElementById(btn.dataset.target);
+    const show = !list.classList.contains('show');
+    list.classList.toggle('show', show);
+    btn.textContent = show ? 'Hide referring domains' : 'Show top referring domains';
+  }
+});
+$('go').onclick = run;
+$('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; };
+
+async function run(){
+  const website = $('website').value.trim();
+  const competitors = (CODE && $('compToggle').checked)
+    ? [$('comp1').value, $('comp2').value, $('comp3').value].map(s => s.trim()).filter(Boolean)
+    : [];
+
+  if (!website){
+    $('go').textContent = 'Add a website first';
+    setTimeout(() => $('go').textContent = 'Check backlinks', 2000);
+    return;
+  }
+
+  $('go').disabled = true;
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = 'Checking…';
+  $('out').innerHTML = '<p class="empty">Pulling ' + esc(website) + '\'s real backlink profile…</p>';
+  window.scrollTo(0,0);
+
+  let d;
+  try {
+    // With a code: the full report (competitors + top referring domains).
+    // Without one: the free summary-only endpoint — same response shape
+    // (still { website, sites: [...] }), just missing top_referring_domains
+    // and never accepting competitors, so renderResults/renderSite need no
+    // branching between the two.
+    const endpoint = CODE ? '/backlinks' : '/backlinks/summary';
+    const payload = CODE ? { code: CODE, website, competitors } : { website };
+    const res = await fetch(API + endpoint, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  $('go').disabled = false;
+
+  if (d.error){
+    $('rTitle').textContent = website;
+    $('out').innerHTML = '<p class="err">' + esc(d.error) + '</p>';
+    return;
+  }
+  $('rTitle').textContent = d.website;
+  $('out').innerHTML = renderResults(d);
+}
+
+function renderResults(d){
+  return d.sites.map((s, i) => renderSite(s, i)).join('') +
+    '<p class="foot">Referring domain and backlink counts, dofollow/nofollow split, and domain rank (0–1000, DataForSEO\'s own PageRank-style score) come from DataForSEO\'s Backlinks API. Top referring domains list is capped at 20, sorted by rank. Cached 7 days per domain — backlink profiles don\'t shift day to day.</p>';
+}
+
+function renderSite(s, i){
+  const isYou = i === 0;
+  if (s.error){
+    return '<div class="sitecard' + (isYou ? ' you' : '') + '"><div class="domain">' + esc(s.domain) + '</div>' +
+      '<p class="err" style="margin-top:10px">' + esc(s.error) + '</p></div>';
+  }
+
+  const total = s.referring_domains_dofollow + s.referring_domains_nofollow || 1;
+  const dofollowPct = (s.referring_domains_dofollow / total * 100).toFixed(2);
+  const rankBadge = s.rank !== null
+    ? '<span class="rankbadge">Domain rank <b>' + s.rank + '</b>/1000</span>'
+    : '<span class="rankbadge">Domain rank — n/a</span>';
+  const firstSeen = s.first_seen ? new Date(s.first_seen).getFullYear() : null;
+  const listId = 'reflist' + i;
+
+  let html = '<div class="sitecard' + (isYou ? ' you' : '') + '">' +
+    '<div class="domainrow"><div class="domain">' + esc(s.domain) + (isYou ? ' (you)' : '') + '</div>' + rankBadge + '</div>' +
+    '<div class="headline">' + fmtNum(s.referring_domains) + '<span class="unit">referring domains</span></div>' +
+    '<div class="subline">' + s.total_backlinks.toLocaleString() + ' total backlinks' + (firstSeen ? ' · earliest seen ' + firstSeen : '') + '</div>' +
+    '<div class="distbar"><span style="width:' + dofollowPct + '%;background:var(--ok)"></span><span style="width:' + (100 - dofollowPct) + '%;background:var(--warn)"></span></div>' +
+    '<div class="distlegend">' +
+      '<span><span class="dot" style="background:var(--ok)"></span>Dofollow: ' + s.referring_domains_dofollow.toLocaleString() + '</span>' +
+      '<span><span class="dot" style="background:var(--warn)"></span>Nofollow: ' + s.referring_domains_nofollow.toLocaleString() + '</span>' +
+    '</div>';
+
+  if (s.top_referring_domains && s.top_referring_domains.length){
+    html += '<button class="togglebtn" type="button" data-target="' + listId + '">Show top referring domains</button>';
+    html += '<div class="reflist" id="' + listId + '">' + s.top_referring_domains.map(r =>
+      '<div class="refrow"><span class="rdomain">' + esc(r.domain) + '</span>' +
+      '<span class="rmeta"><span>rank ' + (r.rank ?? '—') + '</span><span>' + r.backlinks.toLocaleString() + ' links</span></span></div>'
+    ).join('') + '</div>';
+  }
+
+  return html + '</div>';
+}
+</script>
+</body>
+</html>

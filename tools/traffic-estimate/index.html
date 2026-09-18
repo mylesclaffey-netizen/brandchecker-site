@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estimated organic traffic</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2335c48d'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c;
+        /* Validated separately for chart use (line marks need a different
+           OKLCH lightness band than UI badges/text do) — same hue families
+           as the site's own palette, adjusted to pass dataviz's dark-mode
+           categorical checks. Fixed order: yours, then competitors 1-3. */
+        --chart-1:#6e7bff;--chart-2:#e0574a;--chart-3:#1fa374;--chart-4:#b8811f}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:640px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input,select{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  select{height:42px}
+  input:focus,select:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:14px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-bottom:14px;cursor:pointer;user-select:none}
+  .toggle input{width:auto}
+  #compBox{display:none;margin-bottom:6px}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer;margin-top:6px}
+  .submit:hover{background:#5c68f2}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+  .empty{font-size:12.5px;color:var(--muted)}
+
+  #results{display:none;margin-top:30px}
+  .backbtn{font-size:14px;color:var(--you);background:none;border:0;cursor:pointer;margin-bottom:16px;
+        font-family:'IBM Plex Mono',monospace}
+
+  .sitecard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:14px}
+  .sitecard.you{border-color:var(--ok)}
+  .sitecard .domainrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px}
+  .sitecard .domain{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--muted)}
+  .sitecard.you .domain{color:var(--ok)}
+  .rankbadge{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
+        border:1px solid var(--line);border-radius:20px;padding:3px 9px;white-space:nowrap;flex:none}
+  .rankbadge b{color:var(--ink);font-weight:700}
+  .headline{font-family:'Space Grotesk',sans-serif;font-size:34px;font-weight:700;color:var(--gold);line-height:1.1}
+  .headline .unit{font-size:15px;color:var(--muted);font-weight:500;margin-left:6px}
+  .subline{font-size:11.5px;color:var(--muted);margin-top:4px}
+
+  .distbar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:16px;background:var(--paper)}
+  .distbar span{height:100%}
+  .distlegend{display:flex;flex-wrap:wrap;gap:10px;margin-top:9px;font-size:10px;color:var(--muted)}
+  .distlegend .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px}
+
+  .adnote{font-size:10.5px;color:var(--muted);margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);line-height:1.5}
+  .adnote b{color:var(--ink)}
+
+  .trendbtn{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
+        background:none;border:1px solid var(--line);border-radius:6px;padding:6px 10px;
+        cursor:pointer;margin-top:14px}
+  .trendbtn:hover{color:var(--ink);border-color:var(--muted)}
+  .trendbtn[disabled]{opacity:.5;cursor:not-allowed}
+  .trendbtn.on{color:var(--chart-dot,var(--ink));border-color:currentColor}
+
+  /* ---- trend chart ---- */
+  .chartcard{background:var(--card);border:1px solid var(--line);border-radius:12px;
+        padding:18px 18px 8px;margin-bottom:14px;display:none}
+  .chartcard.show{display:block}
+  .chartcard h4{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;margin-bottom:2px}
+  .chartcard .sub{font-size:11px;color:var(--muted);margin-bottom:10px}
+  .chartsvg{width:100%;height:auto;display:block;overflow:visible}
+  .gridline{stroke:var(--line);stroke-width:1}
+  .axislabel{fill:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:9.5px}
+  .trendline{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+  .trenddot{stroke:var(--card);stroke-width:1.5;cursor:pointer}
+  .trendlabel{font-family:'Space Grotesk',sans-serif;font-size:10.5px;font-weight:700}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin:8px 0 12px;font-size:10.5px;color:var(--muted)}
+  .legend .sw{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+  .crosshair{stroke:var(--muted);stroke-width:1;stroke-dasharray:2,3;pointer-events:none}
+  .tooltip{position:absolute;background:var(--paper);border:1px solid var(--line);border-radius:7px;
+        padding:8px 10px;font-size:10.5px;pointer-events:none;opacity:0;transition:opacity .1s ease;
+        white-space:nowrap;z-index:5}
+  .tooltip.show{opacity:1}
+  .tooltip .trow{display:flex;align-items:center;gap:6px;padding:1px 0}
+  .tooltip .sw{width:6px;height:6px;border-radius:50%;flex:none}
+  .chartwrap{position:relative}
+
+  .foot{font-size:10px;color:var(--muted);margin-top:20px;line-height:1.5}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate" style="display:none">
+    <p class="eyebrow">Light token usage</p>
+    <h1>You need an access code</h1>
+    <p class="lede">This tool runs on a personal link. Open the link you were sent — it carries your code — or type the code below.</p>
+    <div class="field" style="max-width:280px"><label for="manual">Access code</label>
+      <input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="submit" id="enter" type="button" style="max-width:280px">Continue</button>
+    <p class="after" style="text-align:left;max-width:280px">Don't have one? <a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>
+  </div>
+
+  <div id="form">
+    <p class="eyebrow">Light token usage</p>
+    <h1>Estimated organic traffic</h1>
+    <p class="lede">How much organic search traffic a site is actually pulling in, estimated from every keyword it ranks for — not a panel-data guess, the same rank &times; volume &times; click-through-rate math Ahrefs and SEMrush use for their own traffic numbers.</p>
+
+    <div class="row2">
+      <div class="field"><label for="website">Website</label><input id="website" type="text" placeholder="yoursite.com"></div>
+      <div class="field"><label for="market">Market</label><select id="market"></select></div>
+    </div>
+
+    <label class="toggle"><input type="checkbox" id="compToggle"> Compare against up to 3 competitors</label>
+    <div id="compBox">
+      <div class="field"><input id="comp1" type="text" placeholder="competitor1.com"></div>
+      <div class="field"><input id="comp2" type="text" placeholder="competitor2.com"></div>
+      <div class="field"><input id="comp3" type="text" placeholder="competitor3.com"></div>
+    </div>
+
+    <button class="submit" id="go" type="button">Estimate traffic</button>
+    <p class="after">Organic search traffic only — not total site traffic, which would also count paid, direct and social.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <button class="backbtn" id="back">&larr; New estimate</button>
+    <p class="eyebrow restag">Estimated organic traffic</p>
+    <h1 id="rTitle" style="font-size:20px">Checking…</h1>
+    <div id="out"></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+
+const MARKETS = ['United Kingdom','United States','Canada','Ireland','Australia','Germany','France',
+  'Netherlands','Switzerland','Austria','Spain','Italy','Poland','Czechia','Slovakia'];
+
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtVol(n){
+  if (n >= 1000000) return (Math.round(n / 100000) / 10) + 'M';
+  if (n >= 1000) return (Math.round(n / 100) / 10) + 'K';
+  return String(n);
+}
+function fmtUsd(n){
+  if (n >= 1000000) return '$' + (Math.round(n / 100000) / 10) + 'M';
+  if (n >= 1000) return '$' + (Math.round(n / 100) / 10) + 'K';
+  return '$' + n;
+}
+
+$('market').innerHTML = MARKETS.map(m => '<option' + (m === 'United States' ? ' selected' : '') + '>' + esc(m) + '</option>').join('');
+
+$('compToggle').addEventListener('change', e => { $('compBox').style.display = e.target.checked ? 'block' : 'none'; });
+$('out').addEventListener('click', e => {
+  const btn = e.target.closest('.trendbtn');
+  if (btn) toggleTrend(btn);
+});
+$('go').onclick = run;
+$('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; };
+
+async function run(){
+  const website = $('website').value.trim();
+  const market = $('market').value;
+  const competitors = $('compToggle').checked
+    ? [$('comp1').value, $('comp2').value, $('comp3').value].map(s => s.trim()).filter(Boolean)
+    : [];
+
+  if (!website){
+    $('go').textContent = 'Add a website first';
+    setTimeout(() => $('go').textContent = 'Estimate traffic', 2000);
+    return;
+  }
+
+  $('go').disabled = true;
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = 'Checking…';
+  $('out').innerHTML = '<p class="empty">Pulling every keyword ' + esc(website) + ' ranks for in ' + market + '…</p>';
+  window.scrollTo(0,0);
+
+  let d;
+  try {
+    const res = await fetch(API + '/traffic-estimate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, website, market, competitors })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  $('go').disabled = false;
+
+  if (d.error){
+    $('rTitle').textContent = website;
+    $('out').innerHTML = '<p class="err">' + esc(d.error) + '</p>';
+    return;
+  }
+  $('rTitle').textContent = d.website;
+  $('out').innerHTML = renderResults(d);
+}
+
+const DIST_COLORS = [
+  ['pos_1', '#1', 'var(--ok)'],
+  ['pos_2_10', '#2–10', 'var(--you)'],
+  ['pos_11_20', '#11–20', 'var(--warn)'],
+  ['pos_21_50', '#21–50', 'var(--muted)'],
+  ['pos_51_100', '#51–100', 'var(--line)']
+];
+
+const CHART_COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)'];
+let currentMarket = '';
+const trendData = new Map(); // domain -> {points, colorIndex}
+
+function renderResults(d){
+  currentMarket = d.market;
+  trendData.clear();
+  return '<div class="chartcard" id="chartcard"><h4>12-month trend</h4>' +
+    '<div id="chartInner"></div></div>' +
+    d.sites.map((s, i) => renderSite(s, i)).join('') +
+    '<p class="foot">Estimated organic search traffic only, from ' + esc(d.market) +
+    ' — not total site visits (no paid, direct, social or referral). Same underlying technique Ahrefs/SEMrush use for their own traffic estimates: search volume x click-through-rate, summed across every ranked keyword. Domain rank is a separate PageRank-style score (0–100) from each site\'s backlink profile — not market-specific, so it\'s the same number regardless of which market you check. Cached 7 days since the underlying data only updates weekly.</p>';
+}
+
+function renderSite(s, colorIndex){
+  const isYou = colorIndex === 0;
+  if (s.error){
+    return '<div class="sitecard' + (isYou ? ' you' : '') + '"><div class="domain">' + esc(s.domain) + '</div>' +
+      '<p class="err" style="margin-top:10px">' + esc(s.error) + '</p></div>';
+  }
+
+  const total = Object.values(s.positions).reduce((a, b) => a + b, 0) || 1;
+  const bar = DIST_COLORS.map(([key,, color]) =>
+    '<span style="width:' + (s.positions[key] / total * 100).toFixed(2) + '%;background:' + color + '"></span>'
+  ).join('');
+  const legend = DIST_COLORS.map(([key, label, color]) =>
+    '<span><span class="dot" style="background:' + color + '"></span>' + label + ': ' + (s.positions[key] ?? 0).toLocaleString() + '</span>'
+  ).join('');
+
+  const rankBadge = s.rank !== null
+    ? '<span class="rankbadge">Domain rank <b>' + s.rank + '</b>/100</span>'
+    : '<span class="rankbadge">Domain rank — n/a</span>';
+
+  return '<div class="sitecard' + (isYou ? ' you' : '') + '">' +
+    '<div class="domainrow"><div class="domain">' + esc(s.domain) + (isYou ? ' (you)' : '') + '</div>' + rankBadge + '</div>' +
+    '<div class="headline">' + fmtVol(s.etv) + '<span class="unit">estimated visits / month</span></div>' +
+    '<div class="subline">Ranking for ' + s.keyword_count.toLocaleString() + ' keywords in the top 100</div>' +
+    '<div class="distbar">' + bar + '</div>' +
+    '<div class="distlegend">' + legend + '</div>' +
+    '<div class="adnote">Would cost roughly <b>' + fmtUsd(s.ad_equivalent_cost) + '/mo</b> to buy this much traffic via ads — a rough, directional figure (sums every keyword’s own cost independently, so it overstates real budget for sites with a lot of keyword overlap), not a real quote.</div>' +
+    '<button class="trendbtn" data-domain="' + esc(s.domain) + '" data-color="' + colorIndex + '" type="button">+ Show 12-month trend</button>' +
+    '</div>';
+}
+
+async function toggleTrend(btn){
+  const domain = btn.dataset.domain;
+  const colorIndex = Number(btn.dataset.color);
+
+  if (trendData.has(domain)){
+    trendData.delete(domain);
+    btn.textContent = '+ Show 12-month trend';
+    btn.classList.remove('on');
+    btn.style.color = '';
+    renderChart();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+
+  let d;
+  try {
+    const res = await fetch(API + '/traffic-estimate/timeline', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, domain, market: currentMarket, months: 12 })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  btn.disabled = false;
+
+  if (d.error){
+    btn.textContent = 'Failed — retry';
+    return;
+  }
+
+  trendData.set(domain, { points: d.points, colorIndex });
+  btn.textContent = '✓ Trend shown — tap to hide';
+  btn.classList.add('on');
+  btn.style.color = CHART_COLORS[colorIndex];
+  renderChart();
+}
+
+function niceMax(v){
+  if (v <= 0) return 10;
+  const mag = Math.pow(10, Math.floor(Math.log10(v)));
+  const n = v / mag;
+  const step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+  return step * mag;
+}
+
+// One metric, one scale, one chart — organic and paid never share an axis
+// (their scale can differ by 100x+, confirmed live comparing progressive.com's
+// two series, which made a shared-axis paid line collapse flat against the
+// x-axis and become unreadable). Returns markup plus the x/y scale
+// functions renderChart() needs to wire that chart's own hover layer.
+function buildChart(id, series, months, metricKey, opts){
+  const W = 600, H = opts.height, padL = 46, padR = 12, padT = 10, padB = 26;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const maxV = niceMax(Math.max(1, ...series.flatMap(([, s]) => s.points.map(p => p[metricKey]))) * 1.15);
+  const x = i => padL + (months.length > 1 ? (i / (months.length - 1)) * innerW : innerW / 2);
+  const y = v => padT + innerH - (v / maxV) * innerH;
+
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="chartsvg" id="' + id + '">';
+  for (let g = 0; g <= 4; g++){
+    const v = (maxV / 4) * g;
+    svg += '<line x1="' + padL + '" y1="' + y(v).toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y(v).toFixed(1) + '" class="gridline"></line>';
+    svg += '<text x="' + (padL - 8) + '" y="' + (y(v) + 3).toFixed(1) + '" text-anchor="end" class="axislabel">' + fmtVol(v) + '</text>';
+  }
+  months.forEach((m, i) => {
+    if (months.length > 8 && i % 2 !== 0 && i !== months.length - 1) return;
+    svg += '<text x="' + x(i).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle" class="axislabel">' + m.slice(5) + '</text>';
+  });
+
+  series.forEach(([domain, s]) => {
+    const color = CHART_COLORS[s.colorIndex];
+    const pts = s.points.map((p, i) => x(i).toFixed(1) + ',' + y(p[metricKey]).toFixed(1)).join(' ');
+    svg += '<polyline points="' + pts + '" class="trendline" style="stroke:' + color + '"></polyline>';
+    s.points.forEach((p, i) => {
+      svg += '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(p[metricKey]).toFixed(1) + '" r="3" class="trenddot" style="fill:' + color + '"></circle>';
+    });
+    if (opts.endLabels){
+      const last = s.points[s.points.length - 1];
+      svg += '<text x="' + (x(s.points.length - 1) + 6).toFixed(1) + '" y="' + (y(last[metricKey]) + 3).toFixed(1) + '" class="trendlabel" style="fill:' + color + '">' + esc(domain) + '</text>';
+    }
+  });
+
+  svg += '<line x1="0" y1="0" x2="0" y2="' + innerH + '" class="crosshair" id="' + id + 'Crosshair" style="display:none;transform:translate(' + padL + 'px,' + padT + 'px)"></line>';
+  svg += '<rect x="' + padL + '" y="' + padT + '" width="' + innerW + '" height="' + innerH + '" fill="transparent" id="' + id + 'Hoverzone"></rect>';
+  svg += '</svg>';
+  return { svg, x, y };
+}
+
+function renderChart(){
+  const card = $('chartcard');
+  const inner = $('chartInner');
+  if (!trendData.size){
+    card.classList.remove('show');
+    inner.innerHTML = '';
+    return;
+  }
+  card.classList.add('show');
+
+  const series = [...trendData.entries()].sort((a, b) => a[1].colorIndex - b[1].colorIndex);
+  const months = series[0][1].points.map(p => p.year + '-' + String(p.month).padStart(2, '0'));
+
+  const legend = series.map(([domain, s]) =>
+    '<span><span class="sw" style="background:' + CHART_COLORS[s.colorIndex] + '"></span>' + esc(domain) + '</span>'
+  ).join('');
+
+  const organic = buildChart('chartSvg', series, months, 'etv', { height: 210, endLabels: true });
+  const paid = buildChart('chartSvgPaid', series, months, 'paid_etv', { height: 130, endLabels: false });
+
+  inner.innerHTML =
+    '<div class="legend">' + legend + '</div>' +
+    '<div class="chartwrap">' + organic.svg + '<div class="tooltip" id="tooltip"></div></div>' +
+    '<p class="sub" style="margin-top:16px;margin-bottom:6px">Paid traffic — Google Search text ads only. Not YouTube, ' +
+    'Meta, Display or other channels, so a flat line here doesn’t mean no paid activity, just none detected on this one.</p>' +
+    '<div class="chartwrap">' + paid.svg + '<div class="tooltip" id="tooltipPaid"></div></div>';
+
+  wireChartHover('chartSvg', 'chartInner', series, months, organic.x, organic.y, 'etv', 'tooltip');
+  wireChartHover('chartSvgPaid', 'chartInner', series, months, paid.x, paid.y, 'paid_etv', 'tooltipPaid');
+}
+
+function wireChartHover(svgId, wrapId, series, months, x, y, metricKey, tooltipId){
+  const svg = $(svgId);
+  const hoverzone = $(svgId + 'Hoverzone');
+  const crosshair = $(svgId + 'Crosshair');
+  const tooltip = $(tooltipId);
+  if (!hoverzone) return;
+
+  hoverzone.addEventListener('mousemove', e => {
+    const rect = svg.getBoundingClientRect();
+    const svgX = (e.clientX - rect.left) / rect.width * 600;
+    let idx = 0, best = Infinity;
+    months.forEach((m, i) => { const d = Math.abs(x(i) - svgX); if (d < best) { best = d; idx = i; } });
+
+    crosshair.style.display = 'block';
+    crosshair.setAttribute('transform', 'translate(' + x(idx).toFixed(1) + ',0)');
+
+    const rows = series.map(([domain, s]) =>
+      '<div class="trow"><span class="sw" style="background:' + CHART_COLORS[s.colorIndex] + '"></span>' +
+      esc(domain) + ': ' + fmtVol(s.points[idx][metricKey]) + '</div>'
+    ).join('');
+    tooltip.innerHTML = '<div style="color:var(--muted);margin-bottom:4px">' + months[idx] + '</div>' + rows;
+    tooltip.classList.add('show');
+    const wrapRect = svg.parentElement.getBoundingClientRect();
+    tooltip.style.left = Math.min(e.clientX - wrapRect.left + 12, wrapRect.width - 170) + 'px';
+    tooltip.style.top = (e.clientY - wrapRect.top - 40) + 'px';
+  });
+  hoverzone.addEventListener('mouseleave', () => {
+    crosshair.style.display = 'none';
+    tooltip.classList.remove('show');
+  });
+}
+
+if (!CODE){
+  $('form').style.display = 'none';
+  $('gate').style.display = 'block';
+  const goGate = () => {
+    const v = $('manual').value.trim().toLowerCase().replace(/\s+/g, '');
+    if (v) location.search = '?k=' + encodeURIComponent(v);
+  };
+  $('enter').onclick = goGate;
+  $('manual').onkeydown = e => { if (e.key === 'Enter') goGate(); };
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>llms.txt generator</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23c4cbdb'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:640px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
+  fieldset{border:0;margin-bottom:24px}
+  legend{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+         text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .hint{font-size:11.5px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;margin-top:14px}
+  label:first-child{margin-top:0}
+  input,textarea{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  input:focus,textarea:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  textarea{resize:vertical;min-height:60px;font-family:'IBM Plex Mono',monospace}
+  .field{margin-bottom:12px;position:relative}
+
+  .siterow{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px}
+  .siterow .stack{flex:1;display:flex;flex-direction:column;gap:6px}
+  .rmbtn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:7px;
+        width:38px;height:38px;flex:none;cursor:pointer;font-size:16px;margin-top:1px}
+  .addbtn{font-size:12px;color:var(--you);background:none;border:1px dashed var(--line);
+        border-radius:7px;padding:9px 14px;cursor:pointer;font-family:'IBM Plex Mono',monospace}
+  .addbtn.small{font-size:11px;padding:6px 11px}
+
+  .block{background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:16px;margin-bottom:12px;position:relative}
+  .block .rmblock{position:absolute;top:12px;right:12px;background:none;border:1px solid var(--line);
+        color:var(--muted);border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px}
+  .block .blocktitle{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;
+        letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+
+  .outheading{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+     text-transform:uppercase;color:var(--muted);margin:28px 0 10px}
+  .codebox{background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:16px;max-height:420px;overflow:auto;margin-bottom:14px}
+  .codebox pre{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ok);
+        white-space:pre-wrap;word-break:break-word}
+  .codebox .empty{color:var(--muted);white-space:normal}
+
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer}
+  .submit:hover{background:#5c68f2}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px;line-height:1.6}
+  .after a{color:var(--you)}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate" style="display:none">
+    <p class="eyebrow">Free tool · no access code needed</p>
+    <h1>You need an access code</h1>
+    <p class="lede">This tool runs on a personal link. Open the link you were sent — it carries your code — or type the code below.</p>
+    <div class="field" style="max-width:280px"><label for="manual">Access code</label>
+      <input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="submit" id="enter" type="button" style="max-width:280px">Continue</button>
+    <p class="after" style="text-align:left;max-width:280px">Don't have one? <a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>
+  </div>
+
+  <div id="main">
+    <p class="eyebrow">Free tool · no access code needed</p>
+    <h1>llms.txt generator</h1>
+    <p class="lede">A curated map of your site for AI assistants to read — the same idea as robots.txt or a sitemap, but written for language models instead of crawlers. Fill in what applies, then host the result at <b>yoursite.com/llms.txt</b>.</p>
+
+    <fieldset>
+      <legend>Basics</legend>
+      <label for="siteName">Site or project name</label>
+      <div class="field"><input id="siteName" type="text" placeholder="Café Savoy"></div>
+      <label for="summary">One-line summary</label>
+      <div class="field"><input id="summary" type="text" placeholder="A specialty coffee roaster and café in Prague, since 2019."></div>
+      <p class="hint">This becomes the quoted line right under your name — keep it to one real sentence. It's what a model reads first.</p>
+      <label for="context">Additional context (optional)</label>
+      <div class="field"><textarea id="context" placeholder="Longer background a model should know before reading the links below — history, what makes you different, anything a generic crawl would miss."></textarea></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Sections</legend>
+      <p class="hint">Group your most important pages under headings — "Docs," "Products," "About," whatever fits. Each link can carry a one-line note. A section named "Optional" is a real convention: it tells a model these links are lower-priority and safe to skip if it's short on room.</p>
+      <div id="sections"></div>
+      <button class="addbtn" id="addSection" type="button">+ Add a section</button>
+    </fieldset>
+
+    <p class="outheading">Generated llms.txt</p>
+    <div class="codebox"><pre id="output" class="empty">Add a site name and at least one link above to generate your file.</pre></div>
+    <button class="submit" id="copyBtn" type="button" disabled>Copy code</button>
+    <p class="after">Save this as a plain text file named <b>llms.txt</b> and host it at your site's root — <b>yoursite.com/llms.txt</b>, same place as robots.txt. Spec at <a href="https://llmstxt.org" target="_blank" rel="noopener">llmstxt.org</a>.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+
+const $ = id => document.getElementById(id);
+const MAX_SECTIONS = 8, MAX_LINKS = 12;
+const SECTION_PRESETS = ['Docs', 'Guides', 'Products', 'Pricing', 'Blog', 'API Reference', 'Changelog', 'About', 'Optional'];
+
+/* ---- section blocks (each holds its own repeatable link rows) ---- */
+function addSectionBlock(presetName){
+  if ($('sections').children.length >= MAX_SECTIONS) return;
+  const block = document.createElement('div');
+  block.className = 'block';
+  block.innerHTML =
+    '<button type="button" class="rmblock" aria-label="Remove section">&times;</button>' +
+    '<p class="blocktitle">Section</p>' +
+    '<label>Section name</label>' +
+    '<div class="field"><input class="sec-name" type="text" list="sectionPresets" placeholder="Docs"></div>' +
+    '<div class="linkrows"></div>' +
+    '<button type="button" class="addbtn small addLink">+ Add a link</button>';
+  block.querySelector('.sec-name').value = presetName || '';
+  block.querySelector('.sec-name').oninput = regenerate;
+  block.querySelector('.addLink').onclick = () => addLinkRow(block.querySelector('.linkrows'));
+  block.querySelector('.rmblock').onclick = () => { block.remove(); $('addSection').style.display = ''; regenerate(); };
+  $('sections').appendChild(block);
+  if ($('sections').children.length >= MAX_SECTIONS) $('addSection').style.display = 'none';
+  addLinkRow(block.querySelector('.linkrows'));
+  return block;
+}
+$('addSection').onclick = () => addSectionBlock();
+
+/* ---- link rows, scoped inside one section block ---- */
+function addLinkRow(container){
+  if (container.children.length >= MAX_LINKS) return;
+  const row = document.createElement('div');
+  row.className = 'siterow';
+  row.innerHTML =
+    '<div class="stack">' +
+      '<input type="text" class="link-title" placeholder="Getting started">' +
+      '<input type="text" class="link-url" placeholder="https://" value="https://">' +
+      '<input type="text" class="link-desc" placeholder="One-line description (optional)">' +
+    '</div>' +
+    '<button type="button" class="rmbtn" aria-label="Remove link">&times;</button>';
+  row.querySelectorAll('input').forEach(el => el.oninput = regenerate);
+  row.querySelector('.rmbtn').onclick = () => {
+    row.remove();
+    if (container.children.length < MAX_LINKS) container.parentElement.querySelector('.addLink').style.display = '';
+    regenerate();
+  };
+  container.appendChild(row);
+  if (container.children.length >= MAX_LINKS) container.parentElement.querySelector('.addLink').style.display = 'none';
+}
+
+['siteName', 'summary', 'context'].forEach(id => $(id).oninput = regenerate);
+
+function buildMarkdown(){
+  const name = $('siteName').value.trim();
+  if (!name) return null;
+
+  const sections = [...document.querySelectorAll('#sections .block')].map(block => {
+    const secName = block.querySelector('.sec-name').value.trim();
+    const links = [...block.querySelectorAll('.siterow')].map(row => ({
+      title: row.querySelector('.link-title').value.trim(),
+      url: row.querySelector('.link-url').value.trim(),
+      desc: row.querySelector('.link-desc').value.trim()
+    })).filter(l => l.title && l.url && l.url !== 'https://');
+    return { name: secName, links };
+  }).filter(s => s.name && s.links.length);
+
+  if (!sections.length) return null;
+
+  let md = '# ' + name + '\n';
+  const summary = $('summary').value.trim();
+  if (summary) md += '\n> ' + summary + '\n';
+  const context = $('context').value.trim();
+  if (context) md += '\n' + context + '\n';
+
+  sections.forEach(s => {
+    md += '\n## ' + s.name + '\n\n';
+    s.links.forEach(l => {
+      md += '- [' + l.title + '](' + l.url + ')' + (l.desc ? ': ' + l.desc : '') + '\n';
+    });
+  });
+
+  return { md, sectionCount: sections.length, linkCount: sections.reduce((n, s) => n + s.links.length, 0) };
+}
+
+let lastCounts = { sections: 0, links: 0 };
+
+function regenerate(){
+  const result = buildMarkdown();
+  if (!result){
+    $('output').className = 'empty';
+    $('output').textContent = 'Add a site name and at least one link above to generate your file.';
+    $('copyBtn').disabled = true;
+    return;
+  }
+  $('output').className = '';
+  $('output').textContent = result.md;
+  $('copyBtn').disabled = false;
+  lastCounts = { sections: result.sectionCount, links: result.linkCount };
+}
+
+$('copyBtn').onclick = async () => {
+  navigator.clipboard?.writeText($('output').textContent);
+  const original = $('copyBtn').textContent;
+  $('copyBtn').textContent = 'Copied ✓';
+  setTimeout(() => $('copyBtn').textContent = original, 1500);
+
+  try {
+    await fetch(API + '/llms-txt', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, site_name: $('siteName').value.trim(), sections: lastCounts.sections, links: lastCounts.links })
+    });
+  } catch (e) { /* history logging only — never block the copy on this */ }
+};
+
+const datalist = document.createElement('datalist');
+datalist.id = 'sectionPresets';
+datalist.innerHTML = SECTION_PRESETS.map(s => '<option value="' + s + '">').join('');
+document.body.appendChild(datalist);
+
+addSectionBlock('Docs');
+</script>
+</body>
+</html>

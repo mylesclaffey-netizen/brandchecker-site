@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redirect map validator</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MC2SEO">
+<meta property="og:url" content="https://brandchecker.eu/tools/redirect-check/">
+<meta property="og:title" content="Redirect Map Validator — Free SEO Tool | MC2SEO">
+<meta property="og:description" content="For a site migration: does each old URL actually redirect — and land on the right new page, not just anywhere that returns 200? Free, no signup.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta name="twitter:title" content="Redirect Map Validator — Free SEO Tool | MC2SEO">
+<meta name="twitter:description" content="For a site migration: does each old URL actually redirect — and land on the right new page, not just anywhere that returns 200? Free, no signup.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236e7bff'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:660px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input,textarea{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  textarea{resize:vertical;min-height:130px;line-height:1.7}
+  input:focus,textarea:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:14px}
+  .field .count{font-size:10.5px;color:var(--muted);margin-top:5px;text-align:right}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer;margin-top:6px}
+  .submit:hover{background:#5c68f2}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+  .empty{font-size:12.5px;color:var(--muted)}
+
+  #results{display:none;margin-top:30px}
+  .backbtn{font-size:14px;color:var(--you);background:none;border:0;cursor:pointer;margin-bottom:16px;
+        font-family:'IBM Plex Mono',monospace}
+
+  .summary{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:20px}
+  .summary.clean{border-color:var(--ok)}
+  .summary.issues{border-color:var(--bad)}
+  .summary .headline{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px}
+  .summary .sub{font-size:12px;color:var(--muted)}
+
+  .urow{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:9px}
+  .urow.error{border-color:var(--bad)}
+  .urow.warn{border-color:var(--warn)}
+  .urow .path{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;word-break:break-all}
+  .urow .arrow{display:flex;align-items:baseline;gap:8px;margin-top:5px;font-size:11.5px;color:var(--muted);word-break:break-all}
+  .urow .arrow .dest{color:var(--ink)}
+  .urow .statuspill{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:20px;flex:none;letter-spacing:.03em}
+  .urow .statuspill.s2{color:var(--ok);background:rgba(53,196,141,.12)}
+  .urow .statuspill.s3{color:var(--warn);background:rgba(224,169,58,.12)}
+  .urow .statuspill.s4,.urow .statuspill.s5{color:var(--bad);background:rgba(232,105,95,.12)}
+  .urow .flags{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+  .urow .flagline{font-size:11.5px;line-height:1.5}
+  .urow .flagline.ok{color:var(--ok)}
+  .urow .flagline.warn{color:var(--warn)}
+  .urow .flagline.error{color:var(--bad)}
+
+  .foot{font-size:10px;color:var(--muted);margin-top:20px;line-height:1.5}
+
+  .share{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+  .sharelabel{font-size:11px;color:var(--muted)}
+  .sharebtn{font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;color:var(--ink);
+      background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 13px;cursor:pointer;
+      text-decoration:none;display:inline-block}
+  .sharebtn:hover{border-color:var(--you);color:var(--you)}
+  .sharebtn.copied{border-color:var(--ok);color:var(--ok)}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate" style="display:none">
+    <p class="eyebrow">Free tool · no access code needed</p>
+    <h1>You need an access code</h1>
+    <p class="lede">This tool runs on a personal link. Open the link you were sent — it carries your code — or type the code below.</p>
+    <div class="field" style="max-width:280px"><label for="manual">Access code</label>
+      <input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="submit" id="enter" type="button" style="max-width:280px">Continue</button>
+    <p class="after" style="text-align:left;max-width:280px">Don't have one? <a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>
+  </div>
+
+  <div id="form">
+    <p class="eyebrow">Free tool · no access code needed</p>
+    <h1>Redirect map validator</h1>
+    <p class="lede">For a site migration: does each old URL actually redirect — and land on the right new page, not just anywhere that returns 200? Catches the single most common, costly migration mistake: everything quietly redirecting to the homepage instead of its real equivalent.</p>
+
+    <div class="field"><label for="website">Website</label><input id="website" type="text" placeholder="yoursite.com"></div>
+    <div class="field">
+      <label for="urls">Old URLs — one per line, up to 500</label>
+      <textarea id="urls" placeholder="/old-page&#10;/old-page-2, /new-page-2&#10;/blog/old-post, /articles/new-post"></textarea>
+      <div class="count" id="urlCount">0 / 500</div>
+    </div>
+    <p class="after" style="margin:-4px 0 14px">Just a path checks where it actually lands, no verdict. Add <code>, /expected-new-path</code> after any line to check it landed in the right place.</p>
+    <button class="submit" id="go" type="button">Check redirects</button>
+    <p class="after">Same-domain only — checks redirects within one site, not a full domain migration. Nothing changed on your site. Checked in batches of 50 — a full site's worth of URLs runs as several batches automatically, combined into one set of results.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <button class="backbtn" id="back">&larr; New check</button>
+    <p class="eyebrow restag">Redirect map validator</p>
+    <h1 id="rTitle" style="font-size:20px">Checking…</h1>
+    <div id="out"></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+
+const $ = id => document.getElementById(id);
+const BATCH_SIZE = 50;
+const MAX_BATCHES = 10;
+const MAX_URLS = BATCH_SIZE * MAX_BATCHES;
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function renderShare(website, urls){
+  const shareUrl = location.origin + location.pathname + '?website=' + encodeURIComponent(website) + '&urls=' + encodeURIComponent(urls.join('\n'));
+  const text = encodeURIComponent(shareUrl);
+  return '<div class="share"><span class="sharelabel">Share this report:</span>' +
+    '<a class="sharebtn" href="https://wa.me/?text=' + text + '" target="_blank" rel="noopener">WhatsApp</a>' +
+    '<a class="sharebtn" href="mailto:?subject=' + encodeURIComponent('SEO report') + '&body=' + text + '">Email</a>' +
+    '<button class="sharebtn" id="copyShare" type="button" onclick="copyShareLink(\'' + shareUrl.replace(/'/g, "\\'") + '\')">Copy link</button></div>';
+}
+function copyShareLink(url){
+  navigator.clipboard?.writeText(url).then(() => {
+    const btn = $('copyShare');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+$('go').onclick = run;
+$('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; };
+$('urls').addEventListener('input', updateCount);
+function updateCount(){
+  const n = urlList().length;
+  $('urlCount').textContent = n + ' / ' + MAX_URLS;
+  $('urlCount').style.color = n > MAX_URLS ? 'var(--bad)' : 'var(--muted)';
+}
+function urlList(){
+  return $('urls').value.split('\n').map(l => l.trim()).filter(Boolean).slice(0, MAX_URLS);
+}
+function chunk(arr, size){
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+async function run(){
+  const website = $('website').value.trim();
+  const urls = urlList();
+
+  if (!website){
+    $('go').textContent = 'Add your website first';
+    setTimeout(() => $('go').textContent = 'Check redirects', 2000);
+    return;
+  }
+  if (!urls.length){
+    $('go').textContent = 'Add at least one URL';
+    setTimeout(() => $('go').textContent = 'Check redirects', 2000);
+    return;
+  }
+
+  const batches = chunk(urls, BATCH_SIZE);
+
+  $('go').disabled = true;
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = website;
+  window.scrollTo(0,0);
+
+  // Same report id across every batch so they collapse into one history
+  // entry instead of up to 10 — recordRun() dedups by this id server-side.
+  const reportId = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now());
+
+  const allResults = [];
+  for (let i = 0; i < batches.length; i++){
+    const batchUrls = batches[i];
+    $('out').innerHTML = '<p class="empty">Batch ' + (i + 1) + ' of ' + batches.length + ' — checked ' +
+      allResults.length + ' of ' + urls.length + ' URLs so far…</p>';
+
+    let d;
+    try {
+      const res = await fetch(API + '/redirect-check', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: CODE, website, urls: batchUrls, report: reportId })
+      });
+      d = await res.json();
+    } catch (e) { d = { error: 'could not reach the API' }; }
+
+    if (d.error){
+      // A batch-level failure (e.g. a dropped connection) shouldn't lose
+      // the whole run — record it against each URL in that batch and
+      // keep going with the remaining batches.
+      allResults.push(...batchUrls.map(u => ({ input: u, error: d.error, flags: ['input_error'] })));
+    } else {
+      allResults.push(...d.results);
+    }
+  }
+
+  $('go').disabled = false;
+  $('out').innerHTML = renderResults({ website, results: allResults }) + renderShare(website, urls);
+}
+
+const FLAG_INFO = {
+  ok:                 ['ok',    '✓ Redirects correctly'],
+  no_redirect:        ['warn',  'No redirect — this URL already returns 200 directly'],
+  wrong_destination:  ['error', 'Landed on the wrong page'],
+  broken:             ['error', 'Broken — doesn’t resolve to a working page'],
+  loop:               ['error', 'Redirect loop detected'],
+  too_many_hops:      ['error', 'Too many redirect hops (10+) — likely a loop'],
+  chain:              ['warn',  null], // message built dynamically with hop count
+  temporary_redirect: ['warn',  'Uses a temporary redirect (302/307) — should be permanent (301/308) for a finished migration'],
+  input_error:        ['error', null]
+};
+
+function rowSeverity(flags){
+  if (flags.some(f => FLAG_INFO[f]?.[0] === 'error')) return 'error';
+  if (flags.some(f => FLAG_INFO[f]?.[0] === 'warn')) return 'warn';
+  return 'ok';
+}
+
+function statusClass(status){
+  if (!status) return 's5';
+  return 's' + Math.min(5, Math.floor(status / 100));
+}
+
+function renderResults(d){
+  const errorCount = d.results.filter(r => rowSeverity(r.flags) === 'error').length;
+  const warnCount = d.results.filter(r => rowSeverity(r.flags) === 'warn').length;
+  const okCount = d.results.length - errorCount - warnCount;
+
+  const headline = !errorCount && !warnCount
+    ? 'All ' + d.results.length + ' redirect' + (d.results.length === 1 ? '' : 's') + ' check out clean'
+    : errorCount
+    ? errorCount + ' broken or wrong' + (warnCount ? ', ' + warnCount + ' worth a look' : '')
+    : warnCount + ' thing' + (warnCount === 1 ? '' : 's') + ' worth a look';
+
+  const summaryClass = errorCount ? 'issues' : 'clean';
+  const sub = okCount + ' of ' + d.results.length + ' clean · checked just now';
+
+  let html = '<div class="summary ' + summaryClass + '"><div class="headline">' + esc(headline) + '</div><div class="sub">' + esc(sub) + '</div></div>';
+  html += d.results.map(renderRow).join('');
+  html += '<p class="foot">Follows each redirect itself, hop by hop, rather than trusting only the final landing page — that\'s what catches chains, loops, and temporary (302/307) redirects a browser would silently hide. Same-domain only; a full domain migration needs its own check. A shared link for a very long URL list can get unwieldy in some apps — works best for a focused batch, not the full 500.</p>';
+  return html;
+}
+
+const SHARED_WEBSITE = new URLSearchParams(location.search).get('website') || '';
+const SHARED_URLS = new URLSearchParams(location.search).get('urls') || '';
+if (SHARED_WEBSITE && SHARED_URLS) {
+  $('website').value = SHARED_WEBSITE;
+  $('urls').value = SHARED_URLS;
+  updateCount();
+  run();
+}
+
+function renderRow(r){
+  if (r.error){
+    return '<div class="urow error"><div class="path">' + esc(r.input) + '</div>' +
+      '<div class="flags"><div class="flagline error">' + esc(r.error) + '</div></div></div>';
+  }
+
+  const severity = rowSeverity(r.flags);
+  const statusLabel = r.final_status ? String(r.final_status) : '—';
+
+  const flagLines = r.flags.map(f => {
+    const [cls, staticMsg] = FLAG_INFO[f] || ['warn', f];
+    let msg = staticMsg;
+    if (f === 'chain') msg = r.hops + '-hop redirect chain — each extra hop costs crawl budget and a little link equity';
+    if (f === 'wrong_destination' && r.expected) msg = 'Landed on ' + r.final + ' — expected ' + r.expected;
+    return '<div class="flagline ' + cls + '">' + esc(msg) + '</div>';
+  }).join('');
+
+  return '<div class="urow ' + severity + '">' +
+    '<div class="path">' + esc(r.input) + '</div>' +
+    '<div class="arrow"><span class="statuspill ' + statusClass(r.final_status) + '">' + statusLabel + '</span>' +
+    '<span class="dest">' + esc(r.final) + '</span></div>' +
+    '<div class="flags">' + flagLines + '</div></div>';
+}
+
+</script>
+</body>
+</html>

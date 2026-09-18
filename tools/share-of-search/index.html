@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Share of search</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23FFFF00'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c;
+        --c1:#5b6478;--c2:#414a5c;--c3:#2c3344}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:560px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px}
+  fieldset{border:0;margin-bottom:24px}
+  legend{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+         text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .hint{font-size:11.5px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  input:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:12px}
+  .competitors{display:flex;flex-direction:column;gap:12px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font:12.5px 'IBM Plex Mono',monospace;color:var(--ink);background:var(--card);
+        border:1px solid var(--line);border-radius:20px;padding:8px 14px;cursor:pointer}
+  .chip[aria-pressed=true]{background:var(--you);border-color:var(--you);color:#fff}
+  .chip[disabled]{opacity:.4;cursor:not-allowed}
+  .grouplabel{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px}
+  .cap{font-size:11px;color:var(--muted);margin-top:10px}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px}
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  #results{display:none}
+  .strip{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:24px 0 28px}
+  .strip .line{display:flex;justify-content:space-between;gap:12px;font-size:13px}
+  .strip .clock{color:var(--muted);font-variant-numeric:tabular-nums}
+  .track{height:3px;background:var(--line);border-radius:2px;margin-top:11px;overflow:hidden}
+  .track i{display:block;height:100%;width:0;background:var(--you);transition:width .5s}
+  .verdict{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;
+           margin:24px 0 22px;display:none}
+  .verdict p{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:500;line-height:1.35}
+  h2{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;
+     text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:22px}
+  .legend .item{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted)}
+  .legend .dot{width:9px;height:9px;border-radius:2px;flex:0 0 auto}
+  .market{border-top:1px solid var(--line);padding:18px 0}
+  .market:last-of-type{border-bottom:1px solid var(--line)}
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+  .country{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:500}
+  .lang{font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+  .pctbox{text-align:right;white-space:nowrap}
+  .pct{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700}
+  .delta{font-size:11px;margin-top:2px}
+  .delta.down{color:var(--bad)} .delta.up{color:var(--ok)} .delta.flat{color:var(--muted)}
+  .bar{display:flex;height:14px;border-radius:4px;overflow:hidden;margin:14px 0 4px;background:var(--line)}
+  .bar i{display:block;height:100%}
+  .seg-client{background:var(--you)} .seg-c1{background:var(--c1)} .seg-c2{background:var(--c2)} .seg-c3{background:var(--c3)}
+  .breakdown{display:flex;flex-wrap:wrap;gap:6px 14px;margin:2px 0 12px;font-size:11.5px;color:var(--muted)}
+  .breakdown .bitem{display:flex;align-items:center;gap:5px}
+  .breakdown .bitem i{width:8px;height:8px;border-radius:2px;flex:none}
+  .breakdown .bname{color:var(--ink)}
+  .breakdown .bd{margin-left:2px}
+  .breakdown .bd.down{color:var(--bad)} .breakdown .bd.up{color:var(--ok)} .breakdown .bd.flat{color:var(--muted)}
+  .lowvol{font-size:12px;color:var(--muted);margin:12px 0 4px;font-style:italic}
+  .ghost{width:80px;height:26px;border-radius:5px;margin-left:auto;
+         background:linear-gradient(90deg,#1b2130,#28304a,#1b2130);background-size:200% 100%;
+         animation:sweep 1.3s linear infinite}
+  @keyframes sweep{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .notes{list-style:none;margin-top:11px}
+  .notes li{font-size:11px;color:var(--muted);display:flex;gap:7px;padding:1.5px 0}
+  .notes .dot2{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:0 0 auto;margin-top:5px}
+  .notes .dot2.ok{background:var(--ok)} .notes .dot2.warn{background:var(--warn)}
+  .notes b{color:var(--ink);font-weight:400}
+  .foot{font-size:10px;color:var(--muted);margin-top:22px;line-height:1.6}
+  @media (prefers-reduced-motion:reduce){.ghost{animation:none}}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="form">
+    <p class="eyebrow">Free tool</p>
+    <h1>Who's actually winning search for your category?</h1>
+    <p class="lede">Your brand's share of combined search volume against named competitors, market by market, over the last twelve months.</p>
+
+    <fieldset>
+      <legend>Your brand</legend>
+      <div class="field"><label for="site">Website</label><input id="site" type="text" placeholder="yourcompany.com">
+        <p class="hint" style="margin-top:7px">Used to check you against the right result when your brand name isn't unique.</p></div>
+      <div class="field"><label for="brand">Brand name</label><input id="brand" type="text" placeholder="the name people search"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Competitors</legend>
+      <p class="hint">Up to three, named the way people search for them.</p>
+      <div class="competitors">
+        <div class="field"><label for="comp1">Competitor 1</label><input id="comp1" type="text"></div>
+        <div class="field"><label for="comp2">Competitor 2 (optional)</label><input id="comp2" type="text"></div>
+        <div class="field"><label for="comp3">Competitor 3 (optional)</label><input id="comp3" type="text"></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Category (optional)</legend>
+      <div class="field"><label for="cat">Category word</label><input id="cat" type="text" placeholder="e.g. wireless headphones">
+        <p class="hint" style="margin-top:7px">Adds a “brand + category” search to every brand, alongside name, reviews and pricing.</p></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Markets</legend>
+      <p class="hint">Up to five.</p>
+      <p class="grouplabel" style="margin-top:0">English-speaking</p>
+      <div class="chips" id="grpEn"></div>
+      <p class="grouplabel">Rest of Europe</p>
+      <div class="chips" id="grpEu"></div>
+      <p class="cap" id="cap"></p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Email (optional)</legend>
+      <div class="field"><label for="email">Email</label><input id="email" type="text" placeholder="you@company.com">
+        <p class="hint" style="margin-top:7px">Only used if you want us to follow up on this report.</p></div>
+    </fieldset>
+
+    <button class="submit" id="go" type="button">Compare share of search</button>
+    <p class="after">Around 5 seconds per market.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <p class="eyebrow restag">Share of search</p>
+    <h1 id="rTitle"></h1>
+    <p class="lede" id="rMeta"></p>
+    <div class="strip" id="strip">
+      <div class="line"><span id="stage">Starting</span><span class="clock" id="clock">0:00</span></div>
+      <div class="track"><i id="bar"></i></div>
+    </div>
+    <div class="verdict" id="verdict"><p id="verdictText"></p></div>
+    <div class="legend" id="legend"></div>
+    <h2>By market</h2>
+    <div id="out"></div>
+    <p class="foot" id="foot"></p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+
+const MARKETS = [
+  ['United Kingdom','English','en'],['United States','English','en'],
+  ['Canada','English — Quebec searches in French','en'],['Ireland','English','en'],
+  ['Australia','English','en'],['Germany','German','eu'],['France','French','eu'],
+  ['Netherlands','Dutch','eu'],['Switzerland','German — largest of three','eu'],
+  ['Austria','German','eu'],['Spain','Spanish','eu'],['Italy','Italian','eu'],
+  ['Poland','Polish','eu'],['Czechia','Czech','eu'],['Slovakia','Slovak','eu']
+].map(([name,lang,group])=>({name,lang,group}));
+
+const CODE = new URLSearchParams(location.search).get('k') || '';
+const REPORT_ID = new URLSearchParams(location.search).get('id') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+
+const MAX_MARKETS = 5;
+const SEG_CLASSES = ['seg-client','seg-c1','seg-c2','seg-c3'];
+const selected = new Set(['Germany']);
+let reportId = '';
+
+const $ = id => document.getElementById(id);
+const fmt = n => n >= 1000 ? Math.round(n/100)/10 + 'k' : String(n);
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function noCodeGate(){
+  document.querySelector('.wrap').innerHTML =
+    '<p class="eyebrow">Free tool</p><h1>You need an access code</h1>' +
+    '<p class="lede">This tool runs on a personal link. Open the link you were sent — it ' +
+    'carries your code — or type the code below.</p>' +
+    '<div class="field" style="max-width:280px"><label for="manual">Access code</label>' +
+    '<input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>' +
+    '<button class="submit" id="enter" type="button" style="max-width:280px">Continue</button>' +
+    '<p class="after" style="text-align:left;max-width:280px">Don’t have one? ' +
+    '<a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>';
+
+  const go = () => {
+    const v = document.getElementById('manual').value.trim().toLowerCase().replace(/\s+/g,'');
+    if (v) location.search = '?k=' + encodeURIComponent(v);
+  };
+  document.getElementById('enter').onclick = go;
+  document.getElementById('manual').onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+
+function renderChips(){
+  for (const g of ['en','eu']){
+    const el = $(g === 'en' ? 'grpEn' : 'grpEu');
+    el.innerHTML = '';
+    for (const m of MARKETS.filter(x => x.group === g)){
+      const b = document.createElement('button');
+      b.className = 'chip'; b.type = 'button'; b.textContent = m.name;
+      const on = selected.has(m.name);
+      b.setAttribute('aria-pressed', String(on));
+      if (!on && selected.size >= MAX_MARKETS) b.disabled = true;
+      b.onclick = () => { on ? selected.delete(m.name) : selected.add(m.name); renderChips(); };
+      el.appendChild(b);
+    }
+  }
+  $('cap').textContent = selected.size + ' of ' + MAX_MARKETS + ' selected';
+}
+
+function competitors(){
+  return [$('comp1').value, $('comp2').value, $('comp3').value]
+    .map(v => v.trim()).filter(Boolean).slice(0, 3);
+}
+
+$('go').onclick = run;
+
+async function run(){
+  const site  = $('site').value.trim();
+  const brand = $('brand').value.trim();
+  const comps = competitors();
+  const cat   = $('cat').value.trim();
+  const email = $('email').value.trim();
+  const list  = MARKETS.filter(m => selected.has(m.name));
+
+  if (!site || !brand || !comps.length || !list.length){
+    $('go').textContent = !site ? 'Add your website first'
+      : !brand ? 'Add your brand name first'
+      : !comps.length ? 'Add at least one competitor'
+      : 'Pick a market first';
+    setTimeout(() => $('go').textContent = 'Compare share of search', 2000);
+    return;
+  }
+
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = brand;
+  $('rMeta').textContent = list.length + (list.length === 1 ? ' market' : ' markets') +
+    ' · vs ' + comps.join(', ') + ' · ' +
+    new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  reportId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  window.scrollTo(0,0);
+
+  const start = Date.now();
+  const tick = setInterval(() => {
+    const s = Math.floor((Date.now()-start)/1000);
+    $('clock').textContent = Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+  }, 1000);
+
+  const rows = [];
+  for (let i = 0; i < list.length; i++){
+    $('stage').textContent = 'Checking ' + list[i].name;
+    rows.push(await checkMarketShare(site, brand, comps, cat, email, list[i]));
+    $('bar').style.width = Math.round((i+1)/list.length*100) + '%';
+  }
+
+  clearInterval(tick);
+  $('strip').style.display = 'none';
+
+  renderLegend(brand, comps);
+  showVerdict(rows);
+  renderRows(rows);
+
+  $('foot').textContent = 'Volume is summed across “brand”, “brand reviews”, “brand pricing”' +
+    (cat ? ' and “brand ' + cat + '”' : '') + ' for each name, current month vs. the same month a year ago. ' +
+    'Markets with under 300 combined monthly searches aren’t shown as a trend — there isn’t enough ' +
+    'volume to read one reliably.';
+}
+
+async function checkMarketShare(site, brand, comps, cat, email, m){
+  try {
+    const res = await fetch(API + '/share', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        code: CODE, report: reportId, website: site, brand, competitors: comps,
+        category: cat, email, market: m.name
+      })
+    });
+    const d = await res.json();
+    return { ...d, market: m.name, lang: m.lang, error: d.error || null };
+  } catch (e) {
+    return { market: m.name, lang: m.lang, error: 'could not reach the API' };
+  }
+}
+
+function renderLegend(brand, comps){
+  const names = [brand, ...comps];
+  $('legend').innerHTML = names.map((name, i) =>
+    '<span class="item"><span class="dot" style="background:' +
+    (i === 0 ? 'var(--you)' : 'var(--c' + i + ')') + '"></span>' + name + '</span>').join('');
+}
+
+function showVerdict(rows){
+  const measurable = rows.filter(r => !r.error && !r.low_volume && r.change_pp !== null);
+  let text;
+  if (measurable.length){
+    const worst = measurable.reduce((a, b) => a.change_pp <= b.change_pp ? a : b);
+    const client = worst.brands.find(b => b.is_client);
+    const dir = worst.change_pp < 0 ? 'down' : 'up';
+    text = 'Biggest move is ' + worst.market + ': ' + dir + ' ' + Math.abs(worst.change_pp).toFixed(1) +
+      ' points to ' + client.share.toFixed(1) + '% of search there.';
+  } else if (rows.some(r => !r.error)){
+    text = 'Not enough historical search volume in these markets to measure a twelve-month change.';
+  } else {
+    text = 'None of the selected markets could be checked.';
+  }
+  $('verdictText').textContent = text;
+  $('verdict').style.display = 'block';
+}
+
+function sortKey(r){
+  return (!r.error && !r.low_volume && r.change_pp !== null) ? r.change_pp : Infinity;
+}
+
+function renderRows(rows){
+  const sorted = [...rows].sort((a, b) => sortKey(a) - sortKey(b));
+  const out = $('out');
+  out.innerHTML = '';
+
+  for (const r of sorted){
+    const row = document.createElement('div');
+    row.className = 'market';
+
+    if (r.error){
+      row.innerHTML = '<div class="top"><div><span class="country">' + r.market +
+        '</span> <span class="lang">' + r.lang + '</span></div></div>' +
+        '<p class="lowvol">Couldn’t check this market — ' + r.error + '</p>';
+      out.appendChild(row);
+      continue;
+    }
+
+    if (r.low_volume){
+      row.innerHTML = '<div class="top"><div><span class="country">' + r.market +
+        '</span> <span class="lang">' + r.lang + '</span></div></div>' +
+        '<p class="lowvol">Not enough search volume to measure</p>';
+      out.appendChild(row);
+      continue;
+    }
+
+    const client = r.brands.find(b => b.is_client);
+    const deltaCls = r.change_pp === null ? 'flat' : r.change_pp < 0 ? 'down' : r.change_pp > 0 ? 'up' : 'flat';
+    const deltaText = r.change_pp === null ? 'no 12-month comparison available'
+      : (r.change_pp > 0 ? '+' : '') + r.change_pp.toFixed(1) + 'pp vs 12mo ago';
+
+    const bar = r.brands.map((b, i) =>
+      '<i class="' + (SEG_CLASSES[i] ?? 'seg-c3') + '" style="width:' + (b.share ?? 0) + '%"></i>').join('');
+
+    // Each brand's own 12-month move, not just the client's big headline
+    // number above — a competitor's trend is exactly what "share of search"
+    // is meant to answer and was previously computed server-side then
+    // dropped before it reached here.
+    const colorFor = i => i === 0 ? 'var(--you)' : 'var(--c' + i + ')';
+    const breakdown = r.brands.map((b, i) => {
+      const dCls = b.change_pp === null ? 'flat' : b.change_pp < 0 ? 'down' : b.change_pp > 0 ? 'up' : 'flat';
+      const dText = b.change_pp === null ? '' :
+        ' <span class="bd ' + dCls + '">' + (b.change_pp > 0 ? '+' : '') + b.change_pp.toFixed(1) + 'pp</span>';
+      return '<span class="bitem"><i style="background:' + colorFor(i) + '"></i>' +
+        '<span class="bname">' + esc(b.name) + '</span> ' + (b.share ?? 0).toFixed(1) + '%' + dText + '</span>';
+    }).join('');
+
+    const notes = [];
+    if (r.rank?.error) notes.push(['', 'Couldn’t check your ranking for “' + client.name + '” here — ' + r.rank.error]);
+    else if (r.rank) notes.push(r.rank.ranks_first
+      ? ['ok', 'You rank #1 for “' + client.name + '” here']
+      : ['warn', 'You don’t rank #1 for your own name here' +
+          (r.rank.position ? ' — #' + r.rank.position : ' — outside the top ' + 30)]);
+
+    row.innerHTML =
+      '<div class="top"><div><span class="country">' + r.market + '</span> <span class="lang">' + r.lang + '</span></div>' +
+      '<div class="pctbox"><div class="pct">' + client.share.toFixed(1) + '%</div>' +
+      '<div class="delta ' + deltaCls + '">' + deltaText + '</div></div></div>' +
+      '<div class="bar">' + bar + '</div>' +
+      '<div class="breakdown">' + breakdown + '</div>' +
+      (notes.length ? '<ul class="notes">' + notes.map(([k,t]) =>
+        '<li><span class="dot2 ' + k + '"></span><span>' + t + '</span></li>').join('') + '</ul>' : '');
+
+    out.appendChild(row);
+  }
+}
+
+async function loadSavedReport(id){
+  let data;
+  try {
+    const res = await fetch(API + '/share/get', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, id })
+    });
+    data = await res.json();
+  } catch (e) { data = { error: 'could not reach the API' }; }
+
+  if (data.error || !data.markets) return;
+
+  const rows = data.markets.map(entry => ({
+    ...entry.result, market: entry.market,
+    lang: MARKETS.find(x => x.name === entry.market)?.lang ?? '',
+    error: entry.result?.error || null
+  }));
+  const comps = (rows.find(r => r.brands)?.brands ?? []).filter(b => !b.is_client).map(b => b.name);
+
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = data.brand;
+  $('rMeta').textContent = data.markets.length + (data.markets.length === 1 ? ' market' : ' markets') +
+    ' · vs ' + comps.join(', ') + ' · ' +
+    new Date(data.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  $('strip').style.display = 'none';
+  window.scrollTo(0,0);
+
+  renderLegend(data.brand, comps);
+  showVerdict(rows);
+  renderRows(rows);
+
+  $('foot').textContent = 'Volume is summed across “brand”, “brand reviews”, “brand pricing”' +
+    (data.category ? ' and “brand ' + data.category + '”' : '') + ' for each name, current month vs. the same month a year ago. ' +
+    'Markets with under 300 combined monthly searches aren’t shown as a trend — there isn’t enough ' +
+    'volume to read one reliably.';
+}
+
+if (!CODE) noCodeGate();
+else if (REPORT_ID) loadSavedReport(REPORT_ID);
+else renderChips();
+</script>
+</body>
+</html>

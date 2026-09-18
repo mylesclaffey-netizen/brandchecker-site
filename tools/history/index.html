@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your tool history</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236e7bff'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:640px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:22px}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  input:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:12px}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer;margin-top:6px}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+  .chip{font:12px 'IBM Plex Mono',monospace;color:var(--ink);background:var(--card);
+        border:1px solid var(--line);border-radius:20px;padding:7px 13px;cursor:pointer}
+  .chip[aria-pressed=true]{background:var(--you);border-color:var(--you);color:#fff}
+
+  .rows{display:flex;flex-direction:column;gap:8px}
+  .row{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 14px;
+       display:flex;flex-direction:column;gap:4px}
+  .row-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .row-tool{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--ink)}
+  .row-date{font-size:11px;color:var(--muted);flex:none}
+  .row-detail{font-size:12.5px;color:var(--muted);word-break:break-word}
+  .row-metric{font-size:13px;color:var(--ink);font-weight:500}
+  .row-meta{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:2px}
+  .row-markets{font-size:11px;color:var(--muted)}
+  .row-cost{font-size:11px;color:var(--muted)}
+  .row-link{font-size:11.5px;color:var(--you);white-space:nowrap}
+  .row-link:hover{color:#8b95ff}
+  .empty{font-size:13px;color:var(--muted);padding:30px 0;text-align:center}
+  .loading{font-size:13px;color:var(--muted);padding:30px 0;text-align:center}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate" style="display:none">
+    <p class="eyebrow">Free tools</p>
+    <h1>You need an access code</h1>
+    <p class="lede">Your history is tied to your personal link. Open the link you were sent — it carries your code — or type the code below.</p>
+    <div class="field"><label for="manual">Access code</label>
+      <input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="submit" id="enter" type="button">Continue</button>
+    <p class="after">Don't have one? <a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>
+  </div>
+
+  <div id="main" style="display:none">
+    <p class="eyebrow">Your account</p>
+    <h1>Tool history</h1>
+    <p class="lede">Every run across every tool, on this access link.</p>
+
+    <div class="chips" id="chips"></div>
+    <div id="list"><div class="loading">Loading…</div></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+const $ = id => document.getElementById(id);
+
+const TOOLS = [
+  { id: 'rank',         label: 'Rank check' },
+  { id: 'rank-scheduler', label: 'Rank scheduler' },
+  { id: 'grid',         label: 'Grid check' },
+  { id: 'pin-check',    label: 'Map pin check' },
+  { id: 'share',        label: 'Share of search' },
+  { id: 'serp-preview',  label: 'SERP preview' },
+  { id: 'ai-mentions',  label: 'AI mentions' },
+  { id: 'pagespeed',    label: 'PageSpeed' },
+  { id: 'bidding',      label: 'Brand bidding' },
+  { id: 'brand-footprint', label: 'Brand search footprint' },
+  { id: 'backlinks',       label: 'Backlink profile check' },
+  { id: 'brand-sentiment', label: 'Brand sentiment' },
+  { id: 'schema-builder', label: 'Schema builder' },
+  { id: 'crawler-check', label: 'Crawler check' },
+  { id: 'indexnow',      label: 'IndexNow' },
+  { id: 'sitemap-audit', label: 'Sitemap analysis' },
+  { id: 'sitemap-generator', label: 'Sitemap generator' },
+  { id: 'image-audit',   label: 'Image optimization audit' },
+  { id: 'eeat-audit',    label: 'E-E-A-T signals' },
+  { id: 'hreflang-audit', label: 'Hreflang audit' },
+  { id: 'ua-compare',    label: 'User-agent comparison' },
+  { id: 'locale-audit',  label: 'Locale-adaptive content check' },
+  { id: 'review-link',  label: 'Google review link generator' },
+  { id: 'brand-builder', label: 'Brand Builder' }
+];
+const TOOL_LABEL = Object.fromEntries(TOOLS.map(t => [t.id, t.label]));
+
+// Every tool now saves a full retrievable report, each linked by its own
+// existing URL convention.
+const REPORT_LINK = {
+  grid:         (code, id) => `/tools/grid-check/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
+  pagespeed:    (code, id) => `/tools/pagespeed/?k=${encodeURIComponent(code)}&r=${encodeURIComponent(id)}`,
+  bidding:      (code, id) => `/tools/brand-bidding/?k=${encodeURIComponent(code)}&report=${encodeURIComponent(id)}`,
+  rank:         (code, id) => `/tools/rank-check/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
+  'rank-scheduler': (code, id) => `/tools/rank-scheduler/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
+  share:        (code, id) => `/tools/share-of-search/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
+  'serp-preview': (code, id) => `/tools/serp-preview/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
+  'ai-mentions':  (code, id) => `/tools/ai-mentions/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
+  'pin-check':    (code, id) => `/tools/pin-check/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
+  'brand-footprint': (code, id) => `/tools/brand-footprint/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
+  'brand-sentiment': (code, id) => `/tools/brand-sentiment/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
+  'brand-builder': (code, id) => `/tools/brand-builder/report/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`
+};
+
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+let activeTool = null;
+
+function renderChips(){
+  const all = { id: null, label: 'All' };
+  $('chips').innerHTML = [all, ...TOOLS].map(t =>
+    `<button class="chip" type="button" data-tool="${t.id ?? ''}" aria-pressed="${activeTool === t.id}">${esc(t.label)}</button>`
+  ).join('');
+  $('chips').querySelectorAll('.chip').forEach(btn => {
+    btn.onclick = () => { activeTool = btn.dataset.tool || null; renderChips(); loadHistory(); };
+  });
+}
+
+function fmtDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) +
+    ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+}
+
+function renderRow(r){
+  const detail = r.keyword ? esc(r.keyword) + (r.website ? ' — ' + esc(r.website) : '') : esc(r.website || '');
+  const markets = r.markets && r.markets.length ? esc(r.markets.join(', ')) : '';
+  const cost = r.cost ? '$' + Number(r.cost).toFixed(3) : 'free';
+  const linkFn = r.report_id ? REPORT_LINK[r.tool] : null;
+  const link = linkFn ? `<a class="row-link" href="${linkFn(CODE, r.report_id)}">View full report →</a>` : '';
+
+  return `<div class="row">
+    <div class="row-top">
+      <span class="row-tool">${esc(TOOL_LABEL[r.tool] || r.tool)}</span>
+      <span class="row-date">${fmtDate(r.created_at)}</span>
+    </div>
+    ${detail ? `<div class="row-detail">${detail}</div>` : ''}
+    ${r.metric ? `<div class="row-metric">${esc(r.metric)}</div>` : ''}
+    <div class="row-meta">
+      <span class="row-markets">${markets}</span>
+      <span style="display:flex;align-items:center;gap:12px">
+        <span class="row-cost">${cost}</span>
+        ${link}
+      </span>
+    </div>
+  </div>`;
+}
+
+async function loadHistory(){
+  $('list').innerHTML = '<div class="loading">Loading…</div>';
+  let data;
+  try {
+    const res = await fetch(API + '/history', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, tool: activeTool || undefined })
+    });
+    data = await res.json();
+  } catch (e) { data = { error: 'could not reach the API' }; }
+
+  if (data.error){
+    $('list').innerHTML = `<div class="err">${esc(data.error)}</div>`;
+    return;
+  }
+  if (!data.runs || !data.runs.length){
+    $('list').innerHTML = '<div class="empty">No runs yet in this category.</div>';
+    return;
+  }
+  $('list').innerHTML = `<div class="rows">${data.runs.map(renderRow).join('')}</div>`;
+}
+
+if (!CODE){
+  $('gate').style.display = 'block';
+  const go = () => {
+    const v = $('manual').value.trim().toLowerCase().replace(/\s+/g, '');
+    if (v) location.search = '?k=' + encodeURIComponent(v);
+  };
+  $('enter').onclick = go;
+  $('manual').onkeydown = e => { if (e.key === 'Enter') go(); };
+} else {
+  $('main').style.display = 'block';
+  renderChips();
+  loadHistory();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Site migration checklist</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236e7bff'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:700px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6}
+
+  .progress-wrap{background:var(--card);border:1px solid var(--line);border-radius:10px;
+      padding:16px;margin-bottom:22px;position:sticky;top:12px;z-index:5}
+  .progress-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+  .progress-count{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--gold)}
+  .progress-pct{font-size:11.5px;color:var(--muted)}
+  .progress-bar{height:7px;background:var(--line);border-radius:20px;overflow:hidden}
+  .progress-fill{height:100%;background:var(--ok);border-radius:20px;transition:width .25s ease;width:0%}
+  .progress-actions{display:flex;justify-content:flex-end;margin-top:9px}
+  .resetbtn{font-size:11px;color:var(--muted);background:none;border:0;cursor:pointer;
+      font-family:'IBM Plex Mono',monospace;text-decoration:underline}
+  .resetbtn:hover{color:var(--bad)}
+
+  details{background:var(--card);border:1px solid var(--line);border-radius:10px;
+      margin-bottom:12px;overflow:hidden}
+  details[open]{padding-bottom:6px}
+  summary{cursor:pointer;padding:15px 16px;list-style:none;display:flex;
+      justify-content:space-between;align-items:center;gap:10px}
+  summary::-webkit-details-marker{display:none}
+  summary .stitle{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700}
+  summary .swhen{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;
+      margin-top:3px;font-weight:400}
+  summary .scount{font-size:11px;color:var(--muted);white-space:nowrap;flex:none}
+  summary .scount.done{color:var(--ok)}
+  summary .chev{transition:transform .2s ease;color:var(--muted);flex:none}
+  details[open] summary .chev{transform:rotate(90deg)}
+
+  .items{padding:0 16px 12px}
+  .item{display:flex;gap:11px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}
+  .item:first-child{border-top:0}
+  .item input[type=checkbox]{appearance:none;width:18px;height:18px;border:1.5px solid var(--line);
+      border-radius:5px;background:var(--paper);flex:none;margin-top:1px;cursor:pointer;position:relative}
+  .item input[type=checkbox]:checked{background:var(--ok);border-color:var(--ok)}
+  .item input[type=checkbox]:checked::after{content:'';position:absolute;left:5px;top:1px;
+      width:5px;height:9px;border:solid var(--paper);border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .item label{font-size:12.5px;line-height:1.55;cursor:pointer}
+  .item.checked label{color:var(--muted);text-decoration:line-through}
+  .item .tool{display:block;font-size:11px;color:var(--you);margin-top:3px;text-decoration:none}
+  .item .tool:hover{color:#8b95ff}
+
+  .foot{font-size:10px;color:var(--muted);margin-top:20px;line-height:1.5}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Free tool · no access code needed</p>
+  <h1>Site migration checklist</h1>
+  <p class="lede">Every stage of a domain move, replatform, or redesign, in order — from the audit you do before anything changes to what to watch in the weeks after launch. Ticks are saved in this browser, so you can close the tab and pick up where you left off.</p>
+
+  <div class="progress-wrap">
+    <div class="progress-top">
+      <span class="progress-count" id="pCount">0 of 0 complete</span>
+      <span class="progress-pct" id="pPct">0%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="pFill"></div></div>
+    <div class="progress-actions"><button class="resetbtn" id="reset" type="button">Reset all ticks</button></div>
+  </div>
+
+  <div id="sections"></div>
+
+  <p class="foot">This checklist is a reference, not a guarantee — every migration has its own wrinkles. The linked tools check the things that are easy to get wrong silently: redirects, canonicalization, structured data and crawler access.</p>
+
+  <div class="sidenav">
+    <a href="/tools/" class="sidenav-link">← Back to tools</a>
+    <a href="/" class="sidenav-link">← Back to homepage</a>
+    <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const $ = id => document.getElementById(id);
+const STORAGE_KEY = 'mc2seo-migration-checklist-v1';
+
+const SECTIONS = [
+  {
+    id: 'planning', title: 'Pre-migration planning', when: 'Weeks before', open: true,
+    items: [
+      { t: 'Full crawl of the current site — export every indexed URL, not just the ones in the sitemap' },
+      { t: 'Baseline snapshot: organic traffic, rankings for money keywords, and conversions before anything changes' },
+      { t: 'Top backlinked pages identified — these are the ones a broken redirect hurts most' },
+      { t: 'Content inventory: what\'s being kept, merged, or retired, and why' },
+      { t: 'Stakeholder sign-off on scope and launch date, with a named owner for SEO continuity' },
+      { t: 'Staging environment matches the real new site closely enough to test against' }
+    ]
+  },
+  {
+    id: 'redirects', title: 'Redirect mapping', when: 'Before launch',
+    items: [
+      { t: 'A 1:1 redirect map exists for every indexed URL — old path to its real new equivalent, not a blanket homepage redirect' },
+      { t: 'Every redirect is a 301/308 (permanent), not a 302/307, unless the move is genuinely temporary' },
+      { t: 'No redirect chains — each old URL reaches its destination in one hop, not two or three stacked redirects' },
+      { t: 'No redirect loops' },
+      { t: 'Redirect map tested against staging before launch, not discovered live', tool: { href: '/tools/redirect-check/', label: 'Check with the Redirect map validator →' } }
+    ]
+  },
+  {
+    id: 'technical', title: 'Technical SEO parity', when: 'Before launch',
+    items: [
+      { t: 'Canonical tags correct on every page — no page canonicalizing to the wrong URL or to a redirected one' },
+      { t: 'www / non-www and http / https all collapse to one canonical form in a single hop', tool: { href: '/tools/redirect-tracer/', label: 'Check with the Redirect tracer (Homepage variants mode) →' } },
+      { t: 'XML sitemap regenerated for the new URL structure and ready to submit at launch' },
+      { t: 'robots.txt reviewed — nothing important is accidentally disallowed, and nothing sensitive is newly exposed' },
+      { t: 'AI crawlers (GPTBot, ClaudeBot, etc.) aren\'t unintentionally blocked on the new site', tool: { href: '/tools/crawler-check/', label: 'Check with the AI crawler access checker →' } },
+      { t: 'Structured data (schema markup) carried over — Organization, Product, FAQ, breadcrumbs, whatever the old site had', tool: { href: '/tools/schema-audit/', label: 'Check with Schema analysis →' } },
+      { t: 'Meta titles and descriptions preserved or deliberately improved, not lost in the rebuild' },
+      { t: 'hreflang tags intact, if the site serves more than one language or region' },
+      { t: 'SSL certificate valid and HTTPS enforced on the new domain/subdomain' },
+      { t: 'Core Web Vitals / page speed checked on the new site before launch, not after', tool: { href: '/tools/pagespeed/', label: 'Check with PageSpeed comparison →' } }
+    ]
+  },
+  {
+    id: 'content', title: 'Content parity', when: 'Before launch',
+    items: [
+      { t: 'Every indexed page has a real equivalent on the new site, or a deliberate decision to 410/retire it — nothing silently vanishes' },
+      { t: 'Images retain their alt text and aren\'t re-uploaded with new, un-optimized filenames' },
+      { t: 'Internal links updated to the new URL structure, not left pointing through redirects site-wide' },
+      { t: 'No orphaned pages — everything worth keeping is reachable by an internal link' }
+    ]
+  },
+  {
+    id: 'testing', title: 'Pre-launch testing', when: 'Final days before launch',
+    items: [
+      { t: 'Staging site crawled for broken links and server errors' },
+      { t: 'Redirect map validated at scale on staging, not just spot-checked' },
+      { t: 'Mobile rendering checked, not just desktop' },
+      { t: 'Analytics and Search Console tracking code verified on the new site before it goes live' },
+      { t: 'Custom 404 page configured and tested' }
+    ]
+  },
+  {
+    id: 'launch', title: 'Launch day', when: 'The day itself',
+    items: [
+      { t: 'DNS cutover plan written down, with a rollback plan if something breaks' },
+      { t: 'Updated sitemap submitted to Search Console and Bing Webmaster Tools the moment the new site is live' },
+      { t: 'Key pages pinged for re-crawling rather than waiting on the next scheduled crawl', tool: { href: '/tools/indexnow/', label: 'Submit with the IndexNow pinger →' } },
+      { t: 'Server logs watched in the first hours for a spike in crawl errors or 404s' },
+      { t: 'Google Business Profile and other directory listings updated if the domain itself changed' }
+    ]
+  },
+  {
+    id: 'postlaunch', title: 'Post-launch monitoring', when: 'First 2–4 weeks',
+    items: [
+      { t: 'Rankings for money keywords checked regularly against the pre-migration baseline', tool: { href: '/tools/rank-scheduler/', label: 'Set up weekly tracking with Rank scheduler →' } },
+      { t: 'Organic traffic compared against baseline, not just watched in isolation' },
+      { t: 'Search Console checked for crawl errors and index coverage drops' },
+      { t: 'Redirects re-checked a few weeks in — some break quietly after a follow-up deploy', tool: { href: '/tools/redirect-check/', label: 'Re-check with the Redirect map validator →' } },
+      { t: 'Old domain checked for lingering duplicate-content indexing, if it\'s still reachable at all' },
+      { t: 'High-value linking sites contacted to update their links to point at the new URLs directly, not through a redirect' }
+    ]
+  }
+];
+
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function loadChecked(){
+  try { return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')); }
+  catch (e) { return new Set(); }
+}
+function saveChecked(set){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...set])); } catch (e) {}
+}
+
+let checked = loadChecked();
+
+function itemId(sectionId, idx){ return sectionId + ':' + idx; }
+
+function render(){
+  // Capture whichever sections are currently expanded before rebuilding,
+  // so ticking a box doesn't collapse a section the user has open — only
+  // fall back to each section's own default on the very first render.
+  const openState = {};
+  $('sections').querySelectorAll('details').forEach(d => { openState[d.dataset.id] = d.open; });
+  const isFirstRender = Object.keys(openState).length === 0;
+
+  let total = 0;
+  $('sections').innerHTML = SECTIONS.map(section => {
+    const doneInSection = section.items.filter((_, i) => checked.has(itemId(section.id, i))).length;
+    total += section.items.length;
+    const itemsHtml = section.items.map((item, i) => {
+      const id = itemId(section.id, i);
+      const isChecked = checked.has(id);
+      const toolHtml = item.tool ? '<a class="tool" href="' + item.tool.href + '" target="_blank" rel="noopener">' + esc(item.tool.label) + '</a>' : '';
+      return '<div class="item' + (isChecked ? ' checked' : '') + '">' +
+        '<input type="checkbox" id="cb-' + id + '" data-id="' + id + '"' + (isChecked ? ' checked' : '') + '>' +
+        '<label for="cb-' + id + '">' + esc(item.t) + toolHtml + '</label></div>';
+    }).join('');
+
+    const isOpen = isFirstRender ? section.open : openState[section.id];
+    return '<details data-id="' + section.id + '"' + (isOpen ? ' open' : '') + '>' +
+      '<summary><div><div class="stitle">' + esc(section.title) + '</div><div class="swhen">' + esc(section.when) + '</div></div>' +
+      '<span class="scount' + (doneInSection === section.items.length ? ' done' : '') + '">' + doneInSection + '/' + section.items.length + '</span></summary>' +
+      '<div class="items">' + itemsHtml + '</div></details>';
+  }).join('');
+
+  const doneTotal = checked.size;
+  $('pCount').textContent = doneTotal + ' of ' + total + ' complete';
+  $('pPct').textContent = (total ? Math.round(doneTotal / total * 100) : 0) + '%';
+  $('pFill').style.width = (total ? (doneTotal / total * 100) : 0) + '%';
+
+  $('sections').querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const id = cb.dataset.id;
+      if (cb.checked) checked.add(id); else checked.delete(id);
+      saveChecked(checked);
+      render();
+    });
+  });
+}
+
+$('reset').onclick = () => {
+  if (!confirm('Clear every tick on this checklist?')) return;
+  checked = new Set();
+  saveChecked(checked);
+  render();
+};
+
+render();
+</script>
+</body>
+</html>

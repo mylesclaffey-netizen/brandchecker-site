@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MC2SEO — SEO + GEO, one formula</title>
+<meta name="description" content="MC2SEO helps brands rank in Google and get cited by AI answer engines like ChatGPT, Perplexity, and AI Overviews — with one integrated strategy." />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23FFFF00'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0c11;
+    --surface: #12151d;
+    --surface-2: #191d28;
+    --line: rgba(255,255,255,0.09);
+    --text: #eceef4;
+    --text-muted: #9199ab;
+    --text-faint: #5c6474;
+    --accent: #6e7bff;
+    --accent-soft: rgba(110,123,255,0.14);
+    --accent-2: #ffb84d;
+    --accent-2-soft: rgba(255,184,77,0.14);
+    --heading: #ffd65c;
+    --radius: 14px;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --maxw: 1180px;
+  }
+
+  *{ box-sizing: border-box; margin:0; padding:0; }
+
+  html{ scroll-behavior: smooth; }
+
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  body::before{
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(110,123,255,0.16), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, rgba(255,184,77,0.08), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  a{ color: inherit; text-decoration: none; }
+
+  .wrap{
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  section{ position: relative; z-index: 1; }
+
+  ::selection{ background: var(--accent); color: #fff; }
+
+  /* focus visibility */
+  a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible{
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  /* ---------- NAV ---------- */
+  header{
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(10,12,17,0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  nav.wrap{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 76px;
+  }
+  .logo{
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 21px;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: baseline;
+    gap: 1px;
+  }
+  .logo sup{
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+    margin-left: 1px;
+  }
+  .nav-links{
+    display: flex;
+    gap: 36px;
+    align-items: center;
+  }
+  .nav-links a{
+    font-size: 14.5px;
+    color: var(--text-muted);
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
+  .nav-links a:hover{ color: var(--text); }
+  /* .btn.nav-cta (not just .nav-cta) so this beats the later, equally-
+     specific .btn{display:inline-flex} rule — plain .nav-cta was losing
+     that tie-break and showing on mobile regardless of this rule. */
+  .btn.nav-cta{
+    display: none;
+  }
+  @media(min-width: 720px){ .btn.nav-cta{ display: inline-flex; } }
+
+  .btn{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 14.5px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    white-space: nowrap;
+  }
+  .btn-primary{
+    background: linear-gradient(135deg, var(--accent), #8b95ff);
+    color: #fff;
+    box-shadow: 0 0 0 0 rgba(110,123,255,0);
+  }
+  .btn-primary:hover{
+    box-shadow: 0 8px 24px -6px rgba(110,123,255,0.55);
+    transform: translateY(-1px);
+  }
+  .btn-ghost{
+    background: transparent;
+    border-color: var(--line);
+    color: var(--text);
+  }
+  .btn-ghost:hover{
+    border-color: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.03);
+  }
+  .btn-block{ width: 100%; }
+
+  .mobile-toggle{ display:none; background:none; border:none; color:var(--text); font-size:22px; }
+  .nav-tools-mobile{ display:none; }
+  @media(max-width: 719px){
+    .nav-links{ display:none; }
+    .nav-links.mobile-open{
+      display:flex; flex-direction:column; align-items:flex-start; gap:18px;
+      position:absolute; top:76px; left:0; right:0;
+      background:var(--surface); border-bottom:1px solid var(--line);
+      padding:22px 32px 28px; z-index:49;
+    }
+    .mobile-toggle{ display:block; }
+    /* Tools is deliberately its own always-visible link on mobile, not just
+       another item inside the menu — the menu itself was a dead click
+       (scrolled to #contact, nothing else) until this fix, so a visitor
+       had no real path to /tools/ at all. Keeping it outside .nav-links
+       means it stays reachable even if the dropdown breaks again. */
+    .nav-tools-mobile{ display:inline-flex; }
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    padding: 96px 0 80px;
+  }
+  .eyebrow{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid rgba(110,123,255,0.25);
+    padding: 6px 14px;
+    border-radius: 999px;
+    margin-bottom: 28px;
+    opacity: 0;
+    animation: rise 0.7s ease forwards;
+  }
+  .eyebrow .dot{
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent-2);
+    box-shadow: 0 0 8px var(--accent-2);
+  }
+
+  .equation{
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(34px, 6vw, 64px);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    max-width: 900px;
+  }
+  .equation .row{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.28em;
+  }
+  .equation .term{
+    opacity: 0;
+    transform: translateY(14px);
+    animation: rise 0.7s cubic-bezier(.2,.7,.3,1) forwards;
+  }
+  .equation .op{
+    color: var(--text-faint);
+    font-weight: 500;
+    padding: 0 0.05em;
+    opacity: 0;
+    animation: rise 0.7s ease forwards;
+  }
+  .equation .hl{ color: var(--accent); }
+  .equation .hl2{ color: var(--accent-2); }
+  .equation sup{
+    font-size: 0.55em;
+    color: var(--text-faint);
+    position: relative;
+    top: -0.5em;
+  }
+  .t1{ animation-delay: .05s; } .o1{ animation-delay: .25s; }
+  .t2{ animation-delay: .35s; } .o2{ animation-delay: .55s; }
+  .t3{ animation-delay: .65s; } .o3{ animation-delay: .85s; }
+  .t4{ animation-delay: .95s; }
+
+  @keyframes rise{
+    to{ opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-sub{
+    max-width: 560px;
+    color: var(--text-muted);
+    font-size: 17px;
+    margin: 28px 0 36px;
+    opacity: 0;
+    animation: rise 0.7s ease forwards;
+    animation-delay: 1.05s;
+  }
+  .hero-actions{
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: rise 0.7s ease forwards;
+    animation-delay: 1.2s;
+  }
+
+  .hero-stats{
+    display: flex;
+    gap: 44px;
+    flex-wrap: wrap;
+    margin-top: 64px;
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+    opacity: 0;
+    animation: rise 0.7s ease forwards;
+    animation-delay: 1.35s;
+  }
+  .stat-num{
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+  }
+  .stat-label{
+    color: var(--text-faint);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .equation .term, .equation .op, .eyebrow, .hero-sub, .hero-actions, .hero-stats, .reveal{
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+    }
+  }
+
+  /* ---------- logo strip ---------- */
+  .logo-strip-section{
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 36px 0;
+  }
+  .logo-strip-label{
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    text-align: center;
+    margin-bottom: 22px;
+  }
+  .logo-strip{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+    row-gap: 18px;
+  }
+  .logo-strip span{
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--accent);
+    opacity: 0.85;
+    transition: color 0.2s ease, opacity 0.2s ease;
+    white-space: nowrap;
+  }
+  .logo-strip span:hover{
+    color: var(--heading);
+    opacity: 1;
+  }
+
+  /* ---------- shared section styling ---------- */
+  .section{ padding: 108px 0; }
+  .section-head{
+    max-width: 620px;
+    margin-bottom: 56px;
+  }
+  .kicker{
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  h2, h3{
+    color: var(--heading);
+  }
+  h2{
+    font-family: var(--font-display);
+    font-size: clamp(28px, 3.6vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+  .section-sub{
+    color: var(--text-muted);
+    font-size: 16px;
+    margin-top: 14px;
+  }
+
+  .reveal{
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.in{ opacity: 1; transform: translateY(0); }
+
+  /* ---------- SEO vs GEO ---------- */
+  .split{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  @media(min-width: 800px){ .split{ grid-template-columns: 1fr 1fr; } }
+  .split-card{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 34px;
+  }
+  .split-card .tag{
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-bottom: 18px;
+  }
+  .split-card.a .tag{ background: var(--accent-soft); color: var(--accent); }
+  .split-card.b .tag{ background: var(--accent-2-soft); color: var(--accent-2); }
+  .split-card h3{
+    font-family: var(--font-display);
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+  .split-card p{ color: var(--text-muted); font-size: 15px; margin-bottom: 20px; }
+  .split-card ul{ list-style: none; }
+  .split-card li{
+    display: flex;
+    gap: 10px;
+    font-size: 14.5px;
+    color: var(--text);
+    padding: 8px 0;
+    border-top: 1px solid var(--line);
+  }
+  .split-card li:first-of-type{ border-top: none; }
+  .split-card li::before{
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    margin-top: 8px;
+    flex-shrink: 0;
+  }
+  .split-card.a li::before{ background: var(--accent); }
+  .split-card.b li::before{ background: var(--accent-2); }
+
+  .join-line{
+    text-align: center;
+    font-family: var(--font-mono);
+    color: var(--text-faint);
+    font-size: 13.5px;
+    margin-top: 26px;
+    letter-spacing: 0.03em;
+  }
+  .join-line span{ color: var(--text); }
+
+  /* ---------- services grid ---------- */
+  .grid-cards{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 18px;
+  }
+  .card{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 28px;
+    transition: border-color 0.25s ease, transform 0.25s ease, background 0.25s ease;
+  }
+  .card:hover{
+    border-color: rgba(110,123,255,0.35);
+    background: var(--surface-2);
+    transform: translateY(-3px);
+  }
+  .card .icon{
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 18px;
+    color: var(--accent);
+  }
+  .card h3{
+    font-family: var(--font-display);
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+  .card p{ color: var(--text-muted); font-size: 14.5px; }
+
+  /* ---------- process ---------- */
+  .process{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  @media(min-width: 900px){ .process{ grid-template-columns: repeat(4, 1fr); } }
+  .process-step{
+    padding: 32px 28px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  @media(min-width: 900px){
+    .process-step{ border-bottom: none; border-right: 1px solid var(--line); }
+    .process-step:last-child{ border-right: none; }
+  }
+  .process-step:last-child{ border-bottom: none; }
+  .process-index{
+    font-family: var(--font-mono);
+    color: var(--accent);
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .process-step h3{
+    font-family: var(--font-display);
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+  .process-step p{ color: var(--text-muted); font-size: 14px; }
+
+  /* ---------- results ---------- */
+  .results-wrap{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  @media(min-width: 900px){ .results-wrap{ grid-template-columns: 1fr 1fr; } }
+  .results-stats{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .rstat{
+    padding: 22px 0;
+    border-top: 1px solid var(--line);
+  }
+  .rstat .n{
+    font-family: var(--font-display);
+    font-size: 34px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .rstat .n span{ color: var(--accent-2); }
+  .rstat .l{ color: var(--text-faint); font-size: 13.5px; margin-top: 6px; }
+
+  .chart-card{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 28px;
+  }
+  .chart-card .cap{
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-faint);
+    margin-bottom: 18px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .legend{ display: flex; gap: 18px; margin-top: 14px; }
+  .legend-item{ display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text-muted); }
+  .legend-dot{ width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ---------- option toggle ---------- */
+  .option-toggle{
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px;
+    gap: 4px;
+    margin-bottom: 44px;
+  }
+  .option-btn{
+    padding: 11px 22px;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    white-space: nowrap;
+  }
+  .option-btn:hover{ color: var(--text); }
+  .option-btn.active{
+    background: linear-gradient(135deg, var(--accent), #8b95ff);
+    color: #fff;
+  }
+  .option-panel{ display: none; }
+  .option-panel.active{ display: block; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn{ from{ opacity: 0; transform: translateY(6px); } to{ opacity: 1; transform: translateY(0); } }
+
+  /* ---------- booking ---------- */
+  .booking-wrap{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  @media(min-width: 900px){ .booking-wrap{ grid-template-columns: 0.8fr 1.2fr; } }
+  .booking-info p{ color: var(--text-muted); font-size: 15.5px; margin: 14px 0 24px; }
+  .booking-list{ list-style: none; }
+  .booking-list li{
+    display: flex;
+    gap: 10px;
+    font-size: 14.5px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+  }
+  .booking-list li:first-child{ border-top: none; }
+  .booking-list li::before{
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    margin-top: 8px;
+    flex-shrink: 0;
+  }
+  /* ---------- contact ---------- */
+  .contact-wrap{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 40px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 48px;
+  }
+  @media(min-width: 900px){ .contact-wrap{ grid-template-columns: 0.9fr 1.1fr; padding: 56px; } }
+
+  .contact-info h2{ margin-bottom: 14px; }
+  .contact-info p{ color: var(--text-muted); font-size: 15.5px; margin-bottom: 28px; }
+  .contact-detail{
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+    font-size: 14.5px;
+  }
+  .contact-detail:first-of-type{ border-top: none; }
+  .contact-detail .label{ color: var(--text-faint); min-width: 90px; font-family: var(--font-mono); font-size: 12.5px; }
+
+  form{ display: flex; flex-direction: column; gap: 16px; }
+  .form-row{ display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media(min-width: 560px){ .form-row.two{ grid-template-columns: 1fr 1fr; } }
+  label{
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    display: block;
+  }
+  input, textarea{
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14.5px;
+    transition: border-color 0.2s ease;
+  }
+  input:focus, textarea:focus{ border-color: var(--accent); outline: none; }
+  textarea{ resize: vertical; min-height: 100px; }
+  .field{ display: flex; flex-direction: column; }
+
+  .form-status{
+    font-size: 13.5px;
+    color: var(--accent-2);
+    font-family: var(--font-mono);
+    display: none;
+  }
+  .form-status.show{ display: block; }
+
+  /* ---------- footer ---------- */
+  footer{
+    border-top: 1px solid var(--line);
+    padding: 44px 0;
+  }
+  .footer-wrap{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer-links{ display: flex; gap: 26px; }
+  .footer-links a{ color: var(--text-faint); font-size: 13.5px; transition: color 0.2s ease; }
+  .footer-links a:hover{ color: var(--text); }
+  .footer-copy{ color: var(--text-faint); font-size: 13px; font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="wrap">
+    <a href="#" class="logo">MC<sup>2</sup>SEO</a>
+    <div class="nav-links">
+      <a href="#seo-geo">SEO vs GEO</a>
+      <a href="#services">Services</a>
+      <a href="#process">Process</a>
+      <a href="#results">Results</a>
+      <a href="/tools/">Tools</a>
+      <a href="#contact">Get started</a>
+    </div>
+    <a href="#contact" class="btn btn-primary nav-cta">Get started</a>
+    <a href="/tools/" class="btn btn-ghost nav-tools-mobile">Tools</a>
+    <button class="mobile-toggle" aria-label="Menu">☰</button>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <span class="eyebrow"><span class="dot"></span>SEO + GEO, unified</span>
+
+      <h1 class="equation">
+        <div class="row">
+          <span class="term t1 hl">Visibility<sup>2</sup></span>
+          <span class="op o1">=</span>
+        </div>
+        <div class="row">
+          <span class="op o2">(</span>
+          <span class="term t2">SEO</span>
+          <span class="op o2">+</span>
+          <span class="term t3 hl2">GEO</span>
+          <span class="op o3">)</span>
+          <span class="op o3">×</span>
+          <span class="term t4">Consistency</span>
+        </div>
+      </h1>
+
+      <p class="hero-sub">MC2SEO gets your brand ranking on Google and getting cited inside ChatGPT, Perplexity, and AI Overviews — built on one strategy instead of two disconnected ones.</p>
+
+      <div class="hero-actions">
+        <a href="#contact" class="btn btn-primary">Get your free visibility audit</a>
+        <a href="#seo-geo" class="btn btn-ghost">See how it works</a>
+      </div>
+
+      <div class="hero-stats">
+        <div>
+          <div class="stat-num">2</div>
+          <div class="stat-label">search surfaces, one strategy</div>
+        </div>
+        <div>
+          <div class="stat-num">30-day</div>
+          <div class="stat-label">first optimization cycle</div>
+        </div>
+        <div>
+          <div class="stat-num">100%</div>
+          <div class="stat-label">reports built around both</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="logo-strip-section">
+    <div class="wrap">
+      <p class="logo-strip-label">Trusted by</p>
+      <div class="logo-strip">
+        <span>Sadaghian</span>
+        <span>Knuckleheads</span>
+        <span>CloudForecast</span>
+        <span>ContractBook</span>
+        <span>Unstoppable Domains</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="seo-geo">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="kicker">Two engines, one playbook</div>
+        <h2>Search didn't split in two. It just grew a second half.</h2>
+        <p class="section-sub">People still type into Google. They also ask ChatGPT, Perplexity, and Gemini to just tell them the answer — and skip the click entirely. Both are search. Both need a different kind of proof.</p>
+      </div>
+
+      <div class="split reveal">
+        <div class="split-card a">
+          <span class="tag">SEO</span>
+          <h3>Rank in search results</h3>
+          <p>The discipline of getting your pages found, crawled, and placed on the results page itself.</p>
+          <ul>
+            <li>Technical crawlability & site speed</li>
+            <li>Keyword & topical coverage</li>
+            <li>Backlinks & domain authority</li>
+            <li>SERP features & local packs</li>
+          </ul>
+        </div>
+        <div class="split-card b">
+          <span class="tag">GEO</span>
+          <h3>Get cited in AI answers</h3>
+          <p>The discipline of being the source an AI model actually pulls from and names when it answers.</p>
+          <ul>
+            <li>Structured, extractable content</li>
+            <li>Clear entity & schema signals</li>
+            <li>Answer-first content formatting</li>
+            <li>Presence across cited third parties</li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="join-line reveal">Same content foundation. Same authority signals. <span>We build both from a single source of truth.</span></p>
+    </div>
+  </section>
+
+  <section class="section" id="services" style="background: var(--surface); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="kicker">What we do</div>
+        <h2>Every service, pointed at both search engines and AI models.</h2>
+      </div>
+      <div class="grid-cards reveal">
+        <div class="card">
+          <div class="icon">◆</div>
+          <h3>Technical SEO</h3>
+          <p>Site speed, crawl budget, indexation, and structured data that both Googlebot and AI crawlers can parse.</p>
+        </div>
+        <div class="card">
+          <div class="icon">◇</div>
+          <h3>Content strategy</h3>
+          <p>Topical maps built for depth and authority — written to rank, and structured to be quoted.</p>
+        </div>
+        <div class="card">
+          <div class="icon">✦</div>
+          <h3>Generative engine optimization</h3>
+          <p>Formatting, schema, and sourcing that make your content easy for AI models to retrieve and cite by name.</p>
+        </div>
+        <div class="card">
+          <div class="icon">◈</div>
+          <h3>Authority & digital PR</h3>
+          <p>Earned mentions and links across the sites that both search engines and language models already trust.</p>
+        </div>
+        <div class="card">
+          <div class="icon">▣</div>
+          <h3>Analytics & reporting</h3>
+          <p>One dashboard tracking rankings, traffic, and AI citation share — no more guessing what's working.</p>
+        </div>
+        <div class="card">
+          <div class="icon">◎</div>
+          <h3>Local & entity SEO</h3>
+          <p>Knowledge panels, listings, and entity clarity so search engines and AI models know exactly who you are.</p>
+        </div>
+        <div class="card">
+          <div class="icon">⊕</div>
+          <h3>International SEO</h3>
+          <p>Hreflang, localized content, and region-specific authority so you rank and get cited in every market you serve.</p>
+        </div>
+        <div class="card">
+          <div class="icon">▲</div>
+          <h3>Conversion strategy</h3>
+          <p>Turning the traffic and citations you earn into leads — page structure, messaging, and calls to action that convert.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="process">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="kicker">How we work</div>
+        <h2>One formula, run every month.</h2>
+        <p class="section-sub">The same four-step cycle, applied to both search surfaces at once.</p>
+      </div>
+      <div class="process reveal">
+        <div class="process-step">
+          <div class="process-index">01 — Audit</div>
+          <h3>Where you stand today</h3>
+          <p>We crawl your site and test how you show up across Google and AI answer engines.</p>
+        </div>
+        <div class="process-step">
+          <div class="process-index">02 — Formula</div>
+          <h3>A plan built for both</h3>
+          <p>A prioritized roadmap scored against traffic, ranking, and citation goals.</p>
+        </div>
+        <div class="process-step">
+          <div class="process-index">03 — Execute</div>
+          <h3>Content & technical fixes</h3>
+          <p>We ship the content, schema, and structural changes — you approve, we build.</p>
+        </div>
+        <div class="process-step">
+          <div class="process-index">04 — Monitor</div>
+          <h3>Track & iterate</h3>
+          <p>Monthly reporting on rankings and AI citations, with the plan adjusted every cycle.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="results" style="background: var(--surface); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="kicker">Why it works</div>
+        <h2>AI answer engines are already sending traffic. Most sites aren't built to receive it.</h2>
+      </div>
+
+      <div class="results-wrap reveal">
+        <div class="results-stats">
+          <div class="rstat">
+            <div class="n">Search <span>+</span> AI</div>
+            <div class="l">tracked in a single view</div>
+          </div>
+          <div class="rstat">
+            <div class="n">Monthly</div>
+            <div class="l">reporting cadence, always</div>
+          </div>
+          <div class="rstat">
+            <div class="n">Content</div>
+            <div class="l">built once, ranked twice</div>
+          </div>
+          <div class="rstat">
+            <div class="n">Clear</div>
+            <div class="l">attribution, no guesswork</div>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="cap"><span>relative share of search traffic</span><span>illustrative</span></div>
+          <svg viewBox="0 0 320 160" width="100%" height="160" role="img" aria-label="Chart showing AI answer engine share of search rising over time relative to traditional search">
+            <line x1="0" y1="20" x2="320" y2="20" stroke="var(--line)" stroke-width="1"/>
+            <line x1="0" y1="70" x2="320" y2="70" stroke="var(--line)" stroke-width="1"/>
+            <line x1="0" y1="120" x2="320" y2="120" stroke="var(--line)" stroke-width="1"/>
+            <polyline points="0,110 60,105 120,95 180,80 240,55 320,35" fill="none" stroke="#6e7bff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="0,150 60,145 120,130 180,110 240,80 320,50" fill="none" stroke="#ffb84d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="legend">
+            <div class="legend-item"><span class="legend-dot" style="background:#6e7bff"></span>Traditional search clicks</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#ffb84d"></span>AI citation mentions</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="contact">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="kicker">Get started</div>
+        <h2>Two ways in. Same formula either way.</h2>
+        <p class="section-sub">Request a free audit, or skip straight to a call — whatever's faster for you.</p>
+      </div>
+
+      <div class="option-toggle reveal" role="tablist" aria-label="Choose how to get started">
+        <button class="option-btn active" id="tabAudit" role="tab" aria-selected="true" aria-controls="panelAudit">Request an audit</button>
+        <button class="option-btn" id="tabCall" role="tab" aria-selected="false" aria-controls="panelCall">Schedule a free intro call</button>
+      </div>
+
+      <div class="option-panel active reveal" id="panelAudit" role="tabpanel" aria-labelledby="tabAudit">
+        <div class="contact-wrap">
+          <div class="contact-info">
+            <h2 style="font-size:26px;">Get your free visibility audit</h2>
+            <p>We'll check how you rank in Google and whether AI answer engines can find and cite you — then send back a plan.</p>
+
+            <div class="contact-detail">
+              <span class="label">EMAIL</span>
+              <span>hello@brandchecker.eu</span>
+            </div>
+            <div class="contact-detail">
+              <span class="label">RESPONSE</span>
+              <span>Within 1 business day</span>
+            </div>
+            <div class="contact-detail">
+              <span class="label">SCOPE</span>
+              <span>SEO, GEO, or both</span>
+            </div>
+          </div>
+
+          <form id="leadForm">
+            <div class="form-row two">
+              <div class="field">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" required placeholder="Your name" />
+              </div>
+              <div class="field">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required placeholder="you@company.com" />
+              </div>
+            </div>
+            <div class="form-row two">
+              <div class="field">
+                <label for="company">Company</label>
+                <input type="text" id="company" name="company" placeholder="Company name" />
+              </div>
+              <div class="field">
+                <label for="website">Website</label>
+                <input type="text" id="website" name="website" placeholder="yoursite.com" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="message">What are you hoping to fix?</label>
+              <textarea id="message" name="message" placeholder="Tell us a bit about your goals..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Request my free audit</button>
+            <p class="form-status" id="formStatus">Thanks — we'll be in touch within one business day.</p>
+          </form>
+        </div>
+      </div>
+
+      <div class="option-panel" id="panelCall" role="tabpanel" aria-labelledby="tabCall">
+        <div class="booking-wrap">
+          <div class="booking-info">
+            <h2 style="font-size:26px; margin-bottom:4px;">Schedule a free introductory call</h2>
+            <p>A quick, no-pressure call to see if we're a fit — no slides, no pitch deck. Pick a time that works for you.</p>
+            <ul class="booking-list">
+              <li>15 or 30 minutes, on Google Meet</li>
+              <li>Quick look at your current SEO + AI visibility</li>
+              <li>Honest take on what's worth fixing first</li>
+              <li>No obligation to continue</li>
+            </ul>
+          </div>
+
+          <div id="cal-embed" style="width:100%;min-height:600px;overflow:auto"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap footer-wrap">
+    <a href="#" class="logo">MC<sup>2</sup>SEO</a>
+    <div class="footer-links">
+      <a href="#seo-geo">SEO vs GEO</a>
+      <a href="#services">Services</a>
+      <a href="#process">Process</a>
+      <a href="#contact">Get started</a>
+    </div>
+    <div class="footer-copy">© 2026 MC2SEO. All rights reserved.</div>
+  </div>
+</footer>
+
+<script>
+  // scroll reveal
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el => io.observe(el));
+
+  // contact form
+  const API_BASE = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+  const form = document.getElementById('leadForm');
+  const status = document.getElementById('formStatus');
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    const btn = form.querySelector('button[type="submit"]');
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    status.classList.remove('show');
+
+    let ok = false;
+    try {
+      const res = await fetch(API_BASE + '/contact', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name.value.trim(),
+          email: form.email.value.trim(),
+          company: form.company.value.trim(),
+          website: form.website.value.trim(),
+          message: form.message.value.trim()
+        })
+      });
+      const d = await res.json();
+      ok = res.ok && d.ok;
+    } catch (err) { ok = false; }
+
+    if (ok) {
+      status.textContent = "Thanks — we'll be in touch within one business day.";
+      status.classList.add('show');
+      btn.textContent = 'Request sent ✓';
+    } else {
+      status.textContent = 'Something went wrong — email rank@brandchecker.eu directly and we’ll get right back to you.';
+      status.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+
+  // Cal.com inline embed for the "Schedule a call" panel — lazily
+  // initialized the first time that tab is actually shown, not on page
+  // load. The panel starts hidden (no .active class, display:none), and
+  // Cal's inline embed sizes itself against the container at init time —
+  // initializing into a hidden container risks it never rendering
+  // correctly even once the panel is shown afterward.
+  let calEmbedLoaded = false;
+  function loadCalEmbed(){
+    if (calEmbedLoaded) return;
+    calEmbedLoaded = true;
+    (function (C, A, L) {
+      let p = function (a, ar) { a.q.push(ar); };
+      let d = C.document;
+      C.Cal = C.Cal || function () {
+        let cal = C.Cal; let ar = arguments;
+        if (!cal.loaded) {
+          cal.ns = {}; cal.q = cal.q || [];
+          d.head.appendChild(d.createElement('script')).src = A;
+          cal.loaded = true;
+        }
+        if (ar[0] === L) {
+          const api = function () { p(api, arguments); };
+          const namespace = ar[1];
+          api.q = api.q || [];
+          if (typeof namespace === 'string') { cal.ns[namespace] = cal.ns[namespace] || api; p(cal.ns[namespace], ar); p(cal, ['initNamespace', namespace]); }
+          else p(cal, ar);
+          return;
+        }
+        p(cal, ar);
+      };
+    })(window, 'https://app.cal.com/embed/embed.js', 'init');
+    Cal('init', { origin: 'https://cal.com' });
+    Cal('inline', {
+      elementOrSelector: '#cal-embed',
+      calLink: 'mc2seo',
+      layout: 'month_view'
+    });
+    Cal('ui', { styles: { branding: { brandColor: '#6e7bff' } }, hideEventTypeDetails: false, layout: 'month_view' });
+  }
+
+  // audit / call tab switching
+  const tabAudit = document.getElementById('tabAudit');
+  const tabCall = document.getElementById('tabCall');
+  const panelAudit = document.getElementById('panelAudit');
+  const panelCall = document.getElementById('panelCall');
+
+  function showAudit(){
+    tabAudit.classList.add('active'); tabAudit.setAttribute('aria-selected','true');
+    tabCall.classList.remove('active'); tabCall.setAttribute('aria-selected','false');
+    panelAudit.classList.add('active');
+    panelCall.classList.remove('active');
+  }
+  function showCall(){
+    tabCall.classList.add('active'); tabCall.setAttribute('aria-selected','true');
+    tabAudit.classList.remove('active'); tabAudit.setAttribute('aria-selected','false');
+    panelCall.classList.add('active');
+    panelAudit.classList.remove('active');
+    loadCalEmbed();
+  }
+  tabAudit.addEventListener('click', showAudit);
+  tabCall.addEventListener('click', showCall);
+
+  // Mobile menu: toggles the same .nav-links used on desktop into an
+  // open dropdown (see .nav-links.mobile-open in the stylesheet) rather
+  // than the previous placeholder, which just scrolled to #contact and
+  // did nothing else — the only way to reach any nav item, Tools included,
+  // was that one link, and clicking the toggle repeatedly just re-scrolled.
+  const mobileToggle = document.querySelector('.mobile-toggle');
+  const navLinks = document.querySelector('.nav-links');
+  mobileToggle.addEventListener('click', () => {
+    const open = navLinks.classList.toggle('mobile-open');
+    mobileToggle.textContent = open ? '✕' : '☰';
+    mobileToggle.setAttribute('aria-expanded', String(open));
+  });
+  navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+    navLinks.classList.remove('mobile-open');
+    mobileToggle.textContent = '☰';
+    mobileToggle.setAttribute('aria-expanded', 'false');
+  }));
+</script>
+
+</body>
+</html>

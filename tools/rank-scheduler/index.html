@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rank scheduler</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236e7bff'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:640px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input,select,textarea{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  select{height:42px}
+  textarea{resize:vertical;min-height:120px;line-height:1.7}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:14px}
+  .field .count{font-size:10.5px;color:var(--muted);margin-top:5px;text-align:right}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer;margin-top:6px}
+  .submit:hover{background:#5c68f2}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+  .ok-msg{color:var(--ok);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px;margin-bottom:16px}
+  .empty{font-size:12.5px;color:var(--muted)}
+
+  #results{display:none;margin-top:30px}
+  .meta{font-size:12px;color:var(--muted);margin-bottom:18px}
+  .backbtn{font-size:14px;color:var(--you);background:none;border:0;cursor:pointer;margin-bottom:16px;
+        font-family:'IBM Plex Mono',monospace}
+
+  .summary{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:20px}
+  .summary .headline{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px}
+  .summary .sub{font-size:12px;color:var(--muted)}
+
+  .krow{background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:14px 16px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start}
+  .kw{flex:1;min-width:0}
+  .kw .kwhead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .kw .kwtext{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;word-break:break-word}
+  .kw .vbadge{font-size:10.5px;color:var(--muted);white-space:nowrap}
+  .kw .vbadge .vol{color:var(--ink)}
+  .kw .vbadge .cpc{color:var(--gold)}
+  .kw .diffline{font-size:11.5px;margin-top:5px}
+  .kw .diffline.up{color:var(--ok)} .kw .diffline.down{color:var(--bad)}
+  .kw .diffline.new{color:var(--ok)} .kw .diffline.out{color:var(--bad)}
+  .kw .diffline.same{color:var(--muted)}
+  .pos{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;white-space:nowrap;flex:none}
+  .pos.good{color:var(--ok)} .pos.mid{color:var(--warn)} .pos.none{font-size:13px;color:var(--bad)}
+
+  .foot{font-size:10px;color:var(--muted);margin-top:20px;line-height:1.5}
+
+  .watches{margin-top:30px}
+  .watches h2{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin-bottom:12px}
+  .wcard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+  .wcard.paused{opacity:.6}
+  .wcard .wtop{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .wcard .wsite{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700}
+  .wcard .wstatus{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .wcard .wstatus.active{color:var(--ok)}
+  .wcard .wmeta{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.6}
+  .wcard .wactions{display:flex;gap:14px;margin-top:10px}
+  .wcard .wactions a,.wcard .wactions button{font-size:11.5px;color:var(--you);background:none;border:0;
+      cursor:pointer;font-family:'IBM Plex Mono',monospace;padding:0}
+  .wcard .wactions button.danger{color:var(--bad)}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate" style="display:none">
+    <p class="eyebrow">Heavy token usage · recurring</p>
+    <h1>You need an access code</h1>
+    <p class="lede">This tool runs on a personal link. Open the link you were sent — it carries your code — or type the code below.</p>
+    <div class="field" style="max-width:280px"><label for="manual">Access code</label>
+      <input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="submit" id="enter" type="button" style="max-width:280px">Continue</button>
+    <p class="after" style="text-align:left;max-width:280px">Don't have one? <a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>
+  </div>
+
+  <div id="form">
+    <p class="eyebrow">Heavy token usage · recurring</p>
+    <h1>Rank scheduler</h1>
+    <p class="lede">Set it once — up to 20 keywords, one market — and get a report every week showing exactly what moved since the last one. The recurring version of rank snapshot.</p>
+
+    <div id="createMsg"></div>
+
+    <div class="row2">
+      <div class="field"><label for="website">Your website</label><input id="website" type="text" placeholder="yoursite.com"></div>
+      <div class="field"><label for="market">Market</label><select id="market"></select></div>
+    </div>
+    <div class="field">
+      <label for="keywords">Keywords — one per line, up to 20</label>
+      <textarea id="keywords" placeholder="car insurance&#10;cheap car insurance&#10;auto insurance quotes"></textarea>
+      <div class="count" id="kwCount">0 / 20</div>
+    </div>
+    <div class="field"><label for="email">Email for weekly reports</label><input id="email" type="email" placeholder="you@yoursite.com"></div>
+    <button class="submit" id="go" type="button">Start weekly tracking</button>
+    <p class="after">Checks live now for a baseline, then again automatically every 7 days — each report emailed with position changes highlighted. Real cost per check, same as rank snapshot.</p>
+
+    <div class="watches" id="watchesWrap" style="display:none">
+      <h2>Your watches</h2>
+      <div id="watchList"><p class="empty">Loading…</p></div>
+    </div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <button class="backbtn" id="back">&larr; Your watches</button>
+    <p class="eyebrow restag">Rank scheduler</p>
+    <h1 id="rTitle" style="font-size:20px">Loading…</h1>
+    <div id="out"></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+const REPORT_ID = new URLSearchParams(location.search).get('id') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+
+const MARKETS = ['United Kingdom','United States','Canada','Ireland','Australia','Germany','France',
+  'Netherlands','Switzerland','Austria','Spain','Italy','Poland','Czechia','Slovakia'];
+const MAX_KEYWORDS = 20;
+
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtVol(n){ return n >= 1000 ? (Math.round(n / 100) / 10) + 'K' : String(n); }
+function fmtDate(iso){ return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
+
+$('market').innerHTML = MARKETS.map(m => '<option' + (m === 'United States' ? ' selected' : '') + '>' + esc(m) + '</option>').join('');
+
+$('go').onclick = createWatch;
+$('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; history.replaceState(null, '', '?k=' + encodeURIComponent(CODE)); };
+$('keywords').addEventListener('input', updateCount);
+
+function updateCount(){
+  const n = keywordList().length;
+  $('kwCount').textContent = n + ' / ' + MAX_KEYWORDS;
+  $('kwCount').style.color = n > MAX_KEYWORDS ? 'var(--bad)' : 'var(--muted)';
+}
+function keywordList(){
+  return $('keywords').value.split('\n').map(k => k.trim()).filter(Boolean).slice(0, MAX_KEYWORDS);
+}
+
+async function createWatch(){
+  const website = $('website').value.trim();
+  const market = $('market').value;
+  const keywords = keywordList();
+  const email = $('email').value.trim();
+
+  if (!website){ flashGo('Add your website first'); return; }
+  if (!keywords.length){ flashGo('Add at least one keyword'); return; }
+  if (!/^\S+@\S+\.\S+$/.test(email)){ flashGo('Add a valid email'); return; }
+
+  $('go').disabled = true;
+  $('go').textContent = 'Checking…';
+  $('createMsg').innerHTML = '';
+
+  let d;
+  try {
+    const res = await fetch(API + '/rank-scheduler/create', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, website, market, keywords, email })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  $('go').disabled = false;
+  $('go').textContent = 'Start weekly tracking';
+
+  if (d.error){
+    $('createMsg').innerHTML = '<p class="err">' + esc(d.error) + '</p>';
+    return;
+  }
+  $('createMsg').innerHTML = '<p class="ok-msg">Watch created — first report is below. Next check in 7 days, emailed to ' + esc(email) + '.</p>';
+  $('keywords').value = ''; $('email').value = ''; updateCount();
+  loadWatches();
+  showRun({ watch: d.watch, run: { ...d.run, results: d.run.results.map(r => ({ ...r, diff: null })) }, previous_at: null });
+}
+
+function flashGo(msg){
+  $('go').textContent = msg;
+  setTimeout(() => $('go').textContent = 'Start weekly tracking', 2000);
+}
+
+async function loadWatches(){
+  $('watchesWrap').style.display = 'block';
+  let d;
+  try {
+    const res = await fetch(API + '/rank-scheduler/list', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  if (d.error || !d.watches){ $('watchList').innerHTML = '<p class="empty">Could not load your watches.</p>'; return; }
+  if (!d.watches.length){ $('watchList').innerHTML = '<p class="empty">No watches yet — set one up above.</p>'; return; }
+
+  $('watchList').innerHTML = d.watches.map(renderWatchCard).join('');
+  $('watchList').querySelectorAll('[data-view]').forEach(el => el.onclick = e => {
+    e.preventDefault(); loadReport(el.dataset.view);
+  });
+  $('watchList').querySelectorAll('[data-toggle]').forEach(el => el.onclick = () => toggleWatch(el.dataset.toggle, el.dataset.next));
+  $('watchList').querySelectorAll('[data-delete]').forEach(el => el.onclick = () => deleteWatch(el.dataset.delete));
+}
+
+function renderWatchCard(w){
+  const nextIn = Math.max(0, Math.ceil((new Date(w.next_run_at) - Date.now()) / 86400000));
+  const viewLink = w.latest_run ? '<a href="#" data-view="' + esc(w.latest_run.id) + '">View latest report →</a>' : '<span class="empty">No report yet</span>';
+  return '<div class="wcard' + (w.status !== 'active' ? ' paused' : '') + '">' +
+    '<div class="wtop"><div class="wsite">' + esc(w.website) + '</div><div class="wstatus' + (w.status === 'active' ? ' active' : '') + '">' + esc(w.status) + '</div></div>' +
+    '<div class="wmeta">' + w.keywords.length + ' keyword' + (w.keywords.length === 1 ? '' : 's') + ' · ' + esc(w.market) + ' · ' + esc(w.email) +
+    (w.status === 'active' ? ' · next check in ' + nextIn + ' day' + (nextIn === 1 ? '' : 's') : '') + '</div>' +
+    '<div class="wactions">' + viewLink +
+    '<button data-toggle="' + esc(w.id) + '" data-next="' + (w.status === 'active' ? 'paused' : 'active') + '">' + (w.status === 'active' ? 'Pause' : 'Resume') + '</button>' +
+    '<button class="danger" data-delete="' + esc(w.id) + '">Delete</button></div></div>';
+}
+
+async function toggleWatch(id, next){
+  await fetch(API + '/rank-scheduler/pause', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: CODE, id, status: next })
+  });
+  loadWatches();
+}
+
+async function deleteWatch(id){
+  if (!confirm('Delete this watch? Its saved reports go with it.')) return;
+  await fetch(API + '/rank-scheduler/delete', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: CODE, id })
+  });
+  loadWatches();
+}
+
+async function loadReport(id){
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = 'Loading…';
+  $('out').innerHTML = '<p class="empty">Loading report…</p>';
+  window.scrollTo(0,0);
+
+  let d;
+  try {
+    const res = await fetch(API + '/rank-scheduler/get', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, id })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  if (d.error){
+    $('rTitle').textContent = 'Not found';
+    $('out').innerHTML = '<p class="err">' + esc(d.error) + '</p>';
+    return;
+  }
+  history.replaceState(null, '', '?k=' + encodeURIComponent(CODE) + '&id=' + encodeURIComponent(id));
+  showRun(d);
+}
+
+function showRun(d){
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = d.watch.website;
+  $('out').innerHTML = renderResults(d);
+}
+
+function renderResults(d){
+  const results = d.run.results;
+  const inTop = results.filter(r => r.in_top).length;
+  const first = results.filter(r => r.position === 1).length;
+  const headline = inTop + ' of ' + results.length + ' keyword' + (results.length === 1 ? '' : 's') + ' rank in the top 30, in ' + d.watch.market;
+  const sub = d.previous_at
+    ? 'vs the report from ' + fmtDate(d.previous_at) + ' · this one checked ' + fmtDate(d.run.created_at)
+    : 'First check for this watch, ' + fmtDate(d.run.created_at) + ' — nothing to compare yet';
+
+  let html = '<div class="summary"><div class="headline">' + esc(headline) + '</div><div class="sub">' + esc(sub) + '</div></div>';
+  html += results.map(renderRow).join('');
+  html += '<p class="foot">Position is where ' + esc(d.watch.website) + ' sits among organic results. This watch rechecks every 7 days and emails ' +
+    esc(d.watch.email) + ' with the same comparison.</p>';
+  return html;
+}
+
+function diffLine(r){
+  const diff = r.diff;
+  if (!diff) return '';
+  if (diff.kind === 'still_out') return '';
+  if (diff.kind === 'same') return '<div class="diffline same">No change since last week</div>';
+  if (diff.kind === 'new') return '<div class="diffline new">▲ New in top 30 (was not ranking)</div>';
+  if (diff.kind === 'dropped_out') return '<div class="diffline out">▼ Dropped out of top 30 (was #' + diff.from + ')</div>';
+  if (diff.kind === 'up') return '<div class="diffline up">▲ Up ' + diff.delta + ' since last week</div>';
+  if (diff.kind === 'down') return '<div class="diffline down">▼ Down ' + diff.delta + ' since last week</div>';
+  return '';
+}
+
+function renderRow(r){
+  if (r.error){
+    return '<div class="krow"><div class="kw"><div class="kwtext">' + esc(r.keyword) + '</div>' +
+      '<div class="diffline down">' + esc(r.error) + '</div></div></div>';
+  }
+
+  const cls = r.position === null ? 'none' : r.position <= 10 ? 'good' : 'mid';
+  const posHtml = '<div class="pos ' + cls + '">' + (r.position === null ? 'Not in top 30' : '#' + r.position) + '</div>';
+
+  const vparts = [];
+  if (r.volume) vparts.push('<span class="vol">' + fmtVol(r.volume) + '/mo</span>');
+  if (r.cpc) vparts.push('<span class="cpc">$' + r.cpc.toFixed(2) + ' CPC</span>');
+  const vbadge = vparts.length ? '<span class="vbadge">' + vparts.join(' · ') + '</span>' : '';
+
+  return '<div class="krow"><div class="kw"><div class="kwhead"><div class="kwtext">' + esc(r.keyword) + '</div>' + vbadge + '</div>' +
+    diffLine(r) + '</div>' + posHtml + '</div>';
+}
+
+if (!CODE){
+  $('form').style.display = 'none';
+  $('gate').style.display = 'block';
+  const goGate = () => {
+    const v = $('manual').value.trim().toLowerCase().replace(/\s+/g, '');
+    if (v) location.search = '?k=' + encodeURIComponent(v);
+  };
+  $('enter').onclick = goGate;
+  $('manual').onkeydown = e => { if (e.key === 'Enter') goGate(); };
+} else if (REPORT_ID){
+  loadReport(REPORT_ID);
+  loadWatches();
+} else {
+  loadWatches();
+}
+</script>
+</body>
+</html>

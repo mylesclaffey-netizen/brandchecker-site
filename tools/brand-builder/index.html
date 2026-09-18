@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brand Builder</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23ffd65c'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MC2SEO">
+<meta property="og:url" content="https://brandchecker.eu/tools/brand-builder/">
+<meta property="og:title" content="Brand Builder — Free SEO Tool | MC2SEO">
+<meta property="og:description" content="One form, ~18 SEO and brand-visibility tools run automatically — a full Brand Builder Report emailed when it's ready.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Brand Builder — Free SEO Tool | MC2SEO">
+<meta name="twitter:description" content="One form, ~18 SEO and brand-visibility tools run automatically — a full Brand Builder Report emailed when it's ready.">
+<meta name="twitter:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:640px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input,select,textarea{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  select{height:44px}
+  textarea{resize:vertical;min-height:90px;line-height:1.7}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:14px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .hint{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.5}
+  .section{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;color:var(--ink);
+        text-transform:uppercase;letter-spacing:.06em;margin:26px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+  .section:first-of-type{margin-top:0;padding-top:0;border-top:0}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:16px;cursor:pointer;margin-top:10px}
+  .submit:hover{background:#5c68f2}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px;line-height:1.6}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+
+  #results{display:none;margin-top:30px;text-align:center}
+  .okbox{background:var(--card);border:1px solid var(--ok);border-radius:10px;padding:26px 20px}
+  .okbox .big{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;color:var(--ok);margin-bottom:8px}
+  .okbox p{font-size:13px;color:var(--muted);line-height:1.6}
+  .okbox a{color:var(--you)}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+
+  #gate{display:none}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate">
+    <p class="eyebrow">Real API cost</p>
+    <h1>You need an access code</h1>
+    <p class="lede">This tool runs on a personal link. Open the link you were sent — it carries your code — or type the code below.</p>
+    <div class="field" style="max-width:280px"><label for="manual">Access code</label>
+      <input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="submit" id="enter" type="button" style="max-width:280px">Continue</button>
+    <p class="after" style="text-align:left;max-width:280px">Don't have one? <a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>
+  </div>
+
+  <div id="form">
+    <p class="eyebrow">Real API cost · one report</p>
+    <h1>Brand Builder</h1>
+    <p class="lede">One form. ~18 of our tools — rankings, share of search, AI mentions, schema, sitemap, page speed, local search, and more — run automatically against your brand. We email you the full Brand Builder Report once it's ready, usually within a few minutes.</p>
+
+    <div class="section">Your site</div>
+    <div class="field"><label for="homepage">Homepage</label><input id="homepage" type="text" placeholder="yoursite.com"></div>
+    <div class="field"><label for="productPage">Product or key page (optional)</label><input id="productPage" type="text" placeholder="yoursite.com/product"></div>
+    <div class="field"><label for="brandName">Brand / business name</label><input id="brandName" type="text" placeholder="e.g. Acme Inc"></div>
+
+    <div class="section">Where you compete</div>
+    <div class="row2">
+      <div class="field"><label for="market">Country</label><select id="market"></select></div>
+      <div class="field"><label for="city">City (optional)</label><input id="city" type="text" placeholder="e.g. Prague"></div>
+    </div>
+    <p class="hint" style="margin:-6px 0 14px">Local map-pack tracking (grid-check) only runs for Prague, Dublin, Hamburg or Belfast right now — any city still helps our local-pack pin check, which works worldwide.</p>
+    <div class="field">
+      <label for="keywords">Keywords — one per line, up to 10</label>
+      <textarea id="keywords" placeholder="car insurance&#10;cheap car insurance&#10;auto insurance quotes"></textarea>
+    </div>
+    <div class="field">
+      <label for="competitors">Competitor domains — one per line, up to 3 (optional)</label>
+      <textarea id="competitors" placeholder="competitor1.com&#10;competitor2.com" style="min-height:70px"></textarea>
+    </div>
+
+    <div class="section">Delivery</div>
+    <div class="field"><label for="email">Email — the report goes here</label><input id="email" type="email" placeholder="you@yourcompany.com"></div>
+
+    <button class="submit" id="go" type="button">Build my report</button>
+    <p class="after">This runs a real batch of tools — brand-bidding, AI mentions, rank tracking and more — against your data. No live wait on this page; the full report arrives by email.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <div class="okbox">
+      <div class="big">Your Brand Builder Report is on its way</div>
+      <p>We're running ~18 checks against <b id="rBrand"></b> now. Check <b id="rEmail"></b> in a few minutes — or watch it fill in live:</p>
+      <p style="margin-top:14px"><a id="rLink" href="#" target="_blank" rel="noopener">Open the report page →</a></p>
+    </div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+
+const MARKETS = ['United Kingdom','United States','Canada','Ireland','Australia','Germany','France',
+  'Netherlands','Switzerland','Austria','Spain','Italy','Poland','Czechia','Slovakia'];
+
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+$('market').innerHTML = MARKETS.map(m => '<option' + (m === 'United States' ? ' selected' : '') + '>' + esc(m) + '</option>').join('');
+
+function lineList(id, max){
+  return $(id).value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, max);
+}
+
+$('go').onclick = run;
+
+async function run(){
+  const homepage = $('homepage').value.trim();
+  const product_page = $('productPage').value.trim();
+  const brand_name = $('brandName').value.trim();
+  const market = $('market').value;
+  const city = $('city').value.trim();
+  const keywords = lineList('keywords', 10);
+  const competitors = lineList('competitors', 3);
+  const email = $('email').value.trim();
+
+  if (!homepage){ flashGo('Add your homepage first'); return; }
+  if (!brand_name){ flashGo('Add your brand name first'); return; }
+  if (!keywords.length){ flashGo('Add at least one keyword'); return; }
+  if (!email){ flashGo('Add your email first'); return; }
+
+  $('go').disabled = true;
+  $('go').textContent = 'Starting…';
+
+  let d;
+  try {
+    const res = await fetch(API + '/master-form/submit', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, homepage, product_page, brand_name, market, city, keywords, competitors, email })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  $('go').disabled = false;
+  $('go').textContent = 'Build my report';
+
+  if (d.error){
+    $('form').insertAdjacentHTML('beforeend', '<p class="err" style="margin-top:14px">' + esc(d.error) + '</p>');
+    return;
+  }
+
+  $('rBrand').textContent = brand_name;
+  $('rEmail').textContent = email;
+  $('rLink').href = d.report_url;
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  window.scrollTo(0,0);
+}
+
+function flashGo(msg){
+  $('go').textContent = msg;
+  setTimeout(() => $('go').textContent = 'Build my report', 2000);
+}
+
+if (!CODE){
+  $('form').style.display = 'none';
+  $('gate').style.display = 'block';
+  const goGate = () => {
+    const v = $('manual').value.trim().toLowerCase().replace(/\s+/g, '');
+    if (v) location.search = '?k=' + encodeURIComponent(v);
+  };
+  $('enter').onclick = goGate;
+  $('manual').onkeydown = e => { if (e.key === 'Enter') goGate(); };
+}
+</script>
+</body>
+</html>

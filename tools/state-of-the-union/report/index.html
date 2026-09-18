@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>State Of The Union Report</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23ffd65c'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MC2SEO">
+<meta property="og:url" content="https://brandchecker.eu/tools/state-of-the-union/report/">
+<meta property="og:title" content="State Of The Union Report — MC2SEO">
+<meta property="og:description" content="Up to 10 prompts, checked across up to 5 locations, against 5 LLMs — one consolidated brand-visibility report.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="State Of The Union Report — MC2SEO">
+<meta name="twitter:description" content="Up to 10 prompts, checked across up to 5 locations, against 5 LLMs — one consolidated brand-visibility report.">
+<meta name="twitter:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--card2:#171b26;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:720px;margin:0 auto}
+  .eyebrow{font-size:15px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold);overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:12.5px;color:var(--muted);margin-bottom:22px;line-height:1.6}
+  .empty{font-size:12.5px;color:var(--muted)}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+
+  .banner{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:24px}
+  .banner.running{border-color:var(--warn)}
+  .banner.complete{border-color:var(--ok)}
+  .banner .headline{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px}
+  .banner .sub{font-size:12px;color:var(--muted)}
+  .banner .refresh{font-size:11px;color:var(--you);background:none;border:1px solid var(--line);
+        border-radius:6px;padding:6px 12px;cursor:pointer;margin-top:10px;font-family:'IBM Plex Mono',monospace}
+
+  .provider{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+  .provider .phead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:2px}
+  .provider .pname{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700}
+  .provider .pstatus{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+        padding:3px 8px;border-radius:20px;flex:none}
+  .provider .pstatus.connected{color:var(--ok);background:rgba(53,196,141,.12)}
+  .provider .pstatus.unavailable{color:var(--muted);background:rgba(139,147,167,.12)}
+  .provider .psub{font-size:11.5px;color:var(--muted);margin-bottom:12px}
+
+  .pcard{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:13px 14px;margin-bottom:10px}
+  .pcard:last-child{margin-bottom:0}
+  .pcard .prompt{font-family:'Space Grotesk',sans-serif;font-size:13.5px;font-weight:700;margin-bottom:9px;line-height:1.35}
+  .locresult{border-top:1px solid var(--line);padding:9px 0}
+  .locresult:first-of-type{border-top:0;padding-top:0}
+  .locresult .lname{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+        color:var(--muted);margin-bottom:5px;display:flex;justify-content:space-between}
+  .locresult .lstatus{font-size:9px;padding:2px 7px;border-radius:20px}
+  .locresult .lstatus.done{color:var(--ok);background:rgba(53,196,141,.12)}
+  .locresult .lstatus.failed{color:var(--bad);background:rgba(232,105,95,.12)}
+  .locresult .lstatus.pending{color:var(--muted);background:rgba(139,147,167,.12)}
+  .locresult .answer{font-size:12.5px;line-height:1.55;color:var(--ink);white-space:pre-wrap}
+  .locresult .answer.muted{color:var(--muted)}
+
+  .section-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;
+        text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:28px 0 12px}
+  .section-title:first-of-type{margin-top:0}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">State Of The Union</p>
+  <h1 id="rTitle">Loading…</h1>
+  <div id="out"><p class="empty">Fetching your report…</p></div>
+
+  <div class="sidenav">
+    <a href="/tools/state-of-the-union/" class="sidenav-link">← New State Of The Union report</a>
+    <a href="/tools/" class="sidenav-link">← Back to tools</a>
+    <a href="/" class="sidenav-link">← Back to homepage</a>
+  </div>
+</div>
+
+<script>
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+const ID = new URLSearchParams(location.search).get('id') || '';
+const $ = id => document.getElementById(id);
+
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function renderLocResult(cell){
+  if (cell.status === 'pending') {
+    return '<div class="locresult"><div class="lname">' + esc(cell.location) +
+      '<span class="lstatus pending">Pending</span></div><p class="answer muted">Still running — refresh in a bit.</p></div>';
+  }
+  if (cell.status === 'failed') {
+    return '<div class="locresult"><div class="lname">' + esc(cell.location) +
+      '<span class="lstatus failed">Failed</span></div><p class="answer muted">' + esc(cell.error || 'Did not complete.') + '</p></div>';
+  }
+  const text = cell.result?.text;
+  return '<div class="locresult"><div class="lname">' + esc(cell.location) +
+    '<span class="lstatus done">Done</span></div>' +
+    (text ? '<p class="answer">' + esc(text) + '</p>' : '<p class="answer muted">No answer text came back.</p>') + '</div>';
+}
+
+function renderProvider(provider, cellsForProvider, prompts){
+  if (!provider.available) {
+    return '<div class="provider"><div class="phead"><span class="pname">' + esc(provider.label) + '</span>' +
+      '<span class="pstatus unavailable">Not yet connected</span></div>' +
+      '<p class="psub">No API key configured for ' + esc(provider.label) + ' on this account yet.</p></div>';
+  }
+
+  const doneCount = cellsForProvider.filter(c => c.status === 'done').length;
+  const cardsHtml = prompts.map(prompt => {
+    const cells = cellsForProvider.filter(c => c.prompt === prompt);
+    return '<div class="pcard"><div class="prompt">"' + esc(prompt) + '"</div>' +
+      cells.map(renderLocResult).join('') + '</div>';
+  }).join('');
+
+  return '<div class="provider"><div class="phead"><span class="pname">' + esc(provider.label) + '</span>' +
+    '<span class="pstatus connected">Connected</span></div>' +
+    '<p class="psub">' + doneCount + ' of ' + cellsForProvider.length + ' checks done</p>' +
+    cardsHtml + '</div>';
+}
+
+function render(d){
+  $('rTitle').textContent = d.brand_name || d.prompts[0] || 'State Of The Union';
+
+  const doneTotal = d.cells.filter(c => c.status === 'done').length;
+  const attemptedTotal = d.cells.filter(c => c.status !== 'unavailable').length;
+  const bannerCls = d.status === 'complete' ? 'complete' : 'running';
+  const bannerHtml = '<div class="banner ' + bannerCls + '">' +
+    '<div class="headline">' + (d.status === 'complete' ? 'Report complete' : 'Still generating — ' + doneTotal + ' of ' + attemptedTotal + ' checks done') + '</div>' +
+    '<p class="sub">' + d.prompts.length + ' prompt' + (d.prompts.length === 1 ? '' : 's') + ' × ' + d.locations.length + ' location' + (d.locations.length === 1 ? '' : 's') + '</p>' +
+    (d.status !== 'complete' ? '<button class="refresh" id="refreshBtn" type="button">Refresh</button>' : '') +
+    '</div>';
+
+  const providersHtml = d.providers.map(p => renderProvider(p, d.cells.filter(c => c.provider === p.id), d.prompts)).join('');
+
+  $('out').innerHTML = bannerHtml + providersHtml;
+  const btn = $('refreshBtn');
+  if (btn) btn.onclick = () => location.reload();
+}
+
+async function load(){
+  if (!CODE || !ID) { $('out').innerHTML = '<p class="err">Missing access code or report id.</p>'; return; }
+  let d;
+  try {
+    const res = await fetch(API + '/state-of-union/get', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, id: ID })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  if (d.error) { $('rTitle').textContent = 'Report not found'; $('out').innerHTML = '<p class="err">' + esc(d.error) + '</p>'; return; }
+  render(d);
+}
+
+load();
+</script>
+</body>
+</html>

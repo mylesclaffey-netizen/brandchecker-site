@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brand questions</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23ffd65c'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:640px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  input:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:12px}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer;margin-top:6px}
+  .submit:hover{background:#5c68f2}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+  .empty{font-size:12.5px;color:var(--muted)}
+
+  #results{display:none;margin-top:30px}
+  .meta{font-size:12px;color:var(--muted);margin-bottom:18px}
+  .backbtn{font-size:14px;color:var(--you);background:none;border:0;cursor:pointer;margin-bottom:16px;
+        font-family:'IBM Plex Mono',monospace}
+
+  .summary{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:20px}
+  .summary .headline{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px}
+  .summary .sub{font-size:12px;color:var(--muted)}
+
+  /* ---- wheel: star-chart / engraved-plate styling, not a flowchart ---- */
+  .wheelbox{background:radial-gradient(circle at 50% 46%, #171b26 0%, var(--card) 70%);
+        border:1px solid var(--line);border-radius:12px;
+        padding:10px 4px 4px;margin-bottom:14px;overflow:hidden}
+  .wheel{width:100%;height:auto;display:block}
+  .c-bad{--c:var(--bad)} .c-warn{--c:var(--warn)} .c-you{--c:var(--you)}
+  .c-gold{--c:var(--gold)} .c-ok{--c:var(--ok)}
+  .backring{fill:none;stroke:var(--line);stroke-width:1}
+  .rayline{stroke:var(--line);stroke-width:1;opacity:.6}
+  .hub-center{fill:var(--paper);stroke:var(--gold);stroke-width:1.6}
+  .hub-center-inner{fill:none;stroke:var(--gold);stroke-width:1;opacity:.55}
+  .hub-center-label{fill:var(--gold);font-family:'Playfair Display',serif;font-style:italic;font-weight:600;
+        font-size:15px;text-anchor:middle;dominant-baseline:middle}
+  .hubnode{fill:var(--paper);stroke:var(--c);stroke-width:1.6}
+  .hubnode-pivot{fill:var(--c)}
+  .hublabel{fill:var(--c);font-family:'Playfair Display',serif;font-weight:600;font-variant:small-caps;
+        font-size:13px;letter-spacing:.02em}
+  .labelchip{fill:var(--paper);opacity:.82}
+  .spoke{stroke:var(--c);stroke-width:1.3;opacity:.6;fill:none}
+  .twig{stroke:var(--c);stroke-width:.9;opacity:.45;fill:none}
+  .bubble-ring{fill:var(--paper);stroke:var(--c);stroke-width:1.1;cursor:pointer;transition:stroke-width .15s ease}
+  .bubble-dot{fill:var(--c);pointer-events:none}
+  .bubble-ring:hover,.bubble-ring:focus{stroke-width:2;outline:none}
+  @keyframes popIn{from{opacity:0;transform:scale(.25)}to{opacity:1;transform:scale(1)}}
+  @keyframes drawLine{to{stroke-dashoffset:0}}
+  .spoke,.twig{stroke-dasharray:260;stroke-dashoffset:260;animation:drawLine .6s ease forwards}
+  .hubnode,.hubnode-pivot,.bubble-ring,.bubble-dot,.hub-center,.hub-center-inner{
+        transform-origin:center;transform-box:fill-box;opacity:0;
+        animation:popIn .4s cubic-bezier(.34,1.56,.64,1) forwards}
+  .hublabel,.labelchip{opacity:0;animation:popIn .4s ease forwards}
+  .labelchip{animation-name:fadeIn}
+  @keyframes fadeIn{to{opacity:.82}}
+  .backring,.rayline{opacity:0;animation:fadeInFaint .8s ease forwards}
+  @keyframes fadeInFaint{to{opacity:.6}}
+
+  .reading{display:flex;align-items:center;gap:10px;padding:12px 14px;margin:0 0 20px;
+        background:var(--card);border:1px solid var(--line);border-radius:9px;
+        font-size:12.5px;color:var(--muted);min-height:20px}
+  .reading .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+  .reading .txt{flex:1}
+  .reading .hint2{font-size:10.5px;color:var(--muted);white-space:nowrap}
+
+  .catcard{background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:14px 16px;margin-bottom:10px}
+  .cathead{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+  .catdot{width:9px;height:9px;border-radius:50%;flex:none}
+  .catname{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700}
+  .catcount{font-size:11px;color:var(--muted);margin-left:auto}
+  .qrow{display:flex;justify-content:space-between;align-items:center;gap:10px;
+        padding:7px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .qrow:last-child{border-bottom:0}
+  .qrow .qtxt{font-size:12.5px}
+  .qrow .copy{font-size:10px;color:var(--muted);flex:none;opacity:0;transition:opacity .12s ease}
+  .qrow:hover .copy{opacity:1}
+  .vbadge{font-size:10px;color:var(--muted);flex:none;white-space:nowrap}
+  .vbadge .vol{color:var(--ink)}
+  .vbadge .cpc{color:var(--gold)}
+  .paaq{font-style:italic}
+
+  .enrichcard{background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:16px;margin:0 0 20px}
+  .enrichcard h4{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;margin-bottom:4px}
+  .enrichcard .sub{font-size:11.5px;color:var(--muted);margin-bottom:12px;line-height:1.5}
+  .enrichrow{display:flex;gap:8px}
+  select{flex:1;width:100%;height:42px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink);
+        background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:0 10px}
+  .enrichbtn{height:42px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;background:var(--you);
+        color:#fff;border:0;border-radius:7px;padding:0 16px;cursor:pointer;white-space:nowrap}
+  .enrichbtn:hover{background:#5c68f2}
+  .enrichbtn[disabled]{opacity:.5;cursor:not-allowed}
+  .enrichmsg{font-size:11px;margin-top:9px}
+  .enrichmsg.ok{color:var(--ok)}
+  .enrichmsg.bad{color:var(--bad)}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+        background:var(--ink);color:var(--paper);font-size:12px;font-weight:500;
+        padding:9px 16px;border-radius:20px;opacity:0;pointer-events:none;
+        transition:opacity .18s ease,transform .18s ease;z-index:9}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .foot{font-size:10px;color:var(--muted);margin-top:20px;line-height:1.5}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate" style="display:none">
+    <p class="eyebrow">Free tool</p>
+    <h1>You need an access code</h1>
+    <p class="lede">This tool runs on a personal link. Open the link you were sent — it carries your code — or type the code below.</p>
+    <div class="field" style="max-width:280px"><label for="manual">Access code</label>
+      <input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="submit" id="enter" type="button" style="max-width:280px">Continue</button>
+    <p class="after" style="text-align:left;max-width:280px">Don't have one? <a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>
+  </div>
+
+  <div id="form">
+    <p class="eyebrow">Free tool</p>
+    <h1>Brand questions</h1>
+    <p class="lede">What is Google actually finishing when someone starts typing your brand name? Real autocomplete data, grouped into complaints, trust, comparisons, pricing and support — so you see the "is it a scam" questions apart from the "where do I log in" ones.</p>
+
+    <div class="field"><label for="brand">Brand name</label><input id="brand" type="text" placeholder="e.g. GEICO"></div>
+    <button class="submit" id="go" type="button">Find the questions</button>
+    <p class="after">Pulled live from Google and YouTube's own autocomplete — no scraping tricks, nothing saved on your site.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <button class="backbtn" id="back">&larr; New check</button>
+    <p class="eyebrow restag">Brand questions</p>
+    <h1 id="rTitle" style="font-size:20px">Checking…</h1>
+    <div id="out"></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">Copied</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+
+const MARKETS = ['United Kingdom','United States','Canada','Ireland','Australia','Germany','France',
+  'Netherlands','Switzerland','Austria','Spain','Italy','Poland','Czechia','Slovakia'];
+let lastData = null;
+
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+$('go').onclick = run;
+$('brand').onkeydown = e => { if (e.key === 'Enter') run(); };
+$('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; };
+
+async function run(){
+  const brand = $('brand').value.trim();
+  if (!brand){
+    $('go').textContent = 'Add a brand name first';
+    setTimeout(() => $('go').textContent = 'Find the questions', 2000);
+    return;
+  }
+
+  $('go').disabled = true;
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = 'Checking…';
+  $('out').innerHTML = '<p class="empty">Sweeping Google autocomplete across five brand-question categories…</p>';
+  window.scrollTo(0,0);
+
+  let d;
+  try {
+    const res = await fetch(API + '/brand-questions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, brand })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  $('go').disabled = false;
+
+  if (d.error){
+    $('rTitle').textContent = brand;
+    $('out').innerHTML = '<p class="err">' + esc(d.error) + '</p>';
+    return;
+  }
+  lastData = d;
+  $('rTitle').textContent = d.brand;
+  $('out').innerHTML = renderResults(d);
+  wireWheel();
+}
+
+/* ---- rendering ---- */
+
+function renderResults(d){
+  const concerns = d.categories.find(c => c.id === 'concerns');
+  const concernCount = concerns ? concerns.questions.length : 0;
+  const headline = d.total + ' real question' + (d.total === 1 ? '' : 's') + ' found around "' + d.brand + '"';
+  const sub = concernCount
+    ? concernCount + ' of them are complaint-flavored — worth reading first, below.'
+    : 'Nothing complaint-flavored surfaced right now — a good sign, not proof of a clean slate.';
+
+  let html = '<div class="summary"><div class="headline">' + esc(headline) + '</div><div class="sub">' + esc(sub) + '</div></div>';
+
+  html += '<div class="wheelbox">' + wheelSVG(d) + '</div>';
+
+  html += '<div class="reading" id="reading"><span class="dot" id="readingDot"></span>' +
+    '<span class="txt" id="readingTxt">Tap a dot on the wheel to read the question — tap again to copy it.</span>' +
+    '<span class="hint2" id="readingHint"></span></div>';
+
+  html += enrichCardHTML();
+  html += '<div id="paaSection"></div>';
+
+  html += d.categories.map(cat => renderCatCard(cat)).join('');
+
+  html += '<p class="foot">Pulled live from Google and YouTube\'s own autocomplete suggestions across brand-focused search patterns (complaints, trust, comparisons, pricing, account/support). These are real predicted completions, not a guaranteed list of every question people ask — treat frequency (dot size) as a rough signal, not a search-volume number.</p>';
+
+  return html;
+}
+
+const CAT_COLOR_VAR = { bad: '--bad', warn: '--warn', you: '--you', gold: '--gold', ok: '--ok' };
+
+function enrichCardHTML(){
+  const options = MARKETS.map(m =>
+    '<option value="' + esc(m) + '"' + (m === 'United States' ? ' selected' : '') + '>' + esc(m) + '</option>'
+  ).join('');
+  return '<div class="enrichcard"><h4>Add real search volume, CPC & People Also Ask</h4>' +
+    '<p class="sub">Pulls live data for these questions — genuine DataForSEO cost, unlike the free wheel above.</p>' +
+    '<div class="enrichrow"><select id="market">' + options + '</select>' +
+    '<button class="enrichbtn" id="enrichBtn" type="button">Get data</button></div>' +
+    '<div id="enrichMsg"></div></div>';
+}
+
+function fmtVol(n){ return n >= 1000 ? (Math.round(n / 100) / 10) + 'K' : String(n); }
+
+function decorateVolumes(volumes){
+  document.querySelectorAll('#out .qrow').forEach(row => {
+    const v = volumes[(row.dataset.copy || '').toLowerCase()];
+    if (!v) return;
+    const parts = [];
+    if (v.volume) parts.push('<span class="vol">' + fmtVol(v.volume) + '/mo</span>');
+    if (v.cpc) parts.push('<span class="cpc">$' + v.cpc.toFixed(2) + '</span>');
+    if (!parts.length) return;
+    const badge = document.createElement('span');
+    badge.className = 'vbadge';
+    badge.innerHTML = parts.join(' · ');
+    row.insertBefore(badge, row.querySelector('.copy'));
+  });
+}
+
+function renderPAA(paa){
+  if (!paa || !paa.length) return '';
+  const rows = paa.map(p =>
+    '<div class="qrow paaq" data-copy="' + esc(p.text) + '"><span class="qtxt">“' + esc(p.text) + '”</span><span class="copy">copy</span></div>'
+  ).join('');
+  return '<div class="catcard" style="border-color:var(--gold)"><div class="cathead">' +
+    '<span class="catdot" style="background:var(--gold)"></span>' +
+    '<span class="catname" style="color:var(--gold)">People Also Ask</span>' +
+    '<span class="catcount">' + paa.length + '</span></div>' +
+    '<p class="sub" style="margin-bottom:9px">Real questions from Google’s own "People also ask" box — a different, higher-quality signal than autocomplete.</p>' +
+    rows + '</div>';
+}
+
+async function enrich(){
+  if (!lastData) return;
+  const market = $('market').value;
+  const brand = lastData.brand;
+  const questions = lastData.categories.flatMap(c => c.questions.map(q => q.text));
+
+  $('enrichBtn').disabled = true;
+  $('enrichBtn').textContent = 'Fetching…';
+  $('enrichMsg').innerHTML = '';
+
+  let d;
+  try {
+    const res = await fetch(API + '/brand-questions/enrich', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, brand, market, questions })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  $('enrichBtn').disabled = false;
+  $('enrichBtn').textContent = 'Get data';
+
+  if (d.error){
+    $('enrichMsg').innerHTML = '<p class="enrichmsg bad">' + esc(d.error) + '</p>';
+    return;
+  }
+
+  decorateVolumes(d.volumes);
+  $('paaSection').innerHTML = renderPAA(d.paa);
+  $('enrichMsg').innerHTML = '<p class="enrichmsg ok">Done — volume/CPC added below, ' +
+    d.paa.length + ' People Also Ask question' + (d.paa.length === 1 ? '' : 's') + ' found.</p>';
+}
+
+function renderCatCard(cat){
+  if (!cat.questions.length) return '';
+  const rows = cat.questions.map(q =>
+    '<div class="qrow" data-copy="' + esc(q.text) + '"><span class="qtxt">' + esc(q.text) + '</span><span class="copy">copy</span></div>'
+  ).join('');
+  return '<div class="catcard"><div class="cathead">' +
+    '<span class="catdot" style="background:var(' + CAT_COLOR_VAR[cat.color] + ')"></span>' +
+    '<span class="catname" style="color:var(' + CAT_COLOR_VAR[cat.color] + ')">' + esc(cat.label) + '</span>' +
+    '<span class="catcount">' + cat.questions.length + '</span></div>' +
+    rows + '</div>';
+}
+
+// Keeps a gap-degree wedge clear around each hub's own outward direction
+// (where its label sits) so no bubble ever renders on top of the label.
+function bubbleOffsets(m, spread, gap){
+  if (m <= 0) return [];
+  const half = spread / 2, g = gap / 2;
+  const evenSpread = (a, b, n) => n <= 1 ? [(a + b) / 2] : Array.from({length: n}, (_, i) => a + (b - a) * i / (n - 1));
+  const left = Math.ceil(m / 2), right = m - left;
+  return [...evenSpread(-half, -g, left), ...evenSpread(g, half, right)];
+}
+
+// A gentle quadratic-bezier arc between two points instead of a straight
+// line — the one change that does the most to move this away from a
+// flowchart toward something with a hand-drawn, chart-plate feel.
+function curve(x1, y1, x2, y2, cls, delay, bend){
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len, ny = dx / len;
+  const qx = mx + nx * bend, qy = my + ny * bend;
+  return '<path d="M' + x1.toFixed(1) + ',' + y1.toFixed(1) + ' Q' + qx.toFixed(1) + ',' + qy.toFixed(1) +
+    ' ' + x2.toFixed(1) + ',' + y2.toFixed(1) + '" class="' + cls + '" style="animation-delay:' + delay + 'ms"></path>';
+}
+function circle(cx, cy, r, cls, delay){
+  return '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" class="' + cls +
+    '" style="animation-delay:' + delay + 'ms"></circle>';
+}
+
+function wheelSVG(d){
+  const W = 600, H = 540, cx = 300, cy = 258, hubR = 138, bubR = 82;
+  const cats = d.categories;
+  const n = cats.length;
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="wheel">';
+
+  // Faint astrolabe-style backdrop: concentric rings and radiating hairlines,
+  // painted first so everything else sits on top of it.
+  [hubR - 40, hubR + bubR * 0.55, hubR + bubR + 14].forEach((r, i) => {
+    svg += circle(cx, cy, r, 'backring', i * 60);
+  });
+  for (let k = 0; k < 16; k++) {
+    const a = (k * 360 / 16) * Math.PI / 180;
+    const x2 = cx + (hubR + bubR + 14) * Math.cos(a), y2 = cy + (hubR + bubR + 14) * Math.sin(a);
+    svg += '<line x1="' + cx + '" y1="' + cy + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) +
+      '" class="rayline" style="animation-delay:' + (k * 15) + 'ms"></line>';
+  }
+
+  let labels = '';
+
+  cats.forEach((cat, i) => {
+    const angleDeg = -90 + i * (360 / n);
+    const angleRad = angleDeg * Math.PI / 180;
+    const hx = cx + hubR * Math.cos(angleRad);
+    const hy = cy + hubR * Math.sin(angleRad);
+    const baseDelay = i * 70;
+
+    svg += curve(cx, cy, hx, hy, 'spoke c-' + cat.color, baseDelay, 14);
+    svg += circle(hx, hy, 15, 'hubnode c-' + cat.color, baseDelay + 90);
+    svg += circle(hx, hy, 2.6, 'hubnode-pivot c-' + cat.color, baseDelay + 120);
+
+    const bubbles = cat.questions.slice(0, 6);
+    const offsets = bubbleOffsets(bubbles.length, 58, 16);
+    bubbles.forEach((q, j) => {
+      const bAngleDeg = angleDeg + offsets[j];
+      const bAngleRad = bAngleDeg * Math.PI / 180;
+      const bx = hx + bubR * Math.cos(bAngleRad);
+      const by = hy + bubR * Math.sin(bAngleRad);
+      const r = 4.5 + Math.min(q.weight, 3) * 1.1;
+      const delay = baseDelay + 140 + j * 35;
+      svg += curve(hx, hy, bx, by, 'twig c-' + cat.color, delay, 8 * (j % 2 === 0 ? 1 : -1));
+      svg += '<circle cx="' + bx.toFixed(1) + '" cy="' + by.toFixed(1) + '" r="' + r.toFixed(1) +
+        '" class="bubble-ring c-' + cat.color + '" tabindex="0" data-text="' + esc(q.text) +
+        '" style="animation-delay:' + (delay + 35) + 'ms"></circle>';
+      svg += '<circle cx="' + bx.toFixed(1) + '" cy="' + by.toFixed(1) + '" r="' + (r * 0.32).toFixed(1) +
+        '" class="bubble-dot c-' + cat.color + '" style="animation-delay:' + (delay + 55) + 'ms"></circle>';
+    });
+
+    // Labels are collected separately and painted last (see below) so they
+    // always render on top of every bubble, regardless of how close a
+    // bubble's angle lands to the hub's own outward direction.
+    const lx = cx + (hubR + 40) * Math.cos(angleRad);
+    const ly = cy + (hubR + 40) * Math.sin(angleRad);
+    const cosA = Math.cos(angleRad);
+    const anchor = cosA > 0.25 ? 'start' : cosA < -0.25 ? 'end' : 'middle';
+    const chipW = cat.label.length * 7.4 + 12;
+    const chipX = anchor === 'start' ? lx - 6 : anchor === 'end' ? lx - chipW + 6 : lx - chipW / 2;
+    labels += '<rect x="' + chipX.toFixed(1) + '" y="' + (ly - 12).toFixed(1) + '" width="' + chipW.toFixed(1) +
+      '" height="18" rx="9" class="labelchip" style="animation-delay:' + (baseDelay + 90) + 'ms"></rect>';
+    labels += '<text x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="' + anchor +
+      '" class="hublabel c-' + cat.color + '" style="animation-delay:' + (baseDelay + 90) + 'ms">' +
+      esc(cat.label) + '</text>';
+  });
+
+  svg += circle(cx, cy, 38, 'hub-center', 0);
+  svg += circle(cx, cy, 31, 'hub-center-inner', 60);
+  svg += labels;
+  svg += '<text x="' + cx + '" y="' + cy + '" class="hub-center-label" style="animation-delay:0ms">' +
+    esc(d.brand.length > 11 ? d.brand.slice(0, 10) + '…' : d.brand) + '</text>';
+
+  svg += '</svg>';
+  return svg;
+}
+
+/* ---- interaction: hover previews, click/tap copies ---- */
+
+let toastTimer = null;
+function showToast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1400);
+}
+
+function copyText(text){
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast('Copied')).catch(() => showToast(text));
+  } else {
+    showToast(text);
+  }
+}
+
+function setReading(text, color){
+  $('readingTxt').textContent = text;
+  $('readingDot').style.background = color ? 'var(' + CAT_COLOR_VAR[color] + ')' : 'var(--muted)';
+  $('readingHint').textContent = 'tap to copy';
+}
+
+function wireWheel(){
+  const svg = document.querySelector('.wheel');
+  const out = $('out');
+  if (svg){
+    svg.addEventListener('mouseover', e => {
+      const b = e.target.closest('.bubble-ring');
+      if (b) setReading(b.dataset.text, [...b.classList].find(c => c.startsWith('c-'))?.slice(2));
+    });
+    svg.addEventListener('focus', e => {
+      const b = e.target.closest('.bubble-ring');
+      if (b) setReading(b.dataset.text, [...b.classList].find(c => c.startsWith('c-'))?.slice(2));
+    }, true);
+    svg.addEventListener('click', e => {
+      const b = e.target.closest('.bubble-ring');
+      if (!b) return;
+      setReading(b.dataset.text, [...b.classList].find(c => c.startsWith('c-'))?.slice(2));
+      copyText(b.dataset.text);
+    });
+  }
+  out.addEventListener('click', e => {
+    const row = e.target.closest('.qrow');
+    if (row) copyText(row.dataset.copy);
+  });
+  const btn = $('enrichBtn');
+  if (btn) btn.onclick = enrich;
+}
+
+if (!CODE){
+  $('form').style.display = 'none';
+  $('gate').style.display = 'block';
+  const go = () => {
+    const v = $('manual').value.trim().toLowerCase().replace(/\s+/g, '');
+    if (v) location.search = '?k=' + encodeURIComponent(v);
+  };
+  $('enter').onclick = go;
+  $('manual').onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brand search footprint</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236e7bff'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0b0d13;--card:#171c28;--ink:#f4f5f9;--muted:#9aa3ba;--line:#2a3244;
+        --you:#7c87ff;--ok:#3ecf95;--warn:#f0b84f;--bad:#f37b70;--gold:#ffdc72}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.65;padding:32px 20px 70px;font-size:16px}
+  .wrap{max-width:720px;margin:0 auto}
+  .eyebrow{font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500}
+  .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:38px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.1;margin:10px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:16px;color:var(--muted);margin-bottom:28px;line-height:1.65}
+  label{display:block;font-size:13.5px;color:var(--muted);margin-bottom:7px;font-weight:500}
+  input,select{width:100%;font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--ink);
+        background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:15px 17px}
+  select{height:52px}
+  input:focus,select:focus{outline:2.5px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:18px}
+  .field .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:16px;padding:18px;cursor:pointer;margin-top:8px;
+          transition:transform .12s ease,background .15s ease}
+  .submit:hover{background:#8b95ff;transform:translateY(-1px)}
+  .submit[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+  .after{font-size:12.5px;color:var(--muted);text-align:center;margin-top:14px;line-height:1.6}
+  .err{color:var(--bad);font-size:14px;padding:16px;border:1.5px solid var(--line);border-radius:14px}
+  .empty{font-size:14px;color:var(--muted)}
+
+  #results{display:none;margin-top:34px}
+  .backbtn{font-size:15px;color:var(--you);background:none;border:0;cursor:pointer;margin-bottom:20px;
+        font-family:'IBM Plex Mono',monospace;font-weight:500}
+
+  .qmeta{font-size:13.5px;color:var(--muted);margin-bottom:24px;line-height:1.6}
+  .qmeta b{color:var(--ink)}
+
+  .section{margin-bottom:28px}
+  .section h2{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px}
+  .section .sdesc{font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5}
+
+  .card{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:20px;margin-bottom:14px}
+  .card.flag-bad{border-color:var(--bad)}
+  .card.flag-warn{border-color:var(--warn)}
+  .card.flag-ok{border-color:var(--ok)}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:520px){.stats{grid-template-columns:1fr}}
+  .stat{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px}
+  .stat .val{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700}
+  .stat .val.ok{color:var(--ok)} .stat .val.warn{color:var(--warn)} .stat .val.bad{color:var(--bad)}
+  .stat .lbl{font-size:12px;color:var(--muted);margin-top:4px}
+
+  .evrow{padding:12px 0;border-top:1px solid var(--line)}
+  .evrow:first-child{border-top:0}
+  .evrow .etext{font-size:14px;color:var(--ink)}
+  .evrow .etag{font-size:11px;color:var(--bad);text-transform:uppercase;letter-spacing:.04em;margin-top:4px}
+
+  .entity{padding:13px 0;border-top:1px solid var(--line)}
+  .entity:first-child{border-top:0}
+  .entity .edomain{font-family:'Space Grotesk',sans-serif;font-size:14.5px;font-weight:700}
+  .entity .etitle{font-size:13px;color:var(--muted);margin-top:3px}
+
+  .pill{display:inline-block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;
+      padding:4px 10px;border-radius:20px;font-weight:600}
+  .pill.ours{color:var(--ok);background:rgba(62,207,149,.13)}
+  .pill.theirs{color:var(--bad);background:rgba(243,123,112,.13)}
+  .pill.none{color:var(--muted);background:rgba(154,163,186,.13)}
+  .pill.unclear{color:var(--warn);background:rgba(240,184,79,.13)}
+
+  .social{display:flex;justify-content:space-between;align-items:center;gap:12px;
+      padding:13px 0;border-top:1px solid var(--line)}
+  .social:first-child{border-top:0}
+  .social .splatform{font-family:'Space Grotesk',sans-serif;font-size:14.5px;font-weight:700}
+  .social .surl{font-size:12px;color:var(--muted);margin-top:3px;word-break:break-all}
+  .social .srank{flex:none}
+  .pill.ranked{color:var(--ok);background:rgba(62,207,149,.13)}
+  .pill.unranked{color:var(--muted);background:rgba(154,163,186,.13)}
+
+  .idgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .idtile{border-radius:14px;padding:14px 15px;font-size:13px;font-weight:500;line-height:1.4;
+      border:1.5px solid transparent}
+  .idtile.yes{background:rgba(62,207,149,.12);border-color:rgba(62,207,149,.35);color:var(--ok)}
+  .idtile.no{background:rgba(243,123,112,.10);border-color:rgba(243,123,112,.3);color:var(--bad)}
+  .wikinote{margin-top:12px;font-size:12.5px;color:var(--muted);padding:0 2px}
+
+  .foot{font-size:11.5px;color:var(--muted);margin-top:24px;line-height:1.6}
+
+  .sidenav{margin-top:36px;padding-top:20px;border-top:1.5px solid var(--line);
+       display:flex;flex-direction:column;gap:13px}
+  .sidenav-link{font-size:13.5px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate" style="display:none">
+    <p class="eyebrow">Heavy token usage</p>
+    <h1>You need an access code</h1>
+    <p class="lede">This tool runs on a personal link. Open the link you were sent — it carries your code — or type the code below.</p>
+    <div class="field" style="max-width:280px"><label for="manual">Access code</label>
+      <input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="submit" id="enter" type="button" style="max-width:280px">Continue</button>
+    <p class="after" style="text-align:left;max-width:280px">Don't have one? <a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>
+  </div>
+
+  <div id="form">
+    <p class="eyebrow">Heavy token usage</p>
+    <h1>Brand search footprint</h1>
+    <p class="lede">What actually appears on Google page one when someone searches your brand name — who owns it, who's occupying it, and whether Google itself knows who you are. Not a generic "brand score" — a real audit of your own name query.</p>
+
+    <div class="field"><label for="website">Website</label><input id="website" type="text" placeholder="yoursite.com"></div>
+    <div class="row2">
+      <div class="field"><label for="brandName">Brand name</label><input id="brandName" type="text" placeholder="e.g. ESO"></div>
+      <div class="field"><label for="market">Market</label><select id="market"></select></div>
+    </div>
+    <div class="field">
+      <label for="qualified">Qualified brand query (optional)</label>
+      <input id="qualified" type="text" placeholder="e.g. ESO Solutions">
+      <p class="hint">Leave blank if your brand name is already distinctive. If it's a short or generic word, add the fuller name — both get checked, and the gap between them is often the real finding.</p>
+    </div>
+
+    <button class="submit" id="go" type="button">Check brand footprint</button>
+    <p class="after">Two live searches, each with a real screenshot of the results page (or one of each, if your brand name is already distinctive) — real cost, same tier as rank snapshot.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <button class="backbtn" id="back">&larr; New check</button>
+    <p class="eyebrow restag">Brand search footprint</p>
+    <h1 id="rTitle" style="font-size:26px">Checking…</h1>
+    <div id="out"></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+const REPORT_ID = new URLSearchParams(location.search).get('id') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+
+const MARKETS = ['United Kingdom','United States','Canada','Ireland','Australia','Germany','France',
+  'Netherlands','Switzerland','Austria','Spain','Italy','Poland','Czechia','Slovakia'];
+
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+$('market').innerHTML = MARKETS.map(m => '<option' + (m === 'United States' ? ' selected' : '') + '>' + esc(m) + '</option>').join('');
+
+$('go').onclick = run;
+$('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; };
+
+async function run(){
+  const website = $('website').value.trim();
+  const brand_name = $('brandName').value.trim();
+  const qualified_brand_query = $('qualified').value.trim();
+  const market = $('market').value;
+
+  if (!website){ flashGo('Add your website first'); return; }
+  if (!brand_name){ flashGo('Add your brand name first'); return; }
+
+  $('go').disabled = true;
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = 'Checking…';
+  $('out').innerHTML = '<p class="empty">Checking Google page one for "' + esc(brand_name) + '"' + (qualified_brand_query ? ' and "' + esc(qualified_brand_query) + '"' : '') + '…</p>';
+  window.scrollTo(0,0);
+
+  let d;
+  try {
+    const res = await fetch(API + '/brand-footprint', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, website, brand_name, qualified_brand_query, market })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  $('go').disabled = false;
+
+  if (d.error){
+    $('rTitle').textContent = website;
+    $('out').innerHTML = '<p class="err">' + esc(d.error) + '</p>';
+    return;
+  }
+  $('rTitle').textContent = d.brand_name;
+  $('out').innerHTML = renderReport(d);
+  history.replaceState(null, '', '?k=' + encodeURIComponent(CODE) + '&id=' + encodeURIComponent(d.id));
+}
+
+function flashGo(msg){
+  $('go').textContent = msg;
+  setTimeout(() => $('go').textContent = 'Check brand footprint', 2000);
+}
+
+async function loadReport(id){
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = 'Loading…';
+  $('out').innerHTML = '<p class="empty">Loading saved report…</p>';
+
+  let d;
+  try {
+    const res = await fetch(API + '/brand-footprint/get', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, id })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  if (d.error){
+    $('rTitle').textContent = 'Not found';
+    $('out').innerHTML = '<p class="err">' + esc(d.error) + '</p>';
+    return;
+  }
+  $('rTitle').textContent = d.brand_name;
+  $('out').innerHTML = renderReport(d);
+}
+
+function renderReport(d){
+  let html = '<p class="qmeta">Checked <b>' + esc(d.market) + '</b> for <b>"' + esc(d.brand_name) + '"</b>' +
+    (d.same_query ? '' : ' and the qualified query <b>"' + esc(d.qualified_brand_query) + '"</b>') +
+    ' against <b>' + esc(d.website) + '</b>.</p>';
+
+  html += renderScreenshots(d.bare, d.qualified, d.same_query);
+  html += renderConfusion(d.bare, d.qualified, d.same_query);
+  html += renderControl(d.bare, d.qualified, d.same_query);
+  html += renderSocialProfiles(d.bare);
+  html += renderIdentity(d.bare);
+  html += renderReputation(d.bare);
+  html += renderDefence(d.bare);
+
+  html += '<p class="foot">Signals are reported as facts, not scored — this build deliberately stops short of a weighted composite score (see the build notes) so nothing here asserts a judgment a human hasn\'t made. Occupancy entities are candidates worth a look, not confirmed confusion: a domain named after your brand isn\'t automatically a rival, and this tool doesn\'t try to guess which. Checked ' + esc(new Date(d.created_at).toLocaleString()) + '.</p>';
+  return html;
+}
+
+function renderScreenshots(bare, qualified, sameQuery){
+  const shots = [{ label: bare.query, url: bare.screenshot_url }];
+  if (!sameQuery && qualified) shots.push({ label: qualified.query, url: qualified.screenshot_url });
+  if (!shots.some(s => s.url)) return '';
+
+  let html = '<div class="section"><h2>Page one, as it actually looked</h2>' +
+    '<p class="sdesc">A real screenshot of the live Google results, not a mockup. This link works for 24 hours — save the image if you need it longer.</p>';
+  html += shots.filter(s => s.url).map(s =>
+    '<div class="card" style="padding:12px">' +
+    '<div style="font-size:12.5px;color:var(--muted);margin-bottom:10px;padding:0 6px">"' + esc(s.label) + '"</div>' +
+    '<a href="' + esc(s.url) + '" target="_blank" rel="noopener"><img src="' + esc(s.url) + '" alt="Google search results for ' + esc(s.label) + '" style="width:100%;border-radius:12px;display:block"></a>' +
+    '</div>'
+  ).join('');
+  return html + '</div>';
+}
+
+function renderConfusion(bare, qualified, sameQuery){
+  const c = bare.confusion;
+  let html = '<div class="section"><h2>Brand confusion</h2>' +
+    '<p class="sdesc">Other entities sharing your name on page one — the single most under-served finding in a brand audit. These are candidates worth a look, not automatically a problem.</p>';
+
+  const resPill = { ours: 'You own it', theirs: 'A different entity', none: 'No Knowledge Panel', unclear: 'Present, unconfirmed' };
+  html += '<div class="card ' + (c.resolution === 'theirs' ? 'flag-bad' : '') + '">' +
+    '<span class="pill ' + c.resolution + '">' + esc(resPill[c.resolution]) + '</span>' +
+    (c.kp_hijack ? '<p style="margin-top:12px;font-size:14px">The Knowledge Panel for this query resolves to <b>' + esc(c.kp_hijack.title) + '</b>' + (c.kp_hijack.subtitle ? ' (' + esc(c.kp_hijack.subtitle) + ')' : '') + ', linking to <span style="color:var(--muted)">' + esc(c.kp_hijack.url) + '</span> — not your site.</p>' : '') +
+    (c.resolution === 'ours' ? '<p style="margin-top:12px;font-size:14px;color:var(--muted)">The Knowledge Panel links to your own site.</p>' : '') +
+    '</div>';
+
+  if (c.occupancy_count > 0){
+    html += '<div class="card"><div style="font-size:13.5px;color:var(--muted);margin-bottom:4px">' + c.occupancy_count + ' other domain' + (c.occupancy_count === 1 ? '' : 's') + ' named after your brand on page one</div>';
+    html += c.occupancy_entities.map(e =>
+      '<div class="entity"><div class="edomain">' + esc(e.domain) + '</div><div class="etitle">' + esc(e.title) + '</div></div>'
+    ).join('');
+    html += '</div>';
+  } else {
+    html += '<div class="card"><p style="font-size:14px;color:var(--ok)">No other brand-named domains found on page one.</p></div>';
+  }
+
+  if (c.disambiguators.length){
+    html += '<div class="card flag-warn"><div style="font-size:13.5px;color:var(--muted);margin-bottom:8px">Searchers are disambiguating you themselves — real evidence from autocomplete and related searches:</div>';
+    html += c.disambiguators.map(s => '<div class="evrow"><div class="etext">"' + esc(s) + '"</div></div>').join('');
+    html += '</div>';
+  }
+
+  if (!sameQuery && qualified){
+    const qc = qualified.confusion;
+    const gap = c.occupancy_count - qc.occupancy_count;
+    if (gap > 0){
+      html += '<div class="card"><p style="font-size:14px"><b>' + esc(bare.query) + '</b> shows ' + gap + ' more brand-named domain' + (gap === 1 ? '' : 's') + ' than <b>' + esc(qualified.query) + '</b> — a common pattern when the bare name is a shared or generic term. Consider treating the bare-token contest as a landscape fact rather than a target, and focusing on owning the qualified term.</p></div>';
+    }
+  }
+
+  return html + '</div>';
+}
+
+function renderControl(bare, qualified, sameQuery){
+  const c = bare.control;
+  let html = '<div class="section"><h2>Control</h2><p class="sdesc">How much of page one you actually own.</p><div class="stats">';
+  html += stat(c.own_domain_pos1 ? 'Yes' : 'No', 'Own domain at position 1', c.own_domain_pos1 ? 'ok' : 'warn');
+  html += stat(c.owned_in_top10 + ' / 10', 'Owned results in top 10', c.owned_in_top10 >= 2 ? 'ok' : '');
+  html += stat(c.sitelinks_count, 'Sitelinks shown', c.sitelinks_count > 0 ? 'ok' : '');
+  html += stat(Math.round((c.third_party_share_top10 ?? 0) * 100) + '%', 'Third-party share of top 10', '');
+  html += '</div></div>';
+  return html;
+}
+
+function renderSocialProfiles(bare){
+  const profiles = bare.social_profiles || [];
+  if (!profiles.length) return '';
+
+  const sorted = [...profiles].sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
+  let html = '<div class="section"><h2>Social profiles</h2>' +
+    '<p class="sdesc">Your own declared profiles (from your homepage\'s <code>sameAs</code> structured data), checked against where they actually rank for "' + esc(bare.query) + '" — not just whether the platform shows up, but whether it\'s specifically your page.</p>';
+  html += '<div class="card">';
+  html += sorted.map(p =>
+    '<div class="social"><div><div class="splatform">' + esc(p.platform) + '</div>' +
+    '<div class="surl">' + esc(p.url) + '</div></div>' +
+    '<div class="srank"><span class="pill ' + (p.rank !== null ? 'ranked' : 'unranked') + '">' +
+    (p.rank !== null ? 'Rank #' + p.rank : 'Not in top 30') + '</span></div></div>'
+  ).join('');
+  html += '</div></div>';
+  return html;
+}
+
+function renderIdentity(bare){
+  const i = bare.identity;
+  const checks = [
+    [i.knowledge_panel_present, 'Knowledge Panel present'],
+    [i.kg_logo_present, 'Logo shown in Knowledge Panel'],
+    [i.image_pack_present, 'Image pack present'],
+    [i.ai_overview_present, 'AI Overview present for this query'],
+    [i.video_pack_present, 'Video pack present'],
+    [i.twitter_carousel_present, 'X/Twitter carousel present'],
+    [i.paa_present, 'People Also Ask present']
+  ];
+  let html = '<div class="section"><h2>Identity</h2><p class="sdesc">Whether Google knows who you are.</p><div class="idgrid">';
+  html += checks.map(([yes, label]) => '<div class="idtile ' + (yes ? 'yes' : 'no') + '">' + esc(label) + '</div>').join('');
+  html += '</div>';
+  if (i.wikipedia_present) html += '<p class="wikinote">Wikipedia result present <span style="color:var(--ink)">(context only — not a recommendation)</span></p>';
+  html += '</div>';
+  return html;
+}
+
+function renderReputation(bare){
+  const r = bare.reputation;
+  const negatives = [...r.negative_autocomplete.map(h => ({ ...h, source: 'autocomplete' })),
+                     ...r.negative_related_searches.map(h => ({ ...h, source: 'related searches' })),
+                     ...r.negative_paa.map(h => ({ ...h, source: 'People Also Ask' }))];
+
+  let html = '<div class="section"><h2>Reputation</h2><p class="sdesc">What third parties and Google\'s own suggestions say — every flag here is a real string Google returned, shown as evidence.</p>';
+
+  if (negatives.length){
+    html += '<div class="card flag-bad">';
+    html += negatives.map(h => '<div class="evrow"><div class="etext">"' + esc(h.text) + '"</div><div class="etag">' + esc(h.source) + ' · ' + h.matched.map(esc).join(', ') + '</div></div>').join('');
+    html += '</div>';
+  } else {
+    html += '<div class="card"><p style="font-size:14px;color:var(--ok)">No negative autocomplete, related-search or People Also Ask signals found.</p></div>';
+  }
+
+  if (r.complaint_platforms.length || r.employer_review_platforms.length){
+    html += '<div class="card">';
+    html += [...r.complaint_platforms, ...r.employer_review_platforms].map(p =>
+      '<div class="entity"><div class="edomain">' + esc(p.domain) + '</div><div class="etitle">' + esc(p.title) + '</div></div>'
+    ).join('');
+    html += '</div>';
+  }
+
+  if (r.structured_rating){
+    html += '<div class="card"><div style="font-size:13.5px;color:var(--muted)">Structured review rating found</div><pre style="font-size:12.5px;color:var(--ink);margin-top:8px;white-space:pre-wrap">' + esc(JSON.stringify(r.structured_rating, null, 2)) + '</pre></div>';
+  }
+
+  return html + '</div>';
+}
+
+function renderDefence(bare){
+  const d = bare.defence;
+  let html = '<div class="section"><h2>Defence</h2><p class="sdesc">Competitor encroachment on your own brand term.</p><div class="stats">';
+  html += stat(d.paid_ads_count, 'Paid ads on your brand term', d.paid_ads_count > 0 ? 'bad' : 'ok');
+  html += stat(d.competitor_domains_top10.length, "Other results in top 10 (not necessarily brand-named — see Brand confusion above for that)", '');
+  html += '</div>';
+
+  if (d.distinct_advertisers.length){
+    html += '<div class="card flag-bad"><div style="font-size:13.5px;color:var(--muted);margin-bottom:8px">Advertising on your exact brand term:</div>';
+    html += d.distinct_advertisers.map(a => '<div class="evrow"><div class="etext">' + esc(a) + '</div></div>').join('');
+    html += '</div>';
+  }
+
+  return html + '</div>';
+}
+
+function stat(val, label, cls){
+  return '<div class="stat"><div class="val ' + (cls || '') + '">' + esc(val) + '</div><div class="lbl">' + esc(label) + '</div></div>';
+}
+
+if (!CODE){
+  $('form').style.display = 'none';
+  $('gate').style.display = 'block';
+  const goGate = () => {
+    const v = $('manual').value.trim().toLowerCase().replace(/\s+/g, '');
+    if (v) location.search = '?k=' + encodeURIComponent(v);
+  };
+  $('enter').onclick = goGate;
+  $('manual').onkeydown = e => { if (e.key === 'Enter') goGate(); };
+} else if (REPORT_ID){
+  loadReport(REPORT_ID);
+}
+</script>
+</body>
+</html>

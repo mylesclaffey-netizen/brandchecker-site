@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IndexNow pinger</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2338bdf8'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c;--sky:#38bdf8}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:600px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
+  fieldset{border:0;margin-bottom:24px}
+  legend{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+         text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .step{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;
+        border-radius:50%;background:var(--sky);color:#031b26;font-size:10px;font-weight:700;margin-right:6px}
+  .hint{font-size:11.5px;color:var(--muted);margin:0 0 12px;line-height:1.6}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;margin-top:14px}
+  label:first-child{margin-top:0}
+  input,textarea{width:100%;font-family:'IBM Plex Mono',monospace;font-size:13.5px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  input:focus,textarea:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  textarea{resize:vertical;min-height:110px}
+  .field{margin-bottom:12px}
+
+  .keyrow{display:flex;gap:8px;align-items:center}
+  .keyrow input{flex:1;color:var(--sky);font-weight:700}
+  .smallbtn{flex:none;font-size:11.5px;background:var(--card);color:var(--ink);border:1px solid var(--line);
+        border-radius:7px;padding:0 14px;height:44px;cursor:pointer;font-family:'IBM Plex Mono',monospace}
+  .smallbtn:hover{border-color:var(--you)}
+
+  .filebox{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:12px}
+  .filebox .loc{font-size:12px;color:var(--sky);word-break:break-all;margin-bottom:6px}
+  .filebox .contents{font-size:12px;color:var(--muted)}
+  .filebox code{color:var(--ink);background:var(--paper);padding:1px 5px;border-radius:4px}
+
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer}
+  .submit:hover{background:#5c68f2}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px;line-height:1.6}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px;margin-top:16px}
+  .ok{color:var(--ok);font-size:13px;padding:14px;border:1px solid var(--ok);border-radius:8px;margin-top:16px;background:rgba(53,196,141,.08)}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+
+  .gate .field{max-width:280px}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate" style="display:none">
+    <p class="eyebrow">Free tool · no access code needed</p>
+    <h1>You need an access code</h1>
+    <p class="lede">This tool runs on a personal link. Open the link you were sent — it carries your code — or type the code below.</p>
+    <div class="field" style="max-width:280px"><label for="manual">Access code</label>
+      <input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="submit" id="enter" type="button" style="max-width:280px">Continue</button>
+    <p class="after" style="text-align:left;max-width:280px">Don't have one? <a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>
+  </div>
+
+  <div id="main">
+    <p class="eyebrow">Free tool · no access code needed</p>
+    <h1>IndexNow pinger</h1>
+    <p class="lede">Tell Bing — and every other search engine on the shared IndexNow protocol — that specific URLs on your site just changed, instead of waiting for the next scheduled crawl. Free, no signup beyond hosting one small file.</p>
+
+    <fieldset>
+      <legend><span class="step">1</span>Host your verification key</legend>
+      <p class="hint">This proves you own the site. Already have an IndexNow key from somewhere else (like Bing Webmaster Tools)? Paste it in instead of the generated one.</p>
+      <div class="keyrow">
+        <input id="key" type="text" readonly>
+        <button class="smallbtn" id="regenKey" type="button">Generate new</button>
+      </div>
+      <div class="filebox">
+        <div class="loc">Create a file at: <span id="keyLoc">—</span></div>
+        <div class="contents">Containing exactly this, and nothing else:<br><code id="keyContents">—</code></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend><span class="step">2</span>URLs that changed</legend>
+      <p class="hint">One per line, all on the same domain as your key file above. Up to 50 at a time.</p>
+      <div class="field"><textarea id="urls" placeholder="https://yoursite.com/new-page
+https://yoursite.com/updated-page"></textarea></div>
+    </fieldset>
+
+    <button class="submit" id="go" type="button">Submit to IndexNow</button>
+    <div id="result"></div>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function firstHost(){
+  const lines = $('urls').value.split('\n').map(u => u.trim()).filter(Boolean);
+  try { return new URL(lines[0]).host; } catch (e) { return null; }
+}
+
+function updateFileBox(){
+  const key = $('key').value.trim();
+  const host = firstHost();
+  $('keyLoc').textContent = key ? 'https://' + (host || 'yoursite.com') + '/' + key + '.txt' : '—';
+  $('keyContents').textContent = key || '—';
+}
+
+async function loadKey(){
+  let d;
+  try {
+    const res = await fetch(API + '/indexnow/key', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE })
+    });
+    d = await res.json();
+  } catch (e) { d = {}; }
+  $('key').value = d.key || '';
+  updateFileBox();
+}
+$('regenKey').onclick = loadKey;
+$('key').oninput = updateFileBox;
+$('urls').oninput = updateFileBox;
+
+$('go').onclick = run;
+
+async function run(){
+  const key = $('key').value.trim();
+  const urls = $('urls').value.split('\n').map(u => u.trim()).filter(Boolean);
+
+  if (!key){ $('go').textContent = 'Generate or paste a key first'; setTimeout(() => $('go').textContent = 'Submit to IndexNow', 2000); return; }
+  if (!urls.length){ $('go').textContent = 'Add at least one URL'; setTimeout(() => $('go').textContent = 'Submit to IndexNow', 2000); return; }
+
+  $('go').disabled = true;
+  $('result').innerHTML = '';
+
+  let d;
+  try {
+    const res = await fetch(API + '/indexnow/submit', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, key, urls })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  $('go').disabled = false;
+
+  if (d.error){
+    $('result').innerHTML = '<div class="err">' + esc(d.error) + '</div>';
+    return;
+  }
+  $('result').innerHTML = '<div class="ok">✓ Submitted ' + d.submitted + (d.submitted === 1 ? ' URL' : ' URLs') + ' to IndexNow.</div>';
+}
+
+loadKey();
+</script>
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brand Builder Report</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23ffd65c'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MC2SEO">
+<meta property="og:url" content="https://brandchecker.eu/tools/brand-builder/report/">
+<meta property="og:title" content="Brand Builder Report — MC2SEO">
+<meta property="og:description" content="A consolidated SEO and brand-visibility report — rankings, share of search, AI mentions, technical audits and more, all in one place.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Brand Builder Report — MC2SEO">
+<meta name="twitter:description" content="A consolidated SEO and brand-visibility report — rankings, share of search, AI mentions, technical audits and more, all in one place.">
+<meta name="twitter:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:720px;margin:0 auto}
+  .eyebrow{font-size:15px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold);overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:12.5px;color:var(--muted);margin-bottom:22px;line-height:1.6}
+  .empty{font-size:12.5px;color:var(--muted)}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+
+  .banner{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:24px}
+  .banner.running{border-color:var(--warn)}
+  .banner.complete{border-color:var(--ok)}
+  .banner .headline{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px}
+  .banner .sub{font-size:12px;color:var(--muted)}
+  .banner .sub a{color:var(--you)}
+
+  .tool{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px}
+  .tool.warn{border-color:var(--warn)}
+  .tool.bad{border-color:var(--bad)}
+  .tool .thead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}
+  .tool .tname{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700}
+  .tool .tstatus{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+        padding:3px 8px;border-radius:20px;flex:none}
+  .tool .tstatus.done{color:var(--ok);background:rgba(53,196,141,.12)}
+  .tool .tstatus.pending{color:var(--muted);background:rgba(139,147,167,.12)}
+  .tool .tstatus.failed,.tool .tstatus.timed_out{color:var(--bad);background:rgba(232,105,95,.12)}
+  .tool .tstatus.skipped{color:var(--muted);background:rgba(139,147,167,.12)}
+  .tool .tbody{font-size:12.5px;line-height:1.6}
+  .tool .tbody .muted{color:var(--muted)}
+  .tool ul{list-style:none;display:flex;flex-direction:column;gap:5px}
+  .tool ul li{padding-left:0}
+  .flagrow{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px}
+  .flagrow .badge{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+        padding:2px 7px;border-radius:20px;flex:none;margin-top:1px}
+  .flagrow.error .badge{color:var(--bad);background:rgba(232,105,95,.12)}
+  .flagrow.warn .badge{color:var(--warn);background:rgba(224,169,58,.12)}
+  .flagrow.ok .badge{color:var(--ok);background:rgba(53,196,141,.12)}
+  .kv{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px}
+  .kv b{color:var(--ink)}
+  .toollink{font-size:11.5px;color:var(--you)}
+
+  .section-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;
+        text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:28px 0 12px}
+  .section-title:first-of-type{margin-top:0}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+
+  .share{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:24px;padding-top:18px;border-top:1px solid var(--line)}
+  .sharelabel{font-size:11px;color:var(--muted)}
+  .sharebtn{font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;color:var(--ink);
+      background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 13px;cursor:pointer;
+      text-decoration:none;display:inline-block}
+  .sharebtn:hover{border-color:var(--you);color:var(--you)}
+  .sharebtn.copied{border-color:var(--ok);color:var(--ok)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Brand Builder Report</p>
+  <h1 id="rTitle">Loading…</h1>
+  <div id="out"><p class="empty">Fetching your report…</p></div>
+
+  <div class="sidenav">
+    <a href="/tools/brand-builder/" class="sidenav-link">← New Brand Builder report</a>
+    <a href="/tools/" class="sidenav-link">← Back to tools</a>
+    <a href="/" class="sidenav-link">← Back to homepage</a>
+  </div>
+</div>
+
+<script>
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+const ID = new URLSearchParams(location.search).get('id') || '';
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+const TOOL_LABELS = {
+  'crawler-check': 'AI Crawler Access', 'sitemap-audit': 'Sitemap Analysis', 'redirect-tracer': 'Redirect Check',
+  'schema-audit:homepage': 'Schema (Homepage)', 'schema-audit:product': 'Schema (Product Page)',
+  'image-audit:homepage': 'Image Optimization (Homepage)', 'image-audit:product': 'Image Optimization (Product Page)',
+  'eeat-audit:homepage': 'E-E-A-T Signals (Homepage)', 'eeat-audit:product': 'E-E-A-T Signals (Product Page)',
+  'hreflang-audit:homepage': 'Hreflang Audit (Homepage)', 'hreflang-audit:product': 'Hreflang Audit (Product Page)',
+  'ua-compare:homepage': 'User-Agent Comparison (Homepage)', 'ua-compare:product': 'User-Agent Comparison (Product Page)',
+  'locale-audit:homepage': 'Locale-Adaptive Check (Homepage)', 'locale-audit:product': 'Locale-Adaptive Check (Product Page)',
+  'pagespeed': 'PageSpeed Comparison', 'rank-snapshot': 'Keyword Rankings', 'share-of-search': 'Share of Search',
+  'traffic-estimate': 'Estimated Traffic', 'ai-mentions': 'AI Brand Mentions', 'brand-questions': 'Brand Questions',
+  'brand-footprint': 'Brand Search Footprint', 'brand-sentiment': 'Brand Sentiment', 'pin-check': 'Local Map Pack (Pin)',
+  'grid-check': 'Local Map Pack (Grid)'
+};
+const STATUS_LABEL = { done: 'Done', pending: 'Pending', failed: 'Failed', timed_out: 'Timed out', skipped: 'Skipped' };
+
+function flagRow(sev, msg){
+  const cls = sev === 'error' ? 'error' : sev === 'ok' ? 'ok' : 'warn';
+  const label = sev === 'error' ? 'Error' : sev === 'ok' ? 'OK' : 'Warning';
+  return '<div class="flagrow ' + cls + '"><span class="badge">' + label + '</span><span>' + esc(msg) + '</span></div>';
+}
+
+function renderIssues(items){
+  if (!items || !items.length) return '<p class="tbody muted">No issues found.</p>';
+  return items.map(i => flagRow(i.severity, i.message)).join('');
+}
+
+function renderSignals(signals){
+  if (!signals || !signals.length) return '<p class="tbody muted">No data.</p>';
+  return signals.map(s => flagRow(s.severity, s.message)).join('');
+}
+
+function kv(pairs){
+  return '<div class="kv">' + pairs.filter(([,v]) => v !== null && v !== undefined && v !== '')
+    .map(([k,v]) => '<span>' + esc(k) + ': <b>' + esc(v) + '</b></span>').join('') + '</div>';
+}
+
+// One renderer per base tool name. Falls through to a small generic
+// key-value dump for anything not specifically handled — every result is
+// still real handler JSON, so this never breaks even for an unexpected shape.
+const RENDERERS = {
+  'crawler-check': r => {
+    const blocked = (r.crawlers || []).filter(c => c.blocked);
+    return kv([['robots.txt', r.robots_found ? 'found' : 'missing'], ['llms.txt', r.llms_txt_found ? 'found' : 'missing'],
+      ['AI crawlers blocked', blocked.length + ' of ' + (r.crawlers || []).length]]) +
+      (blocked.length ? renderIssues(blocked.map(c => ({ severity: 'warn', message: c.name + ' (' + c.owner + ') is blocked' }))) : '');
+  },
+  'sitemap-audit': r => kv([['Type', r.type], ['URLs', r.url_count], ['Sampled', r.sample_checked]]) + renderIssues(r.issues),
+  'image-audit': r => kv([['Images found', r.image_count], ['Spot-checked', r.images_sampled]]) + renderIssues(r.issues),
+  'hreflang-audit': r => kv([['Tags found', r.hreflang_count], ['Alternates checked', r.reciprocal_checked]]) + renderIssues(r.issues),
+  'ua-compare': r => kv([['Comparing', r.label_a + ' vs. ' + r.label_b]]) + renderIssues(r.issues),
+  'locale-audit': r => renderIssues(r.issues),
+  'schema-audit': r => kv([['Page', r.page_title], ['Schema types', (r.schemas_found || []).join(', ') || 'none']]) + renderIssues(r.findings),
+  'eeat-audit': r => kv([['Word count', r.word_count]]) + renderSignals(r.signals),
+  'redirect-tracer': r => kv([['Hops', (r.hops || []).length], ['Final status', r.final_status], ['Final URL', r.final]]),
+  'pagespeed': r => r.id ? '<p class="tbody"><a class="toollink" href="/tools/pagespeed/?k=' + encodeURIComponent(CODE) + '&r=' + encodeURIComponent(r.id) + '" target="_blank" rel="noopener">View full PageSpeed comparison →</a></p>' : '<p class="tbody muted">No result.</p>',
+  'rank-snapshot': r => '<div class="tbody">' + (r.results || []).map(k =>
+    flagRow(k.in_top ? 'ok' : 'warn', '"' + k.keyword + '" — ' + (k.position ? '#' + k.position : 'not in top results') + (k.local_pack ? ' · local pack present' : ''))
+  ).join('') + '</div>',
+  'share-of-search': r => '<div class="tbody">' + (r.brands || []).map(b =>
+    flagRow(b.is_client ? 'ok' : 'warn', b.name + (b.share != null ? ': ' + b.share + '% share' : ': not enough volume to score'))
+  ).join('') + '</div>',
+  'traffic-estimate': r => '<div class="tbody">' + (r.sites || []).map(s =>
+    flagRow('ok', s.domain + ' — est. ' + (s.etv ?? '—') + ' visits/mo, rank #' + (s.rank ?? '—'))
+  ).join('') + '</div>',
+  'ai-mentions': r => '<div class="tbody">' + (r.results || []).map(p =>
+    flagRow(p.mentioned_count > 0 ? 'ok' : 'warn', '"' + p.prompt + '" — mentioned ' + p.mentioned_count + '/3 runs')
+  ).join('') + '</div>',
+  'brand-questions': r => '<div class="tbody">' + (r.categories || []).filter(c => c.questions.length).map(c =>
+    '<p style="margin:8px 0 3px"><b>' + esc(c.label) + '</b></p>' + c.questions.slice(0, 3).map(q => '<div class="muted">· ' + esc(q.text) + '</div>').join('')
+  ).join('') + '</div>',
+  'brand-sentiment': r => '<div class="tbody">' + (r.providers || []).flatMap(p => p.questions || []).map(q => {
+    const tags = (q.runs || []).map(x => x.sentiment).filter(Boolean);
+    const err = (q.runs || []).every(x => x.error);
+    return flagRow(err ? 'warn' : 'ok', '"' + q.question + '"' + (err ? ' — no answer (AI provider busy)' : ' — ' + tags.join(', ')));
+  }).join('') + '</div>',
+  'brand-footprint': r => {
+    const c = r.bare?.control || {};
+    return kv([['Query', r.bare?.query], ['Owns #1 result', c.own_domain_pos1 ? 'yes' : 'no'],
+      ['Owned in top 10', c.owned_in_top10], ['Third-party share of top 10', c.third_party_share_top10]]);
+  },
+  'pin-check': r => '<div class="tbody">' + (r.results || []).map(k =>
+    '<p style="margin:6px 0 3px"><b>' + esc(k.keyword) + '</b></p>' + (k.organic || []).slice(0, 3).map(o =>
+      '<div class="muted">#' + o.rank + ' ' + esc(o.title) + (o.rating ? ' (★' + o.rating + ')' : '') + '</div>').join('')
+  ).join('') + '</div>',
+  'grid-check': r => kv([['Coverage', r.summary?.coverage + '%'], ['Found in', r.summary?.found + ' of ' + r.summary?.total + ' points'],
+    ['Avg rank', r.summary?.avg_rank], ['AI Overview mentions you', r.ai_overview?.mentioned ? 'yes' : 'no']])
+};
+
+function renderGeneric(result){
+  const entries = Object.entries(result || {}).filter(([k, v]) => v != null && typeof v !== 'object').slice(0, 6);
+  if (!entries.length) return '<p class="tbody muted">No data.</p>';
+  return kv(entries);
+}
+
+function renderTool(task){
+  const base = task.tool.includes(':') ? task.tool.split(':')[0] : task.tool;
+  const label = TOOL_LABELS[task.tool] || TOOL_LABELS[base] || task.tool;
+  const cardCls = task.status === 'failed' || task.status === 'timed_out' ? 'bad' : task.status === 'pending' ? 'warn' : '';
+
+  let body;
+  if (task.status === 'pending') body = '<p class="tbody muted">Still running — refresh in a bit.</p>';
+  else if (task.status === 'failed' || task.status === 'timed_out') body = '<p class="tbody muted">' + esc(task.error || 'Did not complete.') + '</p>';
+  else if (task.status === 'skipped') body = '<p class="tbody muted">Skipped — not applicable for this submission.</p>';
+  else {
+    const renderer = RENDERERS[base];
+    try { body = renderer ? renderer(task.result || {}) : renderGeneric(task.result); }
+    catch (e) { body = renderGeneric(task.result); }
+  }
+
+  return '<div class="tool ' + cardCls + '"><div class="thead"><span class="tname">' + esc(label) + '</span>' +
+    '<span class="tstatus ' + task.status + '">' + esc(STATUS_LABEL[task.status] || task.status) + '</span></div>' + body + '</div>';
+}
+
+function renderShare(){
+  const shareUrl = location.origin + location.pathname + '?id=' + encodeURIComponent(ID);
+  const text = encodeURIComponent(shareUrl);
+  return '<div class="share"><span class="sharelabel">Share this report:</span>' +
+    '<a class="sharebtn" href="https://wa.me/?text=' + text + '" target="_blank" rel="noopener">WhatsApp</a>' +
+    '<a class="sharebtn" href="mailto:?subject=' + encodeURIComponent('Brand Builder Report') + '&body=' + text + '">Email</a>' +
+    '<button class="sharebtn" id="copyShare" type="button" onclick="copyShareLink(\'' + shareUrl.replace(/'/g, "\\'") + '\')">Copy link</button></div>';
+}
+function copyShareLink(url){
+  navigator.clipboard?.writeText(url).then(() => {
+    const btn = $('copyShare');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+let pollTimer = null;
+
+async function load(){
+  if (!ID){ $('out').innerHTML = '<p class="err">No report id in the link.</p>'; return; }
+
+  let d;
+  try {
+    const res = await fetch(API + '/master-form/get', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, id: ID })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+
+  if (d.error){
+    $('rTitle').textContent = 'Not found';
+    $('out').innerHTML = '<p class="err">' + esc(d.error) + '</p>';
+    return;
+  }
+
+  $('rTitle').textContent = d.brand_name;
+
+  const done = d.tasks.filter(t => t.status === 'done').length;
+  const pending = d.tasks.filter(t => t.status === 'pending').length;
+
+  let html = '<div class="banner ' + (d.status === 'complete' ? 'complete' : 'running') + '">' +
+    '<div class="headline">' + (d.status === 'complete' ? 'Report complete' : 'Still generating — ' + done + ' of ' + d.tasks.length + ' checks done') + '</div>' +
+    '<div class="sub">' + esc(d.homepage) + ' · ' + esc(d.market) + (d.city ? ' · ' + esc(d.city) : '') + ' · keywords: ' + (d.keywords || []).join(', ') +
+    (d.bidding_submission_id ? '<br>A brand ad-bidding monitor is also running separately — <a href="/tools/brand-bidding/?report=' + encodeURIComponent(d.bidding_submission_id) + '" target="_blank" rel="noopener">its report →</a> (ready within 24h)' : '') +
+    '</div></div>';
+
+  const order = ['rank-snapshot', 'share-of-search', 'traffic-estimate', 'ai-mentions', 'brand-questions', 'brand-footprint', 'brand-sentiment',
+    'grid-check', 'pin-check', 'pagespeed', 'crawler-check', 'sitemap-audit', 'redirect-tracer',
+    'schema-audit:homepage', 'schema-audit:product', 'image-audit:homepage', 'image-audit:product',
+    'hreflang-audit:homepage', 'hreflang-audit:product', 'eeat-audit:homepage', 'eeat-audit:product',
+    'ua-compare:homepage', 'ua-compare:product', 'locale-audit:homepage', 'locale-audit:product'];
+  const sorted = [...d.tasks].sort((a, b) => order.indexOf(a.tool) - order.indexOf(b.tool));
+
+  html += sorted.map(renderTool).join('');
+  html += renderShare();
+  $('out').innerHTML = html;
+
+  clearTimeout(pollTimer);
+  if (d.status !== 'complete' && pending > 0) pollTimer = setTimeout(load, 15000);
+}
+
+load();
+</script>
+</body>
+</html>

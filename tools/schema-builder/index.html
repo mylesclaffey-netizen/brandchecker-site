@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brand schema builder</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23e0a93a'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
+        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:640px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
+  fieldset{border:0;margin-bottom:24px}
+  legend{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+         text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .hint{font-size:11.5px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;margin-top:14px}
+  label:first-child{margin-top:0}
+  input,textarea,select{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  textarea{resize:vertical;min-height:70px;font-family:'IBM Plex Mono',monospace}
+  .field{margin-bottom:12px;position:relative}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
+
+  .siterow{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px}
+  .siterow input{flex:1}
+  .rmbtn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:7px;
+        width:38px;height:38px;flex:none;cursor:pointer;font-size:16px;margin-top:1px}
+  .addbtn{font-size:12px;color:var(--you);background:none;border:1px dashed var(--line);
+        border-radius:7px;padding:9px 14px;cursor:pointer;font-family:'IBM Plex Mono',monospace}
+
+  .block{background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:16px;margin-bottom:12px;position:relative}
+  .block .rmblock{position:absolute;top:12px;right:12px;background:none;border:1px solid var(--line);
+        color:var(--muted);border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px}
+  .block .blocktitle{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;
+        letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+
+  .outheading{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+     text-transform:uppercase;color:var(--muted);margin:28px 0 10px}
+  .codebox{background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:16px;max-height:420px;overflow:auto;margin-bottom:14px}
+  .codebox pre{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ok);
+        white-space:pre-wrap;word-break:break-word}
+  .codebox .empty{color:var(--muted);white-space:normal}
+
+  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer}
+  .submit:hover{background:#5c68f2}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px;line-height:1.6}
+  .after a{color:var(--you)}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#8b95ff}
+  body.embed .sidenav{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate" style="display:none">
+    <p class="eyebrow">Free tool · no access code needed</p>
+    <h1>You need an access code</h1>
+    <p class="lede">This tool runs on a personal link. Open the link you were sent — it carries your code — or type the code below.</p>
+    <div class="field" style="max-width:280px"><label for="manual">Access code</label>
+      <input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="submit" id="enter" type="button" style="max-width:280px">Continue</button>
+    <p class="after" style="text-align:left;max-width:280px">Don't have one? <a href="/#contact" style="color:var(--you)">Ask us for access</a>.</p>
+  </div>
+
+  <div id="main">
+    <p class="eyebrow">Free tool · no access code needed</p>
+    <h1>Brand schema builder</h1>
+    <p class="lede">Structured data (JSON-LD) for your brand — the same markup Google uses for rich results, and that AI answer engines lean on to get your facts right. Fill in what applies, then copy the code into your site's &lt;head&gt;.</p>
+
+    <fieldset>
+      <legend>Organization</legend>
+      <label for="orgName">Name</label>
+      <div class="field"><input id="orgName" type="text" placeholder="Café Savoy"></div>
+      <label for="orgUrl">Website URL</label>
+      <div class="field"><input id="orgUrl" type="text" placeholder="https://" value="https://"></div>
+      <label for="orgLogo">Logo URL</label>
+      <div class="field"><input id="orgLogo" type="text" placeholder="https://" value="https://"></div>
+      <label for="orgDesc">Description</label>
+      <div class="field"><textarea id="orgDesc" placeholder="One or two sentences about the brand"></textarea></div>
+
+      <label>Social &amp; knowledge-graph profiles (sameAs)</label>
+      <p class="hint">LinkedIn, Wikipedia, Wikidata, Crunchbase, Instagram, X, YouTube — the more you link, the easier it is for AI systems and Google to confirm who you are.</p>
+      <div id="sameAsRows"></div>
+      <button class="addbtn" id="addSameAs" type="button">+ Add a profile link</button>
+
+      <label style="margin-top:18px">Contact (optional)</label>
+      <p class="hint">General brand contact — head office, PR, support. Not tied to a specific address.</p>
+      <div class="row2"><input id="orgPhone" placeholder="Phone"><input id="orgEmail" placeholder="Email"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Locations (optional)</legend>
+      <p class="hint">One location merges straight into the brand's own listing. Add more than one and each becomes its own linked location — the correct way to represent a multi-branch or franchise brand.</p>
+      <div id="locations"></div>
+      <button class="addbtn" id="addLocation" type="button">+ Add another location</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Products (optional)</legend>
+      <p class="hint">Powers price, availability and star ratings in search results.</p>
+      <div id="products"></div>
+      <button class="addbtn" id="addProduct" type="button">+ Add a product</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>FAQs (optional)</legend>
+      <p class="hint">Question-and-answer content Google can show as an expandable rich result — and the shape AI answer engines extract most reliably.</p>
+      <div id="faqs"></div>
+      <button class="addbtn" id="addFaq" type="button">+ Add a question</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Breadcrumbs (optional)</legend>
+      <p class="hint">Shows a page's place in your site structure instead of a raw URL.</p>
+      <div id="crumbs"></div>
+      <button class="addbtn" id="addCrumb" type="button">+ Add a breadcrumb</button>
+    </fieldset>
+
+    <p class="outheading">Generated JSON-LD</p>
+    <div class="codebox"><pre id="output" class="empty">Add at least an organization name and website URL above to generate your schema.</pre></div>
+    <button class="submit" id="copyBtn" type="button" disabled>Copy code</button>
+    <p class="after">Paste this inside a &lt;script type="application/ld+json"&gt; tag in your page's &lt;head&gt;. Validate at <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener">Google's Rich Results Test</a>.</p>
+
+    <div class="sidenav">
+      <a href="/tools/" class="sidenav-link">← Back to tools</a>
+      <a href="/" class="sidenav-link">← Back to homepage</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+      <a href="/#contact" class="sidenav-link accent">Contact a consultant →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+
+const $ = id => document.getElementById(id);
+const MAX_SAMEAS = 8, MAX_PRODUCTS = 5, MAX_FAQS = 10, MAX_CRUMBS = 6;
+const CURRENCIES = ['USD','EUR','GBP','CZK','CAD','AUD'];
+const FAQ_PRESETS = [
+  'What is your return policy?',
+  'Do you ship internationally?',
+  'How long does delivery take?',
+  'What payment methods do you accept?',
+  'How can I contact customer support?',
+  'Do you offer refunds?',
+  'Is there a warranty on your products?',
+  'Do you have a physical store?',
+  'How do I track my order?',
+  'Can I cancel or change my order?'
+];
+const AVAILABILITY = [['InStock','In stock'],['OutOfStock','Out of stock'],['PreOrder','Pre-order'],['LimitedAvailability','Limited availability']];
+
+/* ---- sameAs rows ---- */
+function addSameAsRow(){
+  if ($('sameAsRows').children.length >= MAX_SAMEAS) return;
+  const row = document.createElement('div');
+  row.className = 'siterow';
+  row.innerHTML = '<input type="text" class="sameas-input" placeholder="https://linkedin.com/company/..." value="https://">' +
+    '<button type="button" class="rmbtn" aria-label="Remove">&times;</button>';
+  row.querySelector('input').oninput = regenerate;
+  row.querySelector('.rmbtn').onclick = () => { row.remove(); $('addSameAs').style.display = ''; regenerate(); };
+  $('sameAsRows').appendChild(row);
+  if ($('sameAsRows').children.length >= MAX_SAMEAS) $('addSameAs').style.display = 'none';
+}
+$('addSameAs').onclick = addSameAsRow;
+
+const MAX_LOCATIONS = 10;
+
+/* ---- location blocks ---- */
+function addLocationBlock(){
+  if ($('locations').children.length >= MAX_LOCATIONS) return;
+  const block = document.createElement('div');
+  block.className = 'block';
+  block.innerHTML =
+    '<button type="button" class="rmblock" aria-label="Remove location">&times;</button>' +
+    '<p class="blocktitle">Location</p>' +
+    '<label>Location name (optional)</label>' +
+    '<div class="field"><input class="l-label" type="text" placeholder="Leave blank if this is your only location"></div>' +
+    '<div class="row2" style="margin-bottom:8px"><input class="l-street" placeholder="Street address"><input class="l-city" placeholder="City"></div>' +
+    '<div class="row2"><input class="l-postal" placeholder="Postal code"><input class="l-country" placeholder="Country"></div>' +
+    '<label style="margin-top:14px">Phone for this location (optional)</label>' +
+    '<div class="field"><input class="l-phone" type="text" placeholder="Phone"></div>';
+  block.querySelectorAll('input').forEach(el => el.oninput = regenerate);
+  block.querySelector('.rmblock').onclick = () => { block.remove(); $('addLocation').style.display = ''; regenerate(); };
+  $('locations').appendChild(block);
+  if ($('locations').children.length >= MAX_LOCATIONS) $('addLocation').style.display = 'none';
+}
+$('addLocation').onclick = addLocationBlock;
+
+/* ---- product blocks ---- */
+function addProductBlock(){
+  if ($('products').children.length >= MAX_PRODUCTS) return;
+  const block = document.createElement('div');
+  block.className = 'block';
+  block.innerHTML =
+    '<button type="button" class="rmblock" aria-label="Remove product">&times;</button>' +
+    '<p class="blocktitle">Product</p>' +
+    '<label>Name</label><div class="field"><input class="p-name" type="text" placeholder="Espresso blend, 250g"></div>' +
+    '<label>Image URL</label><div class="field"><input class="p-image" type="text" value="https://"></div>' +
+    '<label>Description</label><div class="field"><textarea class="p-desc"></textarea></div>' +
+    '<div class="row3">' +
+      '<div><label>Price</label><input class="p-price" type="text" placeholder="12.50"></div>' +
+      '<div><label>Currency</label><select class="p-currency">' + CURRENCIES.map(c => '<option value="' + c + '">' + c + '</option>').join('') + '</select></div>' +
+      '<div><label>Availability</label><select class="p-avail">' + AVAILABILITY.map(([v,l]) => '<option value="' + v + '">' + l + '</option>').join('') + '</select></div>' +
+    '</div>' +
+    '<div class="row2" style="margin-top:14px">' +
+      '<div><label>Rating (optional)</label><input class="p-rating" type="text" placeholder="4.7"></div>' +
+      '<div><label>Review count</label><input class="p-reviews" type="text" placeholder="120"></div>' +
+    '</div>';
+  block.querySelectorAll('input,textarea,select').forEach(el => el.oninput = regenerate);
+  block.querySelectorAll('select').forEach(el => el.onchange = regenerate);
+  block.querySelector('.rmblock').onclick = () => { block.remove(); $('addProduct').style.display = ''; regenerate(); };
+  $('products').appendChild(block);
+  if ($('products').children.length >= MAX_PRODUCTS) $('addProduct').style.display = 'none';
+}
+$('addProduct').onclick = addProductBlock;
+
+/* ---- FAQ blocks ---- */
+function addFaqBlock(){
+  if ($('faqs').children.length >= MAX_FAQS) return;
+  const block = document.createElement('div');
+  block.className = 'block';
+  block.innerHTML =
+    '<button type="button" class="rmblock" aria-label="Remove question">&times;</button>' +
+    '<p class="blocktitle">Question</p>' +
+    '<label>Common questions</label>' +
+    '<div class="field"><select class="f-preset"><option value="">Choose one, or just type your own below ↓</option>' +
+    FAQ_PRESETS.map(q => '<option value="' + q.replace(/"/g, '&quot;') + '">' + q + '</option>').join('') +
+    '</select></div>' +
+    '<label>Question</label><div class="field"><input class="f-q" type="text" placeholder="Or write your own question here"></div>' +
+    '<label>Answer</label><div class="field"><textarea class="f-a" placeholder="Yes, worldwide — 3 to 7 business days."></textarea></div>';
+  block.querySelector('.f-preset').onchange = e => {
+    if (e.target.value) block.querySelector('.f-q').value = e.target.value;
+    e.target.value = '';
+    regenerate();
+  };
+  block.querySelectorAll('input,textarea').forEach(el => el.oninput = regenerate);
+  block.querySelector('.rmblock').onclick = () => { block.remove(); $('addFaq').style.display = ''; regenerate(); };
+  $('faqs').appendChild(block);
+  if ($('faqs').children.length >= MAX_FAQS) $('addFaq').style.display = 'none';
+}
+$('addFaq').onclick = addFaqBlock;
+
+/* ---- breadcrumb rows ---- */
+function addCrumbRow(){
+  if ($('crumbs').children.length >= MAX_CRUMBS) return;
+  const row = document.createElement('div');
+  row.className = 'siterow';
+  row.innerHTML = '<div class="row2" style="flex:1">' +
+    '<input type="text" class="c-name" placeholder="Category name">' +
+    '<input type="text" class="c-url" placeholder="https://" value="https://">' +
+    '</div><button type="button" class="rmbtn" aria-label="Remove">&times;</button>';
+  row.querySelectorAll('input').forEach(el => el.oninput = regenerate);
+  row.querySelector('.rmbtn').onclick = () => { row.remove(); $('addCrumb').style.display = ''; regenerate(); };
+  $('crumbs').appendChild(row);
+  if ($('crumbs').children.length >= MAX_CRUMBS) $('addCrumb').style.display = 'none';
+}
+$('addCrumb').onclick = addCrumbRow;
+
+['orgName','orgUrl','orgLogo','orgDesc','orgPhone','orgEmail']
+  .forEach(id => $(id).oninput = regenerate);
+
+function buildGraph(){
+  const graph = [];
+
+  const org = { '@type': 'Organization' };
+  const name = $('orgName').value.trim();
+  const url = $('orgUrl').value.trim();
+  if (!name || !url || url === 'https://') return null;
+
+  org.name = name;
+  org.url = url;
+  const logo = $('orgLogo').value.trim();
+  if (logo && logo !== 'https://') org.logo = logo;
+  const desc = $('orgDesc').value.trim();
+  if (desc) org.description = desc;
+
+  const sameAs = [...document.querySelectorAll('.sameas-input')]
+    .map(i => i.value.trim()).filter(v => v && v !== 'https://');
+  if (sameAs.length) org.sameAs = sameAs;
+
+  const phone = $('orgPhone').value.trim();
+  if (phone) org.telephone = phone;
+  const email = $('orgEmail').value.trim();
+  if (email) org.email = email;
+
+  // One location merges straight into the brand's own Organization entity
+  // (same behavior as before locations were repeatable). More than one
+  // location is genuinely ambiguous on a single entity's address field, so
+  // each becomes its own LocalBusiness, linked back via parentOrganization
+  // — the pattern Google's own guidance uses for multi-branch brands.
+  const locations = [...document.querySelectorAll('#locations .block')].map(block => ({
+    label: block.querySelector('.l-label').value.trim(),
+    street: block.querySelector('.l-street').value.trim(),
+    city: block.querySelector('.l-city').value.trim(),
+    postal: block.querySelector('.l-postal').value.trim(),
+    country: block.querySelector('.l-country').value.trim(),
+    phone: block.querySelector('.l-phone').value.trim()
+  })).filter(l => l.street || l.city || l.postal || l.country);
+
+  function postalAddress(l){
+    const addr = { '@type': 'PostalAddress' };
+    if (l.street) addr.streetAddress = l.street;
+    if (l.city) addr.addressLocality = l.city;
+    if (l.postal) addr.postalCode = l.postal;
+    if (l.country) addr.addressCountry = l.country;
+    return addr;
+  }
+
+  if (locations.length === 1) {
+    org.address = postalAddress(locations[0]);
+  }
+
+  graph.push(org);
+
+  if (locations.length > 1) {
+    locations.forEach((l, i) => {
+      const branch = {
+        '@type': 'LocalBusiness',
+        name: l.label || (name + ' — Location ' + (i + 1)),
+        address: postalAddress(l),
+        parentOrganization: { '@type': 'Organization', name }
+      };
+      if (l.phone) branch.telephone = l.phone;
+      graph.push(branch);
+    });
+  }
+
+  document.querySelectorAll('#products .block').forEach(block => {
+    const pname = block.querySelector('.p-name').value.trim();
+    if (!pname) return;
+    const product = { '@type': 'Product', name: pname, brand: { '@type': 'Organization', name } };
+    const image = block.querySelector('.p-image').value.trim();
+    if (image && image !== 'https://') product.image = image;
+    const desc2 = block.querySelector('.p-desc').value.trim();
+    if (desc2) product.description = desc2;
+    const price = block.querySelector('.p-price').value.trim();
+    if (price) {
+      product.offers = {
+        '@type': 'Offer', price, priceCurrency: block.querySelector('.p-currency').value,
+        availability: 'https://schema.org/' + block.querySelector('.p-avail').value
+      };
+    }
+    const rating = block.querySelector('.p-rating').value.trim();
+    const reviews = block.querySelector('.p-reviews').value.trim();
+    if (rating) {
+      product.aggregateRating = { '@type': 'AggregateRating', ratingValue: rating };
+      if (reviews) product.aggregateRating.reviewCount = reviews;
+    }
+    graph.push(product);
+  });
+
+  const faqEntities = [];
+  document.querySelectorAll('#faqs .block').forEach(block => {
+    const q = block.querySelector('.f-q').value.trim();
+    const a = block.querySelector('.f-a').value.trim();
+    if (!q || !a) return;
+    faqEntities.push({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } });
+  });
+  if (faqEntities.length) graph.push({ '@type': 'FAQPage', mainEntity: faqEntities });
+
+  const crumbItems = [];
+  document.querySelectorAll('#crumbs .siterow').forEach(row => {
+    const cname = row.querySelector('.c-name').value.trim();
+    const curl = row.querySelector('.c-url').value.trim();
+    if (!cname || !curl || curl === 'https://') return;
+    crumbItems.push({ '@type': 'ListItem', position: crumbItems.length + 1, name: cname, item: curl });
+  });
+  if (crumbItems.length) graph.push({ '@type': 'BreadcrumbList', itemListElement: crumbItems });
+
+  return graph;
+}
+
+function counts(){
+  return {
+    locations: [...document.querySelectorAll('#locations .block')].filter(b =>
+      ['.l-street', '.l-city', '.l-postal', '.l-country'].some(sel => b.querySelector(sel).value.trim())
+    ).length,
+    products: [...document.querySelectorAll('#products .block .p-name')].filter(i => i.value.trim()).length,
+    faqs: [...document.querySelectorAll('#faqs .block .f-q')].filter(i => i.value.trim()).length,
+    breadcrumbs: [...document.querySelectorAll('#crumbs .siterow .c-name')].filter(i => i.value.trim()).length
+  };
+}
+
+function regenerate(){
+  const graph = buildGraph();
+  if (!graph){
+    $('output').className = 'empty';
+    $('output').textContent = 'Add at least an organization name and website URL above to generate your schema.';
+    $('copyBtn').disabled = true;
+    return;
+  }
+  const doc = { '@context': 'https://schema.org', '@graph': graph };
+  $('output').className = '';
+  $('output').textContent = JSON.stringify(doc, null, 2);
+  $('copyBtn').disabled = false;
+}
+
+$('copyBtn').onclick = async () => {
+  navigator.clipboard?.writeText($('output').textContent);
+  const original = $('copyBtn').textContent;
+  $('copyBtn').textContent = 'Copied ✓';
+  setTimeout(() => $('copyBtn').textContent = original, 1500);
+
+  try {
+    await fetch(API + '/schema-builder', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, org_name: $('orgName').value.trim(), counts: counts() })
+    });
+  } catch (e) { /* history logging only — never block the copy on this */ }
+};
+
+addSameAsRow();
+addSameAsRow();
+addSameAsRow();
+addLocationBlock();
+</script>
+</body>
+</html>
