@@ -63,6 +63,7 @@
   .findrow{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:12px 14px;display:flex;gap:10px}
   .findrow.error{border-color:var(--bad)}
   .findrow.warn{border-color:var(--warn)}
+  .findrow.info .badge{color:var(--muted);background:rgba(154,163,186,.13)}
   .findrow .badge{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
         padding:3px 8px;border-radius:20px;flex:none;height:fit-content}
   .findrow.error .badge{color:var(--bad);background:rgba(232,105,95,.12)}
@@ -227,7 +228,7 @@ function renderResults(d){
     : warns + ' thing' + (warns === 1 ? '' : 's') + ' worth a look';
 
   const summaryClass = !d.schemas_found.length || warns || errors ? 'issues' : 'clean';
-  const sub = d.og_type ? 'Page type signal (og:type): ' + d.og_type : 'Checked just now';
+  const sub = (d.og_type ? 'Page type signal (og:type): ' + d.og_type : 'Checked just now') + (d.js_rendered && d.schemas_found.length ? ' · found after running JavaScript (not in the raw HTML)' : '');
 
   let html = '<div class="summary ' + summaryClass + '"><div class="headline">' + esc(headline) + '</div><div class="sub">' + esc(sub) + '</div></div>';
 
@@ -237,7 +238,7 @@ function renderResults(d){
 
   if (d.findings.length){
     html += '<div class="findlist">' + d.findings.map(f =>
-      '<div class="findrow ' + f.severity + '"><span class="badge">' + (f.severity === 'error' ? 'Error' : 'Warning') + '</span>' +
+      '<div class="findrow ' + f.severity + '"><span class="badge">' + (f.severity === 'error' ? 'Error' : f.severity === 'info' ? 'Note' : 'Warning') + '</span>' +
       '<div class="msg"><span class="type">' + esc(f.type) + '</span>' + esc(f.message) + '</div></div>'
     ).join('') + '</div>';
   } else if (d.schemas_found.length) {
