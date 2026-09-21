@@ -13,7 +13,13 @@
     make: {
       home: '/make/',
       tools: {
-        'ai-mentions':      { fields: { brand: 'Make' } },
+        'ai-mentions':      { fields: { brand: 'Make', prompts: [
+          'what are the best workflow automation tools?',
+          'best no-code automation platform for small businesses',
+          'what are the best alternatives to Zapier?',
+          'which AI automation platform should I use to connect my apps and AI agents?',
+          'top visual workflow builders for complex multi-step automations'
+        ].join('\n') } },
         'backlinks':        { fields: { website: 'make.com', comp1: MAKE_COMPETITORS[0], comp2: MAKE_COMPETITORS[1], comp3: MAKE_COMPETITORS[2] }, checks: ['compToggle'], show: ['compBox'] },
         'brand-bidding':    { fields: { site: 'make.com', brand: 'Make', comp1: MAKE_COMPETITORS[0], comp2: MAKE_COMPETITORS[1], comp3: MAKE_COMPETITORS[2] } },
         'brand-builder':    { fields: { homepage: 'make.com', brandName: 'Make', keywords: 'workflow automation', competitors: MAKE_COMPETITORS.join('\n') } },
