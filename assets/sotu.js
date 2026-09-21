@@ -85,8 +85,14 @@
     list.forEach(function (c) { var m = (c.mentions || []).filter(function (x) { return x.name === brand; })[0]; if (m && m.mentioned && m.position) ps.push(m.position); });
     return ps.length ? ps.reduce(function (a, b) { return a + b; }, 0) / ps.length : null;
   }
+  // '2026-07-24' -> '24 Jul 2026'
+  function fmtDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso + 'T00:00:00Z');
+    return isNaN(d) ? iso : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  }
   function pct(v) { return v == null ? '—' : Math.round(v * 100) + '%'; }
-  function money(v) { return '$' + (v < 0.1 ? v.toFixed(3) : v.toFixed(2)); }
+  function money(v) { return '$' + (v < 0.01 ? v.toFixed(4) : (v < 0.1 ? v.toFixed(3) : v.toFixed(2))); }
   function ago(iso) {
     if (!iso) return '';
     var s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
@@ -108,6 +114,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, money: money, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, money: money, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();
