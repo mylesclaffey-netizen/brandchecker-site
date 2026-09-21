@@ -193,15 +193,6 @@ function updateGoButton(){
   $('go').textContent = ready ? 'Generate review link' : 'Pick a business above first';
 }
 
-// Default business: Make (Menclova, Prague 8), verified against Google's own
-// listing (website make.com). The place ID is all a review link needs, so this
-// works even where the Places autocomplete key isn't authorised for the page.
-selectedName = 'Make';
-selectedPlaceId = 'ChIJa-IxelaTC0cRzpk5awgZmvU';
-$('biz').value = selectedName;
-$('acBadge').classList.add('show');
-updateGoButton();
-
 async function onBizInput(){
   selectedPlaceId = '';
   $('acBadge').classList.remove('show');
@@ -282,5 +273,6 @@ function renderResult(writeUrl, reviewsUrl){
     '<p class="foot">Both links are Google\'s own official direct-review URL format — nothing proprietary, they\'ll keep working as long as this business exists on Google. If your business has multiple locations, generate a separate link for each one.</p>';
 }
 </script>
+<script src="/assets/presets.js"></script>
 </body>
 </html>

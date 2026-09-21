@@ -86,12 +86,12 @@
   <div id="main">
     <p class="eyebrow">Free tool · no access code needed</p>
     <h1>llms.txt generator</h1>
-    <p class="lede">A curated map of your site for AI assistants to read — the same idea as robots.txt or a sitemap, but written for language models instead of crawlers. Fill in what applies, then host the result at <b>make.com/llms.txt</b>.</p>
+    <p class="lede">A curated map of your site for AI assistants to read — the same idea as robots.txt or a sitemap, but written for language models instead of crawlers. Fill in what applies, then host the result at <b>yoursite.com/llms.txt</b>.</p>
 
     <fieldset>
       <legend>Basics</legend>
       <label for="siteName">Site or project name</label>
-      <div class="field"><input id="siteName" type="text" placeholder="Make" value="Make"></div>
+      <div class="field"><input id="siteName" type="text" placeholder="Café Savoy"></div>
       <label for="summary">One-line summary</label>
       <div class="field"><input id="summary" type="text" placeholder="A specialty coffee roaster and café in Prague, since 2019."></div>
       <p class="hint">This becomes the quoted line right under your name — keep it to one real sentence. It's what a model reads first.</p>
@@ -109,7 +109,7 @@
     <p class="outheading">Generated llms.txt</p>
     <div class="codebox"><pre id="output" class="empty">Add a site name and at least one link above to generate your file.</pre></div>
     <button class="submit" id="copyBtn" type="button" disabled>Copy code</button>
-    <p class="after">Save this as a plain text file named <b>llms.txt</b> and host it at your site's root — <b>make.com/llms.txt</b>, same place as robots.txt. Spec at <a href="https://llmstxt.org" target="_blank" rel="noopener">llmstxt.org</a>.</p>
+    <p class="after">Save this as a plain text file named <b>llms.txt</b> and host it at your site's root — <b>yoursite.com/llms.txt</b>, same place as robots.txt. Spec at <a href="https://llmstxt.org" target="_blank" rel="noopener">llmstxt.org</a>.</p>
 
     <div class="sidenav">
       <a href="/" class="sidenav-link">← Back to tools</a>
@@ -245,5 +245,6 @@ document.body.appendChild(datalist);
 
 addSectionBlock('Docs');
 </script>
+<script src="/assets/presets.js"></script>
 </body>
 </html>

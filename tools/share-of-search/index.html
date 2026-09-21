@@ -105,24 +105,24 @@
 
     <fieldset>
       <legend>Your brand</legend>
-      <div class="field"><label for="site">Website</label><input id="site" type="text" placeholder="make.com" value="make.com">
+      <div class="field"><label for="site">Website</label><input id="site" type="text" placeholder="yourcompany.com">
         <p class="hint" style="margin-top:7px">Used to check you against the right result when your brand name isn't unique.</p></div>
-      <div class="field"><label for="brand">Brand name</label><input id="brand" type="text" placeholder="the name people search" value="Make"></div>
+      <div class="field"><label for="brand">Brand name</label><input id="brand" type="text" placeholder="the name people search"></div>
     </fieldset>
 
     <fieldset>
       <legend>Competitors</legend>
       <p class="hint">Up to three, named the way people search for them.</p>
       <div class="competitors">
-        <div class="field"><label for="comp1">Competitor 1</label><input id="comp1" type="text" value="zapier.com"></div>
-        <div class="field"><label for="comp2">Competitor 2 (optional)</label><input id="comp2" type="text" value="n8n.io"></div>
-        <div class="field"><label for="comp3">Competitor 3 (optional)</label><input id="comp3" type="text" value="workato.com"></div>
+        <div class="field"><label for="comp1">Competitor 1</label><input id="comp1" type="text"></div>
+        <div class="field"><label for="comp2">Competitor 2 (optional)</label><input id="comp2" type="text"></div>
+        <div class="field"><label for="comp3">Competitor 3 (optional)</label><input id="comp3" type="text"></div>
       </div>
     </fieldset>
 
     <fieldset>
       <legend>Category (optional)</legend>
-      <div class="field"><label for="cat">Category word</label><input id="cat" type="text" placeholder="e.g. workflow automation" value="workflow automation">
+      <div class="field"><label for="cat">Category word</label><input id="cat" type="text" placeholder="e.g. wireless headphones">
         <p class="hint" style="margin-top:7px">Adds a “brand + category” search to every brand, alongside name, reviews and pricing.</p></div>
     </fieldset>
 
@@ -447,5 +447,6 @@ if (!CODE) noCodeGate();
 else if (REPORT_ID) loadSavedReport(REPORT_ID);
 else renderChips();
 </script>
+<script src="/assets/presets.js"></script>
 </body>
 </html>

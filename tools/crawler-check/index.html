@@ -111,7 +111,7 @@
     <h1>AI crawler access checker</h1>
     <p class="lede">Is your site actually reachable by ChatGPT, Claude, Perplexity and the other AI crawlers — or is your own robots.txt quietly blocking them? A blocked crawler is often the real reason a brand never gets mentioned by name.</p>
 
-    <div class="field"><label for="url">Website URL</label><input id="url" type="text" placeholder="https://make.com" value="https://make.com"></div>
+    <div class="field"><label for="url">Website URL</label><input id="url" type="text" placeholder="https://yoursite.com" value="https://"></div>
     <button class="submit" id="go" type="button">Check crawler access</button>
     <p class="after">Reads your robots.txt and llms.txt directly — nothing is crawled or changed on your site.</p>
 
@@ -246,5 +246,6 @@ function renderResults(d){
 const SHARED_URL = new URLSearchParams(location.search).get('url') || '';
 if (SHARED_URL) { $('url').value = SHARED_URL; run(); }
 </script>
+<script src="/assets/presets.js"></script>
 </body>
 </html>

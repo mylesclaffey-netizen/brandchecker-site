@@ -102,7 +102,7 @@
     <h1>Image optimization audit</h1>
     <p class="lede">Checks every image on a page for missing alt text, layout-shift risk, lazy-loading, legacy formats, and — the live-verification pass — broken or oversized images.</p>
 
-    <div class="field"><label for="url">Page URL</label><input id="url" type="text" placeholder="https://make.com/product-page" value="https://make.com"></div>
+    <div class="field"><label for="url">Page URL</label><input id="url" type="text" placeholder="https://yoursite.com/product-page" value="https://"></div>
     <button class="submit" id="go" type="button">Audit images</button>
     <p class="after">Reads the page directly — nothing is crawled beyond this one URL, nothing changed on your site.</p>
 
@@ -241,5 +241,6 @@ function renderResults(d){
 const SHARED_URL = new URLSearchParams(location.search).get('url') || '';
 if (SHARED_URL) { $('url').value = SHARED_URL; run(); }
 </script>
+<script src="/assets/presets.js"></script>
 </body>
 </html>

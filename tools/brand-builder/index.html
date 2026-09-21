@@ -86,9 +86,9 @@
     <p class="lede">One form. ~18 of our tools — rankings, share of search, AI mentions, schema, sitemap, page speed, local search, and more — run automatically against your brand. We email you the full Brand Builder Report once it's ready, usually within a few minutes.</p>
 
     <div class="section">Your site</div>
-    <div class="field"><label for="homepage">Homepage</label><input id="homepage" type="text" placeholder="make.com" value="make.com"></div>
-    <div class="field"><label for="productPage">Product or key page (optional)</label><input id="productPage" type="text" placeholder="make.com/product"></div>
-    <div class="field"><label for="brandName">Brand / business name</label><input id="brandName" type="text" placeholder="e.g. Make" value="Make"></div>
+    <div class="field"><label for="homepage">Homepage</label><input id="homepage" type="text" placeholder="yoursite.com"></div>
+    <div class="field"><label for="productPage">Product or key page (optional)</label><input id="productPage" type="text" placeholder="yoursite.com/product"></div>
+    <div class="field"><label for="brandName">Brand / business name</label><input id="brandName" type="text" placeholder="e.g. Acme Inc"></div>
 
     <div class="section">Where you compete</div>
     <div class="row2">
@@ -98,13 +98,11 @@
     <p class="hint" style="margin:-6px 0 14px">Local map-pack tracking (grid-check) only runs for Prague, Dublin, Hamburg or Belfast right now — any city still helps our local-pack pin check, which works worldwide.</p>
     <div class="field">
       <label for="keywords">Keywords — one per line, up to 10</label>
-      <textarea id="keywords" placeholder="workflow automation&#10;best workflow automation tools&#10;automation software">workflow automation</textarea>
+      <textarea id="keywords" placeholder="car insurance&#10;cheap car insurance&#10;auto insurance quotes"></textarea>
     </div>
     <div class="field">
       <label for="competitors">Competitor domains — one per line, up to 3 (optional)</label>
-      <textarea id="competitors" placeholder="competitor1.com&#10;competitor2.com" style="min-height:70px">zapier.com
-n8n.io
-workato.com</textarea>
+      <textarea id="competitors" placeholder="competitor1.com&#10;competitor2.com" style="min-height:70px"></textarea>
     </div>
 
     <div class="section">Delivery</div>
@@ -213,5 +211,6 @@ if (!CODE){
   $('manual').onkeydown = e => { if (e.key === 'Enter') goGate(); };
 }
 </script>
+<script src="/assets/presets.js"></script>
 </body>
 </html>

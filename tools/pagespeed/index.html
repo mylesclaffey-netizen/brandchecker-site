@@ -127,7 +127,7 @@
 
     <fieldset>
       <legend>Your site</legend>
-      <div class="field"><label for="you-url">URL</label><input id="you-url" type="text" placeholder="https://make.com" value="https://make.com"></div>
+      <div class="field"><label for="you-url">URL</label><input id="you-url" type="text" placeholder="https://yoursite.com" value="https://"></div>
     </fieldset>
 
     <fieldset>
@@ -203,12 +203,6 @@ function addCompetitorRow(){
   if ($('competitors').children.length >= MAX_COMPETITORS) $('addComp').style.display = 'none';
 }
 $('addComp').onclick = addCompetitorRow;
-[['Zapier', 'https://zapier.com'], ['n8n', 'https://n8n.io'], ['Workato', 'https://workato.com']].forEach(([label, url]) => {
-  addCompetitorRow();
-  const row = $('competitors').lastElementChild;
-  row.querySelector('.comp-label').value = label;
-  row.querySelector('.comp-url').value = url;
-});
 
 function renderDevChips(){
   $('devChips').innerHTML = [['mobile','Mobile'],['desktop','Desktop']].map(([v,l]) =>
@@ -511,5 +505,6 @@ if (REPORT_ID){
   addCompetitorRow();
 }
 </script>
+<script src="/assets/presets.js"></script>
 </body>
 </html>

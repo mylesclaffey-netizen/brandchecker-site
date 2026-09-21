@@ -127,15 +127,15 @@
     <p class="lede">How much organic search traffic a site is actually pulling in, estimated from every keyword it ranks for — not a panel-data guess, the same rank &times; volume &times; click-through-rate math Ahrefs and SEMrush use for their own traffic numbers.</p>
 
     <div class="row2">
-      <div class="field"><label for="website">Website</label><input id="website" type="text" placeholder="make.com" value="make.com"></div>
+      <div class="field"><label for="website">Website</label><input id="website" type="text" placeholder="yoursite.com"></div>
       <div class="field"><label for="market">Market</label><select id="market"></select></div>
     </div>
 
-    <label class="toggle"><input type="checkbox" id="compToggle" checked> Compare against up to 3 competitors</label>
-    <div id="compBox" style="display:block">
-      <div class="field"><input id="comp1" type="text" placeholder="competitor1.com" value="zapier.com"></div>
-      <div class="field"><input id="comp2" type="text" placeholder="competitor2.com" value="n8n.io"></div>
-      <div class="field"><input id="comp3" type="text" placeholder="competitor3.com" value="workato.com"></div>
+    <label class="toggle"><input type="checkbox" id="compToggle"> Compare against up to 3 competitors</label>
+    <div id="compBox">
+      <div class="field"><input id="comp1" type="text" placeholder="competitor1.com"></div>
+      <div class="field"><input id="comp2" type="text" placeholder="competitor2.com"></div>
+      <div class="field"><input id="comp3" type="text" placeholder="competitor3.com"></div>
     </div>
 
     <button class="submit" id="go" type="button">Estimate traffic</button>
@@ -448,5 +448,6 @@ if (!CODE){
   $('manual').onkeydown = e => { if (e.key === 'Enter') goGate(); };
 }
 </script>
+<script src="/assets/presets.js"></script>
 </body>
 </html>

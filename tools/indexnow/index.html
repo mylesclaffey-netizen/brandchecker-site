@@ -96,8 +96,8 @@
     <fieldset>
       <legend><span class="step">2</span>URLs that changed</legend>
       <p class="hint">One per line, all on the same domain as your key file above. Up to 50 at a time.</p>
-      <div class="field"><textarea id="urls" placeholder="https://make.com/new-page
-https://make.com/updated-page"></textarea></div>
+      <div class="field"><textarea id="urls" placeholder="https://yoursite.com/new-page
+https://yoursite.com/updated-page"></textarea></div>
     </fieldset>
 
     <button class="submit" id="go" type="button">Submit to IndexNow</button>
@@ -128,7 +128,7 @@ function firstHost(){
 function updateFileBox(){
   const key = $('key').value.trim();
   const host = firstHost();
-  $('keyLoc').textContent = key ? 'https://' + (host || 'make.com') + '/' + key + '.txt' : '—';
+  $('keyLoc').textContent = key ? 'https://' + (host || 'yoursite.com') + '/' + key + '.txt' : '—';
   $('keyContents').textContent = key || '—';
 }
 
@@ -180,5 +180,6 @@ async function run(){
 
 loadKey();
 </script>
+<script src="/assets/presets.js"></script>
 </body>
 </html>

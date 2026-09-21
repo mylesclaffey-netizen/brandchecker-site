@@ -95,7 +95,7 @@
     <h1>E-E-A-T signals</h1>
     <p class="lede">Checks a page for the concrete, individually-checkable signals Google's Quality Rater Guidelines point at — author, freshness, substance, citations, HTTPS, and About/Contact pages. A checklist, not a made-up score.</p>
 
-    <div class="field"><label for="url">Page URL</label><input id="url" type="text" placeholder="https://make.com/blog-post" value="https://make.com"></div>
+    <div class="field"><label for="url">Page URL</label><input id="url" type="text" placeholder="https://yoursite.com/blog-post" value="https://"></div>
     <button class="submit" id="go" type="button">Check signals</button>
     <p class="after">Reads the page directly — nothing is crawled beyond this one URL (and its homepage, for the About/Contact check), nothing changed on your site.</p>
 
@@ -215,5 +215,6 @@ function renderResults(d){
 const SHARED_URL = new URLSearchParams(location.search).get('url') || '';
 if (SHARED_URL) { $('url').value = SHARED_URL; run(); }
 </script>
+<script src="/assets/presets.js"></script>
 </body>
 </html>

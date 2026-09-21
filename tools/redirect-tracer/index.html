@@ -125,8 +125,8 @@
       <button class="mode" id="modeDomain" type="button" aria-pressed="false">Homepage variants</button>
     </div>
 
-    <div class="field" id="fieldUrl"><label for="url">URL</label><input id="url" type="text" placeholder="bit.ly/example or make.com/old-page"></div>
-    <div class="field" id="fieldDomain" style="display:none"><label for="domain">Domain</label><input id="domain" type="text" placeholder="make.com" value="make.com"></div>
+    <div class="field" id="fieldUrl"><label for="url">URL</label><input id="url" type="text" placeholder="bit.ly/example or yoursite.com/old-page"></div>
+    <div class="field" id="fieldDomain" style="display:none"><label for="domain">Domain</label><input id="domain" type="text" placeholder="example.com"></div>
 
     <button class="submit" id="go" type="button">Trace redirect</button>
     <p class="after" id="afterText">One live check, no login required. For checking many URLs at once during a site migration, see the <a href="/tools/redirect-check/" style="color:var(--you)">Redirect map validator</a> instead.</p>
@@ -392,5 +392,6 @@ if (SHARED_MODE === 'domain' && SHARED_DOMAIN) {
   run();
 }
 </script>
+<script src="/assets/presets.js"></script>
 </body>
 </html>

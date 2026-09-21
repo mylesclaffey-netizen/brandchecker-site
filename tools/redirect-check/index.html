@@ -111,7 +111,7 @@
     <h1>Redirect map validator</h1>
     <p class="lede">For a site migration: does each old URL actually redirect — and land on the right new page, not just anywhere that returns 200? Catches the single most common, costly migration mistake: everything quietly redirecting to the homepage instead of its real equivalent.</p>
 
-    <div class="field"><label for="website">Website</label><input id="website" type="text" placeholder="make.com" value="make.com"></div>
+    <div class="field"><label for="website">Website</label><input id="website" type="text" placeholder="yoursite.com"></div>
     <div class="field">
       <label for="urls">Old URLs — one per line, up to 500</label>
       <textarea id="urls" placeholder="/old-page&#10;/old-page-2, /new-page-2&#10;/blog/old-post, /articles/new-post"></textarea>
@@ -321,5 +321,6 @@ function renderRow(r){
 }
 
 </script>
+<script src="/assets/presets.js"></script>
 </body>
 </html>

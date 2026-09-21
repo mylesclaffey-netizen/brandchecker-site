@@ -112,15 +112,15 @@
     <h1>Brand sentiment</h1>
     <p class="lede">Not "does an AI bring you up unprompted" — that's a different check. This asks directly: when someone asks an AI assistant about your brand by name, what does it actually say? A fixed panel of 5 questions, each asked 3 times, so the silence rate — how often it has nothing to say — is visible on its own.</p>
 
-    <div class="field"><label for="brand">Brand name</label><input id="brand" type="text" placeholder="e.g. Make" maxlength="80" value="Make"></div>
+    <div class="field"><label for="brand">Brand name</label><input id="brand" type="text" placeholder="e.g. Stripe" maxlength="80"></div>
     <div class="field">
       <label for="context">Context (optional)</label>
-      <input id="context" type="text" placeholder="e.g. automation software" maxlength="120">
+      <input id="context" type="text" placeholder="e.g. payments software" maxlength="120">
       <p class="hint">Add this if your brand name is short or shared with something else — it's woven into every question to help the AI find the right entity.</p>
     </div>
     <div class="field">
       <label for="website">Website (optional)</label>
-      <input id="website" type="text" placeholder="e.g. make.com" maxlength="253" value="make.com">
+      <input id="website" type="text" placeholder="e.g. stripe.com" maxlength="253">
       <p class="hint">Add this to also check where your own social profiles (LinkedIn, X, etc. — read from your homepage's structured data) actually rank on Google for your brand name. Uses one real Google search, so it's not free.</p>
     </div>
     <div class="field" id="marketField" style="display:none">
@@ -318,5 +318,6 @@ if (!CODE){
   loadReport(REPORT_ID);
 }
 </script>
+<script src="/assets/presets.js"></script>
 </body>
 </html>

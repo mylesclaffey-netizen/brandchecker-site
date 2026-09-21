@@ -164,7 +164,7 @@
       <h2>Location</h2>
       <div class="chips" id="modeChips"></div>
       <div class="siterow">
-        <input id="addr" type="text" placeholder="123 Main St, Hamburg — or just a city" value="Prague, Czechia">
+        <input id="addr" type="text" placeholder="123 Main St, Hamburg — or just a city">
         <button class="findbtn" id="findAddr" type="button" aria-label="Find on map">Go</button>
       </div>
       <p class="err" id="addrErr" style="display:none;padding:8px 0;border:0"></p>
@@ -174,7 +174,7 @@
       <p class="hint" id="hint">Or click anywhere on the map to drop a pin.</p>
 
       <h2>Keywords</h2>
-      <div class="field"><input id="kw1" type="text" placeholder="coffee shop" value="workflow automation"></div>
+      <div class="field"><input id="kw1" type="text" placeholder="coffee shop"></div>
       <div id="moreKeywords"></div>
       <button class="addbtn" id="addKw" type="button">+ Add another keyword</button>
 
@@ -623,5 +623,6 @@ initMap();
 if (CODE && REPORT_ID) loadSavedReport(REPORT_ID);
 else if (CODE) centerOnVisitor();
 </script>
+<script src="/assets/presets.js"></script>
 </body>
 </html>
