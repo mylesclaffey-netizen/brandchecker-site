@@ -34,6 +34,18 @@
     });
   }
 
+  // Models answer in markdown. The page shows plain text, so drop the markup characters AFTER the mention
+  // ranges have been applied (they point into the raw text) — headings become bold lines, bullets become dots,
+  // table rules disappear.
+  function tidy(html) {
+    return html
+      .replace(/\*\*/g, '').replace(/__/g, '')
+      .replace(/(^|\n)#{1,6}[ \t]+([^\n]*)/g, '$1<b>$2</b>')
+      .replace(/(^|\n)[ \t]*\|?[ \t]*:?-{3,}:?[ \t]*(\|[ \t]*:?-{3,}:?[ \t]*)*\|?[ \t]*(?=\n|$)/g, '$1')
+      .replace(/(^|\n)[ \t]*[-*][ \t]+/g, '$1• ')
+      .replace(/\n{3,}/g, '\n\n');
+  }
+
   // Escape `text` and wrap every mention (ranges come from the Worker's detector) in a coloured <mark>.
   function highlight(text, mentions, colours) {
     text = String(text == null ? '' : text);
@@ -49,7 +61,7 @@
       out += esc(text.slice(at, sp.s)) + '<mark class="b" style="--bg:' + c.bg + ';--fg:' + c.fg + '">' + esc(text.slice(sp.s, sp.e)) + '</mark>';
       at = sp.e;
     });
-    return out + esc(text.slice(at));
+    return tidy(out + esc(text.slice(at)));
   }
 
   function api(path, body) {

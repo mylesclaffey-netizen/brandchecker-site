@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model comparison</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brand Checker">
+<meta property="og:url" content="https://brandchecker.eu/tools/model-compare/">
+<meta property="og:title" content="Model comparison | Brand Checker">
+<meta property="og:description" content="Ask one prompt to several models of the same AI family and see which ones know your brand.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--you:#ff3d00}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#fff;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;line-height:1.5;padding:22px 16px 60px;font-size:16px}
+  .wrap{max-width:1100px;margin:0 auto}
+  .field{margin:0 0 22px}
+  .field label,.fl{display:block;font-weight:800;font-size:14px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.05em}
+  .hint{font-size:13.5px;color:#3d3d3d;margin:6px 0 0}
+  input[type=text],textarea{width:100%;padding:13px 14px;font-size:16px}
+  textarea{min-height:88px;resize:vertical}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:620px){.row2{grid-template-columns:1fr}}
+  .form{max-width:820px}
+  .opts{display:flex;flex-wrap:wrap;gap:10px}
+  .opt{display:flex;align-items:center;gap:8px;padding:9px 13px;border:2px solid #0a0a0a;background:#fff;cursor:pointer;font-weight:700;font-size:14px;user-select:none}
+  .opt.on{background:#0a0a0a;color:#fff}
+  .opt small{font-weight:500;opacity:.85;font-size:12px}
+  .toggle{display:flex;align-items:flex-start;gap:12px;padding:14px;border:3px solid #0a0a0a;background:#fff;cursor:pointer}
+  .field label.toggle{text-transform:none;letter-spacing:0;font-weight:400;font-size:16px;margin:0}
+  .toggle input{margin-top:4px;width:18px;height:18px;accent-color:#ff3d00}
+  .toggle b{display:block;font-size:16px;text-transform:uppercase;letter-spacing:.04em}
+  .toggle span{font-size:13.5px;color:#3d3d3d}
+  .toggle.disabled{opacity:.55;cursor:not-allowed}
+  details.more{border:3px solid #0a0a0a;padding:14px 16px;margin:0 0 22px;background:#fff}
+  details.more summary{cursor:pointer;font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:14px}
+  details.more[open] summary{margin-bottom:16px}
+  .est{border:3px solid #0a0a0a;padding:14px 16px;margin:0 0 20px;background:#f3f3ef;font-size:15px;box-shadow:5px 5px 0 #0a0a0a}
+  .est b{font-family:'Archivo',sans-serif;font-size:22px;font-weight:900}
+  .err{margin:0 0 16px}
+  .sidenav{margin-top:36px;padding-top:20px;border-top:3px solid #0a0a0a;display:flex;flex-direction:column;gap:13px}
+  .sidenav-link{font-size:14px;font-weight:600}
+  body.embed .sidenav{display:none}
+  #gate,#results{display:none}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+<link rel="stylesheet" href="/assets/sotu.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate" class="form">
+    <p class="eyebrow">Access code needed</p>
+    <h1>Model comparison</h1>
+    <p class="lede">This tool runs on a personal access link. Open the link you were sent, or type the code below.</p>
+    <div class="field" style="max-width:300px"><label for="manual">Access code</label><input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="btn2 solid" id="enter" type="button">Continue</button>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="form" id="formBox">
+      <p class="eyebrow">Same AI, different versions</p>
+      <h1>Model comparison</h1>
+      <p class="lede">Ask one prompt to several models of the same AI family, side by side. See whether older or smaller models know your brand, and how the newer ones answer differently.</p>
+
+      <div class="field">
+        <label for="prompt">Prompt</label>
+        <textarea id="prompt" placeholder="e.g. What are the best tools for …?" maxlength="300"></textarea>
+        <p class="hint">Write it the way a customer would ask an AI assistant.</p>
+      </div>
+
+      <div class="field"><span class="fl">Family</span><div class="seg" id="families" style="margin:0"></div></div>
+      <div class="field"><span class="fl">Models</span><div class="opts" id="models"></div>
+        <p class="hint" id="modelNote">Each family's most expensive top-tier model is left out — it costs several times more per answer.</p></div>
+
+      <details class="more" id="brandBox">
+        <summary>Check who gets named (optional)</summary>
+        <div class="row2 field">
+          <div><label for="brand">Your brand</label><input id="brand" type="text" placeholder="e.g. Acme" maxlength="80"></div>
+          <div><label for="domain">Your website</label><input id="domain" type="text" placeholder="acme.com" maxlength="120"></div>
+        </div>
+        <div class="field"><label for="aliases">Other names for it</label><input id="aliases" type="text" placeholder="e.g. Acme.com, Acme Inc" maxlength="200"></div>
+        <div class="field" style="margin:0"><label for="competitors">Competitors (up to 5, one per line)</label><textarea id="competitors" placeholder="rival.com&#10;another-rival.com"></textarea>
+          <p class="hint">Each gets its own colour in the answers.</p></div>
+      </details>
+
+      <div class="field">
+        <label class="toggle" id="webToggle"><input type="checkbox" id="web">
+          <div><b>Let models search the web</b><span id="webText">Off by default: each model answers from its own knowledge, which shows what it already “knows” about your brand and is far cheaper. Turn on to compare with live search.</span></div></label>
+      </div>
+
+      <div class="est" id="est"></div>
+      <p class="err" id="err" style="display:none"></p>
+      <button class="btn2 solid" id="go" type="button">Compare models</button>
+    </div>
+
+    <div id="results">
+      <div class="sotu-actions" style="margin-top:8px"><button class="btn2" id="again" type="button">← New comparison</button></div>
+      <p class="eyebrow" id="rFamily"></p>
+      <h1 id="rTitle" style="font-size:clamp(26px,4vw,44px)"></h1>
+      <p class="sotu-sub" id="rSub"></p>
+      <div id="rBody"></div>
+    </div>
+
+    <div class="sidenav">
+      <a href="/tools/state-of-the-union/" class="sidenav-link">State Of The Union — across AI assistants →</a>
+      <a href="/tools/history/" class="sidenav-link">My history →</a>
+      <a href="/" class="sidenav-link">← Back to tools</a>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/sotu.js"></script>
+<script>
+if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
+const S = window.SOTU, esc = S.esc, $ = id => document.getElementById(id);
+const REPORT = new URLSearchParams(location.search).get('r') || '';
+let options = null, family = 'claude';
+const chosen = new Set();
+
+document.querySelectorAll('.sidenav-link').forEach(a => {
+  const u = new URL(a.getAttribute('href'), location.origin);
+  if (S.CODE) u.searchParams.set('k', S.CODE);
+  a.setAttribute('href', S.withPreset(u.pathname + u.search));
+});
+
+const fam = () => options.families.filter(f => f.id === family)[0];
+const lines = id => $(id).value.split('\n').map(s => s.trim()).filter(Boolean);
+
+function renderFamilies() {
+  $('families').innerHTML = options.families.map(f =>
+    '<button type="button" data-f="' + f.id + '" aria-pressed="' + (f.id === family) + '">' + esc(f.label) + '</button>').join('');
+  $('families').querySelectorAll('[data-f]').forEach(b => b.onclick = () => { setFamily(b.dataset.f); });
+}
+function setFamily(id) {
+  family = id; chosen.clear();
+  fam().models.forEach(m => chosen.add(m.id));   // start with every model in the family ticked
+  renderFamilies(); renderModels(); estimate();
+}
+window.selectFamily = function (id) { if (options) setFamily(id); };
+
+function renderModels() {
+  const f = fam(), web = $('web').checked;
+  $('models').innerHTML = f.models.map(m =>
+    '<label class="opt' + (chosen.has(m.id) ? ' on' : '') + '" data-m="' + esc(m.id) + '">' + esc(m.label) +
+    ' <small>$' + m.price_in + ' / $' + m.price_out + ' per M</small></label>').join('');
+  $('models').querySelectorAll('[data-m]').forEach(el => el.onclick = () => {
+    const id = el.dataset.m; if (chosen.has(id)) chosen.delete(id); else chosen.add(id);
+    renderModels(); estimate();
+  });
+  const wt = $('webToggle');
+  wt.classList.toggle('disabled', !!f.always_web);
+  $('web').disabled = !!f.always_web;
+  $('webText').textContent = f.always_web
+    ? 'Perplexity’s Sonar models always search the web, so this switch doesn’t apply to them.'
+    : 'Off by default: each model answers from its own knowledge, which shows what it already “knows” about your brand and is far cheaper. Turn on to compare with live search.';
+}
+
+function estimate() {
+  const f = fam(), web = $('web').checked && !f.always_web;
+  let usd = 0, n = 0;
+  f.models.forEach(m => { if (chosen.has(m.id)) { n++; usd += web ? m.estimate_on : m.estimate_off; } });
+  $('est').innerHTML = n ? '<b>≈ ' + S.money(usd) + '</b> for this comparison · ' + n + ' model' + (n === 1 ? '' : 's') + ' · ' + (f.always_web ? 'searches the web' : (web ? 'web search on' : 'own knowledge only'))
+                         : 'Pick at least one model to see the estimated cost.';
+}
+
+function showErr(m) { $('err').textContent = m; $('err').style.display = 'block'; }
+
+async function run() {
+  $('err').style.display = 'none';
+  const prompt = $('prompt').value.trim();
+  if (!prompt) return showErr('Write a prompt to ask.');
+  if (!chosen.size) return showErr('Pick at least one model.');
+  const body = {
+    prompt, family, models: [...chosen], web: $('web').checked,
+    brand_name: $('brand').value.trim(), domain: $('domain').value.trim(),
+    aliases: $('aliases').value.split(',').map(s => s.trim()).filter(Boolean), competitors: lines('competitors')
+  };
+  $('go').disabled = true; $('go').textContent = 'Asking the models…';
+  const r = await S.api('/model-compare/run', body);
+  $('go').disabled = false; $('go').textContent = 'Compare models';
+  if (r.error) return showErr(r.error);
+  history.replaceState(null, '', S.withPreset('?k=' + encodeURIComponent(S.CODE) + '&r=' + encodeURIComponent(r.id)));
+  show(r);
+}
+
+function card(d, r, colours) {
+  const main = d.brands[0];
+  let badge, body, foot = '';
+  if (r.error) {
+    badge = '<span class="badge2 na">Failed</span>';
+    body = '<div class="answer2 err">' + esc(r.error) + '</div>';
+  } else {
+    const ms = r.mentions || [], mMain = main ? ms.filter(m => m.name === main.name)[0] : null;
+    const b = S.badgeFor(main ? mMain : null);
+    badge = '<span class="badge2 ' + b.cls + '">' + b.text + '</span>';
+    body = '<div class="answer2">' + S.highlight(r.text || '', ms, colours) + '</div>';
+    const named = ms.filter(m => m.mentioned);
+    foot += '<div class="chips2">' + (named.length ? named.map(m => {
+      const c = colours[m.name];
+      return '<span class="chip2" style="--bg:' + c.bg + ';--fg:' + c.fg + '">' + esc(m.name) + (m.position ? ' <small>#' + m.position + '</small>' : '') + (m.cited ? ' <small>· cited</small>' : '') + '</span>';
+    }).join('') : (d.brands.length ? '<span class="srcs">None of the tracked brands are named.</span>' : '')) + '</div>';
+    const srcs = (r.sources || []).filter(s => s.url).slice(0, 3);
+    if (srcs.length) foot += '<div class="srcs">Sources: ' + srcs.map(s => '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc((s.title || s.url).slice(0, 38)) + '</a>').join(' · ') + '</div>';
+  }
+  const meta = esc(r.id) + (r.cost ? ' · ' + S.money(r.cost) : '') + (r.ms ? ' · ' + (r.ms / 1000).toFixed(1) + 's' : '');
+  return '<div class="mcard"><div class="mhead"><div><div class="mname">' + esc(r.label) + '</div><div class="mfam">$' + r.price_in + ' in / $' + r.price_out + ' out per M tokens</div></div>' + badge + '</div>' +
+    body + foot + '<div class="mmeta">' + meta + '</div></div>';
+}
+
+function show(d) {
+  const colours = S.colourMap(d.brands), main = d.brands[0];
+  $('formBox').style.display = 'none'; $('results').style.display = 'block';
+  $('rFamily').textContent = d.family.label + ' · ' + (d.web ? 'web search on' : (d.family.always_web ? 'searches the web' : 'own knowledge only'));
+  $('rTitle').textContent = '“' + d.prompt + '”';
+  const ok = d.results.filter(r => !r.error && r.text);
+  const named = main ? ok.filter(r => (r.mentions || []).some(m => m.name === main.name && m.mentioned)).length : null;
+  $('rSub').textContent = main ? main.name + ' is named by ' + named + ' of ' + ok.length + ' ' + d.family.label + ' model' + (ok.length === 1 ? '' : 's') + '.' : ok.length + ' answers, side by side.';
+
+  const cheapestNaming = main ? ok.filter(r => (r.mentions || []).some(m => m.name === main.name && m.mentioned)).sort((a, b) => (a.cost || 0) - (b.cost || 0))[0] : null;
+  const fastest = ok.slice().sort((a, b) => a.ms - b.ms)[0];
+  const cards = [
+    main ? { cls: 'accent', lbl: 'Names ' + esc(main.name), val: named + ' / ' + ok.length, sub: 'models mention it' } : { cls: 'accent', lbl: 'Answers', val: ok.length, sub: 'models answered' },
+    { lbl: 'Cheapest that names you', val: cheapestNaming ? esc(cheapestNaming.label.replace(/^Claude |^GPT-/, '')) : '—', sub: cheapestNaming ? S.money(cheapestNaming.cost) + ' per answer' : (main ? 'none of them do' : 'set a brand to see') },
+    { lbl: 'Fastest', val: fastest ? (fastest.ms / 1000).toFixed(1) + 's' : '—', sub: fastest ? esc(fastest.label) : '' },
+    { lbl: 'Total cost', val: S.money(d.total_cost || 0), sub: 'for this comparison' }
+  ];
+  const legend = d.brands.length ? '<div class="legend">' + d.brands.map(b => {
+    const c = colours[b.name]; return '<span class="chip2" style="--bg:' + c.bg + ';--fg:' + c.fg + '">' + esc(b.name) + (b === main ? ' <small>your brand</small>' : '') + '</span>';
+  }).join('') + '</div>' : '';
+
+  let matrix = '';
+  if (d.brands.length) {
+    matrix = '<h2 class="h2b">Who each model names</h2><div class="tblwrap"><table class="tbl"><tr><th>Model</th>' +
+      d.brands.map(b => '<th><span class="dot" style="--bg:' + colours[b.name].bg + '"></span>' + esc(b.name) + '</th>').join('') + '</tr>' +
+      ok.map(r => '<tr><td>' + esc(r.label) + '</td>' + d.brands.map(b => {
+        const m = (r.mentions || []).filter(x => x.name === b.name)[0];
+        return '<td class="heat" style="background:' + (m && m.mentioned ? colours[b.name].bg : '#f3f3ef') + ';color:' + (m && m.mentioned ? colours[b.name].fg : '#3d3d3d') + '">' + (m && m.mentioned ? '#' + m.position : '—') + '</td>';
+      }).join('') + '</tr>').join('') + '</table></div>';
+  }
+  $('rBody').innerHTML = '<div class="stats4">' + cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val" style="font-size:' + (String(c.val).length > 6 ? '30px' : '44px') + '">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
+    legend + '<div class="mgrid">' + d.results.map(r => card(d, r, colours)).join('') + '</div>' + matrix;
+  window.scrollTo(0, 0);
+}
+
+async function init() {
+  const r = await S.api('/model-compare/options');
+  if (r.error || !r.connected) { $('formBox').innerHTML = '<p class="err">' + esc(r.error || 'Model comparison is not connected yet.') + '</p>'; return; }
+  options = r;
+  setFamily('claude');
+  ['prompt', 'web'].forEach(id => $(id).addEventListener('input', () => { renderModels(); estimate(); }));
+  $('go').onclick = run;
+  $('again').onclick = () => { history.replaceState(null, '', S.withPreset('?k=' + encodeURIComponent(S.CODE))); $('results').style.display = 'none'; $('formBox').style.display = 'block'; };
+  if (REPORT) {
+    const d = await S.api('/model-compare/get', { id: REPORT });
+    if (d.error) showErr(d.error); else show(d);
+  }
+}
+
+if (!S.CODE) {
+  $('gate').style.display = 'block';
+  const go = () => { const v = $('manual').value.trim().toLowerCase().replace(/\s+/g, ''); if (v) location.search = '?k=' + encodeURIComponent(v); };
+  $('enter').onclick = go; $('manual').onkeydown = e => { if (e.key === 'Enter') go(); };
+} else {
+  $('app').style.display = 'block';
+  init();
+}
+</script>
+<script src="/assets/presets.js"></script>
+</body>
+</html>

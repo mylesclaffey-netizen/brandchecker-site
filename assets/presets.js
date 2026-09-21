@@ -47,6 +47,13 @@
           after: function () { if (typeof window.selectMarkets === 'function') window.selectMarkets(['United States', 'United Kingdom']); call('estimate'); }
         },
         'traffic-estimate': { fields: { website: 'make.com', comp1: MAKE_COMPETITORS[0], comp2: MAKE_COMPETITORS[1], comp3: MAKE_COMPETITORS[2] }, checks: ['compToggle'], show: ['compBox'] },
+        'model-compare': {
+          fields: {
+            prompt: 'What are the best workflow automation tools?',
+            brand: 'Make', domain: 'make.com', aliases: 'Make.com, Integromat', competitors: MAKE_COMPETITORS.join('\n')
+          },
+          after: function () { var b = document.getElementById('brandBox'); if (b) b.open = true; }
+        },
         'grid-check':       { fields: { biz: 'Make', kw: 'workflow automation' } },
         'pin-check':        { fields: { addr: 'Prague, Czechia', kw1: 'workflow automation' } },
         'pagespeed': {

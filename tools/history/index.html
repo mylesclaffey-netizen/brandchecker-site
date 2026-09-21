@@ -116,7 +116,9 @@ const TOOLS = [
   { id: 'ua-compare',    label: 'User-agent comparison' },
   { id: 'locale-audit',  label: 'Locale-adaptive content check' },
   { id: 'review-link',  label: 'Google review link generator' },
-  { id: 'brand-builder', label: 'Brand Builder' }
+  { id: 'brand-builder', label: 'Brand Builder' },
+  { id: 'state-of-the-union', label: 'State Of The Union' },
+  { id: 'model-compare', label: 'Model comparison' }
 ];
 const TOOL_LABEL = Object.fromEntries(TOOLS.map(t => [t.id, t.label]));
 
@@ -134,7 +136,9 @@ const REPORT_LINK = {
   'pin-check':    (code, id) => `/tools/pin-check/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
   'brand-footprint': (code, id) => `/tools/brand-footprint/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
   'brand-sentiment': (code, id) => `/tools/brand-sentiment/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
-  'brand-builder': (code, id) => `/tools/brand-builder/report/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`
+  'brand-builder': (code, id) => `/tools/brand-builder/report/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
+  'state-of-the-union': (code, id) => `/tools/state-of-the-union/report/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
+  'model-compare': (code, id) => `/tools/model-compare/?k=${encodeURIComponent(code)}&r=${encodeURIComponent(id)}`
 };
 
 function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
