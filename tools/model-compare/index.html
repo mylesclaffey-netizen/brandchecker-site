@@ -339,7 +339,7 @@ function show(d) {
       }).join('') + '</tr>').join('') + '</table></div>';
   }
   current = d; view = window.SNAPSHOT ? 'timeline' : 'compare';
-  $('rBody').dataset.compare = '<div class="stats4">' + cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val" style="font-size:' + (String(c.val).length > 6 ? '30px' : '44px') + '">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
+  $('rBody').dataset.compare = '<div class="stats4">' + cards.filter(c => !(window.SNAPSHOT && /^(Cheapest|Fastest|Total cost)/.test(c.lbl))).map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val" style="font-size:' + (String(c.val).length > 6 ? '30px' : '44px') + '">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
     legend + '<div class="mgrid">' + d.results.map(r => card(d, r, colours)).join('') + '</div>' + matrix;
   renderView();
   window.scrollTo(0, 0);
