@@ -103,6 +103,25 @@ function chart(d) {
   return '<div class="chart">' + svg + '</svg></div>';
 }
 
+function timeline(d) {
+  const main = d.brands[0], colours = S.colourMap(d.brands);
+  const rows = d.runs.filter(r => r.says && Object.keys(r.says).length);
+  if (!rows.length) return '';
+  const list = rows.map(r => {
+    const s = r.by_brand[main.name];
+    const per = Object.keys(r.says).map(p => {
+      const v = r.says[p];
+      return '<div style="margin:0 0 10px"><span class="chip2" style="--bg:' + colours[main.name].bg + ';--fg:' + colours[main.name].fg + '">' + esc(p) + (v.position ? ' <small>#' + v.position + '</small>' : '') + '</span>' +
+        (v.says ? '<div class="says" style="margin-top:6px"><small>AI summary</small>' + esc(v.says) + '</div>' : '') +
+        (v.quote ? '<div class="quote" style="--bg:' + colours[main.name].bg + '">' + esc(v.quote) + '</div>' : '') + '</div>';
+    }).join('');
+    return '<div class="trow"><div class="when">' + new Date(r.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) + ' · named in ' + S.pct(s ? s.rate : null) + ' of answers</div>' +
+      '<div class="who">Run of ' + when(r.created_at) + '</div>' + per + '</div>';
+  }).join('');
+  return '<h2 class="h2b">What each model said about ' + esc(main.name) + ', run by run</h2><div class="tl">' + list + '</div>' +
+    '<p class="hint">One answer per model per run (the first that names ' + esc(main.name) + '). The summary is written by a small AI model; the quoted sentence is the model’s own words.</p>';
+}
+
 function renderTrend(d) {
   const colours = S.colourMap(d.brands), main = d.brands[0], runs = d.runs;
   if (!runs.length) { $('detail').innerHTML = '<div class="empty2">No runs yet.</div>'; return; }
@@ -136,6 +155,7 @@ function renderTrend(d) {
     '<div class="stats4">' + cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
     '<h2 class="h2b">Mention rate over time</h2>' + legend + chart(d) +
     (runs.length < 2 ? '<div class="banner2">The trend line appears after the next run' + (d.watch.next_run_at ? ' (due ' + when(d.watch.next_run_at) + ')' : '') + '. Each point is one full run.</div>' : '') +
+    timeline(d) +
     '<h2 class="h2b">Latest run — ' + esc(main.name) + ' by model</h2><div class="tblwrap"><table class="tbl"><tr><th>Model</th><th>Mention rate</th><th>Answers</th></tr>' + provRows + '</table></div>' +
     '<h2 class="h2b">All runs</h2><div class="tblwrap"><table class="tbl"><tr><th>When</th><th>' + esc(main.name) + ' rate</th><th>Avg position</th><th>Answers</th><th>Cost</th><th>Status</th><th></th></tr>' + hist + '</table></div>';
 }

@@ -102,7 +102,7 @@ function modelCard(d, p, cell) {
     if (r.text) {
       const b = S.badgeFor(main ? mMain : null);
       badge = '<span class="badge2 ' + b.cls + '">' + b.text + '</span>';
-      body = '<div class="answer2">' + S.highlight(r.text, ms, colours) + '</div>';
+      body = (r.says ? '<div class="says"><small>AI summary</small>' + esc(r.says) + '</div>' : '') + '<div class="answer2">' + S.highlight(r.text, ms, colours) + '</div>';
     } else {
       badge = '<span class="badge2 na">No answer</span>';
       body = '<div class="answer2 empty">' + esc(r.note || 'No answer text came back.') + '</div>';
