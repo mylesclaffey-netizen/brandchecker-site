@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>State Of The Union trackers</title>
+<title>State Of The Union tracker — Brand Checker for Make</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <meta name="robots" content="noindex">
@@ -23,18 +23,18 @@
 <body>
 <div class="sotu-wrap">
   <p class="eyebrow">State Of The Union</p>
-  <h1>My trackers</h1>
-  <p class="sotu-sub">Each tracker re-runs your prompts on a schedule and keeps every result, so you can see whether AI models name your brand more or less over time.</p>
-  <div class="sotu-actions"><a class="btn2 solid" id="newBtn" href="/tools/state-of-the-union/">New tracker</a></div>
+  <h1>How AI models name Make</h1>
+  <p class="sotu-sub">The same prompts are put to ChatGPT, Claude, Perplexity, Llama, Mistral and Google AI Overviews every week, and every result is kept, so you can see whether AI models name Make more or less over time.</p>
+  <div class="sotu-actions"><a class="btn2" href="/make/">← Brand Checker for Make</a> <a class="btn2" href="/make/claude/">Claude</a> <a class="btn2" href="/make/chatgpt/">ChatGPT</a> <a class="btn2" href="/make/deepseek/">DeepSeek</a> <a class="btn2" href="/make/perplexity/">Perplexity</a></div>
   <div id="list"></div>
   <div id="detail"></div>
 
   <div class="sidenav">
-    <a href="/tools/state-of-the-union/" class="sidenav-link">← New State Of The Union report</a>
-    <a href="/" class="sidenav-link">← Back to tools</a>
+    <a href="/make/" class="sidenav-link">← Back to Brand Checker for Make</a>
   </div>
 </div>
 
+<script>window.SNAPSHOT = "/make/data/stateoftheunion-tracker.json";</script>
 <script src="/assets/sotu.js"></script>
 <script>
 if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
@@ -48,7 +48,7 @@ function link(path, extra) {
   return S.withPreset(u.pathname + u.search);
 }
 document.querySelectorAll('.sidenav-link').forEach(a => a.setAttribute('href', link(a.getAttribute('href'))));
-$('newBtn').setAttribute('href', link('/tools/state-of-the-union/'));
+
 
 function when(iso) { return iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : '—'; }
 
