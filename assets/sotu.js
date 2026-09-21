@@ -2,7 +2,7 @@
 (function () {
   var API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
   var Q = new URLSearchParams(location.search);
-  var CODE = Q.get('k') || (function () { try { return localStorage.getItem('mc2seo_code') || ''; } catch (e) { return ''; } })();
+  var CODE = Q.get('k') || (function () { try { return localStorage.getItem('mc2seo_code') || ''; } catch (e) { return ''; } })() || window.MC_VISITOR || '';
   var PRESET = Q.get('preset') || '';
 
   // English-language markets only (the tool's focus). key = the Worker's market name.

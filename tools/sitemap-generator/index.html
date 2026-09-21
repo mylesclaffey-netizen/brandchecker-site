@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
+<script src="/assets/visitor.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sitemap generator</title>
 <meta property="og:type" content="website">
@@ -132,7 +133,7 @@
 <script>
 if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
 const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
-const CODE = new URLSearchParams(location.search).get('k') || '';
+const CODE = new URLSearchParams(location.search).get('k') || window.MC_VISITOR || '';
 document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
 
 const $ = id => document.getElementById(id);
