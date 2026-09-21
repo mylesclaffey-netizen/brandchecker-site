@@ -227,10 +227,15 @@ function timelineView(d, colours) {
   if (!rows.length) return '<div class="empty2">No model answered.</div>';
 
   // --- chart: mention position by release date (1 = top of the answer's list); lower is better
-  const W = 900, H = 336, L = 88, R = 34, T = 22, B = 74;
+  const W = 900, H = 380, L = 88, R = 125, T = 22, B = 130;
   const times = rows.map(r => new Date(r.released + 'T00:00:00Z').getTime());
   const t0 = Math.min.apply(null, times), t1 = Math.max.apply(null, times);
-  const x = i => rows.length === 1 || t1 === t0 ? (L + W - R) / 2 : L + (W - L - R) * (times[i] - t0) / (t1 - t0);
+  const xs = [];
+  rows.forEach((r, i) => {
+    const base = rows.length === 1 || t1 === t0 ? (L + W - R) / 2 : L + (W - L - R) * (times[i] - t0) / (t1 - t0);
+    xs.push(i ? Math.max(base, xs[i - 1] + 17) : base);   // keep points that share or nearly share a date apart
+  });
+  const x = i => xs[i];
   let maxPos = 4;
   rows.forEach(r => (r.mentions || []).forEach(m => { if (m.mentioned && m.position) maxPos = Math.max(maxPos, Math.min(10, m.position)); }));
   const yOf = p => T + (H - T - B) * (Math.min(p, maxPos) - 1) / (maxPos - 1);
@@ -239,12 +244,9 @@ function timelineView(d, colours) {
   for (let p = 1; p <= maxPos; p++) svg += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + yOf(p) + '" y2="' + yOf(p) + '"/><text x="' + (L - 10) + '" y="' + (yOf(p) + 4) + '" text-anchor="end">#' + p + (p === maxPos && maxPos >= 10 ? '+' : '') + '</text>';
   svg += '<text x="' + (L - 10) + '" y="' + (yNone + 4) + '" text-anchor="end">not named</text><line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + yNone + '" y2="' + yNone + '"/>';
   svg += '<line class="axis" x1="' + L + '" x2="' + L + '" y1="' + T + '" y2="' + (yNone + 10) + '"/>';
-  let lastX = -1e9, lastLow = false;
   rows.forEach((r, i) => {
-    const low = x(i) - lastX < 90 && !lastLow; lastX = x(i); lastLow = low;
-    const dy = low ? 30 : 0;
     const short = r.label.replace(/^Claude |^GPT-|^DeepSeek /, '');
-    svg += '<text x="' + x(i) + '" y="' + (H - 54 + dy) + '" text-anchor="middle" style="font-weight:600;fill:#0a0a0a">' + esc(short.length > 16 ? short.slice(0, 15) + '…' : short) + '</text><text x="' + x(i) + '" y="' + (H - 10) + '" text-anchor="middle">' + esc(S.fmtDate(r.released)) + '</text>';
+    svg += '<text transform="translate(' + (x(i) - 2) + ',' + (yNone + 22) + ') rotate(40)" text-anchor="start" style="font-weight:600;fill:#0a0a0a">' + esc(short.length > 18 ? short.slice(0, 17) + '…' : short) + ' <tspan style="font-weight:400;fill:#666">' + esc(S.fmtDate(r.released)) + '</tspan></text>';
   });
   const order = d.brands.slice(1).concat([main]);              // your brand drawn last, on top
   order.forEach(b => {
