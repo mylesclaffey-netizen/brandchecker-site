@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Model comparison</title>
+<title>DeepSeek models over time — Brand Checker for Make</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Brand Checker">
-<meta property="og:url" content="https://brandchecker.eu/tools/model-compare/">
+<meta property="og:url" content="https://brandchecker.eu/make/deepseek/">
 <meta property="og:title" content="Model comparison | Brand Checker">
 <meta property="og:description" content="Ask one prompt to several models of the same AI family and see which ones know your brand.">
 <meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
@@ -101,7 +101,7 @@
     </div>
 
     <div id="results">
-      <div class="sotu-actions" style="margin-top:8px"><button class="btn2" id="again" type="button">← New comparison</button></div>
+      <div class="sotu-actions" style="margin-top:8px"><a class="btn2" href="/make/">← Brand Checker for Make</a> <a class="btn2" href="/make/claude/">Claude</a> <a class="btn2" href="/make/chatgpt/">ChatGPT</a></div>
       <p class="eyebrow" id="rFamily"></p>
       <h1 id="rTitle" style="font-size:clamp(26px,4vw,44px)"></h1>
       <p class="sotu-sub" id="rSub"></p>
@@ -110,13 +110,12 @@
     </div>
 
     <div class="sidenav">
-      <a href="/tools/state-of-the-union/" class="sidenav-link">State Of The Union — across AI assistants →</a>
-      <a href="/tools/history/" class="sidenav-link">My history →</a>
-      <a href="/" class="sidenav-link">← Back to tools</a>
+      <a href="/make/" class="sidenav-link">← Back to Brand Checker for Make</a>
     </div>
   </div>
 </div>
 
+<script>window.SNAPSHOT = "/make/data/deepseek.json";</script>
 <script src="/assets/sotu.js"></script>
 <script>
 if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
