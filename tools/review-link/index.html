@@ -193,6 +193,15 @@ function updateGoButton(){
   $('go').textContent = ready ? 'Generate review link' : 'Pick a business above first';
 }
 
+// Default business: Make (Menclova, Prague 8), verified against Google's own
+// listing (website make.com). The place ID is all a review link needs, so this
+// works even where the Places autocomplete key isn't authorised for the page.
+selectedName = 'Make';
+selectedPlaceId = 'ChIJa-IxelaTC0cRzpk5awgZmvU';
+$('biz').value = selectedName;
+$('acBadge').classList.add('show');
+updateGoButton();
+
 async function onBizInput(){
   selectedPlaceId = '';
   $('acBadge').classList.remove('show');
