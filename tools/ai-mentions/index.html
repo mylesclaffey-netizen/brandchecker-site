@@ -243,6 +243,9 @@ function renderPromptCard(brand, r){
         sources.slice(0, 8).map(s => '<span><a href="' + esc(s.url || '#') + '" target="_blank" rel="noopener">' +
           esc(s.title || s.url || 'source') + '</a></span>').join('') + '</div>'
       : '') +
+    (r.runs.some(run => run.via)
+      ? '<p class="subtle-label" style="text-transform:none;letter-spacing:0">These answers came from Gemini through OpenRouter’s web search (' + esc(r.runs.find(run => run.via).model) + '), not Google Search grounding — Google’s own Gemini service was unavailable.</p>'
+      : '') +
     '<p class="runrow">' + r.runs.map(run => run.mentioned ? '✓' : '·').join(' ') + '</p>' +
     '</div>';
 }

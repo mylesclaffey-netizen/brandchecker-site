@@ -7,7 +7,7 @@ access code is stripped when the snapshot is taken). Run after any change to the
 import os
 
 src = open('tools/model-compare/index.html', encoding='utf-8').read()
-FAMILIES = {'claude': 'Claude', 'chatgpt': 'ChatGPT', 'deepseek': 'DeepSeek', 'perplexity': 'Perplexity'}
+FAMILIES = {'claude': 'Claude', 'chatgpt': 'ChatGPT', 'deepseek': 'DeepSeek', 'perplexity': 'Perplexity', 'gemini': 'Gemini'}
 
 def swap(text, old, new):
     assert text.count(old) == 1, 'expected exactly one match for: ' + old[:60]

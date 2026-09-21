@@ -299,6 +299,7 @@ function renderRun(r){
   if (r.error) return '<div class="run"><p class="empty" style="padding:0">Could not reach the model for this run.</p></div>';
   const sources = (r.sources || []).slice(0, 6);
   return '<div class="run">' +
+    (r.via ? '<p class="empty" style="padding:0 0 6px">Answered by ' + esc(r.model) + ' through OpenRouter’s web search, not Google Search grounding.</p>' : '') +
     '<span class="pill ' + r.sentiment + '">' + esc(LABELS[r.sentiment] ?? r.sentiment) + '</span>' +
     (r.text ? '<div class="answer">' + esc(r.text) + '</div>' : '<p class="empty" style="padding:0">No answer text came back.</p>') +
     (sources.length

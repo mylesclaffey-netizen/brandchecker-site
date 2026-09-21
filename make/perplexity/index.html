@@ -102,7 +102,7 @@
     </div>
 
     <div id="results">
-      <div class="sotu-actions" style="margin-top:8px"><a class="btn2 navb" href="/make/">← Brand Checker for Make</a> <a class="btn2 navb" href="/make/claude/">Claude</a> <a class="btn2 navb" href="/make/chatgpt/">ChatGPT</a> <a class="btn2 navb" href="/make/deepseek/">DeepSeek</a> <a class="btn2 navb blue" href="/make/perplexity/" aria-current="page">Perplexity</a> <a class="btn2 navb" href="/make/stateoftheunion/tracker/">Weekly tracker</a></div>
+      <div class="sotu-actions" style="margin-top:8px"><a class="btn2 navb" href="/make/">← Brand Checker for Make</a> <a class="btn2 navb" href="/make/claude/">Claude</a> <a class="btn2 navb" href="/make/chatgpt/">ChatGPT</a> <a class="btn2 navb" href="/make/deepseek/">DeepSeek</a> <a class="btn2 navb blue" href="/make/perplexity/" aria-current="page">Perplexity</a> <a class="btn2 navb" href="/make/gemini/">Gemini</a> <a class="btn2 navb" href="/make/stateoftheunion/tracker/">Weekly tracker</a></div>
       <p class="eyebrow" id="rFamily"></p>
       <h1 id="rTitle" style="font-size:clamp(26px,4vw,44px)"></h1>
       <p class="sotu-sub" id="rSub"></p>
@@ -246,7 +246,7 @@ function timelineView(d, colours) {
   svg += '<text x="' + (L - 10) + '" y="' + (yNone + 4) + '" text-anchor="end">not named</text><line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + yNone + '" y2="' + yNone + '"/>';
   svg += '<line class="axis" x1="' + L + '" x2="' + L + '" y1="' + T + '" y2="' + (yNone + 10) + '"/>';
   rows.forEach((r, i) => {
-    const short = r.label.replace(/^Claude |^GPT-|^DeepSeek /, '');
+    const short = r.label.replace(/^Claude |^GPT-|^DeepSeek |^Gemini /, '');
     svg += '<text transform="translate(' + (x(i) - 2) + ',' + (yNone + 22) + ') rotate(40)" text-anchor="start" style="font-weight:600;fill:#0a0a0a">' + esc(short.length > 18 ? short.slice(0, 17) + '…' : short) + ' <tspan style="font-weight:400;fill:#666">' + esc(S.fmtDate(r.released)) + '</tspan></text>';
   });
   const order = d.brands.slice(1).concat([main]);              // your brand drawn last, on top
@@ -320,8 +320,8 @@ function show(d) {
   const fastest = ok.slice().sort((a, b) => a.ms - b.ms)[0];
   const cards = [
     main ? { cls: 'accent', lbl: 'Names ' + esc(main.name), val: named + ' / ' + ok.length, sub: 'models mention it' } : { cls: 'accent', lbl: 'Answers', val: ok.length, sub: 'models answered' },
-    { lbl: 'Cheapest that names you', val: cheapestNaming ? esc(cheapestNaming.label.replace(/^Claude |^GPT-|^DeepSeek /, '')) : '—', sub: cheapestNaming ? S.money(cheapestNaming.cost) + ' per answer' : (main ? 'none of them do' : 'set a brand to see') },
-    { lbl: 'Oldest that names you', val: oldest ? esc(oldest.label.replace(/^Claude |^GPT-|^DeepSeek /, '')) : '—', sub: oldest ? 'released ' + S.fmtDate(oldest.released) : (main ? 'none of them do' : 'set a brand to see') },
+    { lbl: 'Cheapest that names you', val: cheapestNaming ? esc(cheapestNaming.label.replace(/^Claude |^GPT-|^DeepSeek |^Gemini /, '')) : '—', sub: cheapestNaming ? S.money(cheapestNaming.cost) + ' per answer' : (main ? 'none of them do' : 'set a brand to see') },
+    { lbl: 'Oldest that names you', val: oldest ? esc(oldest.label.replace(/^Claude |^GPT-|^DeepSeek |^Gemini /, '')) : '—', sub: oldest ? 'released ' + S.fmtDate(oldest.released) : (main ? 'none of them do' : 'set a brand to see') },
     { lbl: 'Fastest', val: fastest ? (fastest.ms / 1000).toFixed(1) + 's' : '—', sub: fastest ? esc(fastest.label) : '' },
     { lbl: 'Total cost', val: S.money(d.total_cost || 0), sub: 'for this comparison' }
   ];
