@@ -123,7 +123,7 @@
   <div id="form">
     <p class="eyebrow">Free tool · no access code needed</p>
     <h1>How fast is your site, really?</h1>
-    <p class="lede">Your PageSpeed Insights score next to up to two competitors' — same Lighthouse performance score and Core Web Vitals Google itself uses to judge page experience.</p>
+    <p class="lede">Your PageSpeed Insights score next to up to three competitors' — same Lighthouse performance score and Core Web Vitals Google itself uses to judge page experience.</p>
 
     <fieldset>
       <legend>Your site</legend>
@@ -131,7 +131,7 @@
     </fieldset>
 
     <fieldset>
-      <legend>Competitors (optional, up to 2)</legend>
+      <legend>Competitors (optional, up to 3)</legend>
       <div id="competitors"></div>
       <button class="addbtn" id="addComp" type="button">+ Add a competitor</button>
     </fieldset>
@@ -177,7 +177,7 @@ const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
 const CODE = new URLSearchParams(location.search).get('k') || '';
 document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
 const REPORT_ID = new URLSearchParams(location.search).get('r') || '';
-const MAX_COMPETITORS = 2;
+const MAX_COMPETITORS = 3;
 const R = 50, CIRC = 2 * Math.PI * R;
 
 const $ = id => document.getElementById(id);
@@ -203,6 +203,12 @@ function addCompetitorRow(){
   if ($('competitors').children.length >= MAX_COMPETITORS) $('addComp').style.display = 'none';
 }
 $('addComp').onclick = addCompetitorRow;
+[['Zapier', 'https://zapier.com'], ['n8n', 'https://n8n.io'], ['Workato', 'https://workato.com']].forEach(([label, url]) => {
+  addCompetitorRow();
+  const row = $('competitors').lastElementChild;
+  row.querySelector('.comp-label').value = label;
+  row.querySelector('.comp-url').value = url;
+});
 
 function renderDevChips(){
   $('devChips').innerHTML = [['mobile','Mobile'],['desktop','Desktop']].map(([v,l]) =>
