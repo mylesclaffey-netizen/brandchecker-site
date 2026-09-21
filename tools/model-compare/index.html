@@ -227,13 +227,13 @@ function timelineView(d, colours) {
   if (!rows.length) return '<div class="empty2">No model answered.</div>';
 
   // --- chart: mention position by release date (1 = top of the answer's list); lower is better
-  const W = 900, H = 380, L = 88, R = 125, T = 22, B = 130;
+  const W = 900, H = 380, L = 88, R = 150, T = 22, B = 130;
   const times = rows.map(r => new Date(r.released + 'T00:00:00Z').getTime());
   const t0 = Math.min.apply(null, times), t1 = Math.max.apply(null, times);
   const xs = [];
   rows.forEach((r, i) => {
     const base = rows.length === 1 || t1 === t0 ? (L + W - R) / 2 : L + (W - L - R) * (times[i] - t0) / (t1 - t0);
-    xs.push(i ? Math.max(base, xs[i - 1] + 17) : base);   // keep points that share or nearly share a date apart
+    xs.push(i ? Math.max(base, xs[i - 1] + 24) : base);   // keep points that share or nearly share a date apart
   });
   const x = i => xs[i];
   let maxPos = 4;
