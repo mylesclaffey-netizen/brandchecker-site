@@ -31,6 +31,39 @@ src = (src[:start] +
        '\n  <p class="lede" style="margin-top:14px"><strong>How each AI family sees Make, model by model:</strong> '
        '<a href="/make/claude/">Claude</a> · <a href="/make/chatgpt/">ChatGPT</a> · <a href="/make/deepseek/">DeepSeek</a> · <a href="/make/perplexity/">Perplexity</a> · <a href="/make/stateoftheunion/tracker/">Weekly tracker</a></p>' + src[end:])
 
+# On /make/ only: the Optimizely to Webflow checklist gets its own "Migration" group above Local search, so it
+# sits high in the menu. It is taken out of the groups that list it on the main page (the menu credits a tool to
+# the first group that lists it).
+CARD_TITLE = '<h3>Optimizely to Webflow migration checklist</h3>'
+card = None
+while CARD_TITLE in src:
+    i = src.index(CARD_TITLE)
+    a = src.rindex('  <div class="live">', 0, i)
+    b = src.index('No access code needed', i)
+    b = src.index('  </div>\n', b) + len('  </div>\n')
+    card = card or src[a:b]
+    src = src[:a] + src[b:]
+assert card, 'Optimizely checklist card not found'
+group = (
+    '  <details class="category" name="category-group">\n  <summary>\n    <div>\n'
+    '      <div class="cattitle">Migration</div>\n'
+    '      <p class="catlede">Moving from Optimizely to Webflow — the phase-by-phase checklist, including a phase for building the migration as a Make scenario.</p>\n'
+    '    </div>\n    <div class="catmeta"><span class="catcount">1 tool</span><span class="chev">›</span></div>\n  </summary>\n'
+    '  <div class="live-grid">\n\n' + card + '\n  </div>\n  </details>\n\n')
+t = src.index('Local search</div>')
+at = src.rindex('<details', 0, t)
+at = src.rindex('\n', 0, at) + 1
+src = src[:at] + group + src[at:]
+# the category counts on the groups that lost it
+import re
+def bump(title):
+    global src
+    i = src.index(title + '</div>')
+    m = re.compile(r'<span class="catcount">(\d+) tools?</span>').search(src, i)
+    n = int(m.group(1)) - 1
+    src = src[:m.start()] + '<span class="catcount">%d tool%s</span>' % (n, '' if n == 1 else 's') + src[m.end():]
+bump('Free To Use Tools'); bump('Technical &amp; Migration')
+
 os.makedirs('make', exist_ok=True)
 open('make/index.html', 'w', encoding='utf-8').write(src)
 print('wrote make/index.html')
