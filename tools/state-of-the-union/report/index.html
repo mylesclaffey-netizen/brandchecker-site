@@ -174,7 +174,7 @@ function bannerHtml(d) {
   let html;
   if (d.status === 'complete') {
     html = '<div class="banner2 done"><b>Report complete</b> · ' + settled + ' answers · ' + S.ago(d.completed_at || d.created_at) +
-      ' <span style="float:right">' + (d.watch_id
+      ' <span>' + (d.watch_id
         ? '<a class="btn2 small" href="' + S.withPreset('/tools/state-of-the-union/tracker/?k=' + encodeURIComponent(S.CODE) + '&w=' + encodeURIComponent(d.watch_id)) + '">Tracked weekly — see trend →</a>'
         : (d.brands.length ? '<button class="btn2 small solid" id="trackBtn" type="button">Track this weekly</button>' : '')) + '</span></div>';
   } else {

@@ -70,6 +70,7 @@ mark.b{background:var(--bg);color:var(--fg);padding:0 3px;font-weight:700;border
 .heat{font-family:'IBM Plex Mono',monospace;font-weight:500;text-align:center}
 
 .banner2{border:3px solid #0a0a0a;padding:14px 18px;margin:0 0 24px;background:#fff;box-shadow:5px 5px 0 #ffe14d;font-size:15px}
+.banner2{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px}
 .banner2 b{font-family:'Archivo',sans-serif;text-transform:uppercase}
 .banner2.done{box-shadow:5px 5px 0 #00844a}
 .empty2{border:3px dashed #0a0a0a;padding:26px;text-align:center;color:#3d3d3d;margin:0 0 24px}
