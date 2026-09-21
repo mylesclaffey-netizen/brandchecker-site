@@ -29,7 +29,7 @@ src = (src[:start] +
        '<p class="lede">Every tool is already filled in for Make: make.com, its competitors Zapier, n8n and '
        'Workato, and the keyword “workflow automation”. Pick a tool and run it.</p>'
        '\n  <p class="lede" style="margin-top:14px"><strong>How each AI family sees Make, model by model:</strong> '
-       '<a href="/make/claude/">Claude</a> · <a href="/make/chatgpt/">ChatGPT</a> · <a href="/make/deepseek/">DeepSeek</a></p>' + src[end:])
+       '<a href="/make/claude/">Claude</a> · <a href="/make/chatgpt/">ChatGPT</a> · <a href="/make/deepseek/">DeepSeek</a> · <a href="/make/perplexity/">Perplexity</a></p>' + src[end:])
 
 os.makedirs('make', exist_ok=True)
 open('make/index.html', 'w', encoding='utf-8').write(src)
