@@ -16,7 +16,7 @@ def swap(text, old, new):
 
 def nav(current):
     """The row of buttons at the top of every shared page; the page you are on is the blue one."""
-    items = [('/make/', '← Brand Checker for Make', None)] + [('/make/%s/' % f, l, f) for f, l in FAMILIES.items()] + [('/make/stateoftheunion/tracker/', 'Weekly tracker', 'tracker')]
+    items = [('/make/', '← Brand Checker for Make', None), ('/make/overview/', 'All models', 'overview')] + [('/make/%s/' % f, l, f) for f, l in FAMILIES.items()] + [('/make/stateoftheunion/tracker/', 'Weekly tracker', 'tracker')]
     links = ''.join(' <a class="btn2 navb%s" href="%s"%s>%s</a>' % (' blue' if key == current else '', href, ' aria-current="page"' if key == current else '', label) for href, label, key in items)
     return '<div class="sotu-actions" style="margin-top:8px">' + links.strip() + '</div>'
 
@@ -48,3 +48,11 @@ t = swap(t, '<a href="/tools/state-of-the-union/" class="sidenav-link">← New S
 os.makedirs('make/stateoftheunion/tracker', exist_ok=True)
 open('make/stateoftheunion/tracker/index.html', 'w', encoding='utf-8').write(t)
 print('wrote make/stateoftheunion/tracker/index.html')
+
+# ---- one chart of Make across every family: /make/overview/ (reads the five make/data/<family>.json files)
+head = t[:t.index('<div class="sotu-wrap">')]
+head = head.replace('State Of The Union tracker — Brand Checker for Make', 'Make across every AI model — Brand Checker for Make').replace('https://brandchecker.eu/make/stateoftheunion/tracker/', 'https://brandchecker.eu/make/overview/')
+body = open('templates/make-overview.html', encoding='utf-8').read().replace('__NAV__', nav('overview'))
+os.makedirs('make/overview', exist_ok=True)
+open('make/overview/index.html', 'w', encoding='utf-8').write(head + body)
+print('wrote make/overview/index.html')

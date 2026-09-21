@@ -1,0 +1,90 @@
+<div class="sotu-wrap">
+  <p class="eyebrow">State Of The Union · every model</p>
+  <h1>Make across every AI model</h1>
+  <p class="sotu-sub" id="sub">Loading…</p>
+  __NAV__
+  <div class="legend" id="legend"></div>
+  <div id="chart"></div>
+  <p class="hint">Each dot is one model, placed by its release date; the height is where that model listed Make when asked “<span id="prompt"></span>” (#1 at the top). The bottom row means it didn’t name Make at all. Click a name above to hide or show that family.</p>
+  <div class="stats4" id="cards"></div>
+  <div class="sidenav"><a href="/make/" class="sidenav-link">← Back to Brand Checker for Make</a></div>
+</div>
+
+<script src="/assets/sotu.js"></script>
+<script>
+const S = window.SOTU, esc = S.esc, $ = id => document.getElementById(id);
+const FAMILIES = [
+  { id: 'claude', label: 'Claude', colour: '#ff3d00', fg: '#fff' },
+  { id: 'chatgpt', label: 'ChatGPT', colour: '#0a0a0a', fg: '#fff' },
+  { id: 'gemini', label: 'Gemini', colour: '#8a2be2', fg: '#fff' },
+  { id: 'deepseek', label: 'DeepSeek', colour: '#1e3cff', fg: '#fff' },
+  { id: 'perplexity', label: 'Perplexity', colour: '#00a884', fg: '#fff' }
+];
+const hidden = new Set();
+let data = [];
+
+function rowsOf(d) {
+  const main = d.brands[0];
+  return d.results.filter(r => !r.error && r.text).map(r => {
+    const m = (r.mentions || []).find(x => x.name === main.name);
+    return { label: r.label, released: r.released, t: Date.parse(r.released + 'T00:00:00Z'), pos: m && m.mentioned ? (m.position || null) : null, named: !!(m && m.mentioned) };
+  }).sort((a, b) => a.t - b.t);
+}
+
+function chart() {
+  const W = 1000, H = 470, L = 92, R = 36, T = 26, B = 70;
+  const all = data.flatMap(f => f.rows);
+  const t0 = Math.min.apply(null, all.map(r => r.t)), t1 = Math.max.apply(null, all.map(r => r.t));
+  const pad = (t1 - t0) * 0.03, a = t0 - pad, b = t1 + pad;
+  const x = t => L + (W - L - R) * (t - a) / (b - a);
+  let maxPos = 6; all.forEach(r => { if (r.pos) maxPos = Math.max(maxPos, Math.min(10, r.pos)); });
+  const yTop = T, yBot = H - B - 34, yNone = H - B;
+  const y = p => yTop + (yBot - yTop) * (Math.min(p, maxPos) - 1) / (maxPos - 1);
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Position of Make over time, by AI family">';
+  for (let p = 1; p <= maxPos; p++) svg += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(p) + '" y2="' + y(p) + '"/><text x="' + (L - 10) + '" y="' + (y(p) + 4) + '" text-anchor="end">#' + p + (p === maxPos && maxPos >= 10 ? '+' : '') + '</text>';
+  svg += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + yNone + '" y2="' + yNone + '"/><text x="' + (L - 10) + '" y="' + (yNone + 4) + '" text-anchor="end">not named</text>';
+  svg += '<line class="axis" x1="' + L + '" x2="' + L + '" y1="' + T + '" y2="' + (yNone + 10) + '"/><line class="axis" x1="' + L + '" x2="' + (W - R) + '" y1="' + (yNone + 10) + '" y2="' + (yNone + 10) + '"/>';
+  // quarter ticks along the bottom
+  const d0 = new Date(a), start = Date.UTC(d0.getUTCFullYear(), Math.ceil(d0.getUTCMonth() / 3) * 3, 1);
+  for (let tt = start; tt <= b; ) {
+    const d = new Date(tt);
+    svg += '<line class="grid" x1="' + x(tt) + '" x2="' + x(tt) + '" y1="' + (yNone + 10) + '" y2="' + (yNone + 16) + '"/><text x="' + x(tt) + '" y="' + (yNone + 34) + '" text-anchor="middle">' + d.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' }) + ' ' + String(d.getUTCFullYear()).slice(2) + '</text>';
+    tt = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 3, 1);
+  }
+  const n = data.length;
+  data.forEach((f, fi) => {
+    if (hidden.has(f.id)) return;
+    const off = (fi - (n - 1) / 2) * 3.2;    // nudge each family a few pixels so lines that agree sit side by side
+    const pts = f.rows.map(r => ({ r, x: x(r.t), y: (r.named && r.pos ? y(r.pos) : (r.named ? y(maxPos) : yNone)) + off }));
+    if (pts.length > 1) svg += '<polyline class="ln" fill="none" stroke-linejoin="round" style="fill:none;stroke:' + f.colour + ';stroke-width:2.5;opacity:.85" points="' + pts.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') + '"/>';
+    pts.forEach(p => {
+      svg += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="5.5" fill="' + f.colour + '" stroke="#fff" stroke-width="1.5"><title>' + esc(f.label + ' · ' + p.r.label + ' · ' + S.fmtDate(p.r.released) + ' · ' + (p.r.named ? (p.r.pos ? 'Make listed #' + p.r.pos : 'Make named') : 'Make not named')) + '</title></circle>';
+    });
+  });
+  return svg + '</svg>';
+}
+
+function render() {
+  $('legend').innerHTML = data.map(f => '<button type="button" class="chip2 fam" data-f="' + f.id + '" style="--bg:' + (hidden.has(f.id) ? '#fff' : f.colour) + ';--fg:' + (hidden.has(f.id) ? '#0a0a0a' : f.fg) + ';cursor:pointer;opacity:' + (hidden.has(f.id) ? .55 : 1) + '">' + esc(f.label) + '</button>').join('');
+  $('chart').innerHTML = chart();
+  $('legend').querySelectorAll('.fam').forEach(b => b.onclick = () => { hidden.has(b.dataset.f) ? hidden.delete(b.dataset.f) : hidden.add(b.dataset.f); render(); });
+}
+
+Promise.all(FAMILIES.map(f => fetch('/make/data/' + f.id + '.json').then(r => r.json()).then(d => Object.assign({}, f, { rows: rowsOf(d), prompt: d.prompt }))))
+  .then(list => {
+    data = list;
+    const models = list.reduce((t, f) => t + f.rows.length, 0), named = list.reduce((t, f) => t + f.rows.filter(r => r.named).length, 0);
+    $('sub').textContent = 'Make is named by ' + named + ' of ' + models + ' models across ' + list.length + ' AI families — one question, asked of every model with its web search off.';
+    $('prompt').textContent = list[0].prompt;
+    $('cards').innerHTML = list.map(f => {
+      const nm = f.rows.filter(r => r.named), ps = nm.filter(r => r.pos).map(r => r.pos);
+      const avg = ps.length ? (ps.reduce((a, c) => a + c, 0) / ps.length).toFixed(1) : '—';
+      return '<div class="sc"><div class="lbl" style="color:' + f.colour + '">' + esc(f.label) + '</div><div class="val">' + nm.length + ' / ' + f.rows.length + '</div><div class="sub">name Make · average position #' + avg + (ps.length ? ' · best #' + Math.min.apply(null, ps) : '') + '</div></div>';
+    }).join('');
+    render();
+  })
+  .catch(() => { $('sub').textContent = 'This chart could not be loaded.'; });
+</script>
+<script src="/assets/presets.js"></script>
+</body>
+</html>
