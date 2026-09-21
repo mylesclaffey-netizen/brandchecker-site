@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>State Of The Union trackers</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="robots" content="noindex">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--you:#ff3d00}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#fff;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;line-height:1.5;padding:22px 16px 60px;font-size:16px}
+  a{color:inherit}
+  .sidenav{margin-top:36px;padding-top:20px;border-top:3px solid #0a0a0a;display:flex;flex-direction:column;gap:13px}
+  .sidenav-link{font-size:14px;font-weight:600}
+  body.embed .sidenav{display:none}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+<link rel="stylesheet" href="/assets/sotu.css">
+</head>
+<body>
+<div class="sotu-wrap">
+  <p class="eyebrow">State Of The Union</p>
+  <h1>My trackers</h1>
+  <p class="sotu-sub">Each tracker re-runs your prompts on a schedule and keeps every result, so you can see whether AI models name your brand more or less over time.</p>
+  <div class="sotu-actions"><a class="btn2 solid" id="newBtn" href="/tools/state-of-the-union/">New tracker</a></div>
+  <div id="list"></div>
+  <div id="detail"></div>
+
+  <div class="sidenav">
+    <a href="/tools/state-of-the-union/" class="sidenav-link">← New State Of The Union report</a>
+    <a href="/" class="sidenav-link">← Back to tools</a>
+  </div>
+</div>
+
+<script src="/assets/sotu.js"></script>
+<script>
+if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
+const S = window.SOTU, esc = S.esc, $ = id => document.getElementById(id);
+let watches = [], selected = new URLSearchParams(location.search).get('w') || '';
+
+function link(path, extra) {
+  const u = new URL(path, location.origin);
+  if (S.CODE) u.searchParams.set('k', S.CODE);
+  Object.keys(extra || {}).forEach(k => u.searchParams.set(k, extra[k]));
+  return S.withPreset(u.pathname + u.search);
+}
+document.querySelectorAll('.sidenav-link').forEach(a => a.setAttribute('href', link(a.getAttribute('href'))));
+$('newBtn').setAttribute('href', link('/tools/state-of-the-union/'));
+
+function when(iso) { return iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : '—'; }
+
+function card(w) {
+  return '<div class="card2' + (w.id === selected ? ' sel' : '') + '">' +
+    '<span class="status2 ' + w.status + '">' + w.status + ' · ' + w.frequency + '</span>' +
+    '<div class="name">' + esc(w.name) + '</div>' +
+    '<div class="meta">' + esc(w.brand) + ' vs ' + esc((w.competitors || []).join(', ') || 'no competitors') + '</div>' +
+    '<div class="meta">' + w.prompts.length + ' prompt' + (w.prompts.length === 1 ? '' : 's') + ' · ' + w.locations.map(l => S.market(l).short).join(' ') + ' · ' + w.providers.length + ' models · ' + (w.web ? 'web on' : 'web off') + '</div>' +
+    '<div class="meta">' + w.runs + ' run' + (w.runs === 1 ? '' : 's') + ' · last ' + when(w.last_run_at) + ' · next ' + (w.status === 'active' ? when(w.next_run_at) : 'paused') + ' · ≈ ' + S.money(w.estimated_cost_per_run_usd) + ' per run</div>' +
+    '<div class="row"><button class="btn2 small solid" data-view="' + w.id + '">View trend</button>' +
+    '<button class="btn2 small" data-pause="' + w.id + '" data-to="' + (w.status === 'active' ? 'paused' : 'active') + '">' + (w.status === 'active' ? 'Pause' : 'Resume') + '</button>' +
+    '<button class="btn2 small" data-del="' + w.id + '">Delete</button></div></div>';
+}
+
+function renderList() {
+  if (!watches.length) {
+    $('list').innerHTML = '<div class="empty2">No trackers yet. Run a report and choose “Track this every week”, or start one from the form.</div>';
+    return;
+  }
+  $('list').innerHTML = '<div class="trk">' + watches.map(card).join('') + '</div>';
+  $('list').querySelectorAll('[data-view]').forEach(b => b.onclick = () => { selected = b.dataset.view; history.replaceState(null, '', link('/tools/state-of-the-union/tracker/', { w: selected })); renderList(); loadTrend(); });
+  $('list').querySelectorAll('[data-pause]').forEach(b => b.onclick = async () => {
+    const r = await S.api('/state-of-union/watch/pause', { id: b.dataset.pause, status: b.dataset.to });
+    if (r.error) alert(r.error); else loadList();
+  });
+  $('list').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if (!confirm('Delete this tracker? Its past reports stay available, but it will stop running.')) return;
+    await S.api('/state-of-union/watch/delete', { id: b.dataset.del });
+    if (selected === b.dataset.del) { selected = ''; $('detail').innerHTML = ''; }
+    loadList();
+  });
+}
+
+function chart(d) {
+  const runs = d.runs, W = 900, H = 320, L = 46, R = 20, T = 16, B = 40;
+  const colours = S.colourMap(d.brands), n = runs.length;
+  const x = i => n === 1 ? (L + W - R) / 2 : L + (W - L - R) * i / (n - 1);
+  const y = v => T + (H - T - B) * (1 - v);
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Mention rate over time">';
+  [0, .25, .5, .75, 1].forEach(v => { svg += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '"/><text x="' + (L - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + Math.round(v * 100) + '%</text>'; });
+  svg += '<line class="axis" x1="' + L + '" x2="' + L + '" y1="' + T + '" y2="' + (H - B) + '"/><line class="axis" x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '"/>';
+  runs.forEach((r, i) => { svg += '<text x="' + x(i) + '" y="' + (H - 14) + '" text-anchor="middle">' + when(r.created_at) + '</text>'; });
+  // your brand drawn last so it sits on top
+  const order = d.brands.slice(1).concat(d.brands.slice(0, 1));
+  order.forEach(b => {
+    const pts = runs.map((r, i) => { const s = r.by_brand[b.name]; return s && s.rate != null ? [x(i), y(s.rate), s, r] : null; }).filter(Boolean);
+    if (!pts.length) return;
+    const c = colours[b.name].bg;
+    if (pts.length > 1) svg += '<polyline class="ln" style="stroke:' + c + '" points="' + pts.map(p => p[0] + ',' + p[1]).join(' ') + '"/>';
+    pts.forEach(p => { svg += '<circle class="pt" cx="' + p[0] + '" cy="' + p[1] + '" r="7" fill="' + c + '"><title>' + esc(b.name) + ' · ' + when(p[3].created_at) + ' · ' + Math.round(p[2].rate * 100) + '% (' + p[2].mentioned + ' of ' + p[2].answered + ' answers)</title></circle>'; });
+  });
+  return '<div class="chart">' + svg + '</svg></div>';
+}
+
+function renderTrend(d) {
+  const colours = S.colourMap(d.brands), main = d.brands[0], runs = d.runs;
+  if (!runs.length) { $('detail').innerHTML = '<div class="empty2">No runs yet.</div>'; return; }
+  const last = runs[runs.length - 1], prev = runs.length > 1 ? runs[runs.length - 2] : null;
+  const now = last.by_brand[main.name] ? last.by_brand[main.name].rate : null;
+  const before = prev && prev.by_brand[main.name] ? prev.by_brand[main.name].rate : null;
+  const delta = now != null && before != null ? Math.round((now - before) * 100) : null;
+  const spend = runs.reduce((t, r) => t + r.cost, 0);
+  const cards = [
+    { cls: 'accent', lbl: 'Mention rate now', val: S.pct(now), sub: esc(main.name) + ' · latest run' },
+    { lbl: 'Change', val: delta == null ? '—' : (delta > 0 ? '+' : '') + delta + ' pts', sub: prev ? 'since the previous run' : 'needs a second run' },
+    { lbl: 'Runs kept', val: runs.length, sub: d.watch.frequency },
+    { lbl: 'Total spend', val: S.money(spend), sub: 'all runs so far' }
+  ];
+  const legend = '<div class="legend">' + d.brands.map(b => '<span class="chip2" style="--bg:' + colours[b.name].bg + ';--fg:' + colours[b.name].fg + '">' + esc(b.name) + '</span>').join('') + '</div>';
+
+  const provRows = Object.keys(last.by_provider).map(p => {
+    const v = last.by_provider[p];
+    return '<tr><td>' + esc(p) + '</td><td class="heat" style="background:rgba(255,61,0,' + (0.08 + 0.72 * (v.rate || 0)).toFixed(2) + ')">' + S.pct(v.rate) + '</td><td class="num">' + v.mentioned + ' / ' + v.answered + '</td></tr>';
+  }).join('');
+  const hist = runs.slice().reverse().map(r => {
+    const s = r.by_brand[main.name];
+    return '<tr><td>' + new Date(r.created_at).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + '</td>' +
+      '<td class="num">' + S.pct(s ? s.rate : null) + '</td><td class="num">' + (s && s.avg_position ? '#' + s.avg_position : '—') + '</td>' +
+      '<td class="num">' + r.answers + '</td><td class="num">' + S.money(r.cost) + '</td><td>' + r.status + '</td>' +
+      '<td><a href="' + link('/tools/state-of-the-union/report/', { id: r.id }) + '">Open report →</a></td></tr>';
+  }).join('');
+
+  $('detail').innerHTML =
+    '<h2 class="h2b">' + esc(d.watch.name) + '</h2>' +
+    '<div class="stats4">' + cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
+    '<h2 class="h2b">Mention rate over time</h2>' + legend + chart(d) +
+    (runs.length < 2 ? '<div class="banner2">The trend line appears after the next run' + (d.watch.next_run_at ? ' (due ' + when(d.watch.next_run_at) + ')' : '') + '. Each point is one full run.</div>' : '') +
+    '<h2 class="h2b">Latest run — ' + esc(main.name) + ' by model</h2><div class="tblwrap"><table class="tbl"><tr><th>Model</th><th>Mention rate</th><th>Answers</th></tr>' + provRows + '</table></div>' +
+    '<h2 class="h2b">All runs</h2><div class="tblwrap"><table class="tbl"><tr><th>When</th><th>' + esc(main.name) + ' rate</th><th>Avg position</th><th>Answers</th><th>Cost</th><th>Status</th><th></th></tr>' + hist + '</table></div>';
+}
+
+async function loadTrend() {
+  if (!selected) { $('detail').innerHTML = ''; return; }
+  $('detail').innerHTML = '<p class="sotu-sub">Loading…</p>';
+  const d = await S.api('/state-of-union/trend', { id: selected });
+  if (d.error) { $('detail').innerHTML = '<div class="empty2">' + esc(d.error) + '</div>'; return; }
+  renderTrend(d);
+}
+
+async function loadList() {
+  const r = await S.api('/state-of-union/watch/list');
+  if (r.error) { $('list').innerHTML = '<div class="empty2">' + esc(r.error) + '</div>'; return; }
+  watches = r.watches;
+  if (!selected && watches.length) selected = watches[0].id;
+  renderList();
+  loadTrend();
+}
+
+if (!S.CODE) $('list').innerHTML = '<div class="empty2">This page needs your access link.</div>';
+else loadList();
+</script>
+<script src="/assets/presets.js"></script>
+</body>
+</html>

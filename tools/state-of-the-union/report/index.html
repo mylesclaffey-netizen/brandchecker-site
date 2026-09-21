@@ -3,170 +3,237 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>State Of The Union Report</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23ffd65c'/%3E%3C/svg%3E" />
+<title>State Of The Union report</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Brand Checker">
 <meta property="og:url" content="https://brandchecker.eu/tools/state-of-the-union/report/">
-<meta property="og:title" content="State Of The Union Report — Brand Checker">
-<meta property="og:description" content="Up to 10 prompts, checked across up to 5 locations, against 5 LLMs — one consolidated brand-visibility report.">
+<meta property="og:title" content="State Of The Union report — Brand Checker">
+<meta property="og:description" content="How AI models answer your prompts, market by market, and how often they name your brand versus your competitors.">
 <meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:image:type" content="image/jpeg">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="State Of The Union Report — Brand Checker">
-<meta name="twitter:description" content="Up to 10 prompts, checked across up to 5 locations, against 5 LLMs — one consolidated brand-visibility report.">
-<meta name="twitter:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
 <style>
-  :root{--paper:#ffffff;--card:#ffffff;--card2:#f3f3ef;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;
-        --you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000;--gold:#0a0a0a}
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--you:#ff3d00}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
-       line-height:1.5;padding:22px 16px 60px}
-  .wrap{max-width:720px;margin:0 auto}
-  .eyebrow{font-size:15px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
-  h1{font-family:'Archivo',sans-serif;font-size:30px;font-weight:700;letter-spacing:-.02em;
-     line-height:1.14;margin:8px 0;color:var(--gold);overflow-wrap:break-word;word-break:break-word}
-  .lede{font-size:12.5px;color:var(--muted);margin-bottom:22px;line-height:1.6}
-  .empty{font-size:12.5px;color:var(--muted)}
-  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
-
-  .banner{background:var(--card);border:3px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:20px;margin-bottom:28px}
-  .banner.running{box-shadow:6px 6px 0 var(--warn)}
-  .banner.complete{box-shadow:6px 6px 0 var(--ok)}
-  .banner .headline{font-family:'Archivo',sans-serif;font-size:22px;font-weight:900;margin-bottom:4px;text-transform:uppercase}
-  .banner .sub{font-size:14px;color:var(--muted)}
-  .banner .refresh{font-size:11px;color:var(--you);background:none;border:1px solid var(--line);
-        border-radius:6px;padding:6px 12px;cursor:pointer;margin-top:10px;font-family:'IBM Plex Mono',monospace}
-
-  .provider{background:var(--card);border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:20px;margin-bottom:22px}
-  .provider .phead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:2px}
-  .provider .pname{font-family:'Archivo',sans-serif;font-size:24px;font-weight:900;letter-spacing:-.02em}
-  .provider .pstatus{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-        padding:3px 9px;border:2px solid var(--ink);flex:none}
-  .provider .pstatus.connected{color:var(--ink);background:#c8f169}
-  .provider .pstatus.unavailable{color:var(--muted);background:rgba(139,147,167,.12)}
-  .provider .psub{font-size:14px;color:var(--muted);margin-bottom:12px}
-
-  .pcard{background:var(--card2);border:2px solid var(--ink);padding:16px;margin-bottom:12px}
-  .pcard:last-child{margin-bottom:0}
-  .pcard .prompt{font-family:'Archivo',sans-serif;font-size:17px;font-weight:800;margin-bottom:9px;line-height:1.35}
-  .locresult{border-top:2px solid var(--ink);padding:12px 0}
-  .locresult:first-of-type{border-top:0;padding-top:0}
-  .locresult .lname{font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
-        color:var(--muted);margin-bottom:5px;display:flex;justify-content:space-between}
-  .locresult .lstatus{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border:2px solid var(--ink)}
-  .locresult .lstatus.done{color:var(--ink);background:#c8f169}
-  .locresult .lstatus.failed{color:#fff;background:var(--bad);border-color:var(--bad)}
-  .locresult .lstatus.pending{color:var(--muted);background:rgba(139,147,167,.12)}
-  .locresult .answer{font-size:15px;line-height:1.55;color:var(--ink);white-space:pre-wrap}
-  .locresult .answer.muted{color:var(--muted)}
-
-  .section-title{font-family:'Archivo',sans-serif;font-size:13px;font-weight:700;
-        text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:28px 0 12px}
-  .section-title:first-of-type{margin-top:0}
-
-  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
-       display:flex;flex-direction:column;gap:11px}
-  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
-  .sidenav-link:hover{color:var(--ink)}
-  .sidenav-link.accent{color:var(--you);font-weight:500}
-  .sidenav-link.accent:hover{color:#ff3d00}
+  body{background:#fff;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;line-height:1.5;padding:22px 16px 60px;font-size:16px}
+  a{color:inherit}
+  .sidenav{margin-top:36px;padding-top:20px;border-top:3px solid #0a0a0a;display:flex;flex-direction:column;gap:13px}
+  .sidenav-link{font-size:14px;font-weight:600}
+  body.embed .sidenav{display:none}
 </style>
 <link rel="stylesheet" href="/assets/theme.css">
+<link rel="stylesheet" href="/assets/sotu.css">
 </head>
 <body>
-<div class="wrap">
+<div class="sotu-wrap">
   <p class="eyebrow">State Of The Union</p>
   <h1 id="rTitle">Loading…</h1>
-  <div id="out"><p class="empty">Fetching your report…</p></div>
+  <p class="sotu-sub" id="rSub"></p>
+  <div id="banner"></div>
+  <div id="out"></div>
 
   <div class="sidenav">
     <a href="/tools/state-of-the-union/" class="sidenav-link">← New State Of The Union report</a>
+    <a href="/tools/state-of-the-union/tracker/" class="sidenav-link" id="trackersLink">My trackers →</a>
     <a href="/" class="sidenav-link">← Back to tools</a>
   </div>
 </div>
 
+<script src="/assets/sotu.js"></script>
 <script>
-const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
-const CODE = new URLSearchParams(location.search).get('k') || '';
+if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
+const S = window.SOTU, esc = S.esc;
 const ID = new URLSearchParams(location.search).get('id') || '';
 const $ = id => document.getElementById(id);
+document.querySelectorAll('.sidenav-link').forEach(a => {
+  const u = new URL(a.getAttribute('href'), location.origin);
+  if (S.CODE) u.searchParams.set('k', S.CODE);
+  a.setAttribute('href', S.withPreset(u.pathname + u.search));
+});
 
-function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+let data = null, colours = {}, tab = 'compare', promptIdx = 0, marketSel = null, pollTimer = null, pollCount = 0;
 
-function renderLocResult(cell){
-  if (cell.status === 'pending') {
-    return '<div class="locresult"><div class="lname">' + esc(cell.location) +
-      '<span class="lstatus pending">Pending</span></div><p class="answer muted">Still running — refresh in a bit.</p></div>';
-  }
-  if (cell.status === 'failed') {
-    return '<div class="locresult"><div class="lname">' + esc(cell.location) +
-      '<span class="lstatus failed">Failed</span></div><p class="answer muted">' + esc(cell.error || 'Did not complete.') + '</p></div>';
-  }
-  const text = cell.result?.text;
-  return '<div class="locresult"><div class="lname">' + esc(cell.location) +
-    '<span class="lstatus done">Done</span></div>' +
-    (text ? '<p class="answer">' + esc(text) + '</p>' : '<p class="answer muted">No answer text came back.</p>') + '</div>';
+function shown(d) {                       // providers that were part of this run, in registry order
+  const used = new Set(d.cells.map(c => c.provider));
+  return d.providers.filter(p => used.has(p.id));
 }
 
-function renderProvider(provider, cellsForProvider, prompts){
-  if (!provider.available) {
-    return '<div class="provider"><div class="phead"><span class="pname">' + esc(provider.label) + '</span>' +
-      '<span class="pstatus unavailable">Not yet connected</span></div>' +
-      '<p class="psub">No API key configured for ' + esc(provider.label) + ' on this account yet.</p></div>';
-  }
+function statCards(d) {
+  const main = d.brands[0], answered = S.answered(d.cells);
+  const attempted = d.cells.filter(c => c.status !== 'unavailable');
+  const doneN = attempted.filter(c => c.status === 'done' || c.status === 'failed').length;
+  const rateTxt = main ? S.pct(S.rate(answered, main.name)) : '—';
+  const cards = [
+    { cls: 'accent', lbl: 'Mention rate', val: rateTxt, sub: main ? 'answers naming ' + esc(main.name) : 'add a brand to track mentions' },
+    { lbl: 'Prompts', val: d.prompts.length, sub: 'asked in each market' },
+    { lbl: 'Markets', val: d.locations.length, sub: d.locations.map(l => S.market(l).short).join(' · ') },
+    { lbl: 'Models', val: shown(d).filter(p => p.available).length, sub: 'compared per prompt' },
+    { lbl: 'Run cost', val: S.money(d.total_cost || 0), sub: d.web ? 'web search on' : 'web search off' }
+  ];
+  return '<div class="stats4">' + cards.map(c =>
+    '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>'
+  ).join('') + '</div>';
+}
 
-  const doneCount = cellsForProvider.filter(c => c.status === 'done').length;
-  const cardsHtml = prompts.map(prompt => {
-    const cells = cellsForProvider.filter(c => c.prompt === prompt);
-    return '<div class="pcard"><div class="prompt">"' + esc(prompt) + '"</div>' +
-      cells.map(renderLocResult).join('') + '</div>';
+function legend(d) {
+  return '<div class="legend">' + d.brands.map(b => {
+    const c = colours[b.name];
+    return '<span class="chip2" style="--bg:' + c.bg + ';--fg:' + c.fg + '">' + esc(b.name) + (b === d.brands[0] ? ' <small>your brand</small>' : '') + '</span>';
+  }).join('') + '</div>';
+}
+
+function modelCard(d, p, cell) {
+  const main = d.brands[0];
+  let badge = '', body = '', foot = '', meta = '';
+  if (!p.available) {
+    badge = '<span class="badge2 na">Not connected</span>';
+    body = '<div class="answer2 empty">' + esc(p.label) + ' is not connected on this account yet.</div>';
+  } else if (!cell || cell.status === 'pending') {
+    badge = '<span class="badge2 na">Waiting…</span>';
+    body = '<div class="answer2 empty">This answer is still being fetched.</div>';
+  } else if (cell.status === 'failed') {
+    badge = '<span class="badge2 na">Failed</span>';
+    body = '<div class="answer2 err">' + esc(cell.error || 'Did not complete.') + '</div>';
+  } else {
+    const r = cell.result || {}, ms = cell.mentions || [];
+    const mMain = main ? ms.filter(m => m.name === main.name)[0] : null;
+    if (r.text) {
+      const b = S.badgeFor(main ? mMain : null);
+      badge = '<span class="badge2 ' + b.cls + '">' + b.text + '</span>';
+      body = '<div class="answer2">' + S.highlight(r.text, ms, colours) + '</div>';
+    } else {
+      badge = '<span class="badge2 na">No answer</span>';
+      body = '<div class="answer2 empty">' + esc(r.note || 'No answer text came back.') + '</div>';
+    }
+    const named = ms.filter(m => m.mentioned);
+    foot += '<div class="chips2">' + (named.length ? named.map(m => {
+      const c = colours[m.name];
+      return '<span class="chip2" style="--bg:' + c.bg + ';--fg:' + c.fg + '">' + esc(m.name) + (m.position ? ' <small>#' + m.position + '</small>' : '') + (m.cited ? ' <small>· cited</small>' : '') + '</span>';
+    }).join('') : (d.brands.length ? '<span class="srcs">None of the tracked brands are named.</span>' : '')) + '</div>';
+    const srcs = (r.sources || []).filter(s => s.url).slice(0, 3);
+    if (srcs.length) foot += '<div class="srcs">Sources: ' + srcs.map(s => '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc((s.title || s.domain || s.url).slice(0, 38)) + '</a>').join(' · ') + '</div>';
+    meta = (r.model ? esc(r.model) : '') + (cell.cost ? ' · ' + S.money(cell.cost) : '') + (p.always_web ? ' · searches the web' : (d.web ? ' · web search on' : ' · own knowledge only'));
+  }
+  return '<div class="mcard"><div class="mhead"><div><div class="mname">' + esc(p.label) + '</div><div class="mfam">' + esc(p.family || '') + '</div></div>' + badge + '</div>' +
+    body + foot + (meta ? '<div class="mmeta">' + meta + '</div>' : '') + '</div>';
+}
+
+function compareView(d) {
+  const prompt = d.prompts[promptIdx] || d.prompts[0];
+  const mk = marketSel && d.locations.includes(marketSel) ? marketSel : d.locations[0];
+  const pillsHtml = '<div class="pills">' + d.prompts.map((p, i) =>
+    '<button class="pill2" data-p="' + i + '" aria-pressed="' + (i === promptIdx) + '">' + esc(p) + '</button>').join('') + '</div>';
+  const tabsHtml = '<div class="mtabs">' + d.locations.map(l => {
+    const m = S.market(l);
+    return '<button data-m="' + esc(l) + '" aria-pressed="' + (l === mk) + '">' + m.flag + ' ' + m.short + '</button>';
+  }).join('') + '</div>';
+  const mkt = S.market(mk);
+  const ctx = '<div class="ctx"><span>Asked in English (' + esc(mkt.short) + '), as if from ' + esc(mk) + ' · ' + (d.web ? 'web search on' : 'web search off') + ' · run ' + S.ago(d.created_at) + '</span></div>';
+  const cards = shown(d).map(p => modelCard(d, p, d.cells.filter(c => c.provider === p.id && c.prompt === prompt && c.location === mk)[0])).join('');
+  return pillsHtml + tabsHtml + ctx + legend(d) + '<div class="mgrid">' + cards + '</div>';
+}
+
+function matrix(d, title, keys, keyOf, labelOf) {
+  const answered = S.answered(d.cells);
+  const head = '<tr><th>' + title + '</th>' + d.brands.map(b => '<th><span class="dot" style="--bg:' + colours[b.name].bg + '"></span>' + esc(b.name) + '</th>').join('') + '</tr>';
+  const rows = keys.map(k => {
+    const list = answered.filter(c => keyOf(c) === k);
+    return '<tr><td>' + labelOf(k) + '</td>' + d.brands.map(b => {
+      const v = S.rate(list, b.name);
+      const bg = v == null ? '#f3f3ef' : 'rgba(255,61,0,' + (0.08 + 0.72 * v).toFixed(2) + ')';
+      return '<td class="heat" style="background:' + bg + '">' + S.pct(v) + '</td>';
+    }).join('') + '</tr>';
   }).join('');
-
-  return '<div class="provider"><div class="phead"><span class="pname">' + esc(provider.label) + '</span>' +
-    '<span class="pstatus connected">Connected</span></div>' +
-    '<p class="psub">' + doneCount + ' of ' + cellsForProvider.length + ' checks done</p>' +
-    cardsHtml + '</div>';
+  return '<div class="tblwrap"><table class="tbl">' + head + rows + '</table></div>';
 }
 
-function render(d){
-  $('rTitle').textContent = d.brand_name || d.prompts[0] || 'State Of The Union';
-
-  const doneTotal = d.cells.filter(c => c.status === 'done').length;
-  const attemptedTotal = d.cells.filter(c => c.status !== 'unavailable').length;
-  const bannerCls = d.status === 'complete' ? 'complete' : 'running';
-  const bannerHtml = '<div class="banner ' + bannerCls + '">' +
-    '<div class="headline">' + (d.status === 'complete' ? 'Report complete' : 'Still generating — ' + doneTotal + ' of ' + attemptedTotal + ' checks done') + '</div>' +
-    '<p class="sub">' + d.prompts.length + ' prompt' + (d.prompts.length === 1 ? '' : 's') + ' × ' + d.locations.length + ' location' + (d.locations.length === 1 ? '' : 's') + '</p>' +
-    (d.status !== 'complete' ? '<button class="refresh" id="refreshBtn" type="button">Refresh</button>' : '') +
-    '</div>';
-
-  const providersHtml = d.providers.map(p => renderProvider(p, d.cells.filter(c => c.provider === p.id), d.prompts)).join('');
-
-  $('out').innerHTML = bannerHtml + providersHtml;
-  const btn = $('refreshBtn');
-  if (btn) btn.onclick = () => location.reload();
+function brandsView(d) {
+  if (!d.brands.length) return '<div class="empty2">No brand was set for this run, so there are no mentions to count. Start a new report and enter your brand and competitors.</div>';
+  const answered = S.answered(d.cells);
+  const rows = d.brands.map(b => {
+    const v = S.rate(answered, b.name), pos = S.avgPosition(answered, b.name);
+    const cited = answered.filter(c => (c.mentions || []).some(m => m.name === b.name && m.cited)).length;
+    const named = answered.filter(c => (c.mentions || []).some(m => m.name === b.name && m.mentioned)).length;
+    return '<tr><td><span class="dot" style="--bg:' + colours[b.name].bg + '"></span><b>' + esc(b.name) + '</b>' + (b === d.brands[0] ? ' <small>(you)</small>' : '') + '</td>' +
+      '<td><div class="bar" style="--bg:' + colours[b.name].bg + '"><i style="width:' + Math.round((v || 0) * 100) + '%"></i></div></td>' +
+      '<td class="num">' + S.pct(v) + '</td><td class="num">' + named + ' / ' + answered.length + '</td><td class="num">' + (pos == null ? '—' : '#' + pos.toFixed(1)) + '</td><td class="num">' + cited + '</td></tr>';
+  }).join('');
+  const overall = '<div class="tblwrap"><table class="tbl"><tr><th>Brand</th><th>Share of answers</th><th>Rate</th><th>Answers naming it</th><th>Avg position</th><th>Cited as source</th></tr>' + rows + '</table></div>';
+  const provs = shown(d).filter(p => p.available).map(p => p.id);
+  const labelP = id => esc((d.providers.filter(p => p.id === id)[0] || {}).label || id);
+  return '<h2 class="h2b">Who gets named</h2>' + overall +
+    '<h2 class="h2b">By model</h2>' + matrix(d, 'Model', provs, c => c.provider, labelP) +
+    '<h2 class="h2b">By market</h2>' + matrix(d, 'Market', d.locations, c => c.location, l => S.market(l).flag + ' ' + esc(l)) +
+    '<h2 class="h2b">By prompt</h2>' + matrix(d, 'Prompt', d.prompts, c => c.prompt, esc);
 }
 
-async function load(){
-  if (!CODE || !ID) { $('out').innerHTML = '<p class="err">Missing access code or report id.</p>'; return; }
-  let d;
-  try {
-    const res = await fetch(API + '/state-of-union/get', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: CODE, id: ID })
-    });
-    d = await res.json();
-  } catch (e) { d = { error: 'could not reach the API' }; }
-
-  if (d.error) { $('rTitle').textContent = 'Report not found'; $('out').innerHTML = '<p class="err">' + esc(d.error) + '</p>'; return; }
-  render(d);
+function bannerHtml(d) {
+  const attempted = d.cells.filter(c => c.status !== 'unavailable');
+  const settled = attempted.filter(c => c.status === 'done' || c.status === 'failed').length;
+  let html;
+  if (d.status === 'complete') {
+    html = '<div class="banner2 done"><b>Report complete</b> · ' + settled + ' answers · ' + S.ago(d.completed_at || d.created_at) +
+      ' <span style="float:right">' + (d.watch_id
+        ? '<a class="btn2 small" href="' + S.withPreset('/tools/state-of-the-union/tracker/?k=' + encodeURIComponent(S.CODE) + '&w=' + encodeURIComponent(d.watch_id)) + '">Tracked weekly — see trend →</a>'
+        : (d.brands.length ? '<button class="btn2 small solid" id="trackBtn" type="button">Track this weekly</button>' : '')) + '</span></div>';
+  } else {
+    html = '<div class="banner2"><b>Still running</b> — ' + settled + ' of ' + attempted.length + ' answers in. This page updates by itself.</div>';
+  }
+  return html;
 }
 
-load();
+function render() {
+  const d = data;
+  colours = S.colourMap(d.brands);
+  $('rTitle').textContent = d.brand_name || d.prompts[0];
+  $('rSub').textContent = d.brands.length > 1
+    ? 'How often AI models name ' + d.brands[0].name + ' compared with ' + d.brands.slice(1).map(b => b.name).join(', ') + '.'
+    : 'How AI models answer these prompts, market by market.';
+  $('banner').innerHTML = bannerHtml(d);
+  $('out').innerHTML = statCards(d) +
+    '<div class="seg"><button data-t="compare" aria-pressed="' + (tab === 'compare') + '">Compare answers</button><button data-t="brands" aria-pressed="' + (tab === 'brands') + '">Brand mentions</button></div>' +
+    (tab === 'compare' ? compareView(d) : brandsView(d));
+
+  $('out').querySelectorAll('[data-t]').forEach(b => b.onclick = () => { tab = b.dataset.t; render(); });
+  $('out').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { promptIdx = +b.dataset.p; render(); });
+  $('out').querySelectorAll('[data-m]').forEach(b => b.onclick = () => { marketSel = b.dataset.m; render(); });
+  const tb = $('trackBtn'); if (tb) tb.onclick = startTracking;
+}
+
+async function startTracking() {
+  const d = data, used = [...new Set(d.cells.filter(c => c.status !== 'unavailable').map(c => c.provider))];
+  const body = {
+    brand_name: d.brands[0].name, aliases: d.brands[0].aliases, domain: (d.brands[0].domains || [])[0],
+    competitors: d.brands.slice(1), prompts: d.prompts, locations: d.locations, providers: used, web: d.web, frequency: 'weekly'
+  };
+  const ok = confirm('Track this weekly? A fresh run starts now and then every 7 days. Roughly ' + S.money(d.total_cost * 4.3) + ' a month at this size (you can pause or delete it any time).');
+  if (!ok) return;
+  $('trackBtn').disabled = true;
+  const r = await S.api('/state-of-union/watch/create', body);
+  if (r.error) { alert(r.error); $('trackBtn').disabled = false; return; }
+  location.href = S.withPreset('/tools/state-of-the-union/tracker/?k=' + encodeURIComponent(S.CODE) + '&w=' + encodeURIComponent(r.watch_id));
+}
+
+async function load() {
+  const r = await S.api('/state-of-union/get', { id: ID });
+  if (r.error) {
+    $('rTitle').textContent = 'Not found';
+    $('out').innerHTML = '<div class="empty2">' + esc(r.error) + '</div>';
+    return;
+  }
+  data = r;
+  if (marketSel === null) marketSel = r.locations[0];
+  render();
+  if (r.status !== 'complete' && pollCount < 200) { pollTimer = setTimeout(load, 6000); pollCount++; }
+}
+
+if (!S.CODE || !ID) {
+  $('rTitle').textContent = 'No report';
+  $('out').innerHTML = '<div class="empty2">This page needs a report link. Start a report from the State Of The Union tool.</div>';
+} else {
+  load();
+}
 </script>
 <script src="/assets/presets.js"></script>
 </body>

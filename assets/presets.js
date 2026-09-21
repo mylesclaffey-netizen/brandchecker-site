@@ -38,7 +38,14 @@
         'redirect-tracer':  { fields: { domain: 'make.com' } },
         'serp-preview':     { fields: { kw: 'workflow automation' } },
         'share-of-search':  { fields: { site: 'make.com', brand: 'Make', cat: 'workflow automation', comp1: MAKE_COMPETITORS[0], comp2: MAKE_COMPETITORS[1], comp3: MAKE_COMPETITORS[2] } },
-        'state-of-the-union': { fields: { brandName: 'Make' } },
+        'state-of-the-union': {
+          fields: {
+            brand: 'Make', domain: 'make.com', aliases: 'Make.com, Integromat',
+            competitors: MAKE_COMPETITORS.join('\n'),
+            prompts: 'What are the best workflow automation tools?\nBest AI automation platform\nVisual AI automation platform'
+          },
+          after: function () { if (typeof window.selectMarkets === 'function') window.selectMarkets(['United States', 'United Kingdom']); call('estimate'); }
+        },
         'traffic-estimate': { fields: { website: 'make.com', comp1: MAKE_COMPETITORS[0], comp2: MAKE_COMPETITORS[1], comp3: MAKE_COMPETITORS[2] }, checks: ['compToggle'], show: ['compBox'] },
         'grid-check':       { fields: { biz: 'Make', kw: 'workflow automation' } },
         'pin-check':        { fields: { addr: 'Prague, Czechia', kw1: 'workflow automation' } },
