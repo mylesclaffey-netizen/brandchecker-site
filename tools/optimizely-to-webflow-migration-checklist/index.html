@@ -18,23 +18,23 @@
 <meta name="twitter:title" content="Optimizely to Webflow Migration Checklist | Brand Checker">
 <meta name="twitter:description" content="Every stage of a move from Optimizely CMS to Webflow, in order — including a dedicated phase for building the actual Make.com migration scenario, plus content-type-to-Collection mapping, redirect gaps for CMS items, and the rest of the SEO parity work that's easy to lose in a replatform.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%234353FF'/%3E%3C/svg%3E" />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{--paper:#0a0c11;--card:#12151d;--ink:#eceef4;--muted:#8b93a7;--line:#242c3d;
-        --you:#6e7bff;--ok:#35c48d;--warn:#e0a93a;--bad:#e8695f;--gold:#ffd65c}
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;
+        --you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000;--gold:#0a0a0a}
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
        line-height:1.5;padding:22px 16px 60px}
   .wrap{max-width:700px;margin:0 auto}
   .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-  h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+  h1{font-family:'Archivo',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
      line-height:1.14;margin:8px 0}
   .lede{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6}
 
   .progress-wrap{background:var(--card);border:1px solid var(--line);border-radius:10px;
       padding:16px;margin-bottom:22px;position:sticky;top:12px;z-index:5}
   .progress-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
-  .progress-count{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--gold)}
+  .progress-count{font-family:'Archivo',sans-serif;font-size:15px;font-weight:700;color:var(--gold)}
   .progress-pct{font-size:11.5px;color:var(--muted)}
   .progress-bar{height:7px;background:var(--line);border-radius:20px;overflow:hidden}
   .progress-fill{height:100%;background:var(--ok);border-radius:20px;transition:width .25s ease;width:0%}
@@ -49,7 +49,7 @@
   summary{cursor:pointer;padding:15px 16px;list-style:none;display:flex;
       justify-content:space-between;align-items:center;gap:10px}
   summary::-webkit-details-marker{display:none}
-  summary .stitle{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700}
+  summary .stitle{font-family:'Archivo',sans-serif;font-size:15px;font-weight:700}
   summary .swhen{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;
       margin-top:3px;font-weight:400}
   summary .scount{font-size:11px;color:var(--muted);white-space:nowrap;flex:none}
@@ -68,7 +68,7 @@
   .item label{font-size:12.5px;line-height:1.55;cursor:pointer}
   .item.checked label{color:var(--muted);text-decoration:line-through}
   .item .tool{display:block;font-size:11px;color:var(--you);margin-top:3px;text-decoration:none}
-  .item .tool:hover{color:#8b95ff}
+  .item .tool:hover{color:#ff3d00}
 
   .foot{font-size:10px;color:var(--muted);margin-top:20px;line-height:1.5}
 
@@ -77,9 +77,10 @@
   .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
   .sidenav-link:hover{color:var(--ink)}
   .sidenav-link.accent{color:var(--you);font-weight:500}
-  .sidenav-link.accent:hover{color:#8b95ff}
+  .sidenav-link.accent:hover{color:#ff3d00}
   body.embed .sidenav{display:none}
 </style>
+<link rel="stylesheet" href="/assets/theme.css">
 </head>
 <body>
 <div class="wrap">

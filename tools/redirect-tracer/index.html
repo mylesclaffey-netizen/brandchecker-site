@@ -18,17 +18,17 @@
 <meta name="twitter:title" content="Redirect Tracer — Free SEO Tool | Brand Checker">
 <meta name="twitter:description" content="Paste any URL to see exactly where it redirects — every hop, every status code, all the way to the final destination. Free, no signup.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236e7bff'/%3E%3C/svg%3E" />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{--paper:#0b0d13;--card:#171c28;--ink:#f4f5f9;--muted:#9aa3ba;--line:#2a3244;
-        --you:#7c87ff;--ok:#3ecf95;--warn:#f0b84f;--bad:#f37b70;--gold:#ffdc72}
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;
+        --you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000;--gold:#0a0a0a}
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
        line-height:1.65;padding:32px 20px 70px;font-size:16px}
   .wrap{max-width:680px;margin:0 auto}
   .eyebrow{font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500}
   .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
-  h1{font-family:'Space Grotesk',sans-serif;font-size:38px;font-weight:700;letter-spacing:-.02em;
+  h1{font-family:'Archivo',sans-serif;font-size:38px;font-weight:700;letter-spacing:-.02em;
      line-height:1.1;margin:10px 0;color:var(--gold)}
   #rTitle{overflow-wrap:break-word;word-break:break-word}
   .lede{font-size:16px;color:var(--muted);margin-bottom:28px;line-height:1.65}
@@ -37,10 +37,10 @@
         background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:15px 17px}
   input:focus{outline:2.5px solid var(--you);outline-offset:1px;border-color:transparent}
   .field{margin-bottom:18px}
-  .submit{width:100%;font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;
+  .submit{width:100%;font-family:'Archivo',sans-serif;font-size:17px;font-weight:700;
           background:var(--you);color:#fff;border:0;border-radius:16px;padding:18px;cursor:pointer;margin-top:8px;
           transition:transform .12s ease,background .15s ease}
-  .submit:hover{background:#8b95ff;transform:translateY(-1px)}
+  .submit:hover{background:#ff3d00;transform:translateY(-1px)}
   .submit:active{transform:translateY(0)}
   .submit[disabled]{opacity:.5;cursor:not-allowed;transform:none}
   .after{font-size:12.5px;color:var(--muted);text-align:center;margin-top:14px;line-height:1.6}
@@ -51,14 +51,14 @@
   .mode{flex:1;font:13.5px 'IBM Plex Mono',monospace;font-weight:500;color:var(--muted);background:var(--card);
       border:1.5px solid var(--line);border-radius:12px;padding:12px 12px;cursor:pointer;text-align:center;
       transition:background .15s ease,color .15s ease,border-color .15s ease}
-  .mode[aria-pressed=true]{background:var(--you);border-color:var(--you);color:#fff}
+  .mode[aria-pressed=true]{background:var(--you);border-color:var(--you);color:#0a0a0a}
 
   #results{display:none;margin-top:34px}
   .backbtn{font-size:15px;color:var(--you);background:none;border:0;cursor:pointer;margin-bottom:20px;
         font-family:'IBM Plex Mono',monospace;font-weight:500}
 
   .summary{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:20px;margin-bottom:24px}
-  .summary .headline{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;margin-bottom:6px;word-break:break-all}
+  .summary .headline{font-family:'Archivo',sans-serif;font-size:17px;font-weight:700;margin-bottom:6px;word-break:break-all}
   .summary .sub{font-size:13.5px;color:var(--muted);word-break:break-all}
   .summary .sub.ok{color:var(--ok)} .summary .sub.warn{color:var(--warn)} .summary .sub.bad{color:var(--bad)}
   .summary.good{border-color:var(--ok)}
@@ -72,7 +72,7 @@
   .hop.final::before{background:var(--you);border-color:var(--you)}
   .hop::after{content:'';position:absolute;left:-16px;top:17px;bottom:-3px;width:1px;background:var(--line)}
   .hop:last-child::after{display:none}
-  .hop .status{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;display:inline-block;margin-right:8px}
+  .hop .status{font-family:'Archivo',sans-serif;font-size:14px;font-weight:700;display:inline-block;margin-right:8px}
   .hop .status.s2{color:var(--ok)} .hop .status.s3{color:var(--warn)} .hop .status.s4,.hop .status.s5{color:var(--bad)}
   .hop .url{font-size:14px;color:var(--ink);word-break:break-all}
   .hop .tag{font-size:11px;color:var(--muted);margin-left:6px}
@@ -81,7 +81,7 @@
         padding:16px 18px;margin-bottom:12px;display:flex;gap:16px;align-items:center}
   .vrow.flag-broken,.vrow.flag-loop,.vrow.flag-too_many_hops,.vrow.flag-wrong_destination,.vrow.flag-duplicate_canonical{border-color:var(--bad)}
   .vrow .vlabel{width:104px;flex:none}
-  .vrow .vlabel .proto{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700}
+  .vrow .vlabel .proto{font-family:'Archivo',sans-serif;font-size:14px;font-weight:700}
   .vrow .vdetail{flex:1;min-width:0}
   .vrow .vurl{font-size:13.5px;color:var(--muted);word-break:break-all}
   .vrow .vurl .arrow{color:var(--you);margin:0 4px}
@@ -107,9 +107,10 @@
   .sidenav-link{font-size:13.5px;color:var(--muted);transition:color .15s ease}
   .sidenav-link:hover{color:var(--ink)}
   .sidenav-link.accent{color:var(--you);font-weight:500}
-  .sidenav-link.accent:hover{color:#8b95ff}
+  .sidenav-link.accent:hover{color:#ff3d00}
   body.embed .sidenav{display:none}
 </style>
+<link rel="stylesheet" href="/assets/theme.css">
 </head>
 <body>
 <div class="wrap">
