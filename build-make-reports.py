@@ -27,10 +27,10 @@ for fam, label in FAMILIES.items():
     open('make/%s/index.html' % fam, 'w', encoding='utf-8').write(page)
     print('wrote make/%s/index.html' % fam)
 
-# ---- the State Of The Union tracker for Make: /make/stateoftheunion/tracker/ (data: make/data/stateoftheunion-tracker.json)
+# ---- the State Of The Union tracker for Make: /make/stateoftheunion/tracker/ (live data from the worker's public-trend endpoint; the watch id must be listed in PUBLIC_TRACKERS in worker/wrangler.toml)
 t = open('tools/state-of-the-union/tracker/index.html', encoding='utf-8').read()
 t = swap(t, '<title>State Of The Union trackers</title>', '<title>State Of The Union tracker — Brand Checker for Make</title>') if '<title>State Of The Union trackers</title>' in t else t
-t = swap(t, '<script src="/assets/sotu.js"></script>', '<script>window.SNAPSHOT = "/make/data/stateoftheunion-tracker.json";</script>\n<script src="/assets/sotu.js"></script>')
+t = swap(t, '<script src="/assets/sotu.js"></script>', '<script>window.SNAPSHOT = true; window.PUBLIC_TRACKER = "feb38601-904d-4c89-819a-030f29946b44";</script>\n<script src="/assets/sotu.js"></script>')
 t = swap(t, '<h1>My trackers</h1>', '<h1>How AI models name Make</h1>')
 t = swap(t, '<p class="sotu-sub">Each tracker re-runs your prompts on a schedule and keeps every result, so you can see whether AI models name your brand more or less over time.</p>',
          '<p class="sotu-sub">The same prompts are put to ChatGPT, Claude, Perplexity, Llama, Mistral and Google AI Overviews every week, and every result is kept, so you can see whether AI models name Make more or less over time.</p>')

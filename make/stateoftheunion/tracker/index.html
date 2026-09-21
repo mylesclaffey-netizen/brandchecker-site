@@ -34,7 +34,7 @@
   </div>
 </div>
 
-<script>window.SNAPSHOT = "/make/data/stateoftheunion-tracker.json";</script>
+<script>window.SNAPSHOT = true; window.PUBLIC_TRACKER = "feb38601-904d-4c89-819a-030f29946b44";</script>
 <script src="/assets/sotu.js"></script>
 <script>
 if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
@@ -179,8 +179,9 @@ async function loadList() {
 }
 
 if (window.SNAPSHOT) {
-  // Shared read-only copy of one tracker (see build-make-reports.py): no access code, no API calls.
-  fetch(window.SNAPSHOT).then(r => r.json()).then(renderTrend).catch(() => { $('detail').innerHTML = '<div class="empty2">This tracker could not be loaded.</div>'; });
+  // Shared read-only view of one published tracker (see build-make-reports.py): no access code; live from the public-trend endpoint.
+  (window.PUBLIC_TRACKER ? S.api('/state-of-union/public-trend', { id: window.PUBLIC_TRACKER }) : fetch(window.SNAPSHOT).then(r => r.json()))
+    .then(d => { if (d.error) throw new Error(d.error); renderTrend(d); }).catch(() => { $('detail').innerHTML = '<div class="empty2">This tracker could not be loaded.</div>'; });
 } else if (!S.CODE) $('list').innerHTML = '<div class="empty2">This page needs your access link.</div>';
 else loadList();
 </script>
