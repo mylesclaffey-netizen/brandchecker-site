@@ -75,6 +75,7 @@
 
       <div class="field"><span class="fl">Family</span><div class="seg" id="families" style="margin:0"></div></div>
       <div class="field"><span class="fl">Models</span><div class="opts" id="models"></div>
+        <p style="margin:10px 0 0"><button type="button" class="btn2 small" id="spreadBtn">Pick 5 evenly across time</button></p>
         <p class="hint" id="modelNote">Each family's most expensive top-tier model is left out — it costs several times more per answer. Dates are when OpenRouter listed each model, which is normally its launch date.</p></div>
 
       <details class="more" id="brandBox">
@@ -103,6 +104,7 @@
       <p class="eyebrow" id="rFamily"></p>
       <h1 id="rTitle" style="font-size:clamp(26px,4vw,44px)"></h1>
       <p class="sotu-sub" id="rSub"></p>
+      <div class="seg" id="viewTabs"><button type="button" data-v="compare" aria-pressed="true">Compare answers</button><button type="button" data-v="timeline" aria-pressed="false">Timeline</button></div>
       <div id="rBody"></div>
     </div>
 
@@ -143,6 +145,7 @@ function setFamily(id) {
   renderFamilies(); renderModels(); estimate();
 }
 window.selectFamily = function (id) { if (options) setFamily(id); };
+function pickSpread() { chosen.clear(); fam().spread.forEach(id => chosen.add(id)); renderModels(); estimate(); }
 
 function renderModels() {
   const f = fam(), web = $('web').checked;
@@ -201,7 +204,7 @@ function card(d, r, colours) {
     const ms = r.mentions || [], mMain = main ? ms.filter(m => m.name === main.name)[0] : null;
     const b = S.badgeFor(main ? mMain : null);
     badge = '<span class="badge2 ' + b.cls + '">' + b.text + '</span>';
-    body = '<div class="answer2">' + S.highlight(r.text || '', ms, colours) + '</div>';
+    body = (r.says ? '<div class="says"><small>AI summary</small>' + esc(r.says) + '</div>' : '') + '<div class="answer2">' + S.highlight(r.text || '', ms, colours) + '</div>';
     const named = ms.filter(m => m.mentioned);
     foot += '<div class="chips2">' + (named.length ? named.map(m => {
       const c = colours[m.name];
@@ -213,6 +216,90 @@ function card(d, r, colours) {
   const meta = esc(r.id) + (r.cost ? ' · ' + S.money(r.cost) : '') + (r.ms ? ' · ' + (r.ms / 1000).toFixed(1) + 's' : '');
   return '<div class="mcard"><div class="mhead"><div><div class="mname">' + esc(r.label) + '</div><div class="mfam">Released ' + S.fmtDate(r.released) + '</div><div class="mfam">$' + r.price_in + ' in / $' + r.price_out + ' out per M tokens</div></div>' + badge + '</div>' +
     body + foot + '<div class="mmeta">' + meta + '</div></div>';
+}
+
+let current = null, view = 'compare';
+
+function timelineView(d, colours) {
+  const main = d.brands[0];
+  if (!main) return '<div class="empty2">Add your brand under “Check who gets named” to track where each model mentions it and what it says.</div>';
+  const rows = d.results.filter(r => !r.error && r.text).sort((a, b) => String(a.released).localeCompare(String(b.released)));
+  if (!rows.length) return '<div class="empty2">No model answered.</div>';
+
+  // --- chart: mention position by release date (1 = top of the answer's list); lower is better
+  const W = 900, H = 336, L = 88, R = 34, T = 22, B = 74;
+  const times = rows.map(r => new Date(r.released + 'T00:00:00Z').getTime());
+  const t0 = Math.min.apply(null, times), t1 = Math.max.apply(null, times);
+  const x = i => rows.length === 1 || t1 === t0 ? (L + W - R) / 2 : L + (W - L - R) * (times[i] - t0) / (t1 - t0);
+  let maxPos = 4;
+  rows.forEach(r => (r.mentions || []).forEach(m => { if (m.mentioned && m.position) maxPos = Math.max(maxPos, Math.min(10, m.position)); }));
+  const yOf = p => T + (H - T - B) * (Math.min(p, maxPos) - 1) / (maxPos - 1);
+  const yNone = H - B + 30;
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Mention position over time">';
+  for (let p = 1; p <= maxPos; p++) svg += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + yOf(p) + '" y2="' + yOf(p) + '"/><text x="' + (L - 10) + '" y="' + (yOf(p) + 4) + '" text-anchor="end">#' + p + (p === maxPos && maxPos >= 10 ? '+' : '') + '</text>';
+  svg += '<text x="' + (L - 10) + '" y="' + (yNone + 4) + '" text-anchor="end">not named</text><line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + yNone + '" y2="' + yNone + '"/>';
+  svg += '<line class="axis" x1="' + L + '" x2="' + L + '" y1="' + T + '" y2="' + (yNone + 10) + '"/>';
+  let lastX = -1e9, lastLow = false;
+  rows.forEach((r, i) => {
+    const low = x(i) - lastX < 90 && !lastLow; lastX = x(i); lastLow = low;
+    const dy = low ? 30 : 0;
+    const short = r.label.replace(/^Claude |^GPT-|^DeepSeek /, '');
+    svg += '<text x="' + x(i) + '" y="' + (H - 54 + dy) + '" text-anchor="middle" style="font-weight:600;fill:#0a0a0a">' + esc(short.length > 16 ? short.slice(0, 15) + '…' : short) + '</text><text x="' + x(i) + '" y="' + (H - 10) + '" text-anchor="middle">' + esc(S.fmtDate(r.released)) + '</text>';
+  });
+  const order = d.brands.slice(1).concat([main]);              // your brand drawn last, on top
+  order.forEach(b => {
+    const c = colours[b.name].bg, isMain = b === main;
+    let run = [];
+    const flush = () => { if (run.length > 1) svg += '<polyline class="ln" style="stroke:' + c + ';stroke-width:' + (isMain ? 5 : 3) + '" points="' + run.map(p => p.join(',')).join(' ') + '"/>'; run = []; };
+    rows.forEach((r, i) => {
+      const m = (r.mentions || []).filter(z => z.name === b.name)[0];
+      if (m && m.mentioned && m.position) {
+        const pt = [x(i), yOf(m.position)]; run.push(pt);
+        svg += '<circle class="pt" cx="' + pt[0] + '" cy="' + pt[1] + '" r="' + (isMain ? 8 : 5.5) + '" fill="' + c + '"><title>' + esc(b.name) + ' · ' + esc(r.label) + ' · #' + m.position + '</title></circle>';
+      } else {
+        flush();
+        if (isMain) svg += '<circle cx="' + x(i) + '" cy="' + yNone + '" r="8" fill="#fff" stroke="' + c + '" stroke-width="4"><title>' + esc(b.name) + ' · ' + esc(r.label) + ' · not named</title></circle>';
+      }
+    });
+    flush();
+  });
+  svg += '</svg>';
+
+  const legend = '<div class="legend">' + d.brands.map(b => '<span class="chip2" style="--bg:' + colours[b.name].bg + ';--fg:' + colours[b.name].fg + '">' + esc(b.name) + (b === main ? ' <small>your brand</small>' : '') + '</span>').join('') + '</div>';
+
+  // --- one row per model, oldest first: where it puts you, what it says, the sentences it says it in
+  const list = rows.map(r => {
+    const m = (r.mentions || []).filter(z => z.name === main.name)[0], bd = S.badgeFor(m);
+    const quotes = (r.quotes || []).map(q => '<div class="quote" style="--bg:' + colours[main.name].bg + '">' + S.highlight(q, [{ name: main.name, ranges: rangesIn(q, main) }], colours) + '</div>').join('');
+    return '<div class="trow" style="--bg:' + (m && m.mentioned ? colours[main.name].bg : '#fff') + '"><div class="when">' + esc(S.fmtDate(r.released)) + ' · $' + r.price_in + ' / $' + r.price_out + ' per M</div>' +
+      '<div class="who">' + esc(r.label) + '<span class="badge2 ' + bd.cls + '">' + bd.text + '</span></div>' +
+      (m && m.mentioned
+        ? (r.says ? '<div class="says"><small>AI summary</small>' + esc(r.says) + '</div>' : '') + (quotes || '')
+        : '<div class="quote none">Does not mention ' + esc(main.name) + ' in this answer.</div>') + '</div>';
+  }).join('');
+
+  return '<h2 class="h2b">Where ' + esc(main.name) + ' is mentioned, by model release</h2>' + legend + '<div class="chart">' + svg + '</div>' +
+    '<h2 class="h2b">What each model says about ' + esc(main.name) + '</h2><div class="tl">' + list + '</div>' +
+    '<p class="hint">The summary is written by a small AI model reading the answer, so check it against the quoted sentences, which are the model’s own words.</p>';
+}
+
+// Quotes are short excerpts; find the brand's terms inside one so it can be coloured like everywhere else.
+function rangesIn(q, brand) {
+  const out = [];
+  [brand.name].concat(brand.aliases || []).forEach(term => {
+    if (!term) return;
+    const re = new RegExp('(?<![\\p{L}\\p{N}])' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\p{L}\\p{N}])', 'gu');
+    let m; while ((m = re.exec(q))) out.push([m.index, m.index + m[0].length]);
+  });
+  out.sort((a, b) => a[0] - b[0]);
+  return out.filter((r, i) => !i || r[0] >= out[i - 1][1]);
+}
+
+function renderView() {
+  const d = current, colours = S.colourMap(d.brands);
+  $('viewTabs').querySelectorAll('[data-v]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === view)));
+  $('viewTabs').style.display = 'inline-flex';
+  $('rBody').innerHTML = view === 'timeline' ? timelineView(d, colours) : $('rBody').dataset.compare;
 }
 
 function show(d) {
@@ -248,8 +335,10 @@ function show(d) {
         return '<td class="heat" style="background:' + (m && m.mentioned ? colours[b.name].bg : '#f3f3ef') + ';color:' + (m && m.mentioned ? colours[b.name].fg : '#3d3d3d') + '">' + (m && m.mentioned ? '#' + m.position : '—') + '</td>';
       }).join('') + '</tr>').join('') + '</table></div>';
   }
-  $('rBody').innerHTML = '<div class="stats4">' + cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val" style="font-size:' + (String(c.val).length > 6 ? '30px' : '44px') + '">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
+  current = d; view = 'compare';
+  $('rBody').dataset.compare = '<div class="stats4">' + cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val" style="font-size:' + (String(c.val).length > 6 ? '30px' : '44px') + '">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
     legend + '<div class="mgrid">' + d.results.map(r => card(d, r, colours)).join('') + '</div>' + matrix;
+  renderView();
   window.scrollTo(0, 0);
 }
 
@@ -260,6 +349,8 @@ async function init() {
   setFamily('claude');
   ['prompt', 'web'].forEach(id => $(id).addEventListener('input', () => { renderModels(); estimate(); }));
   $('go').onclick = run;
+  $('spreadBtn').onclick = pickSpread;
+  $('viewTabs').querySelectorAll('[data-v]').forEach(b => b.onclick = () => { view = b.dataset.v; renderView(); });
   $('again').onclick = () => { history.replaceState(null, '', S.withPreset('?k=' + encodeURIComponent(S.CODE))); $('results').style.display = 'none'; $('formBox').style.display = 'block'; };
   if (REPORT) {
     const d = await S.api('/model-compare/get', { id: REPORT });

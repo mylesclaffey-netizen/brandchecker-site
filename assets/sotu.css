@@ -93,3 +93,14 @@ mark.b{background:var(--bg);color:var(--fg);padding:0 3px;font-weight:700;border
 .status2.active{background:#c8f169}
 .status2.paused{background:#f3f3ef}
 @media(max-width:600px){.sc .val{font-size:36px}.seg button{padding:9px 11px}}
+
+/* timeline view (model comparison) */
+.tl{position:relative;margin:0 0 30px;padding-left:26px;border-left:4px solid #0a0a0a}
+.trow{position:relative;padding:0 0 26px 20px}
+.trow::before{content:'';position:absolute;left:-36px;top:6px;width:18px;height:18px;background:var(--bg,#fff);border:3px solid #0a0a0a}
+.trow .when{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#3d3d3d}
+.trow .who{font-family:'Archivo',sans-serif;font-weight:900;font-size:22px;letter-spacing:-.02em;line-height:1.15;margin:2px 0 8px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.says{font-size:16px;line-height:1.5;margin:0 0 8px;font-weight:600}
+.says small{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;border:2px solid #0a0a0a;padding:1px 6px;margin-right:8px;font-weight:500;background:#f3f3ef}
+.quote{border-left:4px solid var(--bg,#ff3d00);padding:2px 0 2px 12px;margin:0 0 6px;font-size:14.5px;color:#0a0a0a}
+.quote.none{border-left-color:#c9c9c9;color:#3d3d3d;font-style:italic}
