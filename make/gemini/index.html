@@ -68,6 +68,7 @@
       <p class="eyebrow">Same AI, different versions</p>
       <h1>LLM Time Machine</h1>
       <p class="lede">Ask one prompt to several models of the same AI family, side by side. See whether older or smaller models know your brand, and how the newer ones answer differently.</p>
+      <p class="err" id="reportErr" style="display:none;padding:12px 14px"></p>
 
       <div class="field">
         <label for="prompt">Prompt</label>
@@ -176,6 +177,14 @@ function estimate() {
 }
 
 function showErr(m) { $('err').textContent = m; $('err').style.display = 'block'; }
+// A report link that fails (wrong or missing access code, expired, mistyped id) used to fail silently —
+// the page just showed a blank "new comparison" form with no clue why. This puts the reason up top,
+// where it's the first thing on the page instead of easy to miss below a long empty form.
+function showReportErr(m) {
+  $('reportErr').innerHTML = esc(m) + ' — you can still start a new comparison below.';
+  $('reportErr').style.display = 'block';
+  window.scrollTo(0, 0);
+}
 
 async function run() {
   $('err').style.display = 'none';
@@ -299,6 +308,7 @@ function rangesIn(q, brand) {
 }
 
 function renderView() {
+  if (!current) return;   // guards a stray tab click before any report has loaded (see showReportErr)
   const d = current, colours = S.colourMap(d.brands);
   $('viewTabs').querySelectorAll('[data-v]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === view)));
   $('viewTabs').style.display = 'inline-flex';
@@ -357,7 +367,7 @@ async function init() {
   $('again').onclick = () => { history.replaceState(null, '', S.withPreset('?k=' + encodeURIComponent(S.CODE))); $('results').style.display = 'none'; $('formBox').style.display = 'block'; };
   if (REPORT) {
     const d = await S.api('/model-compare/get', { id: REPORT });
-    if (d.error) showErr(d.error); else show(d);
+    if (d.error) showReportErr(d.error); else show(d);
   }
 }
 
