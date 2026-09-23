@@ -125,6 +125,7 @@
   <div id="form">
     <p class="eyebrow">Free tool · no access code needed</p>
     <h1>How fast is your site, really?</h1>
+    <p class="err" id="reportErr" style="display:none"></p>
     <p class="lede">Your PageSpeed Insights score next to up to three competitors' — same Lighthouse performance score and Core Web Vitals Google itself uses to judge page experience.</p>
 
     <fieldset>
@@ -485,7 +486,12 @@ async function loadSavedReport(id){
     d = await res.json();
   } catch (e) { d = { error: 'could not reach the API' }; }
 
-  if (d.error || !d.sites){ return; }
+  if (d.error || !d.sites){
+    $('reportErr').textContent = (d.error || 'This report could not be loaded.') + ' — you can still start a new comparison below.';
+    $('reportErr').style.display = 'block';
+    window.scrollTo(0, 0);
+    return;
+  }
   siteResults = d.sites;
   device = 'mobile';
   $('form').style.display = 'none';

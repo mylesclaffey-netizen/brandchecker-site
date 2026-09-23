@@ -155,6 +155,7 @@
   <div id="form">
     <p class="eyebrow">Free tool</p>
     <h1>What does your SERP actually look like?</h1>
+    <p class="err" id="reportErr" style="display:none"></p>
     <p class="lede">A real Google search, previewed the way it renders on a phone or a desktop — for any keyword, in any city or country.</p>
 
     <fieldset>
@@ -537,7 +538,12 @@ async function loadSavedReport(id){
     d = await res.json();
   } catch (e) { d = { error: 'could not reach the API' }; }
 
-  if (d.error || !d.keyword) return;
+  if (d.error || !d.keyword) {
+    $('reportErr').textContent = (d.error || 'This report could not be loaded.') + ' — you can still start a new preview below.';
+    $('reportErr').style.display = 'block';
+    window.scrollTo(0, 0);
+    return;
+  }
 
   reportId = id;
   device = d.device; os = d.os;

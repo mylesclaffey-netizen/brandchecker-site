@@ -101,6 +101,7 @@
   <div id="form">
     <p class="eyebrow">Free tool</p>
     <h1>Where do you rank outside your home market?</h1>
+    <p class="err" id="reportErr" style="display:none"></p>
     <p class="lede">One keyword, up to five countries, checked against the top 30 — using the term people actually search in each market.</p>
 
     <fieldset>
@@ -418,7 +419,12 @@ async function loadSavedReport(id){
     data = await res.json();
   } catch (e) { data = { error: 'could not reach the API' }; }
 
-  if (data.error || !data.markets) return;
+  if (data.error || !data.markets) {
+    $('reportErr').textContent = (data.error || 'This report could not be loaded.') + ' — you can still start a new check below.';
+    $('reportErr').style.display = 'block';
+    window.scrollTo(0, 0);
+    return;
+  }
 
   $('form').style.display = 'none';
   $('results').style.display = 'block';

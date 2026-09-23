@@ -103,6 +103,7 @@
   <div id="form">
     <p class="eyebrow">Free tool</p>
     <h1>Who's actually winning search for your category?</h1>
+    <p class="err" id="reportErr" style="display:none"></p>
     <p class="lede">Your brand's share of combined search volume against named competitors, market by market, over the last twelve months.</p>
 
     <fieldset>
@@ -417,7 +418,12 @@ async function loadSavedReport(id){
     data = await res.json();
   } catch (e) { data = { error: 'could not reach the API' }; }
 
-  if (data.error || !data.markets) return;
+  if (data.error || !data.markets) {
+    $('reportErr').textContent = (data.error || 'This report could not be loaded.') + ' — you can still start a new check below.';
+    $('reportErr').style.display = 'block';
+    window.scrollTo(0, 0);
+    return;
+  }
 
   const rows = data.markets.map(entry => ({
     ...entry.result, market: entry.market,
