@@ -153,7 +153,7 @@ function renderModels() {
   const f = fam(), web = $('web').checked;
   $('models').innerHTML = f.models.map(m =>
     '<label class="opt' + (chosen.has(m.id) ? ' on' : '') + '" data-m="' + esc(m.id) + '">' + esc(m.label) +
-    ' <small>' + S.fmtDate(m.released) + ' · $' + m.price_in + ' / $' + m.price_out + ' per M</small></label>').join('');
+    ' <small>' + S.fmtDate(m.released) + '</small></label>').join('');
   $('modelNote').textContent = BASE_NOTE + (f.note ? ' ' + f.note : '');
   $('models').querySelectorAll('[data-m]').forEach(el => el.onclick = () => {
     const id = el.dataset.m;
@@ -216,7 +216,7 @@ function card(d, r, colours) {
     if (srcs.length) foot += '<div class="srcs">Sources: ' + srcs.map(s => '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc((s.title || s.url).slice(0, 38)) + '</a>').join(' · ') + '</div>';
   }
   const meta = esc(r.id) + (r.cost ? ' · ' + S.money(r.cost) : '') + (r.ms ? ' · ' + (r.ms / 1000).toFixed(1) + 's' : '');
-  return '<div class="mcard"><div class="mhead"><div><div class="mname">' + esc(r.label) + '</div><div class="mfam">Released ' + S.fmtDate(r.released) + '</div><div class="mfam">$' + r.price_in + ' in / $' + r.price_out + ' out per M tokens</div></div>' + badge + '</div>' +
+  return '<div class="mcard"><div class="mhead"><div><div class="mname">' + esc(r.label) + '</div><div class="mfam">Released ' + S.fmtDate(r.released) + '</div></div>' + badge + '</div>' +
     body + foot + '<div class="mmeta">' + meta + '</div></div>';
 }
 
@@ -275,7 +275,7 @@ function timelineView(d, colours) {
   const list = rows.map(r => {
     const m = (r.mentions || []).filter(z => z.name === main.name)[0], bd = S.badgeFor(m);
     const quotes = (r.quotes || []).map(q => '<div class="quote" style="--bg:' + colours[main.name].bg + '">' + S.highlight(q, [{ name: main.name, ranges: rangesIn(q, main) }], colours) + '</div>').join('');
-    return '<div class="trow" style="--bg:' + (m && m.mentioned ? colours[main.name].bg : '#fff') + '"><div class="when">' + esc(S.fmtDate(r.released)) + ' · $' + r.price_in + ' / $' + r.price_out + ' per M</div>' +
+    return '<div class="trow" style="--bg:' + (m && m.mentioned ? colours[main.name].bg : '#fff') + '"><div class="when">' + esc(S.fmtDate(r.released)) + '</div>' +
       '<div class="who">' + esc(r.label) + '<span class="badge2 ' + bd.cls + '">' + bd.text + '</span></div>' +
       (m && m.mentioned
         ? (r.says ? '<div class="says"><small>AI summary</small>' + esc(r.says) + '</div>' : '') + (quotes || '')
