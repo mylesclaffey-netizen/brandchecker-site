@@ -220,8 +220,11 @@ async function startTracking() {
 async function load() {
   const r = await S.api('/state-of-union/get', { id: ID });
   if (r.error) {
+    // A muted "empty" box read as "nothing here" rather than "something went wrong" — this is the
+    // same fix already made on every other report-backed tool page.
     $('rTitle').textContent = 'Not found';
-    $('out').innerHTML = '<div class="empty2">' + esc(r.error) + '</div>';
+    $('out').innerHTML = '<p class="err">' + esc(r.error) + ' — start a new report from State Of The Union.</p>';
+    window.scrollTo(0, 0);
     return;
   }
   data = r;
@@ -232,7 +235,7 @@ async function load() {
 
 if (!S.CODE || !ID) {
   $('rTitle').textContent = 'No report';
-  $('out').innerHTML = '<div class="empty2">This page needs a report link. Start a report from the State Of The Union tool.</div>';
+  $('out').innerHTML = '<p class="err">This page needs a report link. Start a report from the State Of The Union tool.</p>';
 } else {
   load();
 }
