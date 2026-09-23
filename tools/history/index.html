@@ -45,8 +45,9 @@
   .row-meta{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:2px}
   .row-markets{font-size:11px;color:var(--muted)}
   .row-cost{font-size:11px;color:var(--muted)}
-  .row-link{font-size:11.5px;color:var(--you);white-space:nowrap}
-  .row-link:hover{color:#ff3d00}
+  a.row{color:inherit;text-decoration:none;cursor:pointer}
+  a.row:hover,a.row:focus-visible{border-color:var(--you)}
+  .row-link{font-family:'Archivo',sans-serif;font-size:12px;font-weight:700;color:#fff;background:var(--ink);border-radius:6px;padding:7px 11px;white-space:nowrap;pointer-events:none}   /* the whole card is the link now; this is just its label */
   .empty{font-size:13px;color:var(--muted);padding:30px 0;text-align:center}
   .loading{font-size:13px;color:var(--muted);padding:30px 0;text-align:center}
 
@@ -168,23 +169,29 @@ function renderRow(r){
   const markets = r.markets && r.markets.length ? esc(r.markets.join(', ')) : '';
   const cost = r.cost ? '$' + Number(r.cost).toFixed(3) : 'free';
   const linkFn = r.report_id ? REPORT_LINK[r.tool] : null;
-  const link = linkFn ? `<a class="row-link" href="${linkFn(CODE, r.report_id)}">View full report →</a>` : '';
+  const href = linkFn ? linkFn(CODE, r.report_id) : null;
+  // A run with a saved report is one clickable card (the whole row is the link, not just the small
+  // button in the corner — that button alone was too easy to miss). A run with nothing saved (a free
+  // tool, or an older run from before reports were kept) stays a plain, non-clickable card and says so.
+  const tag = href ? 'a' : 'div';
+  const attrs = href ? ` href="${href}"` : '';
 
-  return `<div class="row">
+  return `<${tag} class="row"${attrs}>
     <div class="row-top">
       <span class="row-tool">${esc(TOOL_LABEL[r.tool] || r.tool)}</span>
       <span class="row-date">${fmtDate(r.created_at)}</span>
     </div>
     ${detail ? `<div class="row-detail">${detail}</div>` : ''}
     ${r.metric ? `<div class="row-metric">${esc(r.metric)}</div>` : ''}
+    ${href ? '' : `<div class="row-detail" style="font-style:italic">No saved report for this run.</div>`}
     <div class="row-meta">
       <span class="row-markets">${markets}</span>
       <span style="display:flex;align-items:center;gap:12px">
         <span class="row-cost">${cost}</span>
-        ${link}
+        ${href ? `<span class="row-link">View full report →</span>` : ''}
       </span>
     </div>
-  </div>`;
+  </${tag}>`;
 }
 
 async function loadHistory(){
