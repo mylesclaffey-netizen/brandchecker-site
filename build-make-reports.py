@@ -21,7 +21,7 @@ def nav(current):
     return '<div class="sotu-actions" style="margin-top:8px">' + links.strip() + '</div>'
 
 for fam, label in FAMILIES.items():
-    page = swap(src, '<title>Model comparison</title>', '<title>%s models over time — Brand Checker for Make</title>' % label)
+    page = swap(src, '<title>LLM Time Machine</title>', '<title>%s models over time — Brand Checker for Make</title>' % label)
     page = page.replace('https://brandchecker.eu/tools/model-compare/', 'https://brandchecker.eu/make/%s/' % fam)
     page = swap(page, '<script src="/assets/sotu.js"></script>',
                 '<script>window.SNAPSHOT = "/make/data/%s.json";</script>\n<script src="/assets/sotu.js"></script>' % fam)

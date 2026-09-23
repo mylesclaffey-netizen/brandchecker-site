@@ -11,7 +11,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Brand Checker">
 <meta property="og:url" content="https://brandchecker.eu/make/claude/">
-<meta property="og:title" content="Model comparison | Brand Checker">
+<meta property="og:title" content="LLM Time Machine | Brand Checker">
 <meta property="og:description" content="Ask one prompt to several models of the same AI family and see which ones know your brand.">
 <meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
 <meta name="twitter:card" content="summary_large_image">
@@ -57,7 +57,7 @@
 
   <div id="gate" class="form">
     <p class="eyebrow">Access code needed</p>
-    <h1>Model comparison</h1>
+    <h1>LLM Time Machine</h1>
     <p class="lede">This tool runs on a personal access link. Open the link you were sent, or type the code below.</p>
     <div class="field" style="max-width:300px"><label for="manual">Access code</label><input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
     <button class="btn2 solid" id="enter" type="button">Continue</button>
@@ -66,7 +66,7 @@
   <div id="app" style="display:none">
     <div class="form" id="formBox">
       <p class="eyebrow">Same AI, different versions</p>
-      <h1>Model comparison</h1>
+      <h1>LLM Time Machine</h1>
       <p class="lede">Ask one prompt to several models of the same AI family, side by side. See whether older or smaller models know your brand, and how the newer ones answer differently.</p>
 
       <div class="field">
@@ -347,7 +347,7 @@ function show(d) {
 
 async function init() {
   const r = await S.api('/model-compare/options');
-  if (r.error || !r.connected) { $('formBox').innerHTML = '<p class="err">' + esc(r.error || 'Model comparison is not connected yet.') + '</p>'; return; }
+  if (r.error || !r.connected) { $('formBox').innerHTML = '<p class="err">' + esc(r.error || 'LLM Time Machine is not connected yet.') + '</p>'; return; }
   options = r;
   setFamily('claude');
   ['prompt', 'web'].forEach(id => $(id).addEventListener('input', () => { renderModels(); estimate(); }));
