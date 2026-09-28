@@ -17,10 +17,11 @@
     return MARKETS.filter(function (m) { return m.name === name; })[0] || { name: name, short: name.slice(0, 2).toUpperCase(), flag: '🌐' };
   }
 
-  // One colour per tracked brand; the first (your brand) is the accent.
+  // One colour per tracked brand; the first (your brand) is the accent. Drawn from Hilma af Klint's
+  // Altarpiece No. 1 — your brand is the painting's path indigo, competitors take the rest of its palette.
   var PALETTE = [
-    { bg: '#ff3d00', fg: '#ffffff' }, { bg: '#c8f169', fg: '#0a0a0a' }, { bg: '#8fd0ff', fg: '#0a0a0a' },
-    { bg: '#ffc2ec', fg: '#0a0a0a' }, { bg: '#ffe14d', fg: '#0a0a0a' }, { bg: '#cdb4ff', fg: '#0a0a0a' }
+    { bg: '#34517A', fg: '#ffffff' }, { bg: '#C99A3E', fg: '#0a0a0a' }, { bg: '#5B8C3E', fg: '#ffffff' },
+    { bg: '#A79FD1', fg: '#0a0a0a' }, { bg: '#D97A66', fg: '#0a0a0a' }, { bg: '#6FA0C4', fg: '#ffffff' }
   ];
   function colourMap(brands) {
     var m = {};
