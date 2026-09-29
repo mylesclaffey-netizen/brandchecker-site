@@ -125,6 +125,11 @@
         <div><b>Track this every week</b><span>Re-runs automatically and keeps every result, so you can see whether you’re being named more or less over time.
           <select id="freq" style="width:auto;padding:4px 8px;margin-left:6px;font-size:14px"><option value="weekly">weekly</option><option value="daily">daily (costs 7× more)</option></select></span></div></label>
     </div>
+    <div class="field" id="alertBox">
+      <label for="alertEmail">Email me when something changes (optional)</label>
+      <input id="alertEmail" type="text" inputmode="email" autocomplete="email" placeholder="you@company.com" maxlength="120">
+      <p class="hint">After each run you get a short email if something moved: a model stopped naming you, a competitor overtook you, a new wrong fact, a new most-cited website. Every email has a one-click unsubscribe.</p>
+    </div>
 
     <div class="est" id="est">Choose at least one model to see the estimated cost.</div>
     <p class="err" id="err" style="display:none"></p>
@@ -209,7 +214,8 @@ async function submit() {
     brand_name: brand, domain: $('domain').value.trim(),
     aliases: $('aliases').value.split(',').map(s => s.trim()).filter(Boolean),
     competitors: lines('competitors'), prompts: lines('prompts'), locations: [...chosenMarkets],
-    providers: [...chosenModels], web: $('web').checked, frequency: $('freq').value, repeats: +$('repeats').value || 1, facts: $('facts').value
+    providers: [...chosenModels], web: $('web').checked, frequency: $('freq').value, repeats: +$('repeats').value || 1, facts: $('facts').value,
+    email: track ? $('alertEmail').value.trim() : ''
   };
   if (!body.prompts.length) return showErr('Add at least one prompt.');
   if (!body.locations.length) return showErr('Pick at least one market.');
@@ -256,6 +262,8 @@ async function init() {
   r.providers.forEach(p => { if (p.default && p.available) chosenModels.add(p.id); });
   renderMarkets(); renderModels(); estimate();
   ['prompts', 'web', 'track', 'freq', 'repeats'].forEach(id => $(id).addEventListener('input', estimate));
+  const syncAlert = () => { $('alertBox').style.display = $('track').checked ? 'block' : 'none'; };
+  $('track').addEventListener('input', syncAlert); syncAlert();
   $('go').onclick = submit;
   $('suggestBtn').onclick = suggest;
   $('topic').onkeydown = e => { if (e.key === 'Enter') suggest(); };

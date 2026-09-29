@@ -59,7 +59,9 @@ function card(w) {
     '<div class="meta">' + esc(w.brand) + ' vs ' + esc((w.competitors || []).join(', ') || 'no competitors') + '</div>' +
     '<div class="meta">' + w.prompts.length + ' prompt' + (w.prompts.length === 1 ? '' : 's') + ' · ' + w.locations.map(l => S.market(l).short).join(' ') + ' · ' + w.providers.length + ' models · ' + (w.web ? 'web on' : 'web off') + (w.repeats > 1 ? ' · asked ' + w.repeats + '×' : '') + '</div>' +
     '<div class="meta">' + w.runs + ' run' + (w.runs === 1 ? '' : 's') + ' · last ' + when(w.last_run_at) + ' · next ' + (w.status === 'active' ? when(w.next_run_at) : 'paused') + ' · ≈ ' + S.money(w.estimated_cost_per_run_usd) + ' per run</div>' +
+    '<div class="meta">Alerts: ' + (w.email && w.alerts !== 'off' ? esc(w.email) + (w.alerts === 'every' ? ' · after every run' : ' · when something changes') : 'off') + '</div>' +
     '<div class="row"><button class="btn2 small solid" data-view="' + w.id + '">View trend</button>' +
+    '<button class="btn2 small" data-runnow="' + w.id + '">Run now</button>' +
     '<button class="btn2 small" data-pause="' + w.id + '" data-to="' + (w.status === 'active' ? 'paused' : 'active') + '">' + (w.status === 'active' ? 'Pause' : 'Resume') + '</button>' +
     '<button class="btn2 small" data-del="' + w.id + '">Delete</button></div></div>';
 }
@@ -71,6 +73,12 @@ function renderList() {
   }
   $('list').innerHTML = '<div class="trk">' + watches.map(card).join('') + '</div>';
   $('list').querySelectorAll('[data-view]').forEach(b => b.onclick = () => { selected = b.dataset.view; history.replaceState(null, '', link('/tools/state-of-the-union/tracker/', { w: selected })); renderList(); loadTrend(); });
+  $('list').querySelectorAll('[data-runnow]').forEach(b => b.onclick = async () => {
+    b.disabled = true; b.textContent = 'Starting…';
+    const r = await S.api('/state-of-union/watch/run-now', { id: b.dataset.runnow });
+    if (r.error) { alert(r.error); b.disabled = false; b.textContent = 'Run now'; return; }
+    location.href = link('/tools/state-of-the-union/report/', { id: r.id });
+  });
   $('list').querySelectorAll('[data-pause]').forEach(b => b.onclick = async () => {
     const r = await S.api('/state-of-union/watch/pause', { id: b.dataset.pause, status: b.dataset.to });
     if (r.error) alert(r.error); else loadList();
@@ -161,7 +169,7 @@ function renderTrend(d) {
   }).join('');
 
   $('detail').innerHTML =
-    '<h2 class="h2b">' + esc(d.watch.name) + '</h2>' +
+    '<h2 class="h2b">' + esc(d.watch.name) + '</h2>' + changesHtml(last) + (window.SNAPSHOT ? '' : alertsHtml(d.watch)) +
     '<div class="stats4">' + cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
     '<h2 class="h2b">Mention rate over time</h2>' + legend + chart(d) +
     (runs.length < 2 ? '<div class="banner2">The trend line appears after the next run' + (d.watch.next_run_at ? ' (due ' + when(d.watch.next_run_at) + ')' : '') + '. Each point is one full run.</div>' : '') +
@@ -183,7 +191,34 @@ function citedHtml(d, last, colours) {
     '<div class="tblwrap"><table class="tbl"><tr><th>Domain</th><th>Belongs to</th><th>Answers citing it</th><th>Share of answers</th></tr>' + rows + '</table></div>';
 }
 
+// "What changed since the last run" (Worker: sotuAlerts.js), newest run only.
+function changesHtml(r) {
+  const c = r.changes;
+  if (!c || !c.compared) return '';
+  const mark = { bad: ['▼', '#c0321f'], good: ['▲', '#1b7040'], info: ['•', '#3d3d3d'] };
+  return '<div style="border:3px solid #0a0a0a;padding:14px 16px;margin:0 0 22px;background:#fff;box-shadow:5px 5px 0 #0a0a0a">' +
+    '<div style="font-weight:900;text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px">What changed since the previous run</div>' +
+    (c.items.length ? c.items.map(i => '<p style="margin:0 0 6px"><b style="color:' + mark[i.tone][1] + '">' + mark[i.tone][0] + '</b> ' + esc(i.text) + '</p>').join('')
+      : '<p style="margin:0">Nothing notable changed.</p>') + '</div>';
+}
+
+function alertsHtml(w) {
+  return '<div class="banner2" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>Email alerts</b>' +
+    '<input id="alEmail" type="text" inputmode="email" placeholder="you@company.com" value="' + esc(w.email || '') + '" style="flex:1;min-width:200px;padding:8px 10px;font-size:15px">' +
+    '<select id="alMode" style="width:auto;padding:8px;font-size:14px">' + [['changes', 'when something changes'], ['every', 'after every run'], ['off', 'off']]
+      .map(([v, l]) => '<option value="' + v + '"' + ((w.alerts || 'changes') === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
+    '<button class="btn2 small solid" id="alSave" type="button">Save</button><span id="alMsg" class="hint" style="margin:0"></span></div>';
+}
+
 function wireDetail() {
+  const save = $('alSave');
+  if (save) save.onclick = async () => {
+    save.disabled = true;
+    const r = await S.api('/state-of-union/watch/alerts', { id: selected, email: $('alEmail').value.trim(), alerts: $('alMode').value });
+    save.disabled = false;
+    $('alMsg').textContent = r.error ? r.error : 'Saved.';
+    if (!r.error) loadList();
+  };
   $('detail').querySelectorAll('[data-addcomp]').forEach(b => b.onclick = async () => {
     b.disabled = true;
     const r = await S.api('/state-of-union/watch/add-competitor', { id: selected, name: b.dataset.addcomp });
