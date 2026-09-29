@@ -1,0 +1,124 @@
+<div class="sotu-wrap">
+  <p class="eyebrow">Brand Checker for Make · Learning curve</p>
+  <h1>Is Make “hard to learn”?</h1>
+  <p class="sotu-sub" id="sub">Loading…</p>
+  __NAV__
+  <div class="stats4" id="cards"></div>
+  <div id="out"></div>
+  <p class="hint" id="method"></p>
+  <div class="sidenav"><a href="/make/" class="sidenav-link">← Back to Brand Checker for Make</a></div>
+</div>
+
+<style>
+  .v { display: inline-block; padding: 2px 8px; border: 2px solid #0a0a0a; font-size: 12px; font-weight: 700; white-space: nowrap; margin: 0 4px 3px 0; }
+  .v.hard { background: #c0321f; color: #fff; border-color: #c0321f; }
+  .v.easy { background: #1b7040; color: #fff; border-color: #1b7040; }
+  .v.mixed { background: #e0a020; color: #0a0a0a; }
+  .v.silent, .v.unnamed { background: #f3f3ef; color: #3d3d3d; border-style: dashed; font-weight: 500; }
+  .rel td { vertical-align: top; font-size: 12.5px; }
+  .rel .mn { font-weight: 800; white-space: nowrap; }
+  .bar3 { display: flex; height: 16px; border: 2px solid #0a0a0a; min-width: 160px; }
+  .bar3 i { display: block; height: 100%; }
+</style>
+
+<script src="/assets/sotu.js"></script>
+<script>
+// Data: /make/data/learning-curve.json (+ -history.json) from build-make-learning-curve.mjs, and the Model comparison
+// snapshots /make/data/<family>.json for the model-release view.
+const S = window.SOTU, esc = S.esc, $ = id => document.getElementById(id);
+const LABEL = { chatgpt_app: 'ChatGPT app', perplexity: 'Perplexity', ai_overviews: 'Google AI Overview', chatgpt: 'ChatGPT (own knowledge)', claude: 'Claude (own knowledge)' };
+const WORD = { hard: 'Hard to learn', easy: 'Easy', mixed: 'Mixed', silent: 'Doesn’t say', unnamed: 'Make not named' };
+const FAMILIES = [['chatgpt', 'ChatGPT'], ['claude', 'Claude'], ['gemini', 'Gemini'], ['deepseek', 'DeepSeek'], ['perplexity', 'Perplexity']];
+const HARD = /\b(steep(er)?|(?<!(gentle|low|shallow|minimal|easy) )learning curve|not (very |as )?(beginner|newbie)[- ]friendly|overwhelm\w*|complicated|intimidat\w*|confusing|harder to (learn|use|master)|takes (some )?time to (learn|master)|not for (beginners|non-technical)|less intuitive|daunting|(more|very|quite) technical|technical (users|mindset|skills?|background))\b/i;
+const EASY = /\b(easy to (use|learn|get started)|intuitive|beginner[- ]friendly|user[- ]friendly|simple to (use|learn)|gentle learning curve|quick to learn)\b/i;
+const pct = (n, d) => d ? Math.round(100 * n / d) + '%' : '—';
+const chip = cls => '<span class="v ' + cls + '">' + WORD[cls] + '</span>';
+
+// A Model comparison answer's verdict on ease of use: its ease_of_use tag, else its own sentences about Make.
+function relVerdict(r) {
+  if (r.error || !r.text) return null;
+  const make = (r.mentions || []).find(m => m.name === 'Make');
+  if (!make || !make.mentioned) return { cls: 'unnamed' };
+  const ease = (r.traits || []).find(t => t.dim === 'ease_of_use');
+  const q = r.quotes || [], hq = q.find(x => HARD.test(x)), eq = q.find(x => EASY.test(x) && !HARD.test(x));
+  const hard = (ease && ease.tone === '-') || !!hq, easy = (ease && ease.tone === '+') || !!eq;
+  return { cls: hard && easy ? 'mixed' : hard ? 'hard' : easy ? 'easy' : 'silent', phrase: ease ? ease.phrase : (hq || eq || '').slice(0, 80) };
+}
+
+async function releasesHtml() {
+  const fams = await Promise.all(FAMILIES.map(([id, label]) => fetch('/make/data/' + id + '.json').then(r => r.json()).then(d => ({ id, label, d })).catch(() => null)));
+  let rows = '', firstHard = null, hardN = 0, namedN = 0;
+  fams.filter(Boolean).forEach(f => {
+    const rs = f.d.results.filter(r => r.text && !r.error).sort((a, b) => String(a.released).localeCompare(String(b.released)));
+    const cells = rs.map(r => {
+      const v = relVerdict(r);
+      if (v && v.cls !== 'unnamed') { namedN++; if (v.cls === 'hard' || v.cls === 'mixed') { hardN++; if (!firstHard || r.released < firstHard.released) firstHard = r; } }
+      return '<td><div class="mn">' + esc(r.label.replace(/^Claude |^GPT-|^DeepSeek |^Gemini /, '')) + '</div><small>' + esc(S.fmtDate(r.released)) + '</small><br>' + (v ? chip(v.cls) : '') +
+        (v && v.phrase && v.cls !== 'unnamed' ? '<br><small>“' + esc(v.phrase) + '”</small>' : '') + '</td>';
+    }).join('');
+    rows += '<tr><td class="mn">' + esc(f.label) + '</td>' + cells + '</tr>';
+  });
+  if (!rows) return { html: '', hardN, namedN };
+  return { hardN, namedN, firstHard,
+    html: '<h2 class="h2b">When it started: model by model</h2><p class="hint" style="margin:0 0 10px">Each model’s answer to “What are the best workflow automation tools?” (Model comparison snapshots), oldest release first, and what it said about Make’s ease of use.</p>' +
+      '<div class="tblwrap"><table class="tbl rel">' + rows + '</table></div>' };
+}
+
+async function render(d, history) {
+  const t = d.totals, hardish = t.hard + t.mixed;
+  $('sub').textContent = d.questions.length + ' ease-of-use questions, asked in the ' + d.market + ' on ' + d.providers.map(p => LABEL[p]).join(', ') +
+    (d.repeats > 1 ? ' (ChatGPT app, Perplexity, ChatGPT and Claude ' + d.repeats + '× each)' : '') + '. ' + new Date(d.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + '.';
+  const rel = await releasesHtml();
+  const ease = d.describe && d.describe.dims.find(x => x.dim === 'ease_of_use');
+  const cards = [
+    { cls: 'accent', lbl: 'Call Make hard to learn', val: pct(hardish, t.named), sub: hardish + ' of ' + t.named + ' answers naming Make' + (t.mixed ? ' (' + t.mixed + ' mixed)' : '') },
+    { lbl: 'Call it easy', val: pct(t.easy, t.named), sub: t.easy + ' answers, with nothing hard' },
+    { lbl: 'Don’t say', val: pct(t.silent, t.named), sub: 'answers naming Make, silent on ease' },
+    rel.namedN ? { lbl: 'Across model releases', val: rel.hardN + '/' + rel.namedN, sub: 'models naming Make call it hard' + (rel.firstHard ? '; earliest: ' + esc(rel.firstHard.label) : '') } : null
+  ].filter(Boolean);
+  $('cards').innerHTML = cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('');
+
+  // By surface: share hard / easy / neither, as a three-part bar.
+  const byP = d.providers.map(p => {
+    const b = d.by_provider[p], n = b.answers;
+    if (!n) return '<tr><td><b>' + LABEL[p] + '</b></td><td colspan="2" class="hint">Make not named</td></tr>';
+    const h = b.hard / n, e = Math.max(0, (b.easy - (d.answers.filter(a => a.provider === p && a.class === 'mixed').length)) / n);
+    return '<tr><td><b>' + LABEL[p] + '</b></td><td><div class="bar3"><i style="width:' + Math.round(h * 100) + '%;background:#c0321f"></i><i style="width:' + Math.round(e * 100) + '%;background:#1b7040"></i></div></td>' +
+      '<td class="num">' + b.hard + ' hard · ' + b.easy + ' easy · of ' + n + '</td></tr>';
+  }).join('');
+  let h = '<h2 class="h2b">By AI surface</h2><div class="tblwrap"><table class="tbl"><tr><th>Surface</th><th>Red: hard · green: easy</th><th>Answers naming Make</th></tr>' + byP + '</table></div>';
+
+  h += rel.html;
+
+  // Question by question: every answer's verdict, with the model's own words.
+  h += '<h2 class="h2b">Question by question</h2><div class="tblwrap"><table class="tbl"><tr><th>Question</th>' + d.providers.map(p => '<th>' + LABEL[p] + '</th>').join('') + '</tr>' +
+    d.questions.map(q => '<tr><td><b>“' + esc(q) + '”</b></td>' + d.providers.map(p => '<td>' + d.answers.filter(a => a.prompt === q && a.provider === p).map(a =>
+      chip(a.class) + (a.phrase && a.class !== 'unnamed' ? '<br><small>“' + esc(a.phrase) + '”</small>' : '')).join('<br>') + '</td>').join('') + '</tr>').join('') + '</table></div>';
+
+  // The words the answers use about Make's ease of use (description tags).
+  if (ease) h += '<h2 class="h2b">The words used</h2><p>' + (ease.phrases || []).map(p => '<span class="v ' + (p.tone === '-' ? 'hard' : 'easy') + '">' + esc(p.phrase) + (p.n > 1 ? ' ×' + p.n : '') + '</span>').join(' ') + '</p>';
+
+  // What feeds it: the pages cited by answers that call Make hard, vs easy.
+  const pg = list => list.length ? list.map(p => '<tr><td><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 80)) + '</a>' + (p.title ? '<br><small>' + esc(p.title.slice(0, 90)) + '</small>' : '') + '</td><td class="num">' + p.answers + '</td></tr>').join('') : '<tr><td colspan="2" class="hint">No cited pages.</td></tr>';
+  h += '<h2 class="h2b">What the “hard to learn” answers cite</h2><div class="tblwrap"><table class="tbl"><tr><th>Page</th><th>Answers</th></tr>' + pg(d.pages.hard) + '</table></div>' +
+    '<h2 class="h2b">What the “easy” answers cite</h2><div class="tblwrap"><table class="tbl"><tr><th>Page</th><th>Answers</th></tr>' + pg(d.pages.easy) + '</table></div>' +
+    '<p class="hint" style="margin:-18px 0 26px">Unrelated sites here (travel guides, colouring books) are not a mistake in the table: for short questions like “Is Make good for beginners?”, Perplexity’s web search pulls pages about other meanings of “make”, even when its answer is about the Make platform — a cost of the brand’s everyday-word name.</p>';
+
+  // Google for the same questions.
+  h += '<h2 class="h2b">On Google</h2><div class="tblwrap"><table class="tbl"><tr><th>Question</th><th>make.com</th><th>Top 3</th></tr>' + d.google.map(g =>
+    '<tr><td>“' + esc(g.prompt) + '”</td><td class="num">' + (g.make ? '#' + g.make.rank : '—') + '</td><td><small>' + g.top.slice(0, 3).map(x => '#' + x.rank + ' ' + esc(x.domain)).join('<br>') + '</small></td></tr>').join('') + '</table></div>';
+
+  // Over time (grows with each refresh).
+  if (history.length > 1) h += '<h2 class="h2b">Over time</h2><div class="tblwrap"><table class="tbl"><tr><th>Run</th><th>Hard</th><th>Easy</th><th>Answers naming Make</th></tr>' +
+    history.slice().reverse().map(x => '<tr><td>' + new Date(x.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) + '</td><td class="num">' + pct(x.hard + x.mixed, x.named) + '</td><td class="num">' + pct(x.easy, x.named) + '</td><td class="num">' + x.named + '</td></tr>').join('') + '</table></div>';
+  else h += '<p class="hint">The trend over time appears from the next refresh; each one adds a point.</p>';
+
+  $('out').innerHTML = h;
+  $('method').innerHTML = 'Method: one State Of The LLM Union run (' + d.market + '). An answer counts as “hard to learn” when its description tags put Make’s ease of use as unfavourable or its sentences about Make say so (“steep learning curve”, “not beginner-friendly”, “can feel overwhelming”…); “easy” when they say the opposite and nothing hard; “mixed” when both. Tags are written by a small AI model; the quoted words are the answers’ own. Cost of this snapshot: $' + d.total_cost + '.';
+}
+
+Promise.all([fetch('/make/data/learning-curve.json').then(r => r.json()), fetch('/make/data/learning-curve-history.json').then(r => r.json()).catch(() => [])])
+  .then(([d, h]) => render(d, h)).catch(() => { $('sub').textContent = 'This page could not be loaded.'; });
+</script>
+</body>
+</html>
