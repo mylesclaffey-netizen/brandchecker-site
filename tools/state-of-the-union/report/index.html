@@ -119,7 +119,10 @@ function modelCard(d, p, cell) {
     }).join('') : (d.brands.length ? '<span class="srcs">None of the tracked brands are named.</span>' : '')) + '</div>';
     const srcs = (r.sources || []).filter(s => s.url).slice(0, 3);
     if (srcs.length) foot += '<div class="srcs">Sources: ' + srcs.map(s => '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc((s.title || s.domain || s.url).slice(0, 38)) + '</a>').join(' · ') + '</div>';
-    meta = (r.model ? esc(r.model) : '') + (cell.cost ? ' · ' + S.money(cell.cost) : '') + (p.always_web ? ' · searches the web' : (d.web ? ' · web search on' : ' · own knowledge only'));
+    const qs = (r.queries || []).filter(Boolean);
+    if (qs.length) foot += '<div class="srcs">Searched for: ' + qs.slice(0, 4).map(q => '“' + esc(q) + '”').join(' · ') + (qs.length > 4 ? ' +' + (qs.length - 4) + ' more' : '') + '</div>';
+    const webTxt = p.always_web ? ' · searches the web' : p.decides_web ? (d.web ? ' · made to search the web' : (qs.length || srcs.length ? ' · chose to search the web' : ' · answered without searching')) : (d.web ? ' · web search on' : ' · own knowledge only');
+    meta = (r.model ? esc(r.model) : '') + (cell.cost ? ' · ' + S.money(cell.cost) : '') + webTxt;
   }
   return '<div class="mcard"><div class="mhead"><div><div class="mname">' + esc(p.label) + '</div><div class="mfam">' + esc(p.family || '') + '</div></div>' + badge + '</div>' +
     body + foot + (meta ? '<div class="mmeta">' + meta + '</div>' : '') + '</div>';
