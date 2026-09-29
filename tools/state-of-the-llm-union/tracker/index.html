@@ -146,7 +146,7 @@ function renderTrend(d) {
 
   $('detail').innerHTML =
     '<h2 class="h2b">' + esc(d.watch.name) + '</h2>' +
-    (window.SNAPSHOT ? '' : '<div class="sotu-actions" style="margin:-6px 0 18px"><button class="btn2 small solid" id="pdfBtn" type="button">Download PDF</button> <a class="btn2 small" href="' + S.printUrl({ watch: d.watch.id }) + '" target="_blank" rel="noopener">Print view</a></div>') +
+    (window.SNAPSHOT ? '' : '<div class="sotu-actions" style="margin:-6px 0 18px"><button class="btn2 small solid" id="pdfSumBtn" type="button">Summary PDF</button> <button class="btn2 small" id="pdfBtn" type="button">Full PDF</button> <a class="btn2 small" href="' + S.printUrl({ watch: d.watch.id }) + '" target="_blank" rel="noopener">Print view</a></div>') +
     changesHtml(last) + (window.SNAPSHOT ? '' : alertsHtml(d.watch)) +
     '<div class="stats4">' + cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
     '<h2 class="h2b">Mention rate over time</h2>' + legend + chart(d) +
@@ -191,6 +191,8 @@ function alertsHtml(w) {
 function wireDetail() {
   const pb = $('pdfBtn');
   if (pb) pb.onclick = () => S.downloadPdf({ watch: selected }, pb, 'state-of-the-llm-union-tracker-' + new Date().toISOString().slice(0, 10) + '.pdf');
+  const ps = $('pdfSumBtn');
+  if (ps) ps.onclick = () => S.downloadPdf({ watch: selected, summary: true }, ps, 'state-of-the-llm-union-tracker-' + new Date().toISOString().slice(0, 10) + '-summary.pdf');
   const save = $('alSave');
   if (save) save.onclick = async () => {
     save.disabled = true;

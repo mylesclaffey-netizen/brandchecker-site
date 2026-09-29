@@ -216,7 +216,7 @@
   }
 
   // "Download PDF": the Worker prints the print layout (tools/state-of-the-llm-union/print/) in a hosted browser and returns
-  // the file. `which` = { id } for a report or { watch } for a tracker.
+  // the file. `which` = { id } for a report or { watch } for a tracker, plus summary: true for the ~2-page summary.
   function downloadPdf(which, btn, filename) {
     var label = btn.textContent;
     btn.disabled = true; btn.textContent = 'Making PDF… (up to a minute)';
@@ -235,7 +235,7 @@
       .then(function () { btn.disabled = false; btn.textContent = label; });
   }
   function printUrl(which) {
-    return withPreset('/tools/state-of-the-llm-union/print/?k=' + encodeURIComponent(CODE) + (which.watch ? '&w=' + encodeURIComponent(which.watch) : '&id=' + encodeURIComponent(which.id)));
+    return withPreset('/tools/state-of-the-llm-union/print/?k=' + encodeURIComponent(CODE) + (which.watch ? '&w=' + encodeURIComponent(which.watch) : '&id=' + encodeURIComponent(which.id)) + (which.summary ? '&mode=summary' : ''));
   }
 
   function withPreset(href) {

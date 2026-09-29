@@ -30,6 +30,21 @@
   .foot { margin-top: 36px; border-top: 3px solid #0a0a0a; padding-top: 10px; font-size: 12px; color: #3d3d3d; }
   .brief { border: 3px solid #0a0a0a; padding: 12px 14px; margin: 0 0 14px; }
   .tbl th, .tbl td { font-size: 12.5px; }
+  /* Summary mode (?mode=summary): the headline findings on about two A4 pages — no per-model answers. */
+  body.summary { font-size: 12px; }
+  body.summary h1 { font-size: 36px; margin: 0 0 4px; }
+  body.summary .h2b { font-size: 16px; margin: 16px 0 6px; }
+  body.summary .stats4 { gap: 8px; margin: 10px 0 4px; }
+  body.summary .sc { padding: 8px 10px; box-shadow: none; }
+  body.summary .sc .val { font-size: 26px; }
+  body.summary .sc .sub, body.summary .sc .lbl { font-size: 10px; }
+  body.summary .tbl { margin: 0 0 8px; }
+  body.summary .tbl th, body.summary .tbl td { font-size: 11px; padding: 4px 7px; }
+  body.summary .chart { padding: 6px; margin: 0 0 8px; box-shadow: none; }
+  body.summary .chart svg { max-height: 190px; }
+  body.summary .hint, body.summary .meta { font-size: 11px; }
+  body.summary .foot { margin-top: 14px; font-size: 10px; }
+  body.summary .lst p { margin: 0 0 3px; font-size: 11.5px; }
   @media print {
     body { padding: 0; font-size: 12.5px; }
     .toolbar { display: none; }
@@ -60,6 +75,8 @@
 const S = window.SOTU, esc = S.esc, $ = id => document.getElementById(id);
 const Q = new URLSearchParams(location.search);
 const ID = Q.get('id') || '', WATCH = Q.get('w') || '';
+const SUMMARY = Q.get('mode') === 'summary';
+if (SUMMARY) document.body.classList.add('summary');
 const when = iso => iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—';
 const fullDate = iso => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 $('printBtn').onclick = () => window.print();
@@ -146,7 +163,54 @@ function modelSections(d, colours) {
   }).join('');
 }
 
+// Summary mode: each model's rate for every brand, one row per model.
+function modelTable(d, colours) {
+  const answered = S.answered(d.cells), main = d.brands[0];
+  const used = d.providers.filter(p => answered.some(c => c.provider === p.id));
+  if (!used.length || !d.brands.length) return '';
+  return '<h2 class="h2b">By model</h2><div class="tblwrap"><table class="tbl"><tr><th>Model</th>' + d.brands.map(b => '<th><span class="dot" style="--bg:' + colours[b.name].bg + '"></span>' + esc(b.name) + '</th>').join('') +
+    (main ? '<th>' + esc(main.name) + ' avg position</th>' : '') + '<th>Answers</th></tr>' +
+    used.map(p => {
+      const list = answered.filter(c => c.provider === p.id), pos = main ? S.avgPosition(list, main.name) : null;
+      return '<tr><td><b>' + esc(p.label) + '</b></td>' + d.brands.map(b => {
+        const v = S.rate(list, b.name);
+        return '<td class="num" style="background:' + (v == null ? '#f3f3ef' : 'rgba(255,61,0,' + (0.06 + 0.6 * v).toFixed(2) + ')') + '">' + S.pct(v) + '</td>';
+      }).join('') + (main ? '<td class="num">' + (pos == null ? '—' : '#' + pos.toFixed(1)) + '</td>' : '') + '<td class="num">' + list.length + '</td></tr>';
+    }).join('') + '</table></div>';
+}
+
+// Summary mode: dimension, favourable/unfavourable, the two most common phrases, and which models.
+function describeCompact(ds, brand) {
+  if (!ds || !ds.dims.length) return '';
+  return '<h2 class="h2b">How models describe ' + esc(brand) + '</h2><div class="tblwrap"><table class="tbl"><tr><th>Dimension</th><th>+ / −</th><th>What they say</th><th>Models</th></tr>' +
+    ds.dims.slice(0, 7).map(x => '<tr><td><b>' + esc(x.label) + '</b></td><td class="num"><span style="color:#1b7040">' + x.pos + '+</span> / <span style="color:#c0321f">' + x.neg + '−</span></td>' +
+      '<td>' + (x.phrases || []).slice(0, 2).map(p => (p.tone === '-' ? '− ' : '+ ') + esc(p.phrase)).join(' · ') + '</td>' +
+      '<td>' + (x.models || []).map(m => esc(S.providerLabel(m.model)) + ' ' + (m.pos ? '+' + m.pos : '') + (m.neg ? '−' + m.neg : '')).join(', ') + '</td></tr>').join('') +
+    '</table></div>' + ((ds.best_for || []).length ? '<p class="hint"><b>Best for:</b> ' + ds.best_for.slice(0, 3).map(b => '“' + esc(b.phrase) + '”').join(' · ') + '</p>' : '');
+}
+
+async function summaryHtml(d) {
+  const colours = S.colourMap(d.brands), main = d.brands[0], sm = d.summary || {};
+  let h = statCards(d, colours) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells) + modelTable(d, colours);
+  if (main) h += describeCompact(sm.describe, main.name);
+  if (main && sm.facts && sm.facts.groups.length) {
+    h += '<h2 class="h2b">What AI gets wrong about ' + esc(main.name) + '</h2><div class="lst">' + sm.facts.groups.slice(0, 3).map(g =>
+      '<p><b>' + esc(g.correct) + '</b> — contradicted in ' + g.answers + ' answer' + (g.answers === 1 ? '' : 's') + ' (' + g.providers.map(S.providerLabel).map(esc).join(', ') + '), e.g. “' + esc(g.examples[0].quote.replace(/\*\*|__/g, '').slice(0, 140)) + '”</p>').join('') + '</div>';
+  }
+  const cit = sm.citations;
+  if (cit) h += '<h2 class="h2b">Who gets cited</h2><p class="hint" style="margin:0 0 4px">You ' + S.pct(cit.share.own) + ' · competitors ' + S.pct(cit.share.competitors) + ' · other sites ' + S.pct(cit.share.other) + ' of citations, across ' + cit.answers_with_sources + ' answers with sources. Most cited: ' +
+    cit.top_domains.slice(0, 6).map(x => esc(x.domain) + ' (' + x.answers + ')').join(', ') + '.</p>';
+  if ((sm.discovered || []).length) h += '<h2 class="h2b">Brands you’re not tracking</h2><p class="hint" style="margin:0">' + sm.discovered.slice(0, 8).map(b => esc(b.name) + ' (' + b.answers + ')').join(' · ') + '</p>';
+  if (main) {
+    const briefs = (await Promise.all(d.prompts.map(p => S.api('/state-of-union/brief', { id: d.id, prompt: p, cached_only: true })))).filter(b => b && b.brief);
+    if (briefs.length) h += '<h2 class="h2b">Prompt briefs</h2><div class="lst">' + briefs.slice(0, 3).map(b => '<p><b>“' + esc(b.prompt) + '”</b> — ' + esc(b.brief.verdict) +
+      (b.brief.actions && b.brief.actions[0] ? ' <i>First step: ' + esc(b.brief.actions[0].action) + '.</i>' : '') + '</p>').join('') + '</div>';
+  }
+  return h;
+}
+
 async function reportHtml(d) {
+  if (SUMMARY) return summaryHtml(d);
   const colours = S.colourMap(d.brands), main = d.brands[0], sm = d.summary || {};
   let h = statCards(d, colours) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells);
   if (main) h += S.describeHtml(sm.describe, main.name) + S.factsHtml(sm.facts, main.name);
@@ -180,7 +244,8 @@ async function main() {
     const main = t.brands[0];
     const changes = last.changes && last.changes.compared ? '<h2 class="h2b">What changed since the previous run</h2>' +
       (last.changes.items.length ? last.changes.items.map(i => '<p style="margin:0 0 5px">' + ({ bad: '▼', good: '▲', info: '•' })[i.tone] + ' ' + esc(i.text) + '</p>').join('') : '<p>Nothing notable changed.</p>') : '';
-    html += changes + '<h2 class="h2b">Mention rate over time</h2>' + S.trendChart(t, when) +
+    if (SUMMARY) html += changes + '<h2 class="h2b">Mention rate over time</h2>' + S.trendChart(t, when) + '<h2 class="h2b">Latest run</h2>';
+    else html += changes + '<h2 class="h2b">Mention rate over time</h2>' + S.trendChart(t, when) +
       (main ? S.describeTrendHtml(t.runs, main.name, when) : '') +
       '<h2 class="h2b">All runs</h2><div class="tblwrap"><table class="tbl"><tr><th>Run</th><th>' + esc(main ? main.name : '') + ' named in</th><th>Likely range</th><th>Avg position</th><th>Answers</th></tr>' +
       t.runs.slice().reverse().map(r => { const s = main ? r.by_brand[main.name] : null; return '<tr><td>' + fullDate(r.created_at) + '</td><td class="num">' + S.pct(s ? s.rate : null) + '</td><td class="num">' + (S.range(s) || '—') + '</td><td class="num">' + (s && s.avg_position ? '#' + s.avg_position : '—') + '</td><td class="num">' + r.answers + '</td></tr>'; }).join('') +
@@ -191,11 +256,11 @@ async function main() {
     $('title').textContent = d.brands[0] ? d.brands[0].name + ' in AI answers' : '“' + d.prompts[0] + '”';
     $('meta').innerHTML = metaHtml(d);
   }
-  document.title = $('title').textContent + ' — State Of The LLM Union';
+  document.title = $('title').textContent + ' — State Of The LLM Union' + (SUMMARY ? ' (summary)' : '');
   html += await reportHtml(d);
   $('out').innerHTML = html;
   $('foot').innerHTML = 'Generated ' + fullDate(new Date().toISOString()) + ' by State Of The LLM Union on brandchecker.eu. ' +
-    (d.repeats > 1 ? 'Model sections show the first of the ' + d.repeats + ' answers to each prompt; rates use all of them. ' : '') +
+    (SUMMARY ? 'Summary: the full report adds every answer, model by model. ' : d.repeats > 1 ? 'Model sections show the first of the ' + d.repeats + ' answers to each prompt; rates use all of them. ' : '') +
     'AI summaries, description tags and fact checks are written by small AI models reading the answers; quotes are the models’ own words.';
 }
 
