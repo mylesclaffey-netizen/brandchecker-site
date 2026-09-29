@@ -215,7 +215,7 @@
       }).join('') + '</table></div>';
   }
 
-  // "Download PDF": the Worker prints the print layout (tools/state-of-the-union/print/) in a hosted browser and returns
+  // "Download PDF": the Worker prints the print layout (tools/state-of-the-llm-union/print/) in a hosted browser and returns
   // the file. `which` = { id } for a report or { watch } for a tracker.
   function downloadPdf(which, btn, filename) {
     var label = btn.textContent;
@@ -235,7 +235,7 @@
       .then(function () { btn.disabled = false; btn.textContent = label; });
   }
   function printUrl(which) {
-    return withPreset('/tools/state-of-the-union/print/?k=' + encodeURIComponent(CODE) + (which.watch ? '&w=' + encodeURIComponent(which.watch) : '&id=' + encodeURIComponent(which.id)));
+    return withPreset('/tools/state-of-the-llm-union/print/?k=' + encodeURIComponent(CODE) + (which.watch ? '&w=' + encodeURIComponent(which.watch) : '&id=' + encodeURIComponent(which.id)));
   }
 
   function withPreset(href) {

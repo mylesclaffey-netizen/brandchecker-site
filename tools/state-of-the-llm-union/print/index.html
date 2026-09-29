@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>State Of The LLM Union — report</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/theme.css">
+<link rel="stylesheet" href="/assets/sotu.css">
+<style>
+  /* One flat, A4-shaped page of everything in a report (or a tracker's latest run), for "Download PDF" (the Worker
+     prints this page in Cloudflare's hosted browser) and for the browser's own Print → Save as PDF. */
+  @page { size: A4; margin: 14mm 12mm 16mm; }
+  body { background: #fff; color: #0a0a0a; font-family: 'Archivo', system-ui, sans-serif; margin: 0; padding: 24px 16px 60px; font-size: 14px; line-height: 1.45; }
+  .pw { max-width: 900px; margin: 0 auto; }
+  .toolbar { display: flex; gap: 10px; align-items: center; margin: 0 0 22px; flex-wrap: wrap; }
+  .meta { font-size: 13px; color: #3d3d3d; margin: 4px 0 0; }
+  .meta b { color: #0a0a0a; }
+  .model { border-top: 4px solid #0a0a0a; margin-top: 34px; padding-top: 16px; }
+  .model h2 { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 28px; text-transform: uppercase; letter-spacing: -.02em; margin: 0 0 6px; }
+  .ans { border: 2px solid #0a0a0a; padding: 12px 14px; margin: 0 0 14px; background: #fff; }
+  .ans .ah { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; margin: 0 0 8px; }
+  .ans .ah b { font-size: 14.5px; }
+  .ans .answer2 { font-size: 12.5px; max-height: none; border: 0; padding: 0; background: none; white-space: pre-wrap; }
+  .ans .srcs { font-size: 11.5px; }
+  .tags span { display: inline-block; margin: 2px 4px 2px 0; padding: 1px 6px; font-size: 11.5px; border: 2px solid #1b7040; }
+  .tags span.neg { border-color: #c0321f; }
+  .foot { margin-top: 36px; border-top: 3px solid #0a0a0a; padding-top: 10px; font-size: 12px; color: #3d3d3d; }
+  .brief { border: 3px solid #0a0a0a; padding: 12px 14px; margin: 0 0 14px; }
+  .tbl th, .tbl td { font-size: 12.5px; }
+  @media print {
+    body { padding: 0; font-size: 12.5px; }
+    .toolbar { display: none; }
+    .sc, .chart, .card2 { box-shadow: none !important; }
+    .model { break-before: page; border-top: 0; margin-top: 0; padding-top: 0; }
+    /* Answers run to several pages, so they may break; the small blocks stay whole, and a heading stays with what follows. */
+    .brief, .tbl tr, .sc, .ans .ah, .says, .tags { break-inside: avoid; }
+    h2, .model .meta, .model > p, .ans .ah { break-after: avoid; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<div class="pw">
+  <div class="toolbar" id="toolbar">
+    <button class="btn2 solid" id="printBtn" type="button">Print / save as PDF</button>
+    <a class="btn2" id="backBtn" href="/tools/state-of-the-llm-union/">← Back</a>
+  </div>
+  <p class="eyebrow">State Of The LLM Union · AI visibility report</p>
+  <h1 id="title">Loading…</h1>
+  <div id="meta"></div>
+  <div id="out"></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script src="/assets/sotu.js"></script>
+<script>
+const S = window.SOTU, esc = S.esc, $ = id => document.getElementById(id);
+const Q = new URLSearchParams(location.search);
+const ID = Q.get('id') || '', WATCH = Q.get('w') || '';
+const when = iso => iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—';
+const fullDate = iso => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+$('printBtn').onclick = () => window.print();
+$('backBtn').setAttribute('href', S.withPreset((WATCH ? '/tools/state-of-the-llm-union/tracker/?k=' + encodeURIComponent(S.CODE) + '&w=' + encodeURIComponent(WATCH)
+  : '/tools/state-of-the-llm-union/report/?k=' + encodeURIComponent(S.CODE) + '&id=' + encodeURIComponent(ID))));
+
+function statCards(d, colours) {
+  const sm = d.summary || {}, main = d.brands[0], answered = S.answered(d.cells);
+  const ms = main && sm.by_brand ? sm.by_brand[main.name] : null;
+  const cards = [
+    main ? { cls: 'accent', lbl: 'Mention rate', val: S.pct(S.rate(answered, main.name)), sub: 'answers naming ' + esc(main.name) + (S.range(ms) ? ' · likely ' + S.range(ms) : '') } : null,
+    sm.consistency && main ? { lbl: 'Named every time', val: sm.consistency.always + '/' + sm.consistency.groups, sub: 'combinations asked ' + d.repeats + '×' } : null,
+    sm.citations && main && sm.citations.by_brand[main.name] ? { lbl: 'Cited as a source', val: S.pct(sm.citations.by_brand[main.name].rate), sub: 'of ' + sm.citations.answers_with_sources + ' answers with sources' } : null,
+    sm.facts && main ? { lbl: 'Wrong facts', val: sm.facts.with_issues + '/' + sm.facts.checked, sub: 'answers contradicting your fact sheet' } : null,
+    { lbl: 'Answers', val: answered.length, sub: d.prompts.length + ' prompt' + (d.prompts.length === 1 ? '' : 's') + ' · ' + d.locations.length + ' market' + (d.locations.length === 1 ? '' : 's') }
+  ].filter(Boolean);
+  return '<div class="stats4">' + cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>';
+}
+
+function brandTable(d, colours, cells) {
+  const answered = S.answered(cells), sm = d.summary || {};
+  return '<div class="tblwrap"><table class="tbl"><tr><th>Brand</th><th>Named in</th><th>Likely range</th><th>Answers</th><th>Avg position</th></tr>' +
+    d.brands.map(b => {
+      const pos = S.avgPosition(answered, b.name);
+      return '<tr><td><span class="dot" style="--bg:' + colours[b.name].bg + '"></span><b>' + esc(b.name) + '</b>' + (b === d.brands[0] ? ' <small>(you)</small>' : '') + '</td><td class="num">' + S.pct(S.rate(answered, b.name)) +
+        '</td><td class="num">' + (S.range((sm.by_brand || {})[b.name]) || '—') + '</td><td class="num">' + answered.filter(c => (c.mentions || []).some(m => m.name === b.name && m.mentioned)).length + ' / ' + answered.length +
+        '</td><td class="num">' + (pos == null ? '—' : '#' + pos.toFixed(1)) + '</td></tr>';
+    }).join('') + '</table></div>';
+}
+
+function citationsBlock(d) {
+  const cit = (d.summary || {}).citations;
+  if (!cit) return '';
+  const rows = list => list.slice(0, 10).map(p => '<tr><td>' + esc(p.domain || p.url) + (p.url && p.domain ? '<br><small>' + esc(p.url.replace(/^https?:\/\//, '').slice(0, 90)) + '</small>' : '') + '</td><td>' + esc(p.owner || 'Third party') + '</td><td class="num">' + p.answers + '</td></tr>').join('');
+  let h = '<h2 class="h2b">Who gets cited</h2><p class="hint">Across ' + cit.answers_with_sources + ' answers that showed sources: you ' + S.pct(cit.share.own) + ', competitors ' + S.pct(cit.share.competitors) + ', other sites ' + S.pct(cit.share.other) + ' of citations.</p>' +
+    '<div class="tblwrap"><table class="tbl"><tr><th>Most-cited domains</th><th>Belongs to</th><th>Answers</th></tr>' + rows(cit.top_domains) + '</table></div>';
+  const pg = cit.pages || {};
+  if ((pg.own || []).length) h += '<h2 class="h2b">Your pages that get cited</h2><div class="tblwrap"><table class="tbl"><tr><th>Page</th><th>Belongs to</th><th>Answers</th></tr>' + rows(pg.own) + '</table></div>';
+  if ((pg.competitors || []).length) h += '<h2 class="h2b">Competitor pages that get cited</h2><div class="tblwrap"><table class="tbl"><tr><th>Page</th><th>Belongs to</th><th>Answers</th></tr>' + rows(pg.competitors) + '</table></div>';
+  return h;
+}
+
+function briefBlock(b) {
+  const x = b.brief;
+  const list = (t, items, f) => items && items.length ? '<p style="margin:10px 0 4px"><b>' + t + '</b></p>' + items.map(f).join('') : '';
+  return '<div class="brief"><p style="margin:0 0 6px"><b>“' + esc(b.prompt) + '”</b></p><p class="says">' + esc(x.verdict) + '</p>' +
+    list('Who wins, and why', x.who_wins, w => '<p style="margin:0 0 4px">' + esc(w.brand) + ' — ' + esc(w.why) + '</p>') +
+    list('What to do', x.actions, a => '<p style="margin:0 0 4px">• <b>' + esc(a.action) + '</b> (' + esc(a.where) + ') — ' + esc(a.why) + '</p>') +
+    list('Third-party pages to get onto', x.lists_to_get_on, l => '<p style="margin:0 0 4px">• ' + esc(l.url) + ' — ' + esc(l.why) + '</p>') +
+    (x.content_brief && x.content_brief.title ? '<p style="margin:10px 0 4px"><b>Content brief:</b> ' + esc(x.content_brief.title) + ' — ' + esc(x.content_brief.angle) + '</p>' : '') + '</div>';
+}
+
+// One section per model: its mention rates, then every prompt × market answer (the first repeat) in full.
+function modelSections(d, colours) {
+  const main = d.brands[0], answered = S.answered(d.cells);
+  const used = d.providers.filter(p => d.cells.some(c => c.provider === p.id && c.status !== 'unavailable'));
+  return used.map(p => {
+    const mine = answered.filter(c => c.provider === p.id);
+    const head = '<div class="model"><h2>' + esc(p.label) + '</h2><p class="meta">' + esc(p.family || '') +
+      (p.always_web ? ' · searches the web' : p.decides_web ? ' · decides for itself whether to search' : (d.web ? ' · web search on' : ' · own knowledge only')) + '</p>' +
+      (d.brands.length ? '<p style="margin:8px 0 14px">' + d.brands.map(b => '<span class="chip2" style="--bg:' + colours[b.name].bg + ';--fg:' + colours[b.name].fg + '">' + esc(b.name) + ' <small>' + S.pct(S.rate(mine, b.name)) + '</small></span>').join(' ') + '</p>' : '');
+    const cards = [];
+    d.prompts.forEach(pr => d.locations.forEach(loc => {
+      const same = d.cells.filter(c => c.provider === p.id && c.prompt === pr && c.location === loc);
+      const c = same.filter(x => (x.rep || 1) === 1)[0] || same[0];
+      if (!c) return;
+      const r = c.result || {}, ms = c.mentions || [], mMain = main ? ms.filter(m => m.name === main.name)[0] : null;
+      const b = S.badgeFor(main ? mMain : null);
+      let body;
+      if (c.status === 'failed') body = '<p class="err">' + esc(c.error || 'Did not complete.') + '</p>';
+      else if (!r.text) body = '<p class="hint">' + esc(r.note || 'No answer text came back.') + '</p>';
+      else {
+        const tags = (r.traits || []).map(t => '<span class="' + (t.tone === '-' ? 'neg' : '') + '">' + (t.tone === '-' ? '− ' : '+ ') + esc(t.phrase) + '</span>').join('');
+        const facts = (r.fact_issues || []).map(i => '<p class="quote" style="--bg:#ff3d00;font-size:12px">Contradicts “' + esc(i.correct) + '”: “' + esc(i.quote.replace(/\*\*|__/g, '')) + '”</p>').join('');
+        const srcs = (r.sources || []).filter(s => s.url).slice(0, 5);
+        body = (r.says ? '<div class="says"><small>AI summary</small>' + esc(r.says) + '</div>' : '') + (tags ? '<div class="tags">' + tags + '</div>' : '') + facts +
+          '<div class="answer2">' + S.highlight(r.text, ms, colours) + '</div>' +
+          (srcs.length ? '<div class="srcs">Sources: ' + srcs.map(s => esc(s.domain || s.url.replace(/^https?:\/\//, '').split('/')[0])).join(' · ') + '</div>' : '');
+      }
+      cards.push('<div class="ans"><div class="ah"><div><b>“' + esc(pr) + '”</b><br><small>' + esc(loc) + (same.length > 1 ? ' · answer 1 of ' + same.length : '') + '</small></div>' +
+        '<span class="badge2 ' + b.cls + '">' + b.text + '</span></div>' + body + '</div>');
+    }));
+    return head + cards.join('') + '</div>';
+  }).join('');
+}
+
+async function reportHtml(d) {
+  const colours = S.colourMap(d.brands), main = d.brands[0], sm = d.summary || {};
+  let h = statCards(d, colours) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells);
+  if (main) h += S.describeHtml(sm.describe, main.name) + S.factsHtml(sm.facts, main.name);
+  h += citationsBlock(d) + S.discoveredHtml(sm.discovered, false);
+  if (main) {
+    const briefs = (await Promise.all(d.prompts.map(p => S.api('/state-of-union/brief', { id: d.id, prompt: p, cached_only: true })))).filter(b => b && b.brief);
+    if (briefs.length) h += '<h2 class="h2b">Prompt briefs</h2>' + briefs.map(briefBlock).join('');
+  }
+  return h + modelSections(d, colours);
+}
+
+function metaHtml(d, extra) {
+  return '<p class="meta"><b>' + (extra || 'Run of ' + fullDate(d.created_at)) + '</b> · ' + d.locations.map(l => S.market(l).short).join(', ') + ' · ' +
+    d.providers.filter(p => d.cells.some(c => c.provider === p.id && c.status !== 'unavailable')).map(p => esc(p.label)).join(', ') +
+    ' · ' + (d.web ? 'web search on' : 'web search off') + (d.repeats > 1 ? ' · each prompt asked ' + d.repeats + '×' : '') + '</p>' +
+    '<p class="meta"><b>Prompts:</b> ' + d.prompts.map(p => '“' + esc(p) + '”').join(' · ') + '</p>' +
+    (d.brands.length > 1 ? '<p class="meta"><b>Compared with:</b> ' + d.brands.slice(1).map(b => esc(b.name)).join(', ') + '</p>' : '');
+}
+
+async function main() {
+  let html = '', d;
+  if (WATCH) {
+    const t = await S.api('/state-of-union/trend', { id: WATCH });
+    if (t.error) throw new Error(t.error);
+    const last = t.runs[t.runs.length - 1];
+    if (!last) throw new Error('This tracker has no runs yet.');
+    d = await S.api('/state-of-union/get', { id: last.id });
+    if (d.error) throw new Error(d.error);
+    $('title').textContent = (t.brands[0] ? t.brands[0].name + ' in AI answers' : t.watch.name);
+    $('meta').innerHTML = metaHtml(d, esc(t.watch.name) + ' · ' + t.runs.length + ' run' + (t.runs.length === 1 ? '' : 's') + ' · latest ' + fullDate(last.created_at));
+    const main = t.brands[0];
+    const changes = last.changes && last.changes.compared ? '<h2 class="h2b">What changed since the previous run</h2>' +
+      (last.changes.items.length ? last.changes.items.map(i => '<p style="margin:0 0 5px">' + ({ bad: '▼', good: '▲', info: '•' })[i.tone] + ' ' + esc(i.text) + '</p>').join('') : '<p>Nothing notable changed.</p>') : '';
+    html += changes + '<h2 class="h2b">Mention rate over time</h2>' + S.trendChart(t, when) +
+      (main ? S.describeTrendHtml(t.runs, main.name, when) : '') +
+      '<h2 class="h2b">All runs</h2><div class="tblwrap"><table class="tbl"><tr><th>Run</th><th>' + esc(main ? main.name : '') + ' named in</th><th>Likely range</th><th>Avg position</th><th>Answers</th></tr>' +
+      t.runs.slice().reverse().map(r => { const s = main ? r.by_brand[main.name] : null; return '<tr><td>' + fullDate(r.created_at) + '</td><td class="num">' + S.pct(s ? s.rate : null) + '</td><td class="num">' + (S.range(s) || '—') + '</td><td class="num">' + (s && s.avg_position ? '#' + s.avg_position : '—') + '</td><td class="num">' + r.answers + '</td></tr>'; }).join('') +
+      '</table></div><h2 class="h2b" style="margin-top:34px">Latest run in full</h2>';
+  } else {
+    d = await S.api('/state-of-union/get', { id: ID });
+    if (d.error) throw new Error(d.error);
+    $('title').textContent = d.brands[0] ? d.brands[0].name + ' in AI answers' : '“' + d.prompts[0] + '”';
+    $('meta').innerHTML = metaHtml(d);
+  }
+  document.title = $('title').textContent + ' — State Of The LLM Union';
+  html += await reportHtml(d);
+  $('out').innerHTML = html;
+  $('foot').innerHTML = 'Generated ' + fullDate(new Date().toISOString()) + ' by State Of The LLM Union on brandchecker.eu. ' +
+    (d.repeats > 1 ? 'Model sections show the first of the ' + d.repeats + ' answers to each prompt; rates use all of them. ' : '') +
+    'AI summaries, description tags and fact checks are written by small AI models reading the answers; quotes are the models’ own words.';
+}
+
+main().catch(e => { $('title').textContent = 'Could not load this report'; $('out').innerHTML = '<p class="err">' + esc(e.message || e) + '</p>'; })
+  .finally(() => { (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { window.PRINT_READY = true; }); });
+</script>
+</body>
+</html>
