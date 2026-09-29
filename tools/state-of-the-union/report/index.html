@@ -54,6 +54,7 @@ document.querySelectorAll('.sidenav-link').forEach(a => {
   a.setAttribute('href', S.withPreset(u.pathname + u.search));
 });
 
+let gsc = null, gscPages = null, gscBusy = false;   // Search Console status and per-page metrics (Worker: gsc.js)
 let data = null, colours = {}, tab = 'compare', promptIdx = 0, marketSel = null, repSel = 1, pollTimer = null, pollCount = 0;
 
 function shown(d) {                       // providers that were part of this run, in registry order
@@ -181,7 +182,7 @@ function brandsView(d) {
   const provs = shown(d).filter(p => p.available).map(p => p.id);
   const labelP = id => esc((d.providers.filter(p => p.id === id)[0] || {}).label || id);
   const note = '<p class="hint" style="margin:-18px 0 30px">Likely range: where the true rate probably sits (95%), given how many answers this run collected. More prompts, markets or repeats narrow it.</p>';
-  return '<h2 class="h2b">Who gets named</h2>' + overall + note + consistencyHtml(d) + citationsHtml(d) +
+  return '<h2 class="h2b">Who gets named</h2>' + overall + note + consistencyHtml(d) + citationsHtml(d) + pagesHtml(d) +
     '<h2 class="h2b">By model</h2>' + matrix(d, 'Model', provs, c => c.provider, labelP) +
     '<h2 class="h2b">By market</h2>' + matrix(d, 'Market', d.locations, c => c.location, l => S.market(l).flag + ' ' + esc(l)) +
     '<h2 class="h2b">By prompt</h2>' + matrix(d, 'Prompt', d.prompts, c => c.prompt, esc);
@@ -216,6 +217,82 @@ function citationsHtml(d) {
     '<div class="tblwrap"><table class="tbl"><tr><th>Most-cited domains</th><th>Belongs to</th><th>Answers citing it</th><th>Share of answers</th></tr>' + rows + '</table></div>';
 }
 
+function shortUrl(u) {
+  try { const x = new URL(u); return (x.hostname.replace(/^www\./, '') + x.pathname).replace(/\/$/, ''); } catch (e) { return u; }
+}
+function pageCell(p) {
+  return '<a href="' + esc(p.url) + '" target="_blank" rel="noopener"><b>' + esc(shortUrl(p.url)) + '</b></a>' + (p.title ? '<br><small>' + esc(p.title.slice(0, 90)) + '</small>' : '');
+}
+function modelsOf(d, ids) {
+  return ids.map(id => esc((d.providers.filter(p => p.id === id)[0] || {}).label || id)).join(', ');
+}
+function num(v) { return v == null ? '—' : Number(v).toLocaleString(); }
+
+// Which exact pages the answers cite: yours (with Search Console clicks when connected), competitors', third parties'.
+function pagesHtml(d) {
+  const cit = (d.summary || {}).citations, main = d.brands[0];
+  if (!cit || !cit.pages || !main) return '';
+  const pg = cit.pages, domain = (main.domains || [])[0];
+  const withGsc = gscPages && !gscPages.error;
+  let html = '<h2 class="h2b">Which of your pages get cited</h2>';
+
+  if (gsc && gsc.configured && !gsc.connected) {
+    html += '<div class="banner2"><b>Add Google data to this list.</b> Connect Search Console (read-only) to see each cited page’s Google clicks, impressions and position, and which of your best Google pages no AI answer cites. <button class="btn2 small solid" id="gscConnect" type="button">Connect Search Console</button></div>';
+  } else if (gsc && gsc.connected) {
+    html += '<p class="hint" style="margin:0 0 12px">' + (gscBusy ? 'Loading Search Console…' : withGsc
+      ? 'Search Console: <b>' + esc(gscPages.site) + '</b>, ' + esc(gscPages.start) + ' to ' + esc(gscPages.end) + '. '
+      : (gscPages && gscPages.error ? '<span class="err">' + esc(gscPages.error) + '</span> ' : '')) +
+      '<a href="#" id="gscDisconnect">Disconnect Search Console</a></p>';
+  }
+
+  if (!domain) html += '<div class="empty2">Add your website to the report to see which of your pages are cited.</div>';
+  else if (!pg.own.length) html += '<div class="empty2">No answer in this run cited a page on ' + esc(domain) + '.</div>';
+  else {
+    const g = u => withGsc ? gscPages.pages[u] : undefined;
+    html += '<div class="tblwrap"><table class="tbl"><tr><th>Your page</th><th>Answers citing it</th><th>Cited by</th>' +
+      (withGsc ? '<th>Google clicks</th><th>Impressions</th><th>Avg position</th>' : '') + '</tr>' +
+      pg.own.map(p => {
+        const m = g(p.url);
+        return '<tr><td>' + pageCell(p) + '</td><td class="num">' + p.answers + ' <small>(' + S.pct(p.share) + ')</small></td><td>' + modelsOf(d, p.providers) + '</td>' +
+          (withGsc ? (m ? '<td class="num">' + num(m.clicks) + '</td><td class="num">' + num(m.impressions) + '</td><td class="num">' + m.position + '</td>' : '<td colspan="3" class="num"><small>no Google clicks or impressions</small></td>') : '') + '</tr>';
+      }).join('') + '</table></div>';
+  }
+  if (withGsc && gscPages.top_uncited.length) {
+    html += '<h2 class="h2b">Your top Google pages that no answer cites</h2>' +
+      '<p class="hint" style="margin:0 0 12px">Pages that already win Google clicks but did not appear as a source in any answer in this run: candidates to make more quotable for AI answers.</p>' +
+      '<div class="tblwrap"><table class="tbl"><tr><th>Page</th><th>Google clicks</th><th>Impressions</th><th>Avg position</th></tr>' +
+      gscPages.top_uncited.map(m => '<tr><td>' + pageCell({ url: m.page }) + '</td><td class="num">' + num(m.clicks) + '</td><td class="num">' + num(m.impressions) + '</td><td class="num">' + m.position + '</td></tr>').join('') + '</table></div>';
+  }
+  const other = (title, list, withOwner) => list.length ? '<h2 class="h2b">' + title + '</h2><div class="tblwrap"><table class="tbl"><tr><th>Page</th>' + (withOwner ? '<th>Belongs to</th>' : '') + '<th>Answers citing it</th><th>Cited by</th></tr>' +
+    list.slice(0, 10).map(p => '<tr><td>' + pageCell(p) + '</td>' + (withOwner ? '<td><span class="chip2" style="--bg:' + colours[p.owner].bg + ';--fg:' + colours[p.owner].fg + '">' + esc(p.owner) + '</span></td>' : '') +
+      '<td class="num">' + p.answers + '</td><td>' + modelsOf(d, p.providers) + '</td></tr>').join('') + '</table></div>' : '';
+  return html + other('Competitor pages that get cited', pg.competitors, true) + other('Third-party pages cited most', pg.other, false);
+}
+
+async function loadGsc() {
+  if (gsc !== null || !data || !data.summary || !data.summary.citations) return;
+  gsc = await S.api('/gsc/status');
+  const main = data.brands[0], domain = main && (main.domains || [])[0];
+  if (gsc.connected && domain) {
+    gscBusy = true; render();
+    gscPages = await S.api('/gsc/pages', { domain, urls: data.summary.citations.pages.own.map(p => p.url) });
+    gscBusy = false;
+  }
+  render();
+}
+async function gscConnect() {
+  const u = new URL(location.href); u.searchParams.delete('gsc'); u.hash = 'brands';
+  const r = await S.api('/gsc/start', { return_url: u.toString() });
+  if (r.error || !r.url) return alert(r.error || 'Could not start the Search Console connection.');
+  location.href = r.url;
+}
+async function gscDisconnect(e) {
+  e.preventDefault();
+  if (!confirm('Disconnect Search Console? This report will stop showing Google data until you connect again.')) return;
+  await S.api('/gsc/disconnect');
+  gsc = null; gscPages = null; loadGsc();
+}
+
 function bannerHtml(d) {
   const attempted = d.cells.filter(c => c.status !== 'unavailable');
   const settled = attempted.filter(c => c.status === 'done' || c.status === 'failed').length;
@@ -248,6 +325,8 @@ function render() {
   $('out').querySelectorAll('[data-m]').forEach(b => b.onclick = () => { marketSel = b.dataset.m; render(); });
   $('out').querySelectorAll('[data-r]').forEach(b => b.onclick = () => { repSel = +b.dataset.r; render(); });
   const tb = $('trackBtn'); if (tb) tb.onclick = startTracking;
+  const gc = $('gscConnect'); if (gc) gc.onclick = gscConnect;
+  const gd = $('gscDisconnect'); if (gd) gd.onclick = gscDisconnect;
 }
 
 async function startTracking() {
@@ -276,7 +355,15 @@ async function load() {
   }
   data = r;
   if (marketSel === null) marketSel = r.locations[0];
+  // Back from Google's consent screen: open the brand tab, where the Search Console data shows.
+  const back = new URLSearchParams(location.search).get('gsc');
+  if (back || location.hash === '#brands') tab = 'brands';
+  if (back) {
+    const u = new URL(location.href); u.searchParams.delete('gsc'); history.replaceState(null, '', u.pathname + u.search);
+    if (back !== 'connected') alert(back === 'noscope' ? 'Search Console was not connected: the read-only permission was not granted.' : 'Search Console was not connected.');
+  }
   render();
+  if (r.status === 'complete') loadGsc();
   if (r.status !== 'complete' && pollCount < 200) { pollTimer = setTimeout(load, 6000); pollCount++; }
 }
 
