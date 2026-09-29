@@ -170,6 +170,33 @@
       ' favourably / unfavourably on that point. Green leans favourable, red unfavourable.</p><div class="tblwrap"><table class="tbl">' + head + body + '</table></div>';
   }
 
+  // The tracker's mention-rate-over-time chart (tracker page and the print/PDF layout). `when` formats a run date.
+  function trendChart(d, when) {
+    const runs = d.runs, W = 900, H = 320, L = 46, R = 20, T = 16, B = 40;
+    const colours = colourMap(d.brands), n = runs.length;
+    const x = i => n === 1 ? (L + W - R) / 2 : L + (W - L - R) * i / (n - 1);
+    const y = v => T + (H - T - B) * (1 - v);
+    let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Mention rate over time">';
+    [0, .25, .5, .75, 1].forEach(v => { svg += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '"/><text x="' + (L - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + Math.round(v * 100) + '%</text>'; });
+    svg += '<line class="axis" x1="' + L + '" x2="' + L + '" y1="' + T + '" y2="' + (H - B) + '"/><line class="axis" x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '"/>';
+    runs.forEach((r, i) => { svg += '<text x="' + x(i) + '" y="' + (H - 14) + '" text-anchor="middle">' + when(r.created_at) + '</text>'; });
+  // Your brand's likely range (95%) as a shaded band behind the lines, where runs carry one.
+    const main = d.brands[0];
+    const band = runs.map((r, i) => { const s = r.by_brand[main.name]; return s && s.low != null ? [x(i), y(s.low), y(s.high)] : null; }).filter(Boolean);
+    if (band.length > 1) svg += '<polygon points="' + band.map(p => p[0] + ',' + p[2]).concat(band.slice().reverse().map(p => p[0] + ',' + p[1])).join(' ') + '" fill="' + colours[main.name].bg + '" fill-opacity="0.16"/>';
+    else if (band.length === 1) svg += '<line x1="' + band[0][0] + '" x2="' + band[0][0] + '" y1="' + band[0][1] + '" y2="' + band[0][2] + '" stroke="' + colours[main.name].bg + '" stroke-opacity="0.35" stroke-width="14"/>';
+  // your brand drawn last so it sits on top
+    const order = d.brands.slice(1).concat(d.brands.slice(0, 1));
+    order.forEach(b => {
+      const pts = runs.map((r, i) => { const s = r.by_brand[b.name]; return s && s.rate != null ? [x(i), y(s.rate), s, r] : null; }).filter(Boolean);
+      if (!pts.length) return;
+      const c = colours[b.name].bg;
+      if (pts.length > 1) svg += '<polyline class="ln" style="stroke:' + c + '" points="' + pts.map(p => p[0] + ',' + p[1]).join(' ') + '"/>';
+      pts.forEach(p => { svg += '<circle class="pt" cx="' + p[0] + '" cy="' + p[1] + '" r="7" fill="' + c + '"><title>' + esc(b.name) + ' · ' + when(p[3].created_at) + ' · ' + Math.round(p[2].rate * 100) + '% (' + p[2].mentioned + ' of ' + p[2].answered + ' answers' + (S.range(p[2]) ? ', likely ' + S.range(p[2]) : '') + ')</title></circle>'; });
+    });
+    return '<div class="chart">' + svg + '</svg></div>';
+  }
+
   // Brands the answers name that aren't tracked (sotuStats.js discoverBrands). `addable`: show Add buttons.
   function discoveredHtml(list, addable) {
     if (!list || !list.length) return '';
@@ -183,6 +210,29 @@
       }).join('') + '</table></div>';
   }
 
+  // "Download PDF": the Worker prints the print layout (tools/state-of-the-union/print/) in a hosted browser and returns
+  // the file. `which` = { id } for a report or { watch } for a tracker.
+  function downloadPdf(which, btn, filename) {
+    var label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Making PDF… (up to a minute)';
+    return fetch(API + '/state-of-union/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ code: CODE }, which)) })
+      .then(function (r) {
+        if ((r.headers.get('Content-Type') || '').indexOf('application/pdf') === -1) return r.json().then(function (d) { throw new Error(d.error || 'The PDF could not be made.'); });
+        return r.blob();
+      })
+      .then(function (blob) {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = filename || 'state-of-the-union.pdf';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+      })
+      .catch(function (e) { alert(e.message); })
+      .then(function () { btn.disabled = false; btn.textContent = label; });
+  }
+  function printUrl(which) {
+    return withPreset('/tools/state-of-the-union/print/?k=' + encodeURIComponent(CODE) + (which.watch ? '&w=' + encodeURIComponent(which.watch) : '&id=' + encodeURIComponent(which.id)));
+  }
+
   function withPreset(href) {
     if (!PRESET) return href;
     return href + (href.indexOf('?') === -1 ? '?' : '&') + 'preset=' + encodeURIComponent(PRESET);
@@ -191,6 +241,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();

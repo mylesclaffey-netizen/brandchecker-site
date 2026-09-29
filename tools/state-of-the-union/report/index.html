@@ -353,7 +353,7 @@ function bannerHtml(d) {
   let html;
   if (d.status === 'complete') {
     html = '<div class="banner2 done"><b>Report complete</b> · ' + settled + ' answers · ' + S.ago(d.completed_at || d.created_at) +
-      ' <span>' + (d.watch_id
+      ' <span><button class="btn2 small solid" id="pdfBtn" type="button">Download PDF</button> <a class="btn2 small" href="' + S.printUrl({ id: d.id }) + '" target="_blank" rel="noopener">Print view</a> ' + (d.watch_id
         ? '<a class="btn2 small" href="' + S.withPreset('/tools/state-of-the-union/tracker/?k=' + encodeURIComponent(S.CODE) + '&w=' + encodeURIComponent(d.watch_id)) + '">Tracked weekly — see trend →</a>'
         : (d.brands.length ? '<button class="btn2 small solid" id="trackBtn" type="button">Track this weekly</button>' : '')) + '</span></div>';
   } else {
@@ -380,6 +380,7 @@ function render() {
   $('out').querySelectorAll('[data-r]').forEach(b => b.onclick = () => { repSel = +b.dataset.r; render(); });
   const tb = $('trackBtn'); if (tb) tb.onclick = startTracking;
   const gc = $('gscConnect'); if (gc) gc.onclick = gscConnect;
+  const pb = $('pdfBtn'); if (pb) pb.onclick = () => S.downloadPdf({ id: data.id }, pb, 'state-of-the-union-' + (data.brand_name || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + String(data.created_at).slice(0, 10) + '.pdf');
   $('out').querySelectorAll('[data-addcomp]').forEach(b => b.onclick = async () => {
     b.disabled = true;
     const r = await S.api('/state-of-union/watch/add-competitor', { id: data.watch_id, name: b.dataset.addcomp });
