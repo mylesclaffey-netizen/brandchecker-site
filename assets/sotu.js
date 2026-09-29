@@ -40,6 +40,7 @@
   // table rules disappear.
   function tidy(html) {
     return html
+      .replace(/\[([^\]\n]*)\]\((https?:[^)\s]*)\)/g, '$1')   // [n8n](https://n8n.io) → n8n
       .replace(/\*\*/g, '').replace(/__/g, '')
       .replace(/(^|\n)#{1,6}[ \t]+([^\n]*)/g, '$1<b>$2</b>')
       .replace(/(^|\n)[ \t]*\|?[ \t]*:?-{3,}:?[ \t]*(\|[ \t]*:?-{3,}:?[ \t]*)*\|?[ \t]*(?=\n|$)/g, '$1')

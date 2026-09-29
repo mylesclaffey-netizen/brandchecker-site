@@ -35,8 +35,9 @@
     .toolbar { display: none; }
     .sc, .chart, .card2 { box-shadow: none !important; }
     .model { break-before: page; border-top: 0; margin-top: 0; padding-top: 0; }
-    .ans, .brief, .tbl tr, .sc { break-inside: avoid; }
-    h2 { break-after: avoid; }
+    /* Answers run to several pages, so they may break; the small blocks stay whole, and a heading stays with what follows. */
+    .brief, .tbl tr, .sc, .ans .ah, .says, .tags { break-inside: avoid; }
+    h2, .model .meta, .model > p, .ans .ah { break-after: avoid; }
     a { color: inherit; text-decoration: none; }
   }
 </style>
@@ -138,7 +139,7 @@ function modelSections(d, colours) {
           '<div class="answer2">' + S.highlight(r.text, ms, colours) + '</div>' +
           (srcs.length ? '<div class="srcs">Sources: ' + srcs.map(s => esc(s.domain || s.url.replace(/^https?:\/\//, '').split('/')[0])).join(' · ') + '</div>' : '');
       }
-      cards.push('<div class="ans"><div class="ah"><div><b>“' + esc(pr) + '”</b><br><small>' + S.market(loc).flag + ' ' + esc(loc) + (same.length > 1 ? ' · answer 1 of ' + same.length : '') + '</small></div>' +
+      cards.push('<div class="ans"><div class="ah"><div><b>“' + esc(pr) + '”</b><br><small>' + esc(loc) + (same.length > 1 ? ' · answer 1 of ' + same.length : '') + '</small></div>' +
         '<span class="badge2 ' + b.cls + '">' + b.text + '</span></div>' + body + '</div>');
     }));
     return head + cards.join('') + '</div>';
