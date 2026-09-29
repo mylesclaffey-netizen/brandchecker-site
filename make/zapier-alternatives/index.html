@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zapier alternatives — Brand Checker for Make</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="robots" content="noindex">
+<script src="/assets/visitor.js"></script>
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--you:#ff3d00}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#fff;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;line-height:1.5;padding:22px 16px 60px;font-size:16px}
+  a{color:inherit}
+  .sidenav{margin-top:36px;padding-top:20px;border-top:3px solid #0a0a0a;display:flex;flex-direction:column;gap:13px}
+  .sidenav-link{font-size:14px;font-weight:600}
+  body.embed .sidenav{display:none}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+<link rel="stylesheet" href="/assets/sotu.css">
+</head>
+<body>
+<div class="sotu-wrap">
+  <p class="eyebrow">Brand Checker for Make · Zapier alternatives</p>
+  <h1>When people leave Zapier, does AI send them to Make?</h1>
+  <p class="sotu-sub" id="sub">Loading…</p>
+  <div class="sotu-actions" style="margin-top:8px"><a class="btn2 navb" href="/make/">← Brand Checker for Make</a> <a class="btn2 navb" href="/make/overview/">All models</a> <a class="btn2 navb" href="/make/claude/">Claude</a> <a class="btn2 navb" href="/make/chatgpt/">ChatGPT</a> <a class="btn2 navb" href="/make/deepseek/">DeepSeek</a> <a class="btn2 navb" href="/make/perplexity/">Perplexity</a> <a class="btn2 navb" href="/make/gemini/">Gemini</a> <a class="btn2 navb" href="/make/state-of-the-llm-union/tracker/">Weekly tracker</a> <a class="btn2 navb" href="/make/app-pairs/">App pairs</a> <a class="btn2 navb blue" href="/make/zapier-alternatives/" aria-current="page">Zapier alternatives</a></div>
+  <div class="stats4" id="cards"></div>
+  <div id="out"></div>
+  <p class="hint" id="method"></p>
+  <div class="sidenav"><a href="/make/" class="sidenav-link">← Back to Brand Checker for Make</a></div>
+</div>
+
+<style>
+  .who { display: inline-block; padding: 2px 8px; border: 2px solid #0a0a0a; font-size: 12.5px; font-weight: 700; white-space: nowrap; margin: 0 4px 3px 0; }
+  .who.none { border-style: dashed; color: #6b665d; font-weight: 500; }
+  .qs td { vertical-align: top; }
+  .qs .qn { font-weight: 800; }
+  .cat { background: #0a0a0a; color: #fff; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; font-size: 12px; }
+  .gr { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; white-space: nowrap; }
+</style>
+
+<script src="/assets/sotu.js"></script>
+<script>
+// Data: /make/data/zapier-alternatives.json, made by build-make-zapier-alt.mjs from a State Of The LLM Union run.
+const S = window.SOTU, esc = S.esc, $ = id => document.getElementById(id);
+const SURFACES = [['chatgpt_app', 'ChatGPT app'], ['perplexity', 'Perplexity'], ['ai_overviews', 'Google AI Overview']];
+const COLOURS = { 'Make': ['#34517A', '#fff'], 'n8n': ['#5B8C3E', '#fff'], 'Workato': ['#A79FD1', '#0a0a0a'], 'Power Automate': ['#D97A66', '#0a0a0a'],
+  'Pipedream': ['#6FA0C4', '#fff'], 'Other': ['#fff', '#3d3d3d'] };
+const pct = (n, d) => d ? Math.round(100 * n / d) + '%' : '—';
+
+function chips(list) {
+  return list.map(s => {
+    if (s.who === 'none' || s.who === 'failed') return '<span class="who none">' + (s.who === 'failed' ? 'failed' : 'no answer') + '</span>';
+    const c = COLOURS[s.who] || COLOURS.Other;
+    return '<span class="who" style="background:' + c[0] + ';color:' + c[1] + '">' + esc(s.who === 'Other' ? 'none of these' : s.who) + '</span>' +
+      (s.make_named && s.who !== 'Make' ? '<small>Make #' + s.make_rank + '</small>' : '');
+  }).join('<br>');
+}
+
+function render(d) {
+  const answers = d.questions.flatMap(q => SURFACES.flatMap(([id]) => q.surfaces[id])).filter(s => s.who !== 'none' && s.who !== 'failed');
+  const sw = d.questions.filter(q => q.group === 'Switching').flatMap(q => SURFACES.flatMap(([id]) => q.surfaces[id])).filter(s => s.who !== 'none' && s.who !== 'failed');
+  const first = (list, who) => list.filter(s => s.who === who).length;
+  const onPage1 = d.questions.filter(q => q.google.make && q.google.make.rank <= 10).length;
+  const zap1 = d.questions.filter(q => q.google.zapier && q.google.zapier.rank <= 10).length;
+  const cited = answers.filter(s => (s.make_cited || []).length).length;
+  const ds = d.describe, dim = k => ds && ds.dims.find(x => x.dim === k);
+  const price = dim('price'), ease = dim('ease_of_use');
+  $('sub').textContent = d.questions.length + ' questions people ask when they’re thinking of leaving Zapier, asked in the ' + d.market + ' on ' + SURFACES.map(s => s[1]).join(', ') +
+    (d.repeats > 1 ? ' (ChatGPT and Perplexity ' + d.repeats + '× each)' : '') + ', and searched on Google. ' + new Date(d.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + '.';
+  const cards = [
+    { cls: 'accent', lbl: 'Make named as an alternative', val: pct(sw.filter(s => s.make_named).length, sw.length), sub: 'of ' + sw.length + ' answers to the switching questions' },
+    { lbl: 'Make is the first alternative', val: pct(first(sw, 'Make'), sw.length), sub: 'n8n: ' + pct(first(sw, 'n8n'), sw.length) + ' · Power Automate: ' + pct(first(sw, 'Power Automate'), sw.length) },
+    { lbl: 'make.com cited', val: cited, sub: 'of ' + answers.length + ' answers cite a make.com page' },
+    { lbl: 'make.com on Google page 1', val: onPage1 + '/' + d.questions.length, sub: 'questions (zapier.com: ' + zap1 + ')' },
+    price ? { lbl: 'Make on price', val: price.pos + ' / ' + price.neg, sub: 'answers favourable / unfavourable' } : null,
+    ease ? { lbl: 'Make on ease of use', val: ease.pos + ' / ' + ease.neg, sub: 'answers favourable / unfavourable' } : null
+  ].filter(Boolean);
+  $('cards').innerHTML = cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('');
+
+  // Which alternatives the answers bring up, and how often each is first — switching questions only: the head-to-head
+  // ones name Make or n8n in the question itself.
+  const names = [...new Set(sw.flatMap(s => s.alternatives || []))];
+  const altRows = d.alternatives.concat(names.filter(n => !d.alternatives.includes(n))).map(n => {
+    const named = sw.filter(s => (s.alternatives || []).includes(n)).length;
+    return named ? '<tr><td><b>' + esc(n) + '</b></td><td class="num">' + pct(named, sw.length) + '</td><td class="num">' + pct(first(sw, n), sw.length) + '</td></tr>' : '';
+  }).join('');
+  // Who Google puts first for these questions, when it isn't make.com.
+  const g1 = {};
+  d.questions.forEach(q => (q.google.top || []).slice(0, 3).forEach(t => { g1[t.domain] = (g1[t.domain] || 0) + 1; }));
+  const gTop = Object.entries(g1).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  let h = (gTop.length ? '<h2 class="h2b">Who ranks on Google instead</h2><p class="hint" style="margin:0 0 6px">Sites in Google’s top 3 for these ' + d.questions.length + ' questions, by how many questions they appear for:</p><p>' + gTop.map(([dm, n]) => '<b>' + esc(dm) + '</b> ×' + n).join(' · ') + '</p>' : '') +
+    '<h2 class="h2b">Which alternatives the answers name</h2><p class="hint" style="margin:0 0 10px">Switching questions only (' + sw.length + ' answers).</p><div class="tblwrap"><table class="tbl"><tr><th>Alternative</th><th>Named in</th><th>Named first</th></tr>' + altRows + '</table></div>';
+  if ((d.discovered || []).length) h += '<p class="hint" style="margin:-18px 0 26px">Also named, not tracked: ' + d.discovered.filter(b => !['Zapier'].concat(d.alternatives).includes(b.name)).slice(0, 8).map(b => esc(b.name) + ' (' + b.answers + ')').join(' · ') + '</p>';
+
+  // Question by question.
+  h += '<h2 class="h2b">Question by question</h2><div class="tblwrap"><table class="tbl qs"><tr><th>Question</th>' + SURFACES.map(s => '<th>' + s[1] + '<br><small style="font-weight:400">first alternative named</small></th>').join('') + '<th>Google</th></tr>' +
+    ['Switching', 'Head to head'].map(g => '<tr><td colspan="' + (SURFACES.length + 2) + '" class="cat">' + g + '</td></tr>' + d.questions.filter(q => q.group === g).map(q =>
+      '<tr><td class="qn">“' + esc(q.prompt) + '”</td>' + SURFACES.map(([id]) => '<td>' + chips(q.surfaces[id]) + '</td>').join('') +
+      '<td><span class="gr">Make ' + (q.google.make ? '#' + q.google.make.rank : '—') + '<br>Zapier ' + (q.google.zapier ? '#' + q.google.zapier.rank : '—') + '</span>' +
+      (q.google.top[0] ? '<br><small>#1 ' + esc(q.google.top[0].domain) + '</small>' : '') + '</td></tr>').join('')).join('') + '</table></div>';
+
+  // Where the answers get it from: the pages they cite (third-party pages are outreach targets).
+  const cit = d.citations;
+  if (cit) {
+    const page = p => '<tr><td><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 80)) + '</a>' + (p.title ? '<br><small>' + esc(p.title.slice(0, 90)) + '</small>' : '') + '</td><td>' + esc(p.owner || 'Third party') + '</td><td class="num">' + p.answers + '</td></tr>';
+    h += '<h2 class="h2b">What the answers cite</h2><p class="hint" style="margin:0 0 10px">Across ' + cit.answers_with_sources + ' answers that showed sources: Make ' + S.pct(cit.share.own) + ', competitors ' + S.pct(cit.share.competitors) + ', other sites ' + S.pct(cit.share.other) + ' of citations. Third-party pages are the reviews and roundups to get onto.</p>' +
+      '<div class="tblwrap"><table class="tbl"><tr><th>Most-cited third-party pages</th><th>Belongs to</th><th>Answers</th></tr>' + cit.pages.other.map(page).join('') + '</table></div>' +
+      (cit.pages.own.length ? '<div class="tblwrap"><table class="tbl"><tr><th>make.com pages cited</th><th>Belongs to</th><th>Answers</th></tr>' + cit.pages.own.map(page).join('') + '</table></div>' : '') +
+      (cit.pages.competitors.length ? '<div class="tblwrap"><table class="tbl"><tr><th>Competitor pages cited</th><th>Belongs to</th><th>Answers</th></tr>' + cit.pages.competitors.map(page).join('') + '</table></div>' : '');
+  }
+  if (ds) h += S.describeHtml(ds, 'Make');
+  $('out').innerHTML = h;
+  $('method').innerHTML = 'Method: one State Of The LLM Union run (' + d.market + '); ChatGPT app and Perplexity answers asked ' + d.repeats + '×, Google once. “First alternative” is the tracked alternative (' + d.alternatives.join(', ') +
+    ') named earliest in the answer — Zapier itself is the incumbent, so it isn’t counted. Make’s number (#) is its place among the alternatives an answer names. Cost of this snapshot: $' + d.total_cost + '.';
+}
+
+fetch('/make/data/zapier-alternatives.json').then(r => r.json()).then(render).catch(() => { $('sub').textContent = 'This page could not be loaded.'; });
+</script>
+</body>
+</html>

@@ -16,7 +16,7 @@ def swap(text, old, new):
 
 def nav(current):
     """The row of buttons at the top of every shared page; the page you are on is the blue one."""
-    items = [('/make/', '← Brand Checker for Make', None), ('/make/overview/', 'All models', 'overview')] + [('/make/%s/' % f, l, f) for f, l in FAMILIES.items()] + [('/make/state-of-the-llm-union/tracker/', 'Weekly tracker', 'tracker'), ('/make/app-pairs/', 'App pairs', 'app-pairs')]
+    items = [('/make/', '← Brand Checker for Make', None), ('/make/overview/', 'All models', 'overview')] + [('/make/%s/' % f, l, f) for f, l in FAMILIES.items()] + [('/make/state-of-the-llm-union/tracker/', 'Weekly tracker', 'tracker'), ('/make/app-pairs/', 'App pairs', 'app-pairs'), ('/make/zapier-alternatives/', 'Zapier alternatives', 'zapier-alternatives')]
     links = ''.join(' <a class="btn2 navb%s" href="%s"%s>%s</a>' % (' blue' if key == current else '', href, ' aria-current="page"' if key == current else '', label) for href, label, key in items)
     return '<div class="sotu-actions" style="margin-top:8px">' + links.strip() + '</div>'
 
@@ -64,3 +64,11 @@ body2 = open('templates/make-app-pairs.html', encoding='utf-8').read().replace('
 os.makedirs('make/app-pairs', exist_ok=True)
 open('make/app-pairs/index.html', 'w', encoding='utf-8').write(head2 + body2)
 print('wrote make/app-pairs/index.html')
+
+# ---- Zapier alternatives: /make/zapier-alternatives/ (reads make/data/zapier-alternatives.json, made by build-make-zapier-alt.mjs)
+head3 = t[:t.index('<div class="sotu-wrap">')]
+head3 = head3.replace('State Of The LLM Union tracker — Brand Checker for Make', 'Zapier alternatives — Brand Checker for Make').replace('https://brandchecker.eu/make/state-of-the-llm-union/tracker/', 'https://brandchecker.eu/make/zapier-alternatives/')
+body3 = open('templates/make-zapier-alternatives.html', encoding='utf-8').read().replace('__NAV__', nav('zapier-alternatives'))
+os.makedirs('make/zapier-alternatives', exist_ok=True)
+open('make/zapier-alternatives/index.html', 'w', encoding='utf-8').write(head3 + body3)
+print('wrote make/zapier-alternatives/index.html')
