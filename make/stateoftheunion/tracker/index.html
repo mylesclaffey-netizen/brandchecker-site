@@ -140,6 +140,7 @@ function renderTrend(d) {
   const cards = [
     { cls: 'accent', lbl: 'Mention rate now', val: S.pct(now), sub: esc(main.name) + ' · latest run' + (S.range(lastMain) ? ' · likely ' + S.range(lastMain) : '') },
     last.consistency ? { lbl: 'Named every time', val: last.consistency.always + '/' + last.consistency.groups, sub: 'combos asked ' + (d.repeats || 1) + '× · ' + last.consistency.sometimes + ' only sometimes' } : null,
+    last.facts ? { lbl: 'Wrong facts', val: last.facts.with_issues + '/' + last.facts.checked, sub: 'answers naming ' + esc(main.name) + ' · latest run' } : null,
     cit && cit.by_brand[main.name] && cit.by_brand[main.name].has_domain ? { lbl: 'Cited as a source', val: S.pct(cit.by_brand[main.name].rate), sub: 'of ' + cit.answers_with_sources + ' answers with sources' } : null,
     { lbl: 'Change', val: delta == null ? '—' : (delta > 0 ? '+' : '') + delta + ' pts', sub: prev ? 'since the previous run' : 'needs a second run' },
     { lbl: 'Runs kept', val: runs.length, sub: d.watch.frequency },
@@ -164,7 +165,7 @@ function renderTrend(d) {
     '<div class="stats4">' + cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
     '<h2 class="h2b">Mention rate over time</h2>' + legend + chart(d) +
     (runs.length < 2 ? '<div class="banner2">The trend line appears after the next run' + (d.watch.next_run_at ? ' (due ' + when(d.watch.next_run_at) + ')' : '') + '. Each point is one full run.</div>' : '') +
-    timeline(d) +
+    timeline(d) + S.factsHtml(last.facts, main.name) + S.discoveredHtml(last.discovered, !window.SNAPSHOT) +
     '<h2 class="h2b">Latest run — ' + esc(main.name) + ' by model</h2><div class="tblwrap"><table class="tbl"><tr><th>Model</th><th>Mention rate</th><th>Answers</th></tr>' + provRows + '</table></div>' +
     citedHtml(d, last, colours) +
     '<h2 class="h2b">All runs</h2><div class="tblwrap"><table class="tbl"><tr><th>When</th><th>' + esc(main.name) + ' rate</th><th>Likely range</th><th>Avg position</th><th>Answers</th>' + (window.SNAPSHOT ? '' : '<th>Cost</th>') + '<th>Status</th>' + (window.SNAPSHOT ? '' : '<th></th>') + '</tr>' + hist + '</table></div>';
@@ -182,6 +183,15 @@ function citedHtml(d, last, colours) {
     '<div class="tblwrap"><table class="tbl"><tr><th>Domain</th><th>Belongs to</th><th>Answers citing it</th><th>Share of answers</th></tr>' + rows + '</table></div>';
 }
 
+function wireDetail() {
+  $('detail').querySelectorAll('[data-addcomp]').forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    const r = await S.api('/state-of-union/watch/add-competitor', { id: selected, name: b.dataset.addcomp });
+    b.textContent = r.error ? r.error : 'Added — from the next run';
+    if (!r.error) loadList();
+  });
+}
+
 async function loadTrend() {
   if (!selected) { $('detail').innerHTML = ''; return; }
   $('detail').innerHTML = '<p class="sotu-sub">Loading…</p>';
@@ -195,6 +205,7 @@ async function loadTrend() {
     return;
   }
   renderTrend(d);
+  wireDetail();
 }
 
 async function loadList() {
