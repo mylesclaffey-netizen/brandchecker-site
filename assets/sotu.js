@@ -144,12 +144,15 @@
       }).join('');
       return '<tr><td><b>' + esc(d.label) + '</b></td>' +
         '<td style="min-width:140px"><div style="display:flex;height:14px;border:2px solid #0a0a0a;background:#f3f3ef"><i style="width:' + w(d.pos) + '%;background:' + GOOD + '"></i><i style="width:' + w(d.neg) + '%;background:' + BAD + '"></i></div></td>' +
-        '<td class="num"><span style="color:' + GOOD + '">' + d.pos + ' +</span> / <span style="color:' + BAD + '">' + d.neg + ' −</span></td><td>' + phrases + '</td></tr>';
+        '<td class="num"><span style="color:' + GOOD + '">' + d.pos + ' +</span> / <span style="color:' + BAD + '">' + d.neg + ' −</span></td><td>' + phrases + '</td>' +
+        '<td style="font-size:13px">' + (d.models || []).map(function (m) {
+          return '<span style="white-space:nowrap">' + esc(providerLabel(m.model)) + (m.pos ? ' <b style="color:' + GOOD + '">+' + m.pos + '</b>' : '') + (m.neg ? ' <b style="color:' + BAD + '">−' + m.neg + '</b>' : '') + '</span>';
+        }).join('<br>') + '</td></tr>';
     }).join('');
     var best = (ds.best_for || []).length ? '<p style="margin:0 0 30px"><b>Who they say ' + esc(brand) + ' is best for:</b> ' + ds.best_for.map(function (b) { return '“' + esc(b.phrase) + '”' + (b.n > 1 ? ' ×' + b.n : ''); }).join(' · ') + '</p>' : '';
     return '<h2 class="h2b">How models describe ' + esc(brand) + '</h2><p class="hint" style="margin:0 0 12px">From ' + ds.answers + ' answers that name ' + esc(brand) +
       '. Green: described favourably on that point; red: unfavourably. The chips are the answers’ own words. Tagged by a small AI model.</p>' +
-      '<div class="tblwrap"><table class="tbl" style="margin:0 0 12px"><tr><th>Dimension</th><th>Share of answers</th><th>Favourable / unfavourable</th><th>What they say</th></tr>' + rows + '</table></div>' + best;
+      '<div class="tblwrap"><table class="tbl" style="margin:0 0 12px"><tr><th>Dimension</th><th>Share of answers</th><th>Favourable / unfavourable</th><th>What they say</th><th>Models</th></tr>' + rows + '</table></div>' + best;
   }
 
   // Tracker: one row per dimension, one column per run (oldest → newest), each cell "favourable / unfavourable".
