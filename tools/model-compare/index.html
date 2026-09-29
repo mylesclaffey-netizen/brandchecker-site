@@ -197,18 +197,37 @@ async function run() {
     brand_name: $('brand').value.trim(), domain: $('domain').value.trim(),
     aliases: $('aliases').value.split(',').map(s => s.trim()).filter(Boolean), competitors: lines('competitors')
   };
-  $('go').disabled = true; $('go').textContent = 'Asking the models…';
+  $('go').disabled = true; $('go').textContent = 'Starting…';
   const r = await S.api('/model-compare/run', body);
   $('go').disabled = false; $('go').textContent = 'Compare models';
   if (r.error) return showErr(r.error);
   history.replaceState(null, '', S.withPreset('?k=' + encodeURIComponent(S.CODE) + '&r=' + encodeURIComponent(r.id)));
   show(r);
+  follow(r);
+}
+
+// Answers arrive one by one from the queue: poll until the report is complete, keeping the view and scroll.
+let pollTimer = null;
+function follow(d) {
+  clearTimeout(pollTimer);
+  if (!d || d.status !== 'running') return;
+  let n = 0;
+  const tick = async () => {
+    const next = await S.api('/model-compare/get', { id: d.id });
+    if (next.error) return;
+    show(next, true);
+    if (next.status === 'running' && ++n < 120) pollTimer = setTimeout(tick, 3000);
+  };
+  pollTimer = setTimeout(tick, 2500);
 }
 
 function card(d, r, colours) {
   const main = d.brands[0];
   let badge, body, foot = '';
-  if (r.error) {
+  if (r.pending) {
+    badge = '<span class="badge2 na">Waiting…</span>';
+    body = '<div class="answer2 empty">Asking ' + esc(r.label) + '…</div>';
+  } else if (r.error) {
     badge = '<span class="badge2 na">Failed</span>';
     body = '<div class="answer2 err">' + esc(r.error) + '</div>';
   } else {
@@ -316,14 +335,16 @@ function renderView() {
   $('rBody').innerHTML = view === 'timeline' ? timelineView(d, colours) : $('rBody').dataset.compare;
 }
 
-function show(d) {
+function show(d, update) {
   const colours = S.colourMap(d.brands), main = d.brands[0];
+  const waiting = (d.results || []).filter(r => r.pending).length;
   $('formBox').style.display = 'none'; $('results').style.display = 'block';
   $('rFamily').textContent = d.family.label + ' · ' + (d.web ? 'web search on' : (d.family.always_web ? 'searches the web' : 'own knowledge only'));
   $('rTitle').textContent = '“' + d.prompt + '”';
   const ok = d.results.filter(r => !r.error && r.text);
   const named = main ? ok.filter(r => (r.mentions || []).some(m => m.name === main.name && m.mentioned)).length : null;
-  $('rSub').textContent = main ? main.name + ' is named by ' + named + ' of ' + ok.length + ' ' + d.family.label + ' model' + (ok.length === 1 ? '' : 's') + '.' : ok.length + ' answers, side by side.';
+  $('rSub').textContent = (main ? main.name + ' is named by ' + named + ' of ' + ok.length + ' ' + d.family.label + ' model' + (ok.length === 1 ? '' : 's') + '.' : ok.length + ' answers, side by side.') +
+    (waiting ? ' Waiting for ' + waiting + ' more answer' + (waiting === 1 ? '' : 's') + '…' : '');
 
   const cheapestNaming = main ? ok.filter(r => (r.mentions || []).some(m => m.name === main.name && m.mentioned)).sort((a, b) => (a.cost || 0) - (b.cost || 0))[0] : null;
   const namingModels = main ? ok.filter(r => (r.mentions || []).some(m => m.name === main.name && m.mentioned)) : [];
@@ -349,11 +370,12 @@ function show(d) {
         return '<td class="heat" style="background:' + (m && m.mentioned ? colours[b.name].bg : '#f3f3ef') + ';color:' + (m && m.mentioned ? colours[b.name].fg : '#3d3d3d') + '">' + (m && m.mentioned ? '#' + m.position : '—') + '</td>';
       }).join('') + '</tr>').join('') + '</table></div>';
   }
-  current = d; view = window.SNAPSHOT ? 'timeline' : 'compare';
+  current = d;
+  if (!update) view = window.SNAPSHOT ? 'timeline' : 'compare';
   $('rBody').dataset.compare = '<div class="stats4">' + cards.filter(c => !(window.SNAPSHOT && /^(Cheapest|Fastest|Total cost)/.test(c.lbl))).map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val" style="font-size:' + (String(c.val).length > 6 ? '30px' : '44px') + '">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
     legend + '<div class="mgrid">' + d.results.map(r => card(d, r, colours)).join('') + '</div>' + matrix;
   renderView();
-  window.scrollTo(0, 0);
+  if (!update) window.scrollTo(0, 0);
 }
 
 async function init() {
@@ -365,10 +387,10 @@ async function init() {
   $('go').onclick = run;
   $('spreadBtn').onclick = pickSpread;
   $('viewTabs').querySelectorAll('[data-v]').forEach(b => b.onclick = () => { view = b.dataset.v; renderView(); });
-  $('again').onclick = () => { history.replaceState(null, '', S.withPreset('?k=' + encodeURIComponent(S.CODE))); $('results').style.display = 'none'; $('formBox').style.display = 'block'; };
+  $('again').onclick = () => { clearTimeout(pollTimer); history.replaceState(null, '', S.withPreset('?k=' + encodeURIComponent(S.CODE))); $('results').style.display = 'none'; $('formBox').style.display = 'block'; };
   if (REPORT) {
     const d = await S.api('/model-compare/get', { id: REPORT });
-    if (d.error) showReportErr(d.error); else show(d);
+    if (d.error) showReportErr(d.error); else { show(d); follow(d); }
   }
 }
 
