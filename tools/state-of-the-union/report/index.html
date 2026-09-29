@@ -54,6 +54,7 @@ document.querySelectorAll('.sidenav-link').forEach(a => {
   a.setAttribute('href', S.withPreset(u.pathname + u.search));
 });
 
+let briefs = {};   // prompt -> { busy } | brief response (Worker: promptBrief.js)
 let gsc = null, gscPages = null, gscBusy = false;   // Search Console status and per-page metrics (Worker: gsc.js)
 let data = null, colours = {}, tab = 'compare', promptIdx = 0, marketSel = null, repSel = 1, pollTimer = null, pollCount = 0;
 
@@ -182,7 +183,7 @@ function brandsView(d) {
   const provs = shown(d).filter(p => p.available).map(p => p.id);
   const labelP = id => esc((d.providers.filter(p => p.id === id)[0] || {}).label || id);
   const note = '<p class="hint" style="margin:-18px 0 30px">Likely range: where the true rate probably sits (95%), given how many answers this run collected. More prompts, markets or repeats narrow it.</p>';
-  return '<h2 class="h2b">Who gets named</h2>' + overall + note + consistencyHtml(d) + citationsHtml(d) + pagesHtml(d) +
+  return '<h2 class="h2b">Who gets named</h2>' + overall + note + consistencyHtml(d) + citationsHtml(d) + pagesHtml(d) + briefsHtml(d) +
     '<h2 class="h2b">By model</h2>' + matrix(d, 'Model', provs, c => c.provider, labelP) +
     '<h2 class="h2b">By market</h2>' + matrix(d, 'Market', d.locations, c => c.location, l => S.market(l).flag + ' ' + esc(l)) +
     '<h2 class="h2b">By prompt</h2>' + matrix(d, 'Prompt', d.prompts, c => c.prompt, esc);
@@ -269,6 +270,58 @@ function pagesHtml(d) {
   return html + other('Competitor pages that get cited', pg.competitors, true) + other('Third-party pages cited most', pg.other, false);
 }
 
+// "Why you lose these prompts": prompts worst first, each with an on-demand brief.
+function briefsHtml(d) {
+  const main = d.brands[0];
+  if (!main || d.status !== 'complete') return '';
+  const answered = S.answered(d.cells);
+  const rows = d.prompts.map(p => {
+    const list = answered.filter(c => c.prompt === p);
+    const mine = S.rate(list, main.name);
+    const rivals = d.brands.slice(1).map(b => ({ b, v: S.rate(list, b.name) })).filter(x => x.v != null).sort((a, b) => b.v - a.v);
+    return { p, mine, top: rivals[0] && rivals[0].v > 0 ? rivals[0] : null };
+  }).sort((a, b) => (a.mine ?? 1) - (b.mine ?? 1));
+  const card = r => {
+    const st = briefs[r.p], idx = d.prompts.indexOf(r.p);
+    const head = '<div style="display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap">' +
+      '<div style="flex:1;min-width:240px"><b style="font-size:17px">' + esc(r.p) + '</b><br><small>' + esc(main.name) + ' named in ' + S.pct(r.mine) +
+      (r.top ? ' · ' + esc(r.top.b.name) + ' in ' + S.pct(r.top.v) : '') + '</small></div>' +
+      (st && st.brief ? '' : '<button class="btn2 small' + (r.mine != null && r.mine < 1 ? ' solid' : '') + '" data-brief="' + idx + '" type="button"' + (st && st.busy ? ' disabled' : '') + '>' +
+        (st && st.busy ? 'Writing… (up to a minute)' : (r.mine != null && r.mine < 1 ? 'Why you lose this' : 'How to hold this')) + '</button>') + '</div>';
+    return '<div class="card2" style="border:3px solid #0a0a0a;padding:16px;margin:0 0 16px;background:#fff">' + head +
+      (st && st.error ? '<p class="err" style="margin-top:10px">' + esc(st.error) + '</p>' : '') + (st && st.brief ? briefBody(st, idx) : '') + '</div>';
+  };
+  return '<h2 class="h2b">Why you lose these prompts</h2><p class="hint" style="margin:0 0 14px">Worst first. A brief reads this run’s answers, the pages they cite and the searches ChatGPT ran, and says who wins, why, and what to change. Each costs a few cents to write and is saved with the report.</p>' +
+    rows.map(card).join('');
+}
+
+function briefBody(st, idx) {
+  const b = st.brief;
+  const list = (title, items, fmt) => items && items.length ? '<h3 style="font-size:14px;text-transform:uppercase;letter-spacing:.05em;margin:16px 0 6px">' + title + '</h3>' + items.map(fmt).join('') : '';
+  const link = u => /^https?:\/\//.test(u) ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(shortUrl(u)) + '</a>' : esc(u);
+  const cb = b.content_brief;
+  return '<div style="margin-top:12px;border-top:2px solid #0a0a0a;padding-top:12px">' +
+    '<p class="says" style="font-size:17px">' + esc(b.verdict) + '</p>' +
+    list('Who wins, and why', b.who_wins, x => '<p style="margin:0 0 6px"><b>' + esc(x.brand) + '</b> — ' + esc(x.why) + '</p>') +
+    list('What they have that you don’t', b.gaps, x => '<p style="margin:0 0 6px">• ' + esc(x) + '</p>') +
+    (b.actions && b.actions.length ? '<h3 style="font-size:14px;text-transform:uppercase;letter-spacing:.05em;margin:16px 0 6px">What to do</h3><div class="tblwrap"><table class="tbl" style="margin:0 0 6px"><tr><th>Action</th><th>Where</th><th>Because</th></tr>' +
+      b.actions.map(a => '<tr><td><b>' + esc(a.action) + '</b></td><td>' + link(a.where) + '</td><td>' + esc(a.why) + '</td></tr>').join('') + '</table></div>' : '') +
+    list('Pages to update', b.pages_to_update, x => '<p style="margin:0 0 6px">' + link(x.url) + ' — ' + esc(x.change) + '</p>') +
+    list('Third-party pages to get onto', b.lists_to_get_on, x => '<p style="margin:0 0 6px">' + link(x.url) + ' — ' + esc(x.why) + '</p>') +
+    (cb && cb.title ? '<h3 style="font-size:14px;text-transform:uppercase;letter-spacing:.05em;margin:16px 0 6px">Content brief</h3><p style="margin:0 0 4px"><b>' + esc(cb.title) + '</b></p><p style="margin:0 0 6px">' + esc(cb.angle) + '</p>' +
+      (cb.sections.length ? '<ol style="margin:0 0 0 20px">' + cb.sections.map(x => '<li>' + esc(x) + '</li>').join('') + '</ol>' : '') : '') +
+    '<p class="hint" style="margin-top:14px">Based on ' + st.evidence.answers + ' answers (' + st.evidence.named + ' naming you), ' + st.evidence.cited_pages + ' cited pages' + (st.evidence.searches ? ', ' + st.evidence.searches + ' ChatGPT searches' : '') +
+    '. Written by ' + esc(st.model || 'Claude') + (st.cost ? ' · ' + S.money(st.cost) : '') + (st.cached ? ' · saved' : '') + ' · <a href="#" data-rebrief="' + idx + '">Rewrite</a></p></div>';
+}
+
+async function writeBrief(idx, refresh) {
+  const prompt = data.prompts[idx];
+  briefs[prompt] = { busy: true }; render();
+  const r = await S.api('/state-of-union/brief', { id: ID, prompt, refresh: !!refresh });
+  briefs[prompt] = r.error ? { error: r.error } : r;
+  render();
+}
+
 async function loadGsc() {
   if (gsc !== null || !data || !data.summary || !data.summary.citations) return;
   gsc = await S.api('/gsc/status');
@@ -326,6 +379,8 @@ function render() {
   $('out').querySelectorAll('[data-r]').forEach(b => b.onclick = () => { repSel = +b.dataset.r; render(); });
   const tb = $('trackBtn'); if (tb) tb.onclick = startTracking;
   const gc = $('gscConnect'); if (gc) gc.onclick = gscConnect;
+  $('out').querySelectorAll('[data-brief]').forEach(b => b.onclick = () => writeBrief(+b.dataset.brief));
+  $('out').querySelectorAll('[data-rebrief]').forEach(a => a.onclick = e => { e.preventDefault(); writeBrief(+a.dataset.rebrief, true); });
   const gd = $('gscDisconnect'); if (gd) gd.onclick = gscDisconnect;
 }
 
