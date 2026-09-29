@@ -1,0 +1,111 @@
+<div class="sotu-wrap">
+  <p class="eyebrow">Brand Checker for Make · AI agents</p>
+  <h1>Is Make in the answer when people ask how to build AI agents?</h1>
+  <p class="sotu-sub" id="sub">Loading…</p>
+  __NAV__
+  <div class="stats4" id="cards"></div>
+  <div id="out"></div>
+  <p class="hint" id="method"></p>
+  <div class="sidenav"><a href="/make/" class="sidenav-link">← Back to Brand Checker for Make</a></div>
+</div>
+
+<style>
+  .who { display: inline-block; padding: 2px 8px; border: 2px solid #0a0a0a; font-size: 12.5px; font-weight: 700; white-space: nowrap; margin: 0 4px 3px 0; }
+  .who.none { border-style: dashed; color: #6b665d; font-weight: 500; }
+  .qs td { vertical-align: top; }
+  .qs .qn { font-weight: 800; }
+  .cat { background: #0a0a0a; color: #fff; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; font-size: 12px; }
+  .gr { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; white-space: nowrap; }
+  .ag { font-size: 11.5px; font-weight: 700; }
+  .ag.y { color: #2f6b2a; } .ag.n { color: #9a4a2e; }
+  .quote { border-left: 4px solid #34517A; padding: 4px 0 4px 12px; margin: 0 0 12px; font-size: 14px; }
+  .quote small { display: block; color: #6b665d; margin-top: 2px; }
+  .split th small { font-weight: 400; }
+</style>
+
+<script src="/assets/sotu.js"></script>
+<script>
+// Data: /make/data/ai-agents.json, made by build-make-ai-agents.mjs from a State Of The LLM Union run.
+const S = window.SOTU, esc = S.esc, $ = id => document.getElementById(id);
+const SURFACES = [['chatgpt_app', 'ChatGPT app'], ['perplexity', 'Perplexity'], ['ai_overviews', 'Google AI Overview'], ['chatgpt', 'ChatGPT (memory)'], ['claude', 'Claude (memory)']];
+const SEARCHING = ['chatgpt_app', 'perplexity', 'ai_overviews'], MEMORY = ['chatgpt', 'claude'];
+const COLOURS = { 'Make': ['#34517A', '#fff'], 'n8n': ['#5B8C3E', '#fff'], 'Zapier': ['#D97A66', '#0a0a0a'], 'Lindy': ['#A79FD1', '#0a0a0a'],
+  'Relevance AI': ['#6FA0C4', '#fff'], 'Gumloop': ['#E3B448', '#0a0a0a'], 'Other': ['#fff', '#3d3d3d'] };
+const pct = (n, d) => d ? Math.round(100 * n / d) + '%' : '—';
+const ok = s => s.who !== 'none' && s.who !== 'failed';
+
+function chips(list) {
+  return list.map(s => {
+    if (!ok(s)) return '<span class="who none">' + (s.who === 'failed' ? 'failed' : 'no answer') + '</span>';
+    const c = COLOURS[s.who] || COLOURS.Other;
+    return '<span class="who" style="background:' + c[0] + ';color:' + c[1] + '">' + esc(s.who === 'Other' ? 'none of these' : s.who) + '</span>' +
+      (s.make_named && s.who !== 'Make' ? ' <small>Make #' + s.make_rank + '</small>' : '') +
+      (s.make_named ? ' <span class="ag ' + (s.make_as_agent ? 'y">as agents' : 'n">automation only') + '</span>' : '');
+  }).join('<br>');
+}
+
+function render(d) {
+  const cat = d.questions.filter(q => q.group === 'Category');
+  const pick = (qs, provs) => qs.flatMap(q => provs.flatMap(p => q.surfaces[p] || [])).filter(ok);
+  const all = pick(cat, SURFACES.map(s => s[0])), web = pick(cat, SEARCHING), mem = pick(cat, MEMORY);
+  const first = (list, who) => list.filter(s => s.who === who).length;
+  const named = (list, who) => list.filter(s => (s.tools || []).includes(who)).length;
+  const makeNamed = all.filter(s => s.make_named), asAgent = makeNamed.filter(s => s.make_as_agent);
+  const leader = d.tools.map(t => [t, first(all, t)]).sort((a, b) => b[1] - a[1])[0];
+  const onPage1 = d.questions.filter(q => q.google.make && q.google.make.rank <= 10).length;
+  const n8n1 = d.questions.filter(q => q.google.n8n && q.google.n8n.rank <= 10).length;
+  $('sub').textContent = d.questions.length + ' questions about building AI agents, asked in the ' + d.market + ' on the ChatGPT app, Perplexity and Google (which search the web), and ChatGPT and Claude from their own knowledge' +
+    (d.repeats > 1 ? ' (' + d.repeats + '× each, Google once)' : '') + '. ' + new Date(d.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + '.';
+  const cards = [
+    { cls: 'accent', lbl: 'Make named', val: pct(makeNamed.length, all.length), sub: 'of ' + all.length + ' answers to the ' + cat.length + ' category questions' },
+    { lbl: 'Named as an agent platform', val: pct(asAgent.length, makeNamed.length), sub: asAgent.length + ' of ' + makeNamed.length + ' answers naming Make talk about its agents' },
+    { lbl: 'Make named first', val: pct(first(all, 'Make'), all.length), sub: 'Most often first: ' + leader[0] + ' (' + pct(leader[1], all.length) + ')' },
+    { lbl: 'Searching vs memory', val: pct(named(web, 'Make'), web.length) + ' / ' + pct(named(mem, 'Make'), mem.length), sub: 'Make named when the model searches / answers from memory' },
+    { lbl: 'make.com on Google page 1', val: onPage1 + '/' + d.questions.length, sub: 'questions (n8n.io: ' + n8n1 + ')' }
+  ];
+  $('cards').innerHTML = cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('');
+
+  // Who owns the category: named and first, split by searching vs memory.
+  let h = '<h2 class="h2b">Who owns the category</h2><p class="hint" style="margin:0 0 10px">Category questions only (' + all.length + ' answers) — the head-to-head questions name the tools themselves. A tool that does better from memory than when searching is riding its training data; one that does better when searching is winning today’s web.</p>' +
+    '<div class="tblwrap"><table class="tbl split"><tr><th>Tool</th><th>Named<br><small>all answers</small></th><th>Named first</th><th>Named<br><small>searching (' + web.length + ')</small></th><th>Named<br><small>memory (' + mem.length + ')</small></th></tr>' +
+    d.tools.map(t => [t, named(all, t)]).sort((a, b) => b[1] - a[1]).map(([t]) =>
+      '<tr><td><b>' + esc(t) + '</b></td><td class="num">' + pct(named(all, t), all.length) + '</td><td class="num">' + pct(first(all, t), all.length) + '</td><td class="num">' + pct(named(web, t), web.length) + '</td><td class="num">' + pct(named(mem, t), mem.length) + '</td></tr>').join('') + '</table></div>';
+  const others = (d.others || []).slice(0, 12);
+  if (others.length) h += '<p class="hint" style="margin:-18px 0 26px">Other agent tools named in the ' + all.length + ' category answers: ' + others.map(b => esc(b.name) + ' (' + b.answers + ')').join(' · ') + '</p>';
+
+  // How Make is named: as an agent platform, or only as automation.
+  const qs = cat.flatMap(q => SURFACES.flatMap(([id, label]) => (q.surfaces[id] || []).filter(s => s.make_named && s.make_quote).map(s => ({ ...s, q: q.prompt, label }))));
+  const byLen = (a, b) => b.make_quote.length - a.make_quote.length;
+  const yes = qs.filter(s => s.make_as_agent).sort(byLen), not = qs.filter(s => s.make_not_agent).sort(byLen), no = qs.filter(s => !s.make_as_agent && !s.make_not_agent).sort(byLen);
+  const quote = s => '<div class="quote">“' + esc(s.make_quote) + '”<small>' + esc(s.label) + ' · “' + esc(s.q) + '”</small></div>';
+  h += '<h2 class="h2b">How the answers describe Make</h2><p class="hint" style="margin:0 0 10px">When Make is named, is it as a place to build agents, or only as a workflow tool? Category questions only — the head-to-head ones put “agents” in the question: ' + yes.length + ' answers describe its agents, ' + not.length + ' say outright it isn’t really an agent tool, ' + no.length + ' describe only its automation.</p>' +
+    (yes.length ? '<h3>Named for agents</h3>' + yes.slice(0, 4).map(quote).join('') : '') +
+    (not.length ? '<h3>Named — but “not really an agent tool”</h3>' + not.slice(0, 4).map(quote).join('') : '') +
+    (no.length ? '<h3>Named only for automation</h3>' + no.slice(0, 4).map(quote).join('') : '');
+
+  // Question by question.
+  h += '<h2 class="h2b">Question by question</h2><div class="tblwrap"><table class="tbl qs"><tr><th>Question</th>' + SURFACES.map(s => '<th>' + s[1] + '<br><small style="font-weight:400">first tool named</small></th>').join('') + '<th>Google</th></tr>' +
+    ['Category', 'Head to head'].map(g => '<tr><td colspan="' + (SURFACES.length + 2) + '" class="cat">' + g + '</td></tr>' + d.questions.filter(q => q.group === g).map(q =>
+      '<tr><td class="qn">“' + esc(q.prompt) + '”</td>' + SURFACES.map(([id]) => '<td>' + chips(q.surfaces[id] || []) + '</td>').join('') +
+      '<td><span class="gr">Make ' + (q.google.make ? '#' + q.google.make.rank : '—') + '<br>n8n ' + (q.google.n8n ? '#' + q.google.n8n.rank : '—') + '<br>Zapier ' + (q.google.zapier ? '#' + q.google.zapier.rank : '—') + '</span>' +
+      (q.google.top[0] ? '<br><small>#1 ' + esc(q.google.top[0].domain) + '</small>' : '') + '</td></tr>').join('')).join('') + '</table></div>';
+
+  // Where the answers get it from.
+  const cit = d.citations;
+  if (cit) {
+    const page = p => '<tr><td><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 80)) + '</a>' + (p.title ? '<br><small>' + esc(p.title.slice(0, 90)) + '</small>' : '') + '</td><td>' + esc(p.owner || 'Third party') + '</td><td class="num">' + p.answers + '</td></tr>';
+    h += '<h2 class="h2b">What the answers cite</h2><p class="hint" style="margin:0 0 10px">Across ' + cit.answers_with_sources + ' answers that showed sources: Make ' + S.pct(cit.share.own) + ', competitors ' + S.pct(cit.share.competitors) + ', other sites ' + S.pct(cit.share.other) + ' of citations. In a young category these roundups are still being written — the ones below are the ones to get into.</p>' +
+      '<div class="tblwrap"><table class="tbl"><tr><th>Most-cited third-party pages</th><th>Belongs to</th><th>Answers</th></tr>' + cit.pages.other.map(page).join('') + '</table></div>' +
+      (cit.pages.own.length ? '<div class="tblwrap"><table class="tbl"><tr><th>make.com pages cited</th><th>Belongs to</th><th>Answers</th></tr>' + cit.pages.own.map(page).join('') + '</table></div>' : '') +
+      (cit.pages.competitors.length ? '<div class="tblwrap"><table class="tbl"><tr><th>Competitor pages cited</th><th>Belongs to</th><th>Answers</th></tr>' + cit.pages.competitors.map(page).join('') + '</table></div>' : '');
+  }
+  if (d.describe) h += S.describeHtml(d.describe, 'Make');
+  $('out').innerHTML = h;
+  $('method').innerHTML = 'Method: one State Of The LLM Union run (' + d.market + '). “Searching” is the ChatGPT app, Perplexity and Google’s AI Overview; “memory” is ChatGPT and Claude through the API with web search off. “First tool” is the tracked tool (' + d.tools.join(', ') +
+    ') named earliest in the answer. “Named as an agent platform” means the answer’s own sentences about Make mention agents. Cost of this snapshot: $' + d.total_cost + '.';
+}
+
+fetch('/make/data/ai-agents.json').then(r => r.json()).then(render).catch(() => { $('sub').textContent = 'This page could not be loaded.'; });
+</script>
+</body>
+</html>

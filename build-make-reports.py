@@ -16,7 +16,7 @@ def swap(text, old, new):
 
 def nav(current):
     """The row of buttons at the top of every shared page; the page you are on is the blue one."""
-    items = [('/make/', '← Brand Checker for Make', None), ('/make/overview/', 'All models', 'overview')] + [('/make/%s/' % f, l, f) for f, l in FAMILIES.items()] + [('/make/state-of-the-llm-union/tracker/', 'Weekly tracker', 'tracker'), ('/make/app-pairs/', 'App pairs', 'app-pairs'), ('/make/zapier-alternatives/', 'Zapier alternatives', 'zapier-alternatives'), ('/make/learning-curve/', 'Learning curve', 'learning-curve')]
+    items = [('/make/', '← Brand Checker for Make', None), ('/make/overview/', 'All models', 'overview')] + [('/make/%s/' % f, l, f) for f, l in FAMILIES.items()] + [('/make/state-of-the-llm-union/tracker/', 'Weekly tracker', 'tracker'), ('/make/app-pairs/', 'App pairs', 'app-pairs'), ('/make/zapier-alternatives/', 'Zapier alternatives', 'zapier-alternatives'), ('/make/learning-curve/', 'Learning curve', 'learning-curve'), ('/make/ai-agents/', 'AI agents', 'ai-agents')]
     links = ''.join(' <a class="btn2 navb%s" href="%s"%s>%s</a>' % (' blue' if key == current else '', href, ' aria-current="page"' if key == current else '', label) for href, label, key in items)
     return '<div class="sotu-actions" style="margin-top:8px">' + links.strip() + '</div>'
 
@@ -81,3 +81,11 @@ body4 = open('templates/make-learning-curve.html', encoding='utf-8').read().repl
 os.makedirs('make/learning-curve', exist_ok=True)
 open('make/learning-curve/index.html', 'w', encoding='utf-8').write(head4 + body4)
 print('wrote make/learning-curve/index.html')
+
+# ---- AI agents: /make/ai-agents/ (make/data/ai-agents.json from build-make-ai-agents.mjs)
+head5 = t[:t.index('<div class="sotu-wrap">')]
+head5 = head5.replace('State Of The LLM Union tracker — Brand Checker for Make', 'AI agents — Brand Checker for Make').replace('https://brandchecker.eu/make/state-of-the-llm-union/tracker/', 'https://brandchecker.eu/make/ai-agents/')
+body5 = open('templates/make-ai-agents.html', encoding='utf-8').read().replace('__NAV__', nav('ai-agents'))
+os.makedirs('make/ai-agents', exist_ok=True)
+open('make/ai-agents/index.html', 'w', encoding='utf-8').write(head5 + body5)
+print('wrote make/ai-agents/index.html')
