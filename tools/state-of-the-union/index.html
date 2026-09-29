@@ -46,6 +46,13 @@
   .sidenav-link{font-size:14px;font-weight:600}
   body.embed .sidenav{display:none}
   #gate{display:none}
+  .sugg{border:3px solid #0a0a0a;padding:16px;margin:0 0 22px;background:#f3f3ef}
+  .sugg .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .sugg .row > div{flex:1;min-width:220px}
+  .slist{display:flex;flex-direction:column;gap:6px;margin:14px 0 0;max-height:360px;overflow:auto}
+  .sitem{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:2px solid #0a0a0a;background:#fff;cursor:pointer;font-size:15px}
+  .sitem input{margin-top:4px;width:17px;height:17px;accent-color:#ff3d00;flex:none}
+  .sitem small{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3d3d3d;text-transform:uppercase;letter-spacing:.05em}
 </style>
 <link rel="stylesheet" href="/assets/theme.css">
 <link rel="stylesheet" href="/assets/sotu.css">
@@ -80,10 +87,19 @@
       <textarea id="competitors" placeholder="rival.com&#10;another-rival.com"></textarea>
       <p class="hint">Names or domains. Each gets its own colour in the answers.</p>
     </div>
+    <div class="sugg">
+      <span class="fl">Suggest prompts from real searches</span>
+      <div class="row">
+        <div><label for="topic" class="fl" style="font-size:12px">What you sell, in a few words</label><input id="topic" type="text" placeholder="e.g. vacation rental software" maxlength="80"></div>
+        <button class="btn2" id="suggestBtn" type="button">Find prompts</button>
+      </div>
+      <p class="hint">Pulls Google’s People Also Ask questions, autocomplete and related searches for the first market you pick, plus “alternatives” and “vs” searches for the competitors you list, and turns them into questions for an AI assistant. Questions that already name your brand are left out, since they would always “mention” it. Tick the ones to add.</p>
+      <div id="suggOut"></div>
+    </div>
     <div class="field">
-      <label for="prompts">Prompts (up to 10, one per line)</label>
+      <label for="prompts">Prompts (up to <span id="maxPrompts">25</span>, one per line)</label>
       <textarea id="prompts" placeholder="What are the best tools for …?&#10;Which … would you recommend?"></textarea>
-      <p class="hint">Write them the way a customer would ask an AI assistant.</p>
+      <p class="hint">Write them the way a customer would ask an AI assistant, or add them from the suggestions above.</p>
     </div>
 
     <div class="field"><span class="fl">Markets</span><div class="opts" id="markets"></div></div>
@@ -91,7 +107,12 @@
 
     <div class="field">
       <label class="toggle"><input type="checkbox" id="web">
-        <div><b>Let models search the web</b><span>Off by default: the model answers from its own knowledge, which is far cheaper and shows what it already “knows” about your brand. Turn on to compare with live search. Perplexity and Google AI Overviews always search.</span></div></label>
+        <div><b>Let models search the web</b><span>Off by default: the model answers from its own knowledge, which is far cheaper and shows what it already “knows” about your brand. Turn on to see which websites each answer cites (yours, competitors’, review sites). Perplexity, Gemini and Google AI Overviews always search, so they show sources either way.</span></div></label>
+    </div>
+    <div class="field">
+      <label for="repeats">Ask each prompt</label>
+      <select id="repeats" style="width:auto"><option value="3">3 times (recommended)</option><option value="2">2 times</option><option value="1">once</option></select>
+      <p class="hint">AI models answer differently each time. Asking 3 times shows whether your brand is named reliably or by luck, and gives each mention rate a range. AI Overviews and Gemini are asked once.</p>
     </div>
     <div class="field">
       <label class="toggle"><input type="checkbox" id="track" checked>
@@ -158,16 +179,18 @@ function renderModels() {
 const lines = id => $(id).value.split('\n').map(s => s.trim()).filter(Boolean);
 function estimate() {
   if (!options) return;
-  const cells = lines('prompts').length * chosenMarkets.size;
+  const cells = lines('prompts').length * chosenMarkets.size, reps = +$('repeats').value || 1;
   let usd = 0, n = 0;
   options.providers.forEach(p => {
     if (!chosenModels.has(p.id)) return;
-    n += cells;
-    usd += cells * (p.always_web || $('web').checked ? p.estimate_on : p.estimate_off);
+    const k = cells * (p.once ? 1 : reps);
+    n += k;
+    usd += k * (p.always_web || $('web').checked ? p.estimate_on : p.estimate_off);
   });
   const track = $('track').checked, freq = $('freq').value;
   $('est').innerHTML = n
-    ? '<b>≈ ' + S.money(usd) + '</b> per run · ' + n + ' answers' + (track ? ' · about <b>' + S.money(usd * (freq === 'daily' ? 30 : 4.3)) + '</b> a month' : '')
+    ? '<b>≈ ' + S.money(usd) + '</b> per run · ' + n + ' answers' + (track ? ' · about <b>' + S.money(usd * (freq === 'daily' ? 30 : 4.3)) + '</b> a month' : '') +
+      (n > options.limits.max_cells ? '<br><span class="err">Over the ' + options.limits.max_cells + '-answer limit per run: use fewer prompts, markets, models or repeats.</span>' : '')
     : 'Add at least one prompt, market and model to see the estimated cost.';
 }
 
@@ -180,7 +203,7 @@ async function submit() {
     brand_name: brand, domain: $('domain').value.trim(),
     aliases: $('aliases').value.split(',').map(s => s.trim()).filter(Boolean),
     competitors: lines('competitors'), prompts: lines('prompts'), locations: [...chosenMarkets],
-    providers: [...chosenModels], web: $('web').checked, frequency: $('freq').value
+    providers: [...chosenModels], web: $('web').checked, frequency: $('freq').value, repeats: +$('repeats').value || 1
   };
   if (!body.prompts.length) return showErr('Add at least one prompt.');
   if (!body.locations.length) return showErr('Pick at least one market.');
@@ -192,14 +215,44 @@ async function submit() {
 }
 function showErr(msg) { $('err').textContent = msg; $('err').style.display = 'block'; }
 
+// Prompt suggestions (Worker: promptSuggest.js). Ticking one adds it to the prompts box; unticking removes it.
+async function suggest() {
+  const topic = $('topic').value.trim();
+  if (!topic) { $('suggOut').innerHTML = '<p class="err" style="margin-top:12px">Type what you sell first, e.g. “vacation rental software”.</p>'; return; }
+  const mkt = [...chosenMarkets][0] || 'United States';
+  $('suggestBtn').disabled = true; $('suggestBtn').textContent = 'Searching…';
+  const r = await S.api('/state-of-union/suggest-prompts', { topic, brand: $('brand').value.trim(), competitors: lines('competitors'), market: mkt });
+  $('suggestBtn').disabled = false; $('suggestBtn').textContent = 'Find prompts';
+  if (r.error) { $('suggOut').innerHTML = '<p class="err" style="margin-top:12px">' + esc(r.error) + '</p>'; return; }
+  if (!r.suggestions.length) { $('suggOut').innerHTML = '<p class="hint">No usable questions came back for “' + esc(topic) + '”. Try a broader phrase.</p>'; return; }
+  const have = new Set(lines('prompts').map(x => x.toLowerCase()));
+  $('suggOut').innerHTML = '<div class="slist">' + r.suggestions.map((x, i) =>
+    '<label class="sitem"><input type="checkbox" data-s="' + i + '"' + (have.has(x.prompt.toLowerCase()) ? ' checked' : '') + '><span>' + esc(x.prompt) +
+    '<small>' + esc(x.source) + ' · ' + S.market(r.market).short + ' · “' + esc(x.query) + '”</small></span></label>').join('') + '</div>' +
+    (r.serp_error ? '<p class="hint">People Also Ask was unavailable this time (' + esc(r.serp_error) + '); these come from autocomplete.</p>' : '');
+  $('suggOut').querySelectorAll('[data-s]').forEach(cb => cb.onchange = () => {
+    const text = r.suggestions[+cb.dataset.s].prompt;
+    let cur = lines('prompts');
+    if (cb.checked) {
+      if (cur.length >= options.limits.max_prompts) { cb.checked = false; return showErr('That is the ' + options.limits.max_prompts + '-prompt limit.'); }
+      if (!cur.some(x => x.toLowerCase() === text.toLowerCase())) cur.push(text);
+    } else cur = cur.filter(x => x.toLowerCase() !== text.toLowerCase());
+    $('prompts').value = cur.join('\n');
+    estimate();
+  });
+}
+
 async function init() {
   const r = await S.api('/state-of-union/options');
   if (r.error) { $('models').innerHTML = '<span class="err">' + esc(r.error) + '</span>'; return; }
   options = r;
+  $('maxPrompts').textContent = r.limits.max_prompts;
   r.providers.forEach(p => { if (p.default && p.available) chosenModels.add(p.id); });
   renderMarkets(); renderModels(); estimate();
-  ['prompts', 'web', 'track', 'freq'].forEach(id => $(id).addEventListener('input', estimate));
+  ['prompts', 'web', 'track', 'freq', 'repeats'].forEach(id => $(id).addEventListener('input', estimate));
   $('go').onclick = submit;
+  $('suggestBtn').onclick = suggest;
+  $('topic').onkeydown = e => { if (e.key === 'Enter') suggest(); };
 }
 
 if (!S.CODE) {

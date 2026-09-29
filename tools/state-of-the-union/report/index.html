@@ -54,7 +54,7 @@ document.querySelectorAll('.sidenav-link').forEach(a => {
   a.setAttribute('href', S.withPreset(u.pathname + u.search));
 });
 
-let data = null, colours = {}, tab = 'compare', promptIdx = 0, marketSel = null, pollTimer = null, pollCount = 0;
+let data = null, colours = {}, tab = 'compare', promptIdx = 0, marketSel = null, repSel = 1, pollTimer = null, pollCount = 0;
 
 function shown(d) {                       // providers that were part of this run, in registry order
   const used = new Set(d.cells.map(c => c.provider));
@@ -66,13 +66,17 @@ function statCards(d) {
   const attempted = d.cells.filter(c => c.status !== 'unavailable');
   const doneN = attempted.filter(c => c.status === 'done' || c.status === 'failed').length;
   const rateTxt = main ? S.pct(S.rate(answered, main.name)) : '—';
+  const sm = d.summary || {}, ms = main && sm.by_brand ? sm.by_brand[main.name] : null;
+  const range = S.range(ms), con = sm.consistency, cit = sm.citations;
   const cards = [
-    { cls: 'accent', lbl: 'Mention rate', val: rateTxt, sub: main ? 'answers naming ' + esc(main.name) : 'add a brand to track mentions' },
-    { lbl: 'Prompts', val: d.prompts.length, sub: 'asked in each market' },
+    { cls: 'accent', lbl: 'Mention rate', val: rateTxt, sub: main ? 'answers naming ' + esc(main.name) + (range ? ' · likely range ' + range : '') : 'add a brand to track mentions' },
+    con && main ? { lbl: 'Named every time', val: con.always + '/' + con.groups, sub: 'model × prompt × market combos asked ' + d.repeats + '×; ' + con.sometimes + ' only sometimes' } : null,
+    cit && main ? { lbl: 'Cited as a source', val: S.pct(cit.by_brand[main.name] ? cit.by_brand[main.name].rate : null), sub: cit.by_brand[main.name] && !cit.by_brand[main.name].has_domain ? 'add your website to count citations' : 'of ' + cit.answers_with_sources + ' answers that showed sources' } : null,
+    { lbl: 'Prompts', val: d.prompts.length, sub: 'asked in each market' + (d.repeats > 1 ? ', ' + d.repeats + '× each' : '') },
     { lbl: 'Markets', val: d.locations.length, sub: d.locations.map(l => S.market(l).short).join(' · ') },
     { lbl: 'Models', val: shown(d).filter(p => p.available).length, sub: 'compared per prompt' },
     { lbl: 'Run cost', val: S.money(d.total_cost || 0), sub: d.web ? 'web search on' : 'web search off' }
-  ];
+  ].filter(Boolean);
   return '<div class="stats4">' + cards.map(c =>
     '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>'
   ).join('') + '</div>';
@@ -132,8 +136,16 @@ function compareView(d) {
   }).join('') + '</div>';
   const mkt = S.market(mk);
   const ctx = '<div class="ctx"><span>Asked in English (' + esc(mkt.short) + '), as if from ' + esc(mk) + ' · ' + (d.web ? 'web search on' : 'web search off') + ' · run ' + S.ago(d.created_at) + '</span></div>';
-  const cards = shown(d).map(p => modelCard(d, p, d.cells.filter(c => c.provider === p.id && c.prompt === prompt && c.location === mk)[0])).join('');
-  return pillsHtml + tabsHtml + ctx + legend(d) + '<div class="mgrid">' + cards + '</div>';
+  const reps = d.repeats || 1;
+  const repHtml = reps > 1 ? '<div class="mtabs">' + Array.from({ length: reps }, (_, i) => i + 1).map(n =>
+    '<button data-r="' + n + '" aria-pressed="' + (n === repSel) + '">Answer ' + n + ' of ' + reps + '</button>').join('') + '</div>' : '';
+  // AI Overviews and Gemini are asked once, so they show their single answer whichever repeat is picked.
+  const cellFor = p => {
+    const same = d.cells.filter(c => c.provider === p.id && c.prompt === prompt && c.location === mk);
+    return same.filter(c => (c.rep || 1) === repSel)[0] || same[0];
+  };
+  const cards = shown(d).map(p => modelCard(d, p, cellFor(p))).join('');
+  return pillsHtml + tabsHtml + repHtml + ctx + legend(d) + '<div class="mgrid">' + cards + '</div>';
 }
 
 function matrix(d, title, keys, keyOf, labelOf) {
@@ -152,22 +164,53 @@ function matrix(d, title, keys, keyOf, labelOf) {
 
 function brandsView(d) {
   if (!d.brands.length) return '<div class="empty2">No brand was set for this run, so there are no mentions to count. Start a new report and enter your brand and competitors.</div>';
-  const answered = S.answered(d.cells);
+  const answered = S.answered(d.cells), sm = d.summary || {};
   const rows = d.brands.map(b => {
     const v = S.rate(answered, b.name), pos = S.avgPosition(answered, b.name);
+    const range = S.range((sm.by_brand || {})[b.name]);
     const cited = answered.filter(c => (c.mentions || []).some(m => m.name === b.name && m.cited)).length;
     const named = answered.filter(c => (c.mentions || []).some(m => m.name === b.name && m.mentioned)).length;
     return '<tr><td><span class="dot" style="--bg:' + colours[b.name].bg + '"></span><b>' + esc(b.name) + '</b>' + (b === d.brands[0] ? ' <small>(you)</small>' : '') + '</td>' +
       '<td><div class="bar" style="--bg:' + colours[b.name].bg + '"><i style="width:' + Math.round((v || 0) * 100) + '%"></i></div></td>' +
-      '<td class="num">' + S.pct(v) + '</td><td class="num">' + named + ' / ' + answered.length + '</td><td class="num">' + (pos == null ? '—' : '#' + pos.toFixed(1)) + '</td><td class="num">' + cited + '</td></tr>';
+      '<td class="num">' + S.pct(v) + '</td><td class="num">' + (range || '—') + '</td><td class="num">' + named + ' / ' + answered.length + '</td><td class="num">' + (pos == null ? '—' : '#' + pos.toFixed(1)) + '</td><td class="num">' + cited + '</td></tr>';
   }).join('');
-  const overall = '<div class="tblwrap"><table class="tbl"><tr><th>Brand</th><th>Share of answers</th><th>Rate</th><th>Answers naming it</th><th>Avg position</th><th>Cited as source</th></tr>' + rows + '</table></div>';
+  const overall = '<div class="tblwrap"><table class="tbl"><tr><th>Brand</th><th>Share of answers</th><th>Rate</th><th>Likely range</th><th>Answers naming it</th><th>Avg position</th><th>Cited as source</th></tr>' + rows + '</table></div>';
   const provs = shown(d).filter(p => p.available).map(p => p.id);
   const labelP = id => esc((d.providers.filter(p => p.id === id)[0] || {}).label || id);
-  return '<h2 class="h2b">Who gets named</h2>' + overall +
+  const note = '<p class="hint" style="margin:-18px 0 30px">Likely range: where the true rate probably sits (95%), given how many answers this run collected. More prompts, markets or repeats narrow it.</p>';
+  return '<h2 class="h2b">Who gets named</h2>' + overall + note + consistencyHtml(d) + citationsHtml(d) +
     '<h2 class="h2b">By model</h2>' + matrix(d, 'Model', provs, c => c.provider, labelP) +
     '<h2 class="h2b">By market</h2>' + matrix(d, 'Market', d.locations, c => c.location, l => S.market(l).flag + ' ' + esc(l)) +
     '<h2 class="h2b">By prompt</h2>' + matrix(d, 'Prompt', d.prompts, c => c.prompt, esc);
+}
+
+function consistencyHtml(d) {
+  const con = (d.summary || {}).consistency, main = d.brands[0];
+  if (!con || !main) return '';
+  const seg = (n, bg, fg, label) => n ? '<i style="flex:' + n + ';background:' + bg + ';color:' + fg + '">' + n + ' ' + label + '</i>' : '';
+  return '<h2 class="h2b">How reliably ' + esc(main.name) + ' is named</h2>' +
+    '<div style="display:flex;border:3px solid #0a0a0a;margin:0 0 10px;font-style:normal;font-weight:800;font-size:14px;line-height:2.4;text-align:center;overflow:hidden">' +
+    seg(con.always, '#0a0a0a', '#fff', 'every time') + seg(con.sometimes, '#ff3d00', '#0a0a0a', 'sometimes') + seg(con.never, '#f3f3ef', '#0a0a0a', 'never') + '</div>' +
+    '<p class="hint" style="margin:0 0 30px">Each of the ' + con.groups + ' model × prompt × market combinations was asked ' + d.repeats + ' times. “Sometimes” means the same model gave different answers to the same question: a mention you can’t count on.</p>';
+}
+
+function citationsHtml(d) {
+  const cit = (d.summary || {}).citations;
+  if (!cit) return d.web ? '' : '<h2 class="h2b">Who gets cited</h2><div class="empty2">No answer in this run showed its sources. Turn on web search (or include Perplexity, Gemini or AI Overviews) to see which websites AI answers draw on.</div>';
+  const main = d.brands[0];
+  const sh = cit.share;
+  const split = '<div style="display:flex;border:3px solid #0a0a0a;margin:0 0 10px;font-weight:800;font-size:14px;line-height:2.4;text-align:center;overflow:hidden">' +
+    (sh.own ? '<i style="font-style:normal;flex:' + sh.own + ';background:' + (main ? colours[main.name].bg : '#0a0a0a') + ';color:#fff">You ' + S.pct(sh.own) + '</i>' : '') +
+    (sh.competitors ? '<i style="font-style:normal;flex:' + sh.competitors + ';background:#C99A3E;color:#0a0a0a">Competitors ' + S.pct(sh.competitors) + '</i>' : '') +
+    (sh.other ? '<i style="font-style:normal;flex:' + sh.other + ';background:#f3f3ef;color:#0a0a0a">Other sites ' + S.pct(sh.other) + '</i>' : '') + '</div>';
+  const rows = cit.top_domains.map(x => {
+    const c = x.owner ? colours[x.owner] : null;
+    return '<tr><td><b>' + esc(x.domain) + '</b></td><td>' + (c ? '<span class="chip2" style="--bg:' + c.bg + ';--fg:' + c.fg + '">' + esc(x.owner) + '</span>' : 'Third party') + '</td>' +
+      '<td class="num">' + x.answers + '</td><td class="num">' + S.pct(x.share) + '</td></tr>';
+  }).join('');
+  return '<h2 class="h2b">Who gets cited</h2>' + split +
+    '<p class="hint" style="margin:0 0 16px">Share of all citations across the ' + cit.answers_with_sources + ' answers that showed sources. Domains are matched to brands by the websites you entered.</p>' +
+    '<div class="tblwrap"><table class="tbl"><tr><th>Most-cited domains</th><th>Belongs to</th><th>Answers citing it</th><th>Share of answers</th></tr>' + rows + '</table></div>';
 }
 
 function bannerHtml(d) {
@@ -200,6 +243,7 @@ function render() {
   $('out').querySelectorAll('[data-t]').forEach(b => b.onclick = () => { tab = b.dataset.t; render(); });
   $('out').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { promptIdx = +b.dataset.p; render(); });
   $('out').querySelectorAll('[data-m]').forEach(b => b.onclick = () => { marketSel = b.dataset.m; render(); });
+  $('out').querySelectorAll('[data-r]').forEach(b => b.onclick = () => { repSel = +b.dataset.r; render(); });
   const tb = $('trackBtn'); if (tb) tb.onclick = startTracking;
 }
 
@@ -207,7 +251,7 @@ async function startTracking() {
   const d = data, used = [...new Set(d.cells.filter(c => c.status !== 'unavailable').map(c => c.provider))];
   const body = {
     brand_name: d.brands[0].name, aliases: d.brands[0].aliases, domain: (d.brands[0].domains || [])[0],
-    competitors: d.brands.slice(1), prompts: d.prompts, locations: d.locations, providers: used, web: d.web, frequency: 'weekly'
+    competitors: d.brands.slice(1), prompts: d.prompts, locations: d.locations, providers: used, web: d.web, repeats: d.repeats || 1, frequency: 'weekly'
   };
   const ok = confirm('Track this weekly? A fresh run starts now and then every 7 days. Roughly ' + S.money(d.total_cost * 4.3) + ' a month at this size (you can pause or delete it any time).');
   if (!ok) return;

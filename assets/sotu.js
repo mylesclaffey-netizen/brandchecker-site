@@ -93,6 +93,8 @@
     return isNaN(d) ? iso : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   }
   function pct(v) { return v == null ? '—' : Math.round(v * 100) + '%'; }
+  // "40–82%": the 95% range the Worker computes (sotuStats.js); empty when there is none.
+  function range(s) { return s && s.low != null && s.high != null ? Math.round(s.low * 100) + '–' + Math.round(s.high * 100) + '%' : ''; }
   function money(v) { return '$' + (v < 0.01 ? v.toFixed(4) : (v < 0.1 ? v.toFixed(3) : v.toFixed(2))); }
   function ago(iso) {
     if (!iso) return '';
@@ -115,6 +117,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, money: money, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, money: money, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();
