@@ -109,6 +109,40 @@
     if (!m.mentioned) return { text: 'Not mentioned', cls: 'no' };
     return { text: 'Mentioned' + (m.position ? ' #' + m.position : ''), cls: 'yes' };
   }
+  var PROVIDER_LABELS = { chatgpt: 'ChatGPT', chatgpt_app: 'ChatGPT app', claude: 'Claude', perplexity: 'Perplexity', llama: 'Llama',
+    mistral: 'Mistral', ai_overviews: 'AI Overviews', gemini: 'Gemini', copilot: 'Copilot' };
+  function providerLabel(id) { return PROVIDER_LABELS[id] || id; }
+
+  // "What AI gets wrong about <brand>": fact-check groups from the Worker (sotuStats.js factStats).
+  function factsHtml(facts, brand) {
+    if (!facts) return '';
+    var head = '<h2 class="h2b">What AI gets wrong about ' + esc(brand) + '</h2>';
+    if (!facts.groups.length) return head + '<div class="empty2">None of the ' + facts.checked + ' answers that name ' + esc(brand) + ' contradict your fact sheet.</div>';
+    return head + '<p class="hint" style="margin:0 0 14px">' + facts.with_issues + ' of ' + facts.checked + ' answers naming ' + esc(brand) +
+      ' say something your fact sheet contradicts. Every quote is the model’s own words; the check is done by a small AI model, so confirm before acting.</p>' +
+      facts.groups.map(function (g) {
+        return '<div style="border:3px solid #0a0a0a;padding:14px 16px;margin:0 0 14px;background:#fff">' +
+          '<div style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;font-weight:800">Fact: ' + esc(g.correct) + '</div>' +
+          '<div class="hint" style="margin:2px 0 10px">Contradicted in ' + g.answers + ' answer' + (g.answers === 1 ? '' : 's') + ' · ' + g.providers.map(providerLabel).map(esc).join(', ') + '</div>' +
+          g.examples.map(function (x) {
+            return '<div class="quote" style="--bg:#ff3d00">“' + esc(x.quote) + '”<br><small>' + esc(x.claim) + ' — ' + esc(providerLabel(x.provider)) + ', ' + esc(x.location) + '</small></div>';
+          }).join('') + '</div>';
+      }).join('');
+  }
+
+  // Brands the answers name that aren't tracked (sotuStats.js discoverBrands). `addable`: show Add buttons.
+  function discoveredHtml(list, addable) {
+    if (!list || !list.length) return '';
+    return '<h2 class="h2b">Brands you’re not tracking</h2><p class="hint" style="margin:0 0 12px">Named in these answers but not on your list. ' +
+      (addable ? 'Add one to follow it from the next run.' : 'Add the ones that matter as competitors in your next report or tracker.') + '</p>' +
+      '<div class="tblwrap"><table class="tbl"><tr><th>Brand</th><th>Answers naming it</th><th>Named by</th>' + (addable ? '<th></th>' : '') + '</tr>' +
+      list.map(function (b) {
+        return '<tr><td><b>' + esc(b.name) + '</b>' + (b.variants && b.variants.length ? '<br><small>also ' + b.variants.map(esc).join(', ') + '</small>' : '') + '</td>' +
+          '<td class="num">' + b.answers + ' <small>(' + pct(b.share) + ')</small></td><td>' + b.providers.map(providerLabel).map(esc).join(', ') + '</td>' +
+          (addable ? '<td><button class="btn2 small" type="button" data-addcomp="' + esc(b.name) + '">Add to tracker</button></td>' : '') + '</tr>';
+      }).join('') + '</table></div>';
+  }
+
   function withPreset(href) {
     if (!PRESET) return href;
     return href + (href.indexOf('?') === -1 ? '?' : '&') + 'preset=' + encodeURIComponent(PRESET);
@@ -117,6 +151,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, money: money, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();

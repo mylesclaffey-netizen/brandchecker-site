@@ -83,6 +83,11 @@
       <p class="hint">Helps when your name is also an everyday word. Names like “Make” are only counted when written as a name, not as the verb.</p>
     </div>
     <div class="field">
+      <label for="facts">Facts about your brand (optional)</label>
+      <textarea id="facts" maxlength="1500" placeholder="Free plan: 1,000 operations a month&#10;Founded 2012 in Prague&#10;Connects 2,000+ apps"></textarea>
+      <p class="hint">One fact per line: pricing, plan limits, founding year, key features, where you operate. Every answer that names you is checked against these, and anything that contradicts them is flagged.</p>
+    </div>
+    <div class="field">
       <label for="competitors">Competitors (up to 5, one per line)</label>
       <textarea id="competitors" placeholder="rival.com&#10;another-rival.com"></textarea>
       <p class="hint">Names or domains. Each gets its own colour in the answers.</p>
@@ -204,7 +209,7 @@ async function submit() {
     brand_name: brand, domain: $('domain').value.trim(),
     aliases: $('aliases').value.split(',').map(s => s.trim()).filter(Boolean),
     competitors: lines('competitors'), prompts: lines('prompts'), locations: [...chosenMarkets],
-    providers: [...chosenModels], web: $('web').checked, frequency: $('freq').value, repeats: +$('repeats').value || 1
+    providers: [...chosenModels], web: $('web').checked, frequency: $('freq').value, repeats: +$('repeats').value || 1, facts: $('facts').value
   };
   if (!body.prompts.length) return showErr('Add at least one prompt.');
   if (!body.locations.length) return showErr('Pick at least one market.');
