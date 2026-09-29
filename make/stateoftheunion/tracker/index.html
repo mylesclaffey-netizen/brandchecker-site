@@ -173,7 +173,7 @@ function renderTrend(d) {
     '<div class="stats4">' + cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
     '<h2 class="h2b">Mention rate over time</h2>' + legend + chart(d) +
     (runs.length < 2 ? '<div class="banner2">The trend line appears after the next run' + (d.watch.next_run_at ? ' (due ' + when(d.watch.next_run_at) + ')' : '') + '. Each point is one full run.</div>' : '') +
-    timeline(d) + S.factsHtml(last.facts, main.name) + S.discoveredHtml(last.discovered, !window.SNAPSHOT) +
+    S.describeTrendHtml(runs, main.name, when) + S.describeHtml(last.describe, main.name) + timeline(d) + S.factsHtml(last.facts, main.name) + S.discoveredHtml(last.discovered, !window.SNAPSHOT) +
     '<h2 class="h2b">Latest run — ' + esc(main.name) + ' by model</h2><div class="tblwrap"><table class="tbl"><tr><th>Model</th><th>Mention rate</th><th>Answers</th></tr>' + provRows + '</table></div>' +
     citedHtml(d, last, colours) +
     '<h2 class="h2b">All runs</h2><div class="tblwrap"><table class="tbl"><tr><th>When</th><th>' + esc(main.name) + ' rate</th><th>Likely range</th><th>Avg position</th><th>Answers</th>' + (window.SNAPSHOT ? '' : '<th>Cost</th>') + '<th>Status</th>' + (window.SNAPSHOT ? '' : '<th></th>') + '</tr>' + hist + '</table></div>';

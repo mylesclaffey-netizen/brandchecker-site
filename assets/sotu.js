@@ -130,6 +130,46 @@
       }).join('');
   }
 
+  // "How models describe <brand>": per-dimension favourable/unfavourable counts and the answers' own phrases
+  // (Worker: factCheck.js readAbout traits, aggregated in sotuStats.js describeStats).
+  var GOOD = '#1b7040', BAD = '#c0321f';
+  function describeHtml(ds, brand) {
+    if (!ds || !ds.dims.length) return '';
+    var rows = ds.dims.map(function (d) {
+      var w = function (n) { return Math.round(100 * n / ds.answers); };
+      var phrases = (d.phrases || []).map(function (p) {
+        return '<span style="display:inline-block;margin:2px 4px 2px 0;padding:1px 7px;border:2px solid ' + (p.tone === '-' ? BAD : GOOD) + ';font-size:13px">' + esc(p.phrase) + (p.n > 1 ? ' <small>×' + p.n + '</small>' : '') + '</span>';
+      }).join('');
+      return '<tr><td><b>' + esc(d.label) + '</b></td>' +
+        '<td style="min-width:140px"><div style="display:flex;height:14px;border:2px solid #0a0a0a;background:#f3f3ef"><i style="width:' + w(d.pos) + '%;background:' + GOOD + '"></i><i style="width:' + w(d.neg) + '%;background:' + BAD + '"></i></div></td>' +
+        '<td class="num"><span style="color:' + GOOD + '">' + d.pos + ' +</span> / <span style="color:' + BAD + '">' + d.neg + ' −</span></td><td>' + phrases + '</td></tr>';
+    }).join('');
+    var best = (ds.best_for || []).length ? '<p style="margin:0 0 30px"><b>Who they say ' + esc(brand) + ' is best for:</b> ' + ds.best_for.map(function (b) { return '“' + esc(b.phrase) + '”' + (b.n > 1 ? ' ×' + b.n : ''); }).join(' · ') + '</p>' : '';
+    return '<h2 class="h2b">How models describe ' + esc(brand) + '</h2><p class="hint" style="margin:0 0 12px">From ' + ds.answers + ' answers that name ' + esc(brand) +
+      '. Green: described favourably on that point; red: unfavourably. The chips are the answers’ own words. Tagged by a small AI model.</p>' +
+      '<div class="tblwrap"><table class="tbl" style="margin:0 0 12px"><tr><th>Dimension</th><th>Share of answers</th><th>Favourable / unfavourable</th><th>What they say</th></tr>' + rows + '</table></div>' + best;
+  }
+
+  // Tracker: one row per dimension, one column per run (oldest → newest), each cell "favourable / unfavourable".
+  function describeTrendHtml(runs, brand, when) {
+    var rs = (runs || []).filter(function (r) { return r.describe && r.describe.dims.length; }).slice(-8);
+    if (rs.length < 2) return '';
+    var dims = [];
+    rs.forEach(function (r) { r.describe.dims.forEach(function (d) { if (!dims.some(function (x) { return x.dim === d.dim; })) dims.push({ dim: d.dim, label: d.label }); }); });
+    var head = '<tr><th>Dimension</th>' + rs.map(function (r) { return '<th>' + esc(when(r.created_at)) + '</th>'; }).join('') + '</tr>';
+    var body = dims.map(function (x) {
+      return '<tr><td><b>' + esc(x.label) + '</b></td>' + rs.map(function (r) {
+        var d = r.describe.dims.filter(function (y) { return y.dim === x.dim; })[0];
+        if (!d) return '<td class="num" style="color:#8a8a8a">—</td>';
+        var t = (d.pos - d.neg) / d.mentions;
+        var bg = t > 0.2 ? 'rgba(27,112,64,' + (0.12 + 0.4 * t).toFixed(2) + ')' : t < -0.2 ? 'rgba(192,50,31,' + (0.12 - 0.4 * t).toFixed(2) + ')' : '#f3f3ef';
+        return '<td class="num" style="background:' + bg + '">' + d.pos + ' / ' + d.neg + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+    return '<h2 class="h2b">How the description of ' + esc(brand) + ' changes, run by run</h2><p class="hint" style="margin:0 0 12px">Each cell: answers describing ' + esc(brand) +
+      ' favourably / unfavourably on that point. Green leans favourable, red unfavourable.</p><div class="tblwrap"><table class="tbl">' + head + body + '</table></div>';
+  }
+
   // Brands the answers name that aren't tracked (sotuStats.js discoverBrands). `addable`: show Add buttons.
   function discoveredHtml(list, addable) {
     if (!list || !list.length) return '';
@@ -151,6 +191,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();
