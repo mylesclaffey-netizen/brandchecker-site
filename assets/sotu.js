@@ -125,7 +125,7 @@
           '<div style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;font-weight:800">Fact: ' + esc(g.correct) + '</div>' +
           '<div class="hint" style="margin:2px 0 10px">Contradicted in ' + g.answers + ' answer' + (g.answers === 1 ? '' : 's') + ' · ' + g.providers.map(providerLabel).map(esc).join(', ') + '</div>' +
           g.examples.map(function (x) {
-            return '<div class="quote" style="--bg:#ff3d00">“' + esc(x.quote) + '”<br><small>' + esc(x.claim) + ' — ' + esc(providerLabel(x.provider)) + ', ' + esc(x.location) + '</small></div>';
+            return '<div class="quote" style="--bg:#ff3d00">“' + esc(x.quote.replace(/\*\*|__/g, '').trim()) + '”<br><small>' + esc(x.claim) + ' — ' + esc(providerLabel(x.provider)) + ', ' + esc(x.location) + '</small></div>';
           }).join('') + '</div>';
       }).join('');
   }
