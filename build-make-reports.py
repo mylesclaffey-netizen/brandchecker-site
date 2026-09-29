@@ -16,7 +16,7 @@ def swap(text, old, new):
 
 def nav(current):
     """The row of buttons at the top of every shared page; the page you are on is the blue one."""
-    items = [('/make/', '← Brand Checker for Make', None), ('/make/overview/', 'All models', 'overview')] + [('/make/%s/' % f, l, f) for f, l in FAMILIES.items()] + [('/make/state-of-the-llm-union/tracker/', 'Weekly tracker', 'tracker')]
+    items = [('/make/', '← Brand Checker for Make', None), ('/make/overview/', 'All models', 'overview')] + [('/make/%s/' % f, l, f) for f, l in FAMILIES.items()] + [('/make/state-of-the-llm-union/tracker/', 'Weekly tracker', 'tracker'), ('/make/app-pairs/', 'App pairs', 'app-pairs')]
     links = ''.join(' <a class="btn2 navb%s" href="%s"%s>%s</a>' % (' blue' if key == current else '', href, ' aria-current="page"' if key == current else '', label) for href, label, key in items)
     return '<div class="sotu-actions" style="margin-top:8px">' + links.strip() + '</div>'
 
@@ -56,3 +56,11 @@ body = open('templates/make-overview.html', encoding='utf-8').read().replace('__
 os.makedirs('make/overview', exist_ok=True)
 open('make/overview/index.html', 'w', encoding='utf-8').write(head + body)
 print('wrote make/overview/index.html')
+
+# ---- the app-pair visibility map: /make/app-pairs/ (reads make/data/app-pairs.json, made by build-make-app-pairs.mjs)
+head2 = t[:t.index('<div class="sotu-wrap">')]
+head2 = head2.replace('State Of The LLM Union tracker — Brand Checker for Make', 'App-pair map — Brand Checker for Make').replace('https://brandchecker.eu/make/state-of-the-llm-union/tracker/', 'https://brandchecker.eu/make/app-pairs/')
+body2 = open('templates/make-app-pairs.html', encoding='utf-8').read().replace('__NAV__', nav('app-pairs'))
+os.makedirs('make/app-pairs', exist_ok=True)
+open('make/app-pairs/index.html', 'w', encoding='utf-8').write(head2 + body2)
+print('wrote make/app-pairs/index.html')

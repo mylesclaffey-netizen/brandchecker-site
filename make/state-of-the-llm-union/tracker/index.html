@@ -25,7 +25,7 @@
   <p class="eyebrow">State Of The LLM Union</p>
   <h1>How AI models name Make</h1>
   <p class="sotu-sub">The same prompts are put to ChatGPT, Claude, Perplexity, Llama, Mistral and Google AI Overviews every week, and every result is kept, so you can see whether AI models name Make more or less over time.</p>
-  <div class="sotu-actions" style="margin-top:8px"><a class="btn2 navb" href="/make/">← Brand Checker for Make</a> <a class="btn2 navb" href="/make/overview/">All models</a> <a class="btn2 navb" href="/make/claude/">Claude</a> <a class="btn2 navb" href="/make/chatgpt/">ChatGPT</a> <a class="btn2 navb" href="/make/deepseek/">DeepSeek</a> <a class="btn2 navb" href="/make/perplexity/">Perplexity</a> <a class="btn2 navb" href="/make/gemini/">Gemini</a> <a class="btn2 navb blue" href="/make/state-of-the-llm-union/tracker/" aria-current="page">Weekly tracker</a></div>
+  <div class="sotu-actions" style="margin-top:8px"><a class="btn2 navb" href="/make/">← Brand Checker for Make</a> <a class="btn2 navb" href="/make/overview/">All models</a> <a class="btn2 navb" href="/make/claude/">Claude</a> <a class="btn2 navb" href="/make/chatgpt/">ChatGPT</a> <a class="btn2 navb" href="/make/deepseek/">DeepSeek</a> <a class="btn2 navb" href="/make/perplexity/">Perplexity</a> <a class="btn2 navb" href="/make/gemini/">Gemini</a> <a class="btn2 navb blue" href="/make/state-of-the-llm-union/tracker/" aria-current="page">Weekly tracker</a> <a class="btn2 navb" href="/make/app-pairs/">App pairs</a></div>
   <div id="list"></div>
   <div id="detail"></div>
 
@@ -146,7 +146,7 @@ function renderTrend(d) {
 
   $('detail').innerHTML =
     '<h2 class="h2b">' + esc(d.watch.name) + '</h2>' +
-    (window.SNAPSHOT ? '' : '<div class="sotu-actions" style="margin:-6px 0 18px"><button class="btn2 small solid" id="pdfBtn" type="button">Download PDF</button> <a class="btn2 small" href="' + S.printUrl({ watch: d.watch.id }) + '" target="_blank" rel="noopener">Print view</a></div>') +
+    (window.SNAPSHOT ? '' : '<div class="sotu-actions" style="margin:-6px 0 18px"><button class="btn2 small solid" id="pdfSumBtn" type="button">Summary PDF</button> <button class="btn2 small" id="pdfBtn" type="button">Full PDF</button> <a class="btn2 small" href="' + S.printUrl({ watch: d.watch.id }) + '" target="_blank" rel="noopener">Print view</a></div>') +
     changesHtml(last) + (window.SNAPSHOT ? '' : alertsHtml(d.watch)) +
     '<div class="stats4">' + cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
     '<h2 class="h2b">Mention rate over time</h2>' + legend + chart(d) +
@@ -191,6 +191,8 @@ function alertsHtml(w) {
 function wireDetail() {
   const pb = $('pdfBtn');
   if (pb) pb.onclick = () => S.downloadPdf({ watch: selected }, pb, 'state-of-the-llm-union-tracker-' + new Date().toISOString().slice(0, 10) + '.pdf');
+  const ps = $('pdfSumBtn');
+  if (ps) ps.onclick = () => S.downloadPdf({ watch: selected, summary: true }, ps, 'state-of-the-llm-union-tracker-' + new Date().toISOString().slice(0, 10) + '-summary.pdf');
   const save = $('alSave');
   if (save) save.onclick = async () => {
     save.disabled = true;

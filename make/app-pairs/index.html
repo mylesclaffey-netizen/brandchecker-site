@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App-pair map — Brand Checker for Make</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="robots" content="noindex">
+<script src="/assets/visitor.js"></script>
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--you:#ff3d00}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#fff;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;line-height:1.5;padding:22px 16px 60px;font-size:16px}
+  a{color:inherit}
+  .sidenav{margin-top:36px;padding-top:20px;border-top:3px solid #0a0a0a;display:flex;flex-direction:column;gap:13px}
+  .sidenav-link{font-size:14px;font-weight:600}
+  body.embed .sidenav{display:none}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+<link rel="stylesheet" href="/assets/sotu.css">
+</head>
+<body>
+<div class="sotu-wrap">
+  <p class="eyebrow">Brand Checker for Make · App-pair map</p>
+  <h1>Where AI sends people connecting two apps</h1>
+  <p class="sotu-sub" id="sub">Loading…</p>
+  <div class="sotu-actions" style="margin-top:8px"><a class="btn2 navb" href="/make/">← Brand Checker for Make</a> <a class="btn2 navb" href="/make/overview/">All models</a> <a class="btn2 navb" href="/make/claude/">Claude</a> <a class="btn2 navb" href="/make/chatgpt/">ChatGPT</a> <a class="btn2 navb" href="/make/deepseek/">DeepSeek</a> <a class="btn2 navb" href="/make/perplexity/">Perplexity</a> <a class="btn2 navb" href="/make/gemini/">Gemini</a> <a class="btn2 navb" href="/make/state-of-the-llm-union/tracker/">Weekly tracker</a> <a class="btn2 navb blue" href="/make/app-pairs/" aria-current="page">App pairs</a></div>
+  <div class="stats4" id="cards"></div>
+  <div id="out"></div>
+  <p class="hint" id="method"></p>
+  <div class="sidenav"><a href="/make/" class="sidenav-link">← Back to Brand Checker for Make</a></div>
+</div>
+
+<style>
+  .who { display: inline-block; padding: 2px 8px; border: 2px solid #0a0a0a; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+  .who.none { border-style: dashed; color: #6b665d; font-weight: 500; }
+  .who small { font-weight: 500; }
+  .pairs td { vertical-align: top; }
+  .pairs .pn { font-weight: 800; white-space: nowrap; }
+  .cat { background: #0a0a0a; color: #fff; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; font-size: 12px; }
+  .gr { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; white-space: nowrap; }
+  .pg { font-size: 12px; word-break: break-all; }
+</style>
+
+<script src="/assets/sotu.js"></script>
+<script>
+// The Make app-pair visibility map. Data: /make/data/app-pairs.json, made by build-make-app-pairs.mjs from State Of
+// The LLM Union runs (ChatGPT app, Perplexity, Google AI Overview + organic) and DataForSEO search volumes.
+const S = window.SOTU, esc = S.esc, $ = id => document.getElementById(id);
+const SURFACES = [['chatgpt_app', 'ChatGPT app'], ['perplexity', 'Perplexity'], ['ai_overviews', 'Google AI Overview']];
+const COLOURS = { 'Make': ['#34517A', '#fff'], 'Zapier': ['#C99A3E', '#0a0a0a'], 'n8n': ['#5B8C3E', '#fff'], 'Workato': ['#A79FD1', '#0a0a0a'],
+  'Power Automate': ['#D97A66', '#0a0a0a'], 'Native integration': ['#e2e2dc', '#0a0a0a'], 'Other': ['#fff', '#3d3d3d'] };
+const pct = (n, d) => d ? Math.round(100 * n / d) + '%' : '—';
+
+function chip(s) {
+  if (!s || s.who === 'none' || s.who === 'failed') return '<span class="who none">' + (s && s.who === 'failed' ? 'failed' : 'no answer') + '</span>';
+  const c = COLOURS[s.who] || COLOURS.Other;
+  // After a native recommendation, the automation platform the answer names first (Make's real contest).
+  const then = s.who === 'Native integration' && s.first_tool ? '<br><small>then <b>' + esc(s.first_tool) + '</b></small>' : '';
+  const makeToo = s.make_named && s.who !== 'Make' && s.first_tool !== 'Make' ? '<br><small>Make also named</small>' : '';
+  return '<span class="who" style="background:' + c[0] + ';color:' + c[1] + '">' + esc(s.who) + '</span>' + then + makeToo;
+}
+function googleCell(g) {
+  const r = x => x ? '#' + x.rank : '—';
+  return '<span class="gr">Make ' + r(g.make) + '<br>Zapier ' + r(g.zapier) + '</span>';
+}
+function citedCell(p) {
+  const urls = [...new Set(SURFACES.flatMap(([id]) => (p.surfaces[id].make_cited || [])))];
+  const rank = p.google.make && p.google.make.url;
+  return (urls.length ? urls.slice(0, 2).map(u => '<div class="pg">cited: ' + esc(u.replace(/^https?:\/\/(www\.)?/, '').split('?')[0]) + '</div>').join('') : '<span class="hint">not cited</span>') +
+    (rank ? '<div class="pg">ranks: ' + esc(rank.replace(/^https?:\/\/(www\.)?/, '')) + '</div>' : '');
+}
+
+function render(d) {
+  const P = d.pairs, all = P.flatMap(p => SURFACES.map(([id]) => p.surfaces[id])).filter(s => s.who !== 'none' && s.who !== 'failed');
+  const first = who => all.filter(s => s.who === who).length;
+  const onPage1 = P.filter(p => p.google.make && p.google.make.rank <= 10).length;
+  const zapPage1 = P.filter(p => p.google.zapier && p.google.zapier.rank <= 10).length;
+  const cited = P.reduce((t, p) => t + SURFACES.filter(([id]) => (p.surfaces[id].make_cited || []).length).length, 0);
+  $('sub').textContent = P.length + ' app pairs, each asked as “What’s the best way to connect A to B?” in the ' + d.market + ' on ' + SURFACES.map(s => s[1]).join(', ') +
+    ', and searched on Google. ' + new Date(d.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + '.';
+  // Among answers that name any automation platform: which one comes first.
+  const withTool = all.filter(s => s.first_tool), tool = who => withTool.filter(s => s.first_tool === who).length;
+  const cards = [
+    { cls: 'accent', lbl: 'First automation tool named: Make', val: pct(tool('Make'), withTool.length), sub: tool('Make') + ' of ' + withTool.length + ' answers naming a tool' },
+    { lbl: 'First automation tool: Zapier', val: pct(tool('Zapier'), withTool.length), sub: tool('Zapier') + ' answers' },
+    { lbl: 'Native integration first', val: pct(first('Native integration'), all.length), sub: 'AI’s first answer: the apps’ own connection' },
+    { lbl: 'Make named at all', val: pct(all.filter(s => s.make_named).length, all.length), sub: 'of ' + all.length + ' AI answers' },
+    { lbl: 'Make on Google page 1', val: onPage1 + '/' + P.length, sub: 'pairs (Zapier: ' + zapPage1 + ')' },
+    { lbl: 'make.com cited', val: cited, sub: 'AI answers citing a make.com page' }
+  ];
+  $('cards').innerHTML = cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('');
+
+  // By category: who wins, per category.
+  const catRows = d.categories.map(cat => {
+    const ps = P.filter(p => p.category === cat), ans = ps.flatMap(p => SURFACES.map(([id]) => p.surfaces[id])).filter(s => s.who !== 'none' && s.who !== 'failed');
+    const f = who => pct(ans.filter(s => s.who === who).length, ans.length);
+    const wt = ans.filter(s => s.first_tool), t = who => pct(wt.filter(s => s.first_tool === who).length, wt.length);
+    return '<tr><td><b>' + esc(cat) + '</b></td><td class="num">' + f('Native integration') + '</td><td class="num">' + t('Make') + '</td><td class="num">' + t('Zapier') + '</td><td class="num">' + t('n8n') +
+      '</td><td class="num">' + pct(ans.filter(s => s.make_named).length, ans.length) + '</td><td class="num">' + ps.filter(p => p.google.make && p.google.make.rank <= 10).length + '/' + ps.length + '</td></tr>';
+  }).join('');
+  let h = '<h2 class="h2b">By category</h2><div class="tblwrap"><table class="tbl"><tr><th>Category</th><th>Native first</th><th>First tool: Make</th><th>First tool: Zapier</th><th>First tool: n8n</th><th>Make named</th><th>Make on Google page 1</th></tr>' + catRows + '</table></div>';
+
+  // Worklist: highest priority first (search demand × how much is lost, AI and Google).
+  const work = P.slice().sort((a, b) => b.priority - a.priority).filter(p => p.priority > 0).slice(0, 12);
+  h += '<h2 class="h2b">Worklist: the pairs to fix first</h2><p class="hint" style="margin:0 0 12px">Ranked by search demand for “A B integration” and how much Make is missing: not recommended first, not named, not on Google page 1.</p>' +
+    '<div class="tblwrap"><table class="tbl pairs"><tr><th>#</th><th>Pair</th><th>Searches / mo</th>' + SURFACES.map(s => '<th>' + s[1] + '</th>').join('') + '<th>Google</th><th>make.com page</th></tr>' +
+    work.map((p, i) => '<tr><td class="num">' + (i + 1) + '</td><td class="pn">' + esc(p.a) + ' → ' + esc(p.b) + '<br><small style="font-weight:500">' + esc(p.category) + '</small></td><td class="num">' + (p.volume == null ? '—' : p.volume.toLocaleString()) + '</td>' +
+      SURFACES.map(([id]) => '<td>' + chip(p.surfaces[id]) + '</td>').join('') + '<td>' + googleCell(p.google) + '</td><td>' + citedCell(p) + '</td></tr>').join('') + '</table></div>';
+
+  // The full map, by category.
+  h += '<h2 class="h2b">Every pair</h2><div class="tblwrap"><table class="tbl pairs"><tr><th>Pair</th><th>Searches / mo</th>' + SURFACES.map(s => '<th>' + s[1] + '</th>').join('') + '<th>Google</th><th>make.com page</th></tr>' +
+    d.categories.map(cat => '<tr><td colspan="' + (SURFACES.length + 4) + '" class="cat">' + esc(cat) + '</td></tr>' +
+      P.filter(p => p.category === cat).map(p => '<tr><td class="pn">' + esc(p.a) + ' → ' + esc(p.b) + '</td><td class="num">' + (p.volume == null ? '—' : p.volume.toLocaleString()) + '</td>' +
+        SURFACES.map(([id]) => '<td>' + chip(p.surfaces[id]) + '</td>').join('') + '<td>' + googleCell(p.google) + '</td><td>' + citedCell(p) + '</td></tr>').join('')).join('') + '</table></div>';
+
+  // What ChatGPT searched for while answering — shows where it looks (e.g. site:make.com vs site:zapier.com).
+  const qs = {};
+  P.forEach(p => (p.surfaces.chatgpt_app.queries || []).forEach(q => { const k = (q.match(/site:([\w.-]+)/) || [])[1]; if (k) qs[k] = (qs[k] || 0) + 1; }));
+  const siteQs = Object.entries(qs).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  if (siteQs.length) h += '<h2 class="h2b">Which sites ChatGPT searched</h2><p class="hint" style="margin:0 0 8px">When the ChatGPT app searches while answering, these are the sites it restricted searches to (site:…), across all pairs.</p><p>' +
+    siteQs.map(([site, n]) => '<b>' + esc(site) + '</b> ×' + n).join(' · ') + '</p>';
+  $('out').innerHTML = h;
+  $('method').innerHTML = 'Method: one answer per pair per surface (US), from State Of The LLM Union runs. Each cell shows what the answer recommends first — the apps’ own (native) connection or an automation platform, whichever comes earlier in the answer — and, after a native recommendation, the automation platform it names first. Google positions are the organic top 10 for the same question. Searches/month from DataForSEO for “A B integration”. Cost of this snapshot: $' + d.total_cost + '.';
+}
+
+fetch('/make/data/app-pairs.json').then(r => r.json()).then(render).catch(() => { $('sub').textContent = 'The map could not be loaded.'; });
+</script>
+</body>
+</html>
