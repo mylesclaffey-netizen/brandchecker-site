@@ -95,7 +95,7 @@ function modelCard(d, p, cell) {
   if (!p.available) {
     badge = '<span class="badge2 na">Not connected</span>';
     body = '<div class="answer2 empty">' + esc(p.label) + ' is not connected on this account yet.</div>';
-  } else if (!cell || cell.status === 'pending') {
+  } else if (!cell || cell.status === 'pending' || cell.status === 'running') {
     badge = '<span class="badge2 na">Waiting…</span>';
     body = '<div class="answer2 empty">This answer is still being fetched.</div>';
   } else if (cell.status === 'failed') {
