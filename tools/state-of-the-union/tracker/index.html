@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>State Of The Union trackers</title>
+<title>State Of The LLM Union trackers</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <meta name="robots" content="noindex">
@@ -22,7 +22,7 @@
 </head>
 <body>
 <div class="sotu-wrap">
-  <p class="eyebrow">State Of The Union</p>
+  <p class="eyebrow">State Of The LLM Union</p>
   <h1>My trackers</h1>
   <p class="sotu-sub">Each tracker re-runs your prompts on a schedule and keeps every result, so you can see whether AI models name your brand more or less over time.</p>
   <div class="sotu-actions"><a class="btn2 solid" id="newBtn" href="/tools/state-of-the-union/">New tracker</a></div>
@@ -30,7 +30,7 @@
   <div id="detail"></div>
 
   <div class="sidenav">
-    <a href="/tools/state-of-the-union/" class="sidenav-link">← New State Of The Union report</a>
+    <a href="/tools/state-of-the-union/" class="sidenav-link">← New State Of The LLM Union report</a>
     <a href="/" class="sidenav-link">← Back to tools</a>
   </div>
 </div>
@@ -190,7 +190,7 @@ function alertsHtml(w) {
 
 function wireDetail() {
   const pb = $('pdfBtn');
-  if (pb) pb.onclick = () => S.downloadPdf({ watch: selected }, pb, 'state-of-the-union-tracker-' + new Date().toISOString().slice(0, 10) + '.pdf');
+  if (pb) pb.onclick = () => S.downloadPdf({ watch: selected }, pb, 'state-of-the-llm-union-tracker-' + new Date().toISOString().slice(0, 10) + '.pdf');
   const save = $('alSave');
   if (save) save.onclick = async () => {
     save.disabled = true;

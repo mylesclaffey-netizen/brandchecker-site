@@ -5,13 +5,13 @@
 <meta name="robots" content="noindex, nofollow">
 <script src="/assets/visitor.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>State Of The Union report</title>
+<title>State Of The LLM Union report</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Brand Checker">
 <meta property="og:url" content="https://brandchecker.eu/tools/state-of-the-union/report/">
-<meta property="og:title" content="State Of The Union report — Brand Checker">
+<meta property="og:title" content="State Of The LLM Union report — Brand Checker">
 <meta property="og:description" content="How AI models answer your prompts, market by market, and how often they name your brand versus your competitors.">
 <meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
 <meta name="twitter:card" content="summary_large_image">
@@ -29,14 +29,14 @@
 </head>
 <body>
 <div class="sotu-wrap">
-  <p class="eyebrow">State Of The Union</p>
+  <p class="eyebrow">State Of The LLM Union</p>
   <h1 id="rTitle">Loading…</h1>
   <p class="sotu-sub" id="rSub"></p>
   <div id="banner"></div>
   <div id="out"></div>
 
   <div class="sidenav">
-    <a href="/tools/state-of-the-union/" class="sidenav-link">← New State Of The Union report</a>
+    <a href="/tools/state-of-the-union/" class="sidenav-link">← New State Of The LLM Union report</a>
     <a href="/tools/state-of-the-union/tracker/" class="sidenav-link" id="trackersLink">My trackers →</a>
     <a href="/" class="sidenav-link">← Back to tools</a>
   </div>
@@ -380,7 +380,7 @@ function render() {
   $('out').querySelectorAll('[data-r]').forEach(b => b.onclick = () => { repSel = +b.dataset.r; render(); });
   const tb = $('trackBtn'); if (tb) tb.onclick = startTracking;
   const gc = $('gscConnect'); if (gc) gc.onclick = gscConnect;
-  const pb = $('pdfBtn'); if (pb) pb.onclick = () => S.downloadPdf({ id: data.id }, pb, 'state-of-the-union-' + (data.brand_name || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + String(data.created_at).slice(0, 10) + '.pdf');
+  const pb = $('pdfBtn'); if (pb) pb.onclick = () => S.downloadPdf({ id: data.id }, pb, 'state-of-the-llm-union-' + (data.brand_name || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + String(data.created_at).slice(0, 10) + '.pdf');
   $('out').querySelectorAll('[data-addcomp]').forEach(b => b.onclick = async () => {
     b.disabled = true;
     const r = await S.api('/state-of-union/watch/add-competitor', { id: data.watch_id, name: b.dataset.addcomp });
@@ -411,7 +411,7 @@ async function load() {
     // A muted "empty" box read as "nothing here" rather than "something went wrong" — this is the
     // same fix already made on every other report-backed tool page.
     $('rTitle').textContent = 'Not found';
-    $('out').innerHTML = '<p class="err">' + esc(r.error) + ' — start a new report from State Of The Union.</p>';
+    $('out').innerHTML = '<p class="err">' + esc(r.error) + ' — start a new report from State Of The LLM Union.</p>';
     window.scrollTo(0, 0);
     return;
   }
@@ -431,7 +431,7 @@ async function load() {
 
 if (!S.CODE || !ID) {
   $('rTitle').textContent = 'No report';
-  $('out').innerHTML = '<p class="err">This page needs a report link. Start a report from the State Of The Union tool.</p>';
+  $('out').innerHTML = '<p class="err">This page needs a report link. Start a report from the State Of The LLM Union tool.</p>';
 } else {
   load();
 }

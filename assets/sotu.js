@@ -1,4 +1,4 @@
-/* State Of The Union — shared helpers for the form, report and tracker pages. */
+/* State Of The LLM Union — shared helpers for the form, report and tracker pages. */
 (function () {
   var API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
   var Q = new URLSearchParams(location.search);
@@ -227,7 +227,7 @@
       })
       .then(function (blob) {
         var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download = filename || 'state-of-the-union.pdf';
+        a.href = URL.createObjectURL(blob); a.download = filename || 'state-of-the-llm-union.pdf';
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
       })

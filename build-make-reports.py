@@ -29,14 +29,14 @@ for fam, label in FAMILIES.items():
                 nav(fam))
 
     page = swap(page, '<a href="/" class="sidenav-link">← Back to tools</a>', '<a href="/make/" class="sidenav-link">← Back to Brand Checker for Make</a>')
-    page = swap(page, '<a href="/tools/state-of-the-union/" class="sidenav-link">State Of The Union — across AI assistants →</a>\n      <a href="/tools/history/" class="sidenav-link">My history →</a>\n      ', '')
+    page = swap(page, '<a href="/tools/state-of-the-union/" class="sidenav-link">State Of The LLM Union — across AI assistants →</a>\n      <a href="/tools/history/" class="sidenav-link">My history →</a>\n      ', '')
     os.makedirs('make/' + fam, exist_ok=True)
     open('make/%s/index.html' % fam, 'w', encoding='utf-8').write(page)
     print('wrote make/%s/index.html' % fam)
 
-# ---- the State Of The Union tracker for Make: /make/stateoftheunion/tracker/ (live data from the worker's public-trend endpoint; the watch id must be listed in PUBLIC_TRACKERS in worker/wrangler.toml)
+# ---- the State Of The LLM Union tracker for Make: /make/stateoftheunion/tracker/ (live data from the worker's public-trend endpoint; the watch id must be listed in PUBLIC_TRACKERS in worker/wrangler.toml)
 t = open('tools/state-of-the-union/tracker/index.html', encoding='utf-8').read()
-t = swap(t, '<title>State Of The Union trackers</title>', '<title>State Of The Union tracker — Brand Checker for Make</title>') if '<title>State Of The Union trackers</title>' in t else t
+t = swap(t, '<title>State Of The LLM Union trackers</title>', '<title>State Of The LLM Union tracker — Brand Checker for Make</title>') if '<title>State Of The LLM Union trackers</title>' in t else t
 t = swap(t, '<script src="/assets/sotu.js"></script>', '<script>window.SNAPSHOT = true; window.PUBLIC_TRACKER = "feb38601-904d-4c89-819a-030f29946b44";</script>\n<script src="/assets/sotu.js"></script>')
 t = swap(t, '<h1>My trackers</h1>', '<h1>How AI models name Make</h1>')
 t = swap(t, '<p class="sotu-sub">Each tracker re-runs your prompts on a schedule and keeps every result, so you can see whether AI models name your brand more or less over time.</p>',
@@ -44,14 +44,14 @@ t = swap(t, '<p class="sotu-sub">Each tracker re-runs your prompts on a schedule
 t = swap(t, '<div class="sotu-actions"><a class="btn2 solid" id="newBtn" href="/tools/state-of-the-union/">New tracker</a></div>',
          nav('tracker'))
 t = swap(t, "$('newBtn').setAttribute('href', link('/tools/state-of-the-union/'));", '')
-t = swap(t, '<a href="/tools/state-of-the-union/" class="sidenav-link">← New State Of The Union report</a>\n    <a href="/" class="sidenav-link">← Back to tools</a>', '<a href="/make/" class="sidenav-link">← Back to Brand Checker for Make</a>')
+t = swap(t, '<a href="/tools/state-of-the-union/" class="sidenav-link">← New State Of The LLM Union report</a>\n    <a href="/" class="sidenav-link">← Back to tools</a>', '<a href="/make/" class="sidenav-link">← Back to Brand Checker for Make</a>')
 os.makedirs('make/stateoftheunion/tracker', exist_ok=True)
 open('make/stateoftheunion/tracker/index.html', 'w', encoding='utf-8').write(t)
 print('wrote make/stateoftheunion/tracker/index.html')
 
 # ---- one chart of Make across every family: /make/overview/ (reads the five make/data/<family>.json files)
 head = t[:t.index('<div class="sotu-wrap">')]
-head = head.replace('State Of The Union tracker — Brand Checker for Make', 'Make across every AI model — Brand Checker for Make').replace('https://brandchecker.eu/make/stateoftheunion/tracker/', 'https://brandchecker.eu/make/overview/')
+head = head.replace('State Of The LLM Union tracker — Brand Checker for Make', 'Make across every AI model — Brand Checker for Make').replace('https://brandchecker.eu/make/stateoftheunion/tracker/', 'https://brandchecker.eu/make/overview/')
 body = open('templates/make-overview.html', encoding='utf-8').read().replace('__NAV__', nav('overview'))
 os.makedirs('make/overview', exist_ok=True)
 open('make/overview/index.html', 'w', encoding='utf-8').write(head + body)

@@ -1,4 +1,4 @@
-/* State Of The Union — shared components (stat cards, tabs, model cards, brand colours, chart).
+/* State Of The LLM Union — shared components (stat cards, tabs, model cards, brand colours, chart).
    Builds on assets/theme.css: black ink, white paper, vermilion accent, square corners. */
 .sotu-wrap{max-width:1100px;margin:0 auto;padding:8px 0 60px}
 .sotu-wrap h1{font-size:clamp(34px,5.5vw,64px);margin:12px 0 8px}
