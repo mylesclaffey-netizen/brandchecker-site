@@ -309,9 +309,29 @@ function timelineView(d, colours) {
         : '<div class="quote none">Does not mention ' + esc(main.name) + ' in this answer.</div>') + '</div>';
   }).join('');
 
-  return '<h2 class="h2b">Where ' + esc(main.name) + ' is mentioned, by model release</h2>' + legend + '<div class="chart">' + svg + '</div>' +
+  return '<h2 class="h2b">Where ' + esc(main.name) + ' is mentioned, by model release</h2>' + legend + '<div class="chart">' + svg + '</div>' + traitsByModel(rows, main) +
     '<h2 class="h2b">What each model says about ' + esc(main.name) + '</h2><div class="tl">' + list + '</div>' +
     '<p class="hint">The summary is written by a small AI model reading the answer, so check it against the quoted sentences, which are the model’s own words.</p>';
+}
+
+// How each model describes the brand, oldest release first: one row per dimension, one column per model, each cell
+// the model's own phrase, green when favourable and red when not (Worker: factCheck.js readAbout traits).
+function traitsByModel(rows, main) {
+  const tagged = rows.filter(r => Array.isArray(r.traits));
+  if (tagged.length < 2) return '';
+  const labels = { ease_of_use: 'Ease of use', power: 'Power & flexibility', price: 'Price & value', integrations: 'Integrations', support: 'Support',
+    reliability: 'Reliability', scalability: 'Scalability', enterprise: 'Enterprise & security', features: 'Features & innovation' };
+  const dims = Object.keys(labels).filter(k => tagged.some(r => r.traits.some(t => t.dim === k)));
+  if (!dims.length) return '';
+  const short = r => esc(r.label.replace(/^Claude |^GPT-|^DeepSeek |^Gemini /, ''));
+  const head = '<tr><th>Dimension</th>' + tagged.map(r => '<th>' + short(r) + '<br><small style="font-weight:400">' + esc(S.fmtDate(r.released)) + '</small></th>').join('') + '</tr>';
+  const body = dims.map(k => '<tr><td><b>' + labels[k] + '</b></td>' + tagged.map(r => {
+    const t = r.traits.find(x => x.dim === k);
+    return t ? '<td style="background:' + (t.tone === '-' ? 'rgba(192,50,31,.16)' : 'rgba(27,112,64,.16)') + ';font-size:13px">' + (t.tone === '-' ? '− ' : '+ ') + esc(t.phrase) + '</td>' : '<td style="color:#8a8a8a">—</td>';
+  }).join('') + '</tr>').join('');
+  const best = tagged.filter(r => r.best_for).length ? '<tr><td><b>Best for</b></td>' + tagged.map(r => '<td style="font-size:13px">' + esc(r.best_for || '—') + '</td>').join('') + '</tr>' : '';
+  return '<h2 class="h2b">How each model describes ' + esc(main.name) + '</h2><p class="hint" style="margin:0 0 12px">Oldest release on the left. Each cell is the model’s own phrase; green favourable, red unfavourable, — where it didn’t say. Tagged by a small AI model.</p>' +
+    '<div class="tblwrap"><table class="tbl">' + head + body + best + '</table></div>';
 }
 
 // Quotes are short excerpts; find the brand's terms inside one so it can be coloured like everywhere else.
@@ -372,7 +392,7 @@ function show(d, update) {
   current = d;
   if (!update) view = window.SNAPSHOT ? 'timeline' : 'compare';
   $('rBody').dataset.compare = '<div class="stats4">' + cards.filter(c => !(window.SNAPSHOT && /^(Cheapest|Fastest|Total cost)/.test(c.lbl))).map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val" style="font-size:' + (String(c.val).length > 6 ? '30px' : '44px') + '">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
-    legend + '<div class="mgrid">' + d.results.map(r => card(d, r, colours)).join('') + '</div>' + matrix;
+    legend + '<div class="mgrid">' + d.results.map(r => card(d, r, colours)).join('') + '</div>' + matrix + (main ? S.describeHtml(d.describe, main.name) : '');
   renderView();
   if (!update) window.scrollTo(0, 0);
 }
