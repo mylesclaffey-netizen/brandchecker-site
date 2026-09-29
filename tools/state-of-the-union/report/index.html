@@ -187,7 +187,7 @@ function brandsView(d) {
 function consistencyHtml(d) {
   const con = (d.summary || {}).consistency, main = d.brands[0];
   if (!con || !main) return '';
-  const seg = (n, bg, fg, label) => n ? '<i style="flex:' + n + ';background:' + bg + ';color:' + fg + '">' + n + ' ' + label + '</i>' : '';
+  const seg = (n, bg, fg, label) => n ? '<i style="font-style:normal;flex:' + n + ' 0 auto;white-space:nowrap;padding:0 8px;background:' + bg + ';color:' + fg + '">' + n + ' ' + label + '</i>' : '';
   return '<h2 class="h2b">How reliably ' + esc(main.name) + ' is named</h2>' +
     '<div style="display:flex;border:3px solid #0a0a0a;margin:0 0 10px;font-style:normal;font-weight:800;font-size:14px;line-height:2.4;text-align:center;overflow:hidden">' +
     seg(con.always, '#0a0a0a', '#fff', 'every time') + seg(con.sometimes, '#ff3d00', '#0a0a0a', 'sometimes') + seg(con.never, '#f3f3ef', '#0a0a0a', 'never') + '</div>' +
@@ -200,9 +200,9 @@ function citationsHtml(d) {
   const main = d.brands[0];
   const sh = cit.share;
   const split = '<div style="display:flex;border:3px solid #0a0a0a;margin:0 0 10px;font-weight:800;font-size:14px;line-height:2.4;text-align:center;overflow:hidden">' +
-    (sh.own ? '<i style="font-style:normal;flex:' + sh.own + ';background:' + (main ? colours[main.name].bg : '#0a0a0a') + ';color:#fff">You ' + S.pct(sh.own) + '</i>' : '') +
-    (sh.competitors ? '<i style="font-style:normal;flex:' + sh.competitors + ';background:#C99A3E;color:#0a0a0a">Competitors ' + S.pct(sh.competitors) + '</i>' : '') +
-    (sh.other ? '<i style="font-style:normal;flex:' + sh.other + ';background:#f3f3ef;color:#0a0a0a">Other sites ' + S.pct(sh.other) + '</i>' : '') + '</div>';
+    (sh.own ? '<i style="font-style:normal;white-space:nowrap;padding:0 8px;flex:' + sh.own + ' 0 auto;background:' + (main ? colours[main.name].bg : '#0a0a0a') + ';color:#fff">You ' + S.pct(sh.own) + '</i>' : '') +
+    (sh.competitors ? '<i style="font-style:normal;white-space:nowrap;padding:0 8px;flex:' + sh.competitors + ' 0 auto;background:#C99A3E;color:#0a0a0a">Competitors ' + S.pct(sh.competitors) + '</i>' : '') +
+    (sh.other ? '<i style="font-style:normal;white-space:nowrap;padding:0 8px;flex:' + sh.other + ' 0 auto;background:#f3f3ef;color:#0a0a0a">Other sites ' + S.pct(sh.other) + '</i>' : '') + '</div>';
   const rows = cit.top_domains.map(x => {
     const c = x.owner ? colours[x.owner] : null;
     return '<tr><td><b>' + esc(x.domain) + '</b></td><td>' + (c ? '<span class="chip2" style="--bg:' + c.bg + ';--fg:' + c.fg + '">' + esc(x.owner) + '</span>' : 'Third party') + '</td>' +

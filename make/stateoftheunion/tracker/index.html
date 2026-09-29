@@ -57,7 +57,7 @@ function card(w) {
     '<span class="status2 ' + w.status + '">' + w.status + ' · ' + w.frequency + '</span>' +
     '<div class="name">' + esc(w.name) + '</div>' +
     '<div class="meta">' + esc(w.brand) + ' vs ' + esc((w.competitors || []).join(', ') || 'no competitors') + '</div>' +
-    '<div class="meta">' + w.prompts.length + ' prompt' + (w.prompts.length === 1 ? '' : 's') + ' · ' + w.locations.map(l => S.market(l).short).join(' ') + ' · ' + w.providers.length + ' models · ' + (w.web ? 'web on' : 'web off') + '</div>' +
+    '<div class="meta">' + w.prompts.length + ' prompt' + (w.prompts.length === 1 ? '' : 's') + ' · ' + w.locations.map(l => S.market(l).short).join(' ') + ' · ' + w.providers.length + ' models · ' + (w.web ? 'web on' : 'web off') + (w.repeats > 1 ? ' · asked ' + w.repeats + '×' : '') + '</div>' +
     '<div class="meta">' + w.runs + ' run' + (w.runs === 1 ? '' : 's') + ' · last ' + when(w.last_run_at) + ' · next ' + (w.status === 'active' ? when(w.next_run_at) : 'paused') + ' · ≈ ' + S.money(w.estimated_cost_per_run_usd) + ' per run</div>' +
     '<div class="row"><button class="btn2 small solid" data-view="' + w.id + '">View trend</button>' +
     '<button class="btn2 small" data-pause="' + w.id + '" data-to="' + (w.status === 'active' ? 'paused' : 'active') + '">' + (w.status === 'active' ? 'Pause' : 'Resume') + '</button>' +
@@ -92,6 +92,11 @@ function chart(d) {
   [0, .25, .5, .75, 1].forEach(v => { svg += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '"/><text x="' + (L - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + Math.round(v * 100) + '%</text>'; });
   svg += '<line class="axis" x1="' + L + '" x2="' + L + '" y1="' + T + '" y2="' + (H - B) + '"/><line class="axis" x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '"/>';
   runs.forEach((r, i) => { svg += '<text x="' + x(i) + '" y="' + (H - 14) + '" text-anchor="middle">' + when(r.created_at) + '</text>'; });
+  // Your brand's likely range (95%) as a shaded band behind the lines, where runs carry one.
+  const main = d.brands[0];
+  const band = runs.map((r, i) => { const s = r.by_brand[main.name]; return s && s.low != null ? [x(i), y(s.low), y(s.high)] : null; }).filter(Boolean);
+  if (band.length > 1) svg += '<polygon points="' + band.map(p => p[0] + ',' + p[2]).concat(band.slice().reverse().map(p => p[0] + ',' + p[1])).join(' ') + '" fill="' + colours[main.name].bg + '" fill-opacity="0.16"/>';
+  else if (band.length === 1) svg += '<line x1="' + band[0][0] + '" x2="' + band[0][0] + '" y1="' + band[0][1] + '" y2="' + band[0][2] + '" stroke="' + colours[main.name].bg + '" stroke-opacity="0.35" stroke-width="14"/>';
   // your brand drawn last so it sits on top
   const order = d.brands.slice(1).concat(d.brands.slice(0, 1));
   order.forEach(b => {
@@ -99,7 +104,7 @@ function chart(d) {
     if (!pts.length) return;
     const c = colours[b.name].bg;
     if (pts.length > 1) svg += '<polyline class="ln" style="stroke:' + c + '" points="' + pts.map(p => p[0] + ',' + p[1]).join(' ') + '"/>';
-    pts.forEach(p => { svg += '<circle class="pt" cx="' + p[0] + '" cy="' + p[1] + '" r="7" fill="' + c + '"><title>' + esc(b.name) + ' · ' + when(p[3].created_at) + ' · ' + Math.round(p[2].rate * 100) + '% (' + p[2].mentioned + ' of ' + p[2].answered + ' answers)</title></circle>'; });
+    pts.forEach(p => { svg += '<circle class="pt" cx="' + p[0] + '" cy="' + p[1] + '" r="7" fill="' + c + '"><title>' + esc(b.name) + ' · ' + when(p[3].created_at) + ' · ' + Math.round(p[2].rate * 100) + '% (' + p[2].mentioned + ' of ' + p[2].answered + ' answers' + (S.range(p[2]) ? ', likely ' + S.range(p[2]) : '') + ')</title></circle>'; });
   });
   return '<div class="chart">' + svg + '</svg></div>';
 }
@@ -131,12 +136,15 @@ function renderTrend(d) {
   const before = prev && prev.by_brand[main.name] ? prev.by_brand[main.name].rate : null;
   const delta = now != null && before != null ? Math.round((now - before) * 100) : null;
   const spend = runs.reduce((t, r) => t + r.cost, 0);
+  const lastMain = last.by_brand[main.name], cit = last.citations;
   const cards = [
-    { cls: 'accent', lbl: 'Mention rate now', val: S.pct(now), sub: esc(main.name) + ' · latest run' },
+    { cls: 'accent', lbl: 'Mention rate now', val: S.pct(now), sub: esc(main.name) + ' · latest run' + (S.range(lastMain) ? ' · likely ' + S.range(lastMain) : '') },
+    last.consistency ? { lbl: 'Named every time', val: last.consistency.always + '/' + last.consistency.groups, sub: 'combos asked ' + (d.repeats || 1) + '× · ' + last.consistency.sometimes + ' only sometimes' } : null,
+    cit && cit.by_brand[main.name] && cit.by_brand[main.name].has_domain ? { lbl: 'Cited as a source', val: S.pct(cit.by_brand[main.name].rate), sub: 'of ' + cit.answers_with_sources + ' answers with sources' } : null,
     { lbl: 'Change', val: delta == null ? '—' : (delta > 0 ? '+' : '') + delta + ' pts', sub: prev ? 'since the previous run' : 'needs a second run' },
     { lbl: 'Runs kept', val: runs.length, sub: d.watch.frequency },
     { lbl: 'Total spend', val: S.money(spend), sub: 'all runs so far' }
-  ].filter(c => !(window.SNAPSHOT && c.lbl === 'Total spend'));
+  ].filter(c => c && !(window.SNAPSHOT && c.lbl === 'Total spend'));
   const legend = '<div class="legend">' + d.brands.map(b => '<span class="chip2" style="--bg:' + colours[b.name].bg + ';--fg:' + colours[b.name].fg + '">' + esc(b.name) + '</span>').join('') + '</div>';
 
   const provRows = Object.keys(last.by_provider).map(p => {
@@ -146,7 +154,7 @@ function renderTrend(d) {
   const hist = runs.slice().reverse().map(r => {
     const s = r.by_brand[main.name];
     return '<tr><td>' + new Date(r.created_at).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + '</td>' +
-      '<td class="num">' + S.pct(s ? s.rate : null) + '</td><td class="num">' + (s && s.avg_position ? '#' + s.avg_position : '—') + '</td>' +
+      '<td class="num">' + S.pct(s ? s.rate : null) + '</td><td class="num">' + (S.range(s) || '—') + '</td><td class="num">' + (s && s.avg_position ? '#' + s.avg_position : '—') + '</td>' +
       '<td class="num">' + r.answers + '</td>' + (window.SNAPSHOT ? '' : '<td class="num">' + S.money(r.cost) + '</td>') + '<td>' + r.status + '</td>' +
       (window.SNAPSHOT ? '' : '<td><a href="' + link('/tools/state-of-the-union/report/', { id: r.id }) + '">Open report →</a></td>') + '</tr>';
   }).join('');
@@ -158,7 +166,20 @@ function renderTrend(d) {
     (runs.length < 2 ? '<div class="banner2">The trend line appears after the next run' + (d.watch.next_run_at ? ' (due ' + when(d.watch.next_run_at) + ')' : '') + '. Each point is one full run.</div>' : '') +
     timeline(d) +
     '<h2 class="h2b">Latest run — ' + esc(main.name) + ' by model</h2><div class="tblwrap"><table class="tbl"><tr><th>Model</th><th>Mention rate</th><th>Answers</th></tr>' + provRows + '</table></div>' +
-    '<h2 class="h2b">All runs</h2><div class="tblwrap"><table class="tbl"><tr><th>When</th><th>' + esc(main.name) + ' rate</th><th>Avg position</th><th>Answers</th>' + (window.SNAPSHOT ? '' : '<th>Cost</th>') + '<th>Status</th>' + (window.SNAPSHOT ? '' : '<th></th>') + '</tr>' + hist + '</table></div>';
+    citedHtml(d, last, colours) +
+    '<h2 class="h2b">All runs</h2><div class="tblwrap"><table class="tbl"><tr><th>When</th><th>' + esc(main.name) + ' rate</th><th>Likely range</th><th>Avg position</th><th>Answers</th>' + (window.SNAPSHOT ? '' : '<th>Cost</th>') + '<th>Status</th>' + (window.SNAPSHOT ? '' : '<th></th>') + '</tr>' + hist + '</table></div>';
+}
+
+function citedHtml(d, last, colours) {
+  const cit = last.citations;
+  if (!cit) return '';
+  const rows = cit.top_domains.slice(0, 10).map(x => {
+    const c = x.owner ? colours[x.owner] : null;
+    return '<tr><td><b>' + esc(x.domain) + '</b></td><td>' + (c ? '<span class="chip2" style="--bg:' + c.bg + ';--fg:' + c.fg + '">' + esc(x.owner) + '</span>' : 'Third party') + '</td><td class="num">' + x.answers + '</td><td class="num">' + S.pct(x.share) + '</td></tr>';
+  }).join('');
+  return '<h2 class="h2b">Latest run — most-cited websites</h2>' +
+    '<p class="hint" style="margin:0 0 12px">You ' + S.pct(cit.share.own) + ' · competitors ' + S.pct(cit.share.competitors) + ' · other sites ' + S.pct(cit.share.other) + ' of all citations, across ' + cit.answers_with_sources + ' answers that showed sources.</p>' +
+    '<div class="tblwrap"><table class="tbl"><tr><th>Domain</th><th>Belongs to</th><th>Answers citing it</th><th>Share of answers</th></tr>' + rows + '</table></div>';
 }
 
 async function loadTrend() {
