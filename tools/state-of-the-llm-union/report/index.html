@@ -43,6 +43,7 @@
 </div>
 
 <script src="/assets/sotu.js"></script>
+<script src="/assets/sotu-deck.js"></script>
 <script>
 if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
 const S = window.SOTU, esc = S.esc;
@@ -426,7 +427,7 @@ function bannerHtml(d) {
   let html;
   if (d.status === 'complete') {
     html = '<div class="banner2 done"><b>Report complete</b> · ' + settled + ' answers · ' + S.ago(d.completed_at || d.created_at) +
-      ' <span><button class="btn2 small solid" id="pdfSumBtn" type="button">Summary PDF</button> <button class="btn2 small" id="pdfBtn" type="button">Full PDF</button> <a class="btn2 small" href="' + S.printUrl({ id: d.id }) + '" target="_blank" rel="noopener">Print view</a> ' + (d.watch_id
+      ' <span><button class="btn2 small solid" id="pdfSumBtn" type="button">Summary PDF</button> <button class="btn2 small" id="pdfBtn" type="button">Full PDF</button> <button class="btn2 small" id="slidesBtn" type="button">Slides (.pptx)</button> <a class="btn2 small" href="' + S.printUrl({ id: d.id }) + '" target="_blank" rel="noopener">Print view</a> ' + (d.watch_id
         ? '<a class="btn2 small" href="' + S.withPreset('/tools/state-of-the-llm-union/tracker/?k=' + encodeURIComponent(S.CODE) + '&w=' + encodeURIComponent(d.watch_id)) + '">Tracked weekly — see trend →</a>'
         : (d.brands.length ? '<button class="btn2 small solid" id="trackBtn" type="button">Track this weekly</button>' : '')) + '</span></div>';
   } else {
@@ -466,6 +467,7 @@ function render() {
   const pdfName = sfx => 'state-of-the-llm-union-' + (data.brand_name || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + String(data.created_at).slice(0, 10) + sfx + '.pdf';
   const pb = $('pdfBtn'); if (pb) pb.onclick = () => S.downloadPdf({ id: data.id }, pb, pdfName(''));
   const ps = $('pdfSumBtn'); if (ps) ps.onclick = () => S.downloadPdf({ id: data.id, summary: true }, ps, pdfName('-summary'));
+  const sb = $('slidesBtn'); if (sb) sb.onclick = () => window.SOTU_DECK.report(data, { demand: demandState === 'ready' ? demand : null, crawl: crawlState === 'ready' ? crawl : null }, sb);
   $('out').querySelectorAll('[data-addcomp]').forEach(b => b.onclick = async () => {
     b.disabled = true;
     const r = await S.api('/state-of-union/watch/add-competitor', { id: data.watch_id, name: b.dataset.addcomp });

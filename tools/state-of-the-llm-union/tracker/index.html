@@ -36,6 +36,7 @@
 </div>
 
 <script src="/assets/sotu.js"></script>
+<script src="/assets/sotu-deck.js"></script>
 <script>
 if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
 const S = window.SOTU, esc = S.esc, $ = id => document.getElementById(id);
@@ -173,7 +174,7 @@ function renderTrend(d) {
 
   $('detail').innerHTML =
     '<h2 class="h2b">' + esc(d.watch.name) + '</h2>' +
-    (window.SNAPSHOT ? '' : '<div class="sotu-actions" style="margin:-6px 0 18px"><button class="btn2 small solid" id="pdfSumBtn" type="button">Summary PDF</button> <button class="btn2 small" id="pdfBtn" type="button">Full PDF</button> <a class="btn2 small" href="' + S.printUrl({ watch: d.watch.id }) + '" target="_blank" rel="noopener">Print view</a></div>') +
+    (window.SNAPSHOT ? '' : '<div class="sotu-actions" style="margin:-6px 0 18px"><button class="btn2 small solid" id="pdfSumBtn" type="button">Summary PDF</button> <button class="btn2 small" id="pdfBtn" type="button">Full PDF</button> <button class="btn2 small" id="slidesBtn" type="button">Slides (.pptx)</button> <a class="btn2 small" href="' + S.printUrl({ watch: d.watch.id }) + '" target="_blank" rel="noopener">Print view</a></div>') +
     changesHtml(last) + (window.SNAPSHOT ? '' : alertsHtml(d.watch)) +
     '<div class="stats4">' + cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
     '<h2 class="h2b">Mention rate over time</h2>' + trendModeHtml(d) + legend + (trendMode === 'weighted' && trendDemand ? chart(Object.assign({}, d, { runs: weightedRuns(d, trendDemand) })) : chart(d)) +
@@ -222,6 +223,8 @@ function alertsHtml(w) {
 }
 
 function wireDetail() {
+  const sb = $('slidesBtn');
+  if (sb) sb.onclick = () => window.SOTU_DECK.tracker(trendData, { weightedRuns: trendDemand ? weightedRuns(trendData, trendDemand) : null }, sb);
   $('detail').querySelectorAll('[data-tmode]').forEach(b => b.onclick = () => { trendMode = b.dataset.tmode; renderTrend(trendData); wireDetail(); });
   const pb = $('pdfBtn');
   if (pb) pb.onclick = () => S.downloadPdf({ watch: selected }, pb, 'state-of-the-llm-union-tracker-' + new Date().toISOString().slice(0, 10) + '.pdf');
