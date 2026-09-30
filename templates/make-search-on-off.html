@@ -40,6 +40,23 @@
   .rtabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
   .tbl td.num.up { color: #2f6b2a; font-weight: 700; } .tbl td.num.down { color: #9a4a2e; font-weight: 700; }
   @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+  @media print {
+    @page { size: A4; margin: 14mm 12mm; }
+    body { background: #fff !important; }
+    .sotu-actions, .oo-form, .sidenav, .pair details { display: none !important; }
+    .sc { box-shadow: none !important; break-inside: avoid; }
+    .sc.accent { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .stats4 { grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 20px; }
+    .sc { padding: 8px 10px; } .sc .val { font-size: 22px; white-space: nowrap; } .sc .lbl { font-size: 9px; } .sc .sub { font-size: 10px; }
+    .pair { grid-template-columns: 1fr 1fr; gap: 12px; }
+    .pair .answer2 { max-height: none; overflow: visible; font-size: 10.5px; line-height: 1.45; }
+    .tbl { break-inside: auto; } .tbl tr { break-inside: avoid; }
+    .tbl th, .tbl td { padding: 5px 8px; font-size: 12px; }
+    .h2b { break-after: avoid; } .mhead { break-before: page; break-after: avoid; }
+    .mbm { break-before: page; } .mbm + .mhead { break-before: auto; }
+    mark.b { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    a { color: inherit; text-decoration: none; }
+  }
 </style>
 
 <script src="/assets/sotu.js"></script>
@@ -53,7 +70,7 @@ const DEFAULT_PROMPT = 'How do I evaluate an AI agent platform for a mid-sized I
 const DEFAULT_COMPETITORS = ['n8n.io', 'zapier.com', 'workato.com', 'Microsoft Copilot Studio', 'servicenow.com'];
 
 // Vendors counted straight from the text, tracked or not — "how do I…" answers name few, and it's the few that matter.
-const VENDORS = [['Make', /\bMake(\.com)?\b(?! (sure|it|a|an|the|your|this|that|decisions?)\b)|Integromat/], ['n8n', /\bn8n\b/i], ['Zapier', /zapier/i], ['Workato', /workato/i],
+const BASE_VENDORS = [['Make', /\bMake(\.com)?\b(?! (sure|it|a|an|the|your|this|that|decisions?)\b)|Integromat/], ['n8n', /\bn8n\b/i], ['Zapier', /zapier/i], ['Workato', /workato/i],
   ['Power Automate', /power automate/i], ['Copilot Studio', /copilot studio|microsoft copilot/i], ['ServiceNow', /servicenow/i], ['UiPath', /uipath/i], ['Salesforce Agentforce', /agentforce/i],
   ['Moveworks', /moveworks/i], ['Aisera', /aisera/i], ['IBM watsonx', /watsonx|ibm watson/i], ['AWS Bedrock', /bedrock/i], ['Azure AI Foundry', /azure (ai|openai)|ai foundry/i], ['Google Vertex AI / Agent Builder', /vertex ai|agentspace|google(’s|'s)? agent builder|vertex ai agent builder/i],
   ['OpenAI', /\bopenai\b|chatgpt enterprise|agentkit/i], ['Anthropic / Claude', /anthropic|claude/i], ['LangChain / LangGraph', /langchain|langgraph/i], ['CrewAI', /crew ?ai/i], ['AutoGen', /autogen/i],
@@ -69,8 +86,31 @@ const CRITERIA = [['Security & access control', /security|sso\b|rbac|access cont
   ['Model choice / LLM flexibility', /model[- ](choice|agnostic|flexib)|multiple (llms|models)|bring your own model|llm[- ]agnostic|vendor lock/i], ['Scalability', /scalab|scale\b/i],
   ['Vendor support & roadmap', /vendor (support|viability|stability|roadmap)|support (sla|quality)|roadmap/i], ['Data privacy & residency', /data (privacy|residency|retention)|privacy/i]];
 
+let VENDORS = BASE_VENDORS;
+// Sites that are cited but aren't vendors (standards bodies, analysts, big-platform docs already listed above, forums).
+const REFERENCE = /^(nist|cisa|ftc|gartner|forrester|idc|mckinsey|microsoft|openai|google|amazon|aws|ibm|servicenow|salesforce|reddit|medium|youtube|linkedin|wikipedia|g2|capterra|trustradius|github|techtarget|zdnet|forbes|hbr|make|zapier|n8n|gov|europa)$/i;
+// Search answers mostly name the vendors whose pages the search found — count any cited site the answers name,
+// so a new prompt doesn't need a new hand-made list.
+function vendorsFromSources(runs) {
+  const seen = new Set(), out = [];
+  runs.flatMap(d => done(d)).forEach(c => (c.result.sources || []).forEach(src => {
+    const h = host(src.url || ''), parts = h.split('.'), label = parts.length >= 2 ? parts[parts.length - 2] : '';
+    if (!label || label.length < 3 || REFERENCE.test(label) || seen.has(label)) return;
+    seen.add(label);
+    const probe = label + ' ' + h;
+    if (BASE_VENDORS.some(([, re]) => re.test(probe))) return;
+    // Capitalised ("Fynite", "UniDesk") or with its domain ending ("ibl.ai") — so a blog called construct.computer
+    // doesn't count every "construct".
+    const L = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), tld = parts[parts.length - 1];
+    const anyCase = [...L.slice(1)].map(ch => /[a-z]/i.test(ch) ? '[' + ch.toLowerCase() + ch.toUpperCase() + ']' : ch).join('');
+    out.push([h, new RegExp('\\b' + L.charAt(0).toUpperCase() + anyCase + '\\b|\\b' + L + '\\.' + tld + '\\b|\\b' + L.toUpperCase() + '\\.' + tld.toUpperCase() + '\\b')]);
+  }));
+  return out;
+}
 const done = d => (d.cells || []).filter(c => c.status === 'done' && c.result && c.result.text);
 const vendorsIn = t => VENDORS.filter(([, re]) => re.test(t)).map(v => v[0]);
+const knownIn = t => BASE_VENDORS.filter(([, re]) => re.test(t)).map(v => v[0]);
+const isCited = n => !BASE_VENDORS.some(v => v[0] === n);
 const pct = (n, d) => d ? Math.round(100 * n / d) + '%' : '—';
 const avg = xs => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
 const host = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
@@ -79,11 +119,13 @@ const label = id => (MODELS.find(m => m[0] === id) || [id, S.providerLabel ? S.p
 const outline = t => t.split('\n').map(l => l.trim()).filter(l => /^#{1,4}\s|^\*\*[^*]{3,80}\*\*:?$|^\d+[.)]\s+\*\*/.test(l)).map(l => l.replace(/[#*]|\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/^\d+[.)]\s*/, '').replace(/:$/, '').trim()).filter(Boolean);
 
 function render(off, on) {
+  VENDORS = BASE_VENDORS.concat(vendorsFromSources([on]));
   const A = done(off), B = done(on);
   const prompt = (on.prompts || off.prompts || [])[0] || '';
   if (prompt) $('prompt').value = prompt;
   const makeA = A.filter(c => vendorsIn(c.result.text).includes('Make')).length, makeB = B.filter(c => vendorsIn(c.result.text).includes('Make')).length;
-  const vA = avg(A.map(c => vendorsIn(c.result.text).length)), vB = avg(B.map(c => vendorsIn(c.result.text).length));
+  const vA = avg(A.map(c => knownIn(c.result.text).length)), vB = avg(B.map(c => knownIn(c.result.text).length));
+  const sB = avg(B.map(c => vendorsIn(c.result.text).length)) - vB;
   const withSrc = B.filter(c => (c.result.sources || []).length);
   const pages = {};
   withSrc.forEach(c => [...new Set(c.result.sources.map(s => (s.url || '').split('?')[0].replace(/\/$/, '')))].forEach(u => { if (u) (pages[u] ??= { url: u, n: 0, models: new Set() }).n++, pages[u].models.add(c.provider); }));
@@ -95,7 +137,7 @@ function render(off, on) {
     new Date(on.completed_at || on.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + '.';
   const cards = [
     { cls: 'accent', lbl: 'Make named', val: makeA + ' → ' + makeB, sub: 'answers, search off → on (of ' + A.length + ' / ' + B.length + ')' },
-    { lbl: 'Vendors named per answer', val: vA.toFixed(1) + ' → ' + vB.toFixed(1), sub: 'search off → on' },
+    { lbl: 'Known vendors per answer', val: vA.toFixed(1) + ' → ' + vB.toFixed(1), sub: 'search off → on' + (sB >= 0.1 ? ' · plus ' + sB.toFixed(1) + ' cited sites named per answer with search on' : '') },
     { lbl: 'Answers citing sources', val: withSrc.length + '/' + B.length, sub: pageList.length + ' pages cited · ' + shared + ' by more than one model' },
     { lbl: 'make.com cited', val: makeCited.length ? makeCited.reduce((t, p) => t + p.n, 0) : 0, sub: 'times, with search on' },
     { lbl: 'Answer length', val: Math.round(avg(A.map(c => c.result.text.length)) / 100) / 10 + 'k → ' + Math.round(avg(B.map(c => c.result.text.length)) / 100) / 10 + 'k', sub: 'characters, search off → on' }
@@ -107,7 +149,7 @@ function render(off, on) {
     .sort((a, b) => (b[1] + b[2]) - (a[1] + a[2]));
   const cmp = (x, y) => '<td class="num">' + pct(x, A.length) + '</td><td class="num ' + (y > x ? 'up' : y < x ? 'down' : '') + '">' + pct(y, B.length) + '</td>';
   let h = '<h2 class="h2b">Which tools get named</h2><p class="hint" style="margin:0 0 10px">Share of answers naming each tool, whether or not you track it (counted from a fixed list — a vendor it doesn’t know still shows up under the pages cited) — as a platform to pick <i>or</i> as a system to connect to (ServiceNow is mostly the second: “integrates with ServiceNow, Jira…”). Read the answers below for which is which.</p>' +
-    '<div class="tblwrap"><table class="tbl"><tr><th>Tool</th><th>Search off</th><th>Search on</th></tr>' + vRows.map(([n, x, y]) => '<tr><td>' + (n === 'Make' ? '<b>Make</b>' : esc(n)) + '</td>' + cmp(x, y) + '</tr>').join('') + '</table></div>';
+    '<div class="tblwrap"><table class="tbl"><tr><th>Tool</th><th>Search off</th><th>Search on</th></tr>' + vRows.map(([n, x, y]) => '<tr><td>' + (n === 'Make' ? '<b>Make</b>' : esc(n)) + (isCited(n) ? ' <small class="srcs">cited site — vendor or source, check the answers</small>' : '') + '</td>' + cmp(x, y) + '</tr>').join('') + '</table></div>';
 
   // Criteria: what the answers tell you to judge a platform on.
   const cRows = CRITERIA.map(([n, re]) => [n, A.filter(c => re.test(c.result.text)).length, B.filter(c => re.test(c.result.text)).length]).sort((a, b) => (b[1] + b[2]) - (a[1] + a[2]));
@@ -120,7 +162,7 @@ function render(off, on) {
       (host(p.url).endsWith('make.com') ? ' <span class="yes">make.com</span>' : '') + '</td><td class="num">' + p.n + '</td><td>' + [...p.models].map(label).join(', ') + '</td></tr>').join('') + '</table></div>';
 
   // Model by model, side by side.
-  h += '<h2 class="h2b">Model by model</h2>';
+  h += '<h2 class="h2b mbm">Model by model</h2>';
   const provs = [...new Set([...A, ...B].map(c => c.provider))];
   provs.forEach(p => {
     const a = A.filter(c => c.provider === p), b = B.filter(c => c.provider === p);
