@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Search on / off — Brand Checker for Make</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="robots" content="noindex">
+<script src="/assets/visitor.js"></script>
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--you:#ff3d00}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#fff;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;line-height:1.5;padding:22px 16px 60px;font-size:16px}
+  a{color:inherit}
+  .sidenav{margin-top:36px;padding-top:20px;border-top:3px solid #0a0a0a;display:flex;flex-direction:column;gap:13px}
+  .sidenav-link{font-size:14px;font-weight:600}
+  body.embed .sidenav{display:none}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+<link rel="stylesheet" href="/assets/sotu.css">
+</head>
+<body>
+<div class="sotu-wrap">
+  <p class="eyebrow">Brand Checker for Make · Search on / off</p>
+  <h1>What changes when the model searches the web?</h1>
+  <p class="sotu-sub">One prompt, the same models, asked twice: once from the model’s own knowledge, once with web search on. See which tools, criteria and sources the search brings in — and whether Make is one of them.</p>
+  <div class="sotu-actions" style="margin-top:8px"><a class="btn2 navb" href="/make/">← Brand Checker for Make</a> <a class="btn2 navb" href="/make/overview/">All models</a> <a class="btn2 navb" href="/make/claude/">Claude</a> <a class="btn2 navb" href="/make/chatgpt/">ChatGPT</a> <a class="btn2 navb" href="/make/deepseek/">DeepSeek</a> <a class="btn2 navb" href="/make/perplexity/">Perplexity</a> <a class="btn2 navb" href="/make/gemini/">Gemini</a> <a class="btn2 navb" href="/make/state-of-the-llm-union/tracker/">Weekly tracker</a> <a class="btn2 navb" href="/make/app-pairs/">App pairs</a> <a class="btn2 navb" href="/make/zapier-alternatives/">Zapier alternatives</a> <a class="btn2 navb" href="/make/learning-curve/">Learning curve</a> <a class="btn2 navb" href="/make/ai-agents/">AI agents</a> <a class="btn2 navb blue" href="/make/search-on-off/" aria-current="page">Search on / off</a></div>
+
+  <details class="oo-form" id="formBox">
+    <summary>Try your own prompt</summary>
+    <div class="field"><label for="prompt">Prompt</label><textarea id="prompt" maxlength="400" rows="2"></textarea></div>
+    <div class="field"><label>Models</label><div class="oo-models" id="models"></div></div>
+    <div class="field"><label for="competitors">Compare Make with (up to 5, one per line — a website or a name)</label><textarea id="competitors" rows="5"></textarea></div>
+    <div class="field" id="codeBox" hidden style="max-width:300px"><label for="code">Access code</label><input id="code" type="text" autocapitalize="off" spellcheck="false"></div>
+    <p><button class="btn2 solid" id="go" type="button">Ask both ways</button> <span class="hint" id="status"></span></p>
+    <p class="hint">Each model answers twice with search off and twice with it on (answers vary, so one answer each proves little). About $0.05–$0.25 depending on the models.</p>
+  </details>
+
+  <p class="sotu-sub" id="sub">Loading…</p>
+  <div class="stats4" id="cards"></div>
+  <div id="out"></div>
+  <p class="hint" id="method"></p>
+  <div class="sidenav"><a href="/make/" class="sidenav-link">← Back to Brand Checker for Make</a></div>
+</div>
+
+<style>
+  .oo-form { border: 3px solid #0a0a0a; padding: 14px 18px; margin: 0 0 26px; background: #fff; }
+  .oo-form summary { font-family: 'Archivo', sans-serif; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; cursor: pointer; }
+  .oo-form .field { margin: 14px 0 0; }
+  .oo-form textarea { width: 100%; padding: 8px 10px; font-size: 15px; }
+  .oo-models { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; }
+  .oo-models label { font-weight: 600; text-transform: none; letter-spacing: 0; display: inline-flex; gap: 6px; align-items: center; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 0 0 26px; }
+  .pair > div { min-width: 0; }
+  .pair h4 { margin: 0 0 6px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .pair .answer2 { max-height: 300px; }
+  .mhead { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 22px; margin: 26px 0 8px; }
+  .delta { font-size: 14px; margin: 0 0 12px; }
+  .add { color: #2f6b2a; font-weight: 700; } .drop { color: #9a4a2e; font-weight: 700; }
+  .yes { background: #0a0a0a; color: #fff; font-weight: 700; padding: 0 5px; }
+  .outline { font-size: 13px; color: #3d3d3d; margin: 6px 0 0; padding-left: 18px; }
+  .rtabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
+  .tbl td.num.up { color: #2f6b2a; font-weight: 700; } .tbl td.num.down { color: #9a4a2e; font-weight: 700; }
+  @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+</style>
+
+<script src="/assets/sotu.js"></script>
+<script>
+// Snapshot: /make/data/search-on-off.json (build-make-search-on-off.mjs). A pair started here lives at ?off=<id>&on=<id>.
+const S = window.SOTU, esc = S.esc, $ = id => document.getElementById(id);
+const Q = new URLSearchParams(location.search);
+// Models where the toggle means something: Perplexity, Gemini and AI Overviews always search.
+const MODELS = [['chatgpt', 'ChatGPT', true], ['claude', 'Claude', true], ['llama', 'Llama', true], ['mistral', 'Mistral', true], ['chatgpt_app', 'ChatGPT app (decides for itself / made to search)', false]];
+const DEFAULT_PROMPT = 'How do I evaluate an AI agent platform for a mid-sized IT team?';
+const DEFAULT_COMPETITORS = ['n8n.io', 'zapier.com', 'workato.com', 'Microsoft Copilot Studio', 'servicenow.com'];
+
+// Vendors counted straight from the text, tracked or not — "how do I…" answers name few, and it's the few that matter.
+const VENDORS = [['Make', /\bMake(\.com)?\b(?! (sure|it|a|an|the|your|this|that|decisions?)\b)|Integromat/], ['n8n', /\bn8n\b/i], ['Zapier', /zapier/i], ['Workato', /workato/i],
+  ['Power Automate', /power automate/i], ['Copilot Studio', /copilot studio|microsoft copilot/i], ['ServiceNow', /servicenow/i], ['UiPath', /uipath/i], ['Salesforce Agentforce', /agentforce/i],
+  ['Moveworks', /moveworks/i], ['Aisera', /aisera/i], ['IBM watsonx', /watsonx|ibm watson/i], ['AWS Bedrock', /bedrock/i], ['Azure AI', /azure (ai|openai)/i], ['Google Vertex AI', /vertex ai|agentspace/i],
+  ['OpenAI', /\bopenai\b|chatgpt enterprise|agentkit/i], ['Anthropic / Claude', /anthropic|claude/i], ['LangChain / LangGraph', /langchain|langgraph/i], ['CrewAI', /crew ?ai/i], ['AutoGen', /autogen/i],
+  ['Relevance AI', /relevance ai/i], ['Lindy', /\blindy\b/i], ['Gumloop', /gumloop/i], ['Dify', /\bdify\b/i], ['Tines', /\btines\b/i], ['Torq', /\btorq\b/i]];
+// What the answers tell you to judge a platform on.
+const CRITERIA = [['Security & access control', /security|sso\b|rbac|access control|least privilege|permissions?/i], ['Compliance (SOC 2, HIPAA…)', /compliance|soc ?2|hipaa|gdpr|fedramp|iso ?27001/i],
+  ['Integrations with existing tools', /integrat/i], ['Governance & audit trail', /governance|audit (log|trail)|auditab/i], ['Human in the loop / approvals', /human[- ]in[- ]the[- ]loop|approval|hitl|escalat/i],
+  ['Observability & monitoring', /observab|monitoring|logging|tracing/i], ['Reliability & accuracy', /reliab|accura|hallucinat|error rate/i], ['Cost / total cost of ownership', /\bcost|pricing|tco\b|total cost/i],
+  ['Pilot / proof of concept', /pilot|proof of concept|\bpoc\b|trial/i], ['Scoring rubric / scorecard', /rubric|scorecard|scoring|weighted/i], ['Ease of use / no-code', /no[- ]code|low[- ]code|ease of use|user[- ]friendly|learning curve/i],
+  ['Model choice / LLM flexibility', /model[- ](choice|agnostic|flexib)|multiple (llms|models)|bring your own model|llm[- ]agnostic|vendor lock/i], ['Scalability', /scalab|scale\b/i],
+  ['Vendor support & roadmap', /vendor (support|viability|stability|roadmap)|support (sla|quality)|roadmap/i], ['Data privacy & residency', /data (privacy|residency|retention)|privacy/i]];
+
+const done = d => (d.cells || []).filter(c => c.status === 'done' && c.result && c.result.text);
+const vendorsIn = t => VENDORS.filter(([, re]) => re.test(t)).map(v => v[0]);
+const pct = (n, d) => d ? Math.round(100 * n / d) + '%' : '—';
+const avg = xs => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
+const host = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
+const label = id => (MODELS.find(m => m[0] === id) || [id, S.providerLabel ? S.providerLabel(id) : id])[1].replace(/ \(.*/, '');
+// Headings / numbered bold lines: the answer's outline.
+const outline = t => t.split('\n').map(l => l.trim()).filter(l => /^#{1,4}\s|^\*\*[^*]{3,80}\*\*:?$|^\d+[.)]\s+\*\*/.test(l)).map(l => l.replace(/[#*]|\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/^\d+[.)]\s*/, '').replace(/:$/, '').trim()).filter(Boolean);
+
+function render(off, on) {
+  const A = done(off), B = done(on);
+  const prompt = (on.prompts || off.prompts || [])[0] || '';
+  if (prompt) $('prompt').value = prompt;
+  const makeA = A.filter(c => vendorsIn(c.result.text).includes('Make')).length, makeB = B.filter(c => vendorsIn(c.result.text).includes('Make')).length;
+  const vA = avg(A.map(c => vendorsIn(c.result.text).length)), vB = avg(B.map(c => vendorsIn(c.result.text).length));
+  const withSrc = B.filter(c => (c.result.sources || []).length);
+  const pages = {};
+  withSrc.forEach(c => [...new Set(c.result.sources.map(s => (s.url || '').split('?')[0].replace(/\/$/, '')))].forEach(u => { if (u) (pages[u] ??= { url: u, n: 0, models: new Set() }).n++, pages[u].models.add(c.provider); }));
+  const pageList = Object.values(pages).sort((a, b) => b.n - a.n);
+  const makeCited = pageList.filter(p => host(p.url).endsWith('make.com'));
+  const shared = pageList.filter(p => p.models.size > 1).length;
+
+  $('sub').innerHTML = '“' + esc(prompt) + '” — asked ' + (off.repeats || 1) + '× per model with search off and ' + (on.repeats || 1) + '× with search on, ' + esc((on.locations || ['United States'])[0]) + ', ' +
+    new Date(on.completed_at || on.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + '.';
+  const cards = [
+    { cls: 'accent', lbl: 'Make named', val: makeA + ' → ' + makeB, sub: 'answers, search off → on (of ' + A.length + ' / ' + B.length + ')' },
+    { lbl: 'Vendors named per answer', val: vA.toFixed(1) + ' → ' + vB.toFixed(1), sub: 'search off → on' },
+    { lbl: 'Answers citing sources', val: withSrc.length + '/' + B.length, sub: pageList.length + ' pages cited · ' + shared + ' by more than one model' },
+    { lbl: 'make.com cited', val: makeCited.length ? makeCited.reduce((t, p) => t + p.n, 0) : 0, sub: 'times, with search on' },
+    { lbl: 'Answer length', val: Math.round(avg(A.map(c => c.result.text.length)) / 100) / 10 + 'k → ' + Math.round(avg(B.map(c => c.result.text.length)) / 100) / 10 + 'k', sub: 'characters, search off → on' }
+  ];
+  $('cards').innerHTML = cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('');
+
+  // Vendors: share of answers naming each, off vs on.
+  const vRows = VENDORS.map(([n]) => [n, A.filter(c => vendorsIn(c.result.text).includes(n)).length, B.filter(c => vendorsIn(c.result.text).includes(n)).length]).filter(r => r[1] || r[2] || r[0] === 'Make')
+    .sort((a, b) => (b[1] + b[2]) - (a[1] + a[2]));
+  const cmp = (x, y) => '<td class="num">' + pct(x, A.length) + '</td><td class="num ' + (y > x ? 'up' : y < x ? 'down' : '') + '">' + pct(y, B.length) + '</td>';
+  let h = '<h2 class="h2b">Which tools get named</h2><p class="hint" style="margin:0 0 10px">Share of answers naming each tool, whether or not you track it — as a platform to pick <i>or</i> as a system to connect to (ServiceNow is mostly the second: “integrates with ServiceNow, Jira…”). Read the answers below for which is which.</p>' +
+    '<div class="tblwrap"><table class="tbl"><tr><th>Tool</th><th>Search off</th><th>Search on</th></tr>' + vRows.map(([n, x, y]) => '<tr><td>' + (n === 'Make' ? '<b>Make</b>' : esc(n)) + '</td>' + cmp(x, y) + '</tr>').join('') + '</table></div>';
+
+  // Criteria: what the answers tell you to judge a platform on.
+  const cRows = CRITERIA.map(([n, re]) => [n, A.filter(c => re.test(c.result.text)).length, B.filter(c => re.test(c.result.text)).length]).sort((a, b) => (b[1] + b[2]) - (a[1] + a[2]));
+  h += '<h2 class="h2b">What they tell you to judge a platform on</h2><p class="hint" style="margin:0 0 10px">Share of answers that raise each criterion. These are the questions a buyer walks into a demo with — the ones Make’s pages need to answer.</p>' +
+    '<div class="tblwrap"><table class="tbl"><tr><th>Criterion</th><th>Search off</th><th>Search on</th></tr>' + cRows.map(([n, x, y]) => '<tr><td>' + esc(n) + '</td>' + cmp(x, y) + '</tr>').join('') + '</table></div>';
+
+  // Sources: what the search brought in.
+  if (pageList.length) h += '<h2 class="h2b">Where the search answers come from</h2><p class="hint" style="margin:0 0 10px">Pages cited with search on. A page several models cite is shaping the answer for all of them — the place to be.</p>' +
+    '<div class="tblwrap"><table class="tbl"><tr><th>Page</th><th>Answers</th><th>Models</th></tr>' + pageList.slice(0, 15).map(p => '<tr><td><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 80)) + '</a>' +
+      (host(p.url).endsWith('make.com') ? ' <span class="yes">make.com</span>' : '') + '</td><td class="num">' + p.n + '</td><td>' + [...p.models].map(label).join(', ') + '</td></tr>').join('') + '</table></div>';
+
+  // Model by model, side by side.
+  h += '<h2 class="h2b">Model by model</h2>';
+  const provs = [...new Set([...A, ...B].map(c => c.provider))];
+  provs.forEach(p => {
+    const a = A.filter(c => c.provider === p), b = B.filter(c => c.provider === p);
+    const va = new Set(a.flatMap(c => vendorsIn(c.result.text))), vb = new Set(b.flatMap(c => vendorsIn(c.result.text)));
+    const added = [...vb].filter(x => !va.has(x)), dropped = [...va].filter(x => !vb.has(x));
+    h += '<div class="mhead">' + esc(label(p)) + '</div><p class="delta">' +
+      (added.length ? '<span class="add">Search added:</span> ' + added.map(esc).join(', ') + ' ' : '') + (dropped.length ? '<span class="drop">Search dropped:</span> ' + dropped.map(esc).join(', ') + ' ' : '') +
+      (!added.length && !dropped.length ? 'Same tools named either way' + (va.size ? ' (' + [...va].map(esc).join(', ') + ').' : ' — none.') : '') + '</p>';
+    const reps = Math.max(a.length, b.length);
+    for (let i = 0; i < reps; i++) {
+      const side = (c, title) => {
+        if (!c) return '<div><h4>' + title + '</h4><div class="answer2 empty">No answer.</div></div>';
+        const colours = S.colourMap(on.brands || []), ol = outline(c.result.text), src = (c.result.sources || []).filter(s => s.url).slice(0, 5);
+        return '<div><h4>' + title + (reps > 1 ? ' · answer ' + (i + 1) : '') + '</h4><div class="answer2">' + S.highlight(c.result.text, c.mentions || [], colours) + '</div>' +
+          (ol.length ? '<details><summary class="srcs">Outline (' + ol.length + ')</summary><ol class="outline">' + ol.slice(0, 20).map(x => '<li>' + esc(x.slice(0, 90)) + '</li>').join('') + '</ol></details>' : '') +
+          (src.length ? '<div class="srcs">Sources: ' + src.map(s => '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(host(s.url)) + '</a>').join(' · ') + '</div>' : '') + '</div>';
+      };
+      h += '<div class="pair">' + side(a[i], 'Search off') + side(b[i], 'Search on') + '</div>';
+    }
+  });
+  $('out').innerHTML = h;
+  $('method').innerHTML = 'Method: two State Of The LLM Union runs with the same prompt, models and market — one with web search off (own knowledge), one with it on. Tools are counted from the answer text against a fixed list, tracked or not; criteria by keyword. ' +
+    'ChatGPT, Llama and Mistral search through OpenRouter’s web plugin, Claude through Anthropic’s own search. Cost of this pair: $' + ((off.total_cost || 0) + (on.total_cost || 0)).toFixed(3) + '.';
+}
+
+// ---- The form: start a new pair.
+$('prompt').value = DEFAULT_PROMPT;
+$('competitors').value = DEFAULT_COMPETITORS.join('\n');
+$('models').innerHTML = MODELS.map(([id, l, on]) => '<label><input type="checkbox" value="' + id + '"' + (on ? ' checked' : '') + '> ' + esc(l) + '</label>').join('');
+if (!S.CODE) $('codeBox').hidden = false;
+
+async function go() {
+  const code = S.CODE || $('code').value.trim();
+  const providers = [...document.querySelectorAll('#models input:checked')].map(i => i.value);
+  const prompt = $('prompt').value.trim();
+  if (!prompt || !providers.length) { $('status').textContent = 'Enter a prompt and pick at least one model.'; return; }
+  if (!code) { $('status').textContent = 'Enter your access code.'; return; }
+  try { localStorage.setItem('mc2seo_code', code); } catch (e) {}
+  $('go').disabled = true; $('status').textContent = 'Starting…';
+  const base = { code, brand_name: 'Make', domain: 'make.com', aliases: ['Make.com', 'Integromat'], competitors: $('competitors').value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 5),
+    prompts: [prompt], locations: ['United States'], providers, repeats: 2 };
+  const post = body => fetch(S.API + '/state-of-union/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+  const [off, on] = await Promise.all([post({ ...base, web: false }), post({ ...base, web: true })]);
+  if (off.error || on.error) { $('status').textContent = off.error || on.error; $('go').disabled = false; return; }
+  history.pushState(null, '', '?off=' + off.id + '&on=' + on.id);
+  $('status').textContent = 'Running — about $' + ((off.estimated_cost_usd || 0) + (on.estimated_cost_usd || 0)).toFixed(2) + '.';
+  load(off.id, on.id, code);
+}
+$('go').onclick = go;
+
+async function load(offId, onId, code) {
+  const get = id => fetch(S.API + '/state-of-union/get', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, id }) }).then(r => r.json());
+  for (;;) {
+    const [off, on] = await Promise.all([get(offId), get(onId)]);
+    if (off.error || on.error) { $('sub').textContent = off.error || on.error; return; }
+    const total = off.cells.length + on.cells.length, fin = [...off.cells, ...on.cells].filter(c => ['done', 'failed', 'unavailable'].includes(c.status)).length;
+    if (off.status === 'complete' && on.status === 'complete') { $('status').textContent = ''; $('go').disabled = false; render(off, on); return; }
+    $('sub').textContent = 'Asking… ' + fin + ' of ' + total + ' answers back.';
+    await new Promise(r => setTimeout(r, 8000));
+  }
+}
+
+if (Q.get('off') && Q.get('on')) { $('formBox').open = true; load(Q.get('off'), Q.get('on'), S.CODE || Q.get('k') || ''); }
+else fetch('/make/data/search-on-off.json').then(r => r.json()).then(d => render(d.off, d.on)).catch(() => { $('sub').textContent = 'This page could not be loaded.'; });
+</script>
+</body>
+</html>

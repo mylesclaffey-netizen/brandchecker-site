@@ -29,7 +29,7 @@ src = (src[:start] +
        '<p class="lede">Every tool is already filled in for Make: make.com, its competitors Zapier, n8n and '
        'Workato, and the keyword “workflow automation”. Pick a tool and run it.</p>'
        '\n  <p class="lede" style="margin-top:14px"><strong>How each AI family sees Make, model by model:</strong> <a href="/make/overview/">All on one chart</a> · '
-       '<a href="/make/claude/">Claude</a> · <a href="/make/chatgpt/">ChatGPT</a> · <a href="/make/deepseek/">DeepSeek</a> · <a href="/make/perplexity/">Perplexity</a> · <a href="/make/gemini/">Gemini</a> · <a href="/make/state-of-the-llm-union/tracker/">Weekly tracker</a> · <a href="/make/app-pairs/">App-pair map</a> · <a href="/make/zapier-alternatives/">Zapier alternatives</a> · <a href="/make/learning-curve/">Learning curve</a> · <a href="/make/ai-agents/">AI agents</a></p>' + src[end:])
+       '<a href="/make/claude/">Claude</a> · <a href="/make/chatgpt/">ChatGPT</a> · <a href="/make/deepseek/">DeepSeek</a> · <a href="/make/perplexity/">Perplexity</a> · <a href="/make/gemini/">Gemini</a> · <a href="/make/state-of-the-llm-union/tracker/">Weekly tracker</a> · <a href="/make/app-pairs/">App-pair map</a> · <a href="/make/zapier-alternatives/">Zapier alternatives</a> · <a href="/make/learning-curve/">Learning curve</a> · <a href="/make/ai-agents/">AI agents</a> · <a href="/make/search-on-off/">Search on / off</a></p>' + src[end:])
 
 # On /make/ only: the Optimizely to Webflow checklist gets its own "Migration" group above Local search, so it
 # sits high in the menu. It is taken out of the groups that list it on the main page (the menu credits a tool to

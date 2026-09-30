@@ -16,7 +16,7 @@ def swap(text, old, new):
 
 def nav(current):
     """The row of buttons at the top of every shared page; the page you are on is the blue one."""
-    items = [('/make/', '← Brand Checker for Make', None), ('/make/overview/', 'All models', 'overview')] + [('/make/%s/' % f, l, f) for f, l in FAMILIES.items()] + [('/make/state-of-the-llm-union/tracker/', 'Weekly tracker', 'tracker'), ('/make/app-pairs/', 'App pairs', 'app-pairs'), ('/make/zapier-alternatives/', 'Zapier alternatives', 'zapier-alternatives'), ('/make/learning-curve/', 'Learning curve', 'learning-curve'), ('/make/ai-agents/', 'AI agents', 'ai-agents')]
+    items = [('/make/', '← Brand Checker for Make', None), ('/make/overview/', 'All models', 'overview')] + [('/make/%s/' % f, l, f) for f, l in FAMILIES.items()] + [('/make/state-of-the-llm-union/tracker/', 'Weekly tracker', 'tracker'), ('/make/app-pairs/', 'App pairs', 'app-pairs'), ('/make/zapier-alternatives/', 'Zapier alternatives', 'zapier-alternatives'), ('/make/learning-curve/', 'Learning curve', 'learning-curve'), ('/make/ai-agents/', 'AI agents', 'ai-agents'), ('/make/search-on-off/', 'Search on / off', 'search-on-off')]
     links = ''.join(' <a class="btn2 navb%s" href="%s"%s>%s</a>' % (' blue' if key == current else '', href, ' aria-current="page"' if key == current else '', label) for href, label, key in items)
     return '<div class="sotu-actions" style="margin-top:8px">' + links.strip() + '</div>'
 
@@ -89,3 +89,11 @@ body5 = open('templates/make-ai-agents.html', encoding='utf-8').read().replace('
 os.makedirs('make/ai-agents', exist_ok=True)
 open('make/ai-agents/index.html', 'w', encoding='utf-8').write(head5 + body5)
 print('wrote make/ai-agents/index.html')
+
+# ---- Search on / off: /make/search-on-off/ (make/data/search-on-off.json from build-make-search-on-off.mjs; the page can start new pairs)
+head6 = t[:t.index('<div class="sotu-wrap">')]
+head6 = head6.replace('State Of The LLM Union tracker — Brand Checker for Make', 'Search on / off — Brand Checker for Make').replace('https://brandchecker.eu/make/state-of-the-llm-union/tracker/', 'https://brandchecker.eu/make/search-on-off/')
+body6 = open('templates/make-search-on-off.html', encoding='utf-8').read().replace('__NAV__', nav('search-on-off'))
+os.makedirs('make/search-on-off', exist_ok=True)
+open('make/search-on-off/index.html', 'w', encoding='utf-8').write(head6 + body6)
+print('wrote make/search-on-off/index.html')
