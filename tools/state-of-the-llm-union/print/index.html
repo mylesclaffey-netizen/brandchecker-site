@@ -40,6 +40,9 @@
   body.summary .sc .sub, body.summary .sc .lbl { font-size: 10px; }
   body.summary .tbl { margin: 0 0 8px; }
   body.summary .tbl th, body.summary .tbl td { font-size: 11px; padding: 4px 7px; }
+  /* Notes under shared tables (sotu.js) pull up by 18px to sit under the screen layout's 30px table margin; tables here
+     have less, so let them sit below the table instead of over it. */
+  .tblwrap + p.hint { margin-top: 6px !important; }
   body.summary .chart { padding: 6px; margin: 0 0 8px; box-shadow: none; }
   body.summary .chart svg { max-height: 190px; }
   body.summary .hint, body.summary .meta { font-size: 11px; }
