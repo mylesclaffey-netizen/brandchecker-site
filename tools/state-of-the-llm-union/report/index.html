@@ -124,7 +124,7 @@ function modelCard(d, p, cell) {
     if (srcs.length) foot += '<div class="srcs">Sources: ' + srcs.map(s => '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc((s.title || s.domain || s.url).slice(0, 38)) + '</a>').join(' · ') + '</div>';
     const qs = (r.queries || []).filter(Boolean);
     if (qs.length) foot += '<div class="srcs">Searched for: ' + qs.slice(0, 4).map(q => '“' + esc(q) + '”').join(' · ') + (qs.length > 4 ? ' +' + (qs.length - 4) + ' more' : '') + '</div>';
-    const webTxt = p.always_web ? ' · searches the web' : p.decides_web ? (d.web ? ' · made to search the web' : (qs.length || srcs.length ? ' · chose to search the web' : ' · answered without searching')) : (d.web ? ' · web search on' : ' · own knowledge only');
+    const webTxt = p.always_web ? ' · searches the web' : p.decides_web ? (d.web && !p.no_force ? ' · made to search the web' : (qs.length || srcs.length ? ' · chose to search the web' : ' · answered without searching')) : (d.web ? ' · web search on' : ' · own knowledge only');
     meta = (r.model ? esc(r.model) : '') + (cell.cost ? ' · ' + S.money(cell.cost) : '') + webTxt;
   }
   return '<div class="mcard"><div class="mhead"><div><div class="mname">' + esc(p.label) + '</div><div class="mfam">' + esc(p.family || '') + '</div></div>' + badge + '</div>' +

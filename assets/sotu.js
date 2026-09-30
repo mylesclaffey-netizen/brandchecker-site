@@ -111,7 +111,7 @@
     if (!m.mentioned) return { text: 'Not mentioned', cls: 'no' };
     return { text: 'Mentioned' + (m.position ? ' #' + m.position : ''), cls: 'yes' };
   }
-  var PROVIDER_LABELS = { chatgpt: 'ChatGPT', chatgpt_app: 'ChatGPT app', claude: 'Claude', perplexity: 'Perplexity', llama: 'Llama',
+  var PROVIDER_LABELS = { chatgpt: 'ChatGPT', chatgpt_app: 'ChatGPT app', gemini_app: 'Gemini app', ai_mode: 'AI Mode', claude: 'Claude', perplexity: 'Perplexity', llama: 'Llama',
     mistral: 'Mistral', ai_overviews: 'AI Overviews', gemini: 'Gemini', copilot: 'Copilot' };
   function providerLabel(id) { return PROVIDER_LABELS[id] || id; }
 
