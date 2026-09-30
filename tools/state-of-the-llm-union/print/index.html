@@ -210,6 +210,13 @@ async function citedFor(d) {
   return r && r.pages ? r : null;
 }
 
+// What ChatGPT searched for (Worker: sotuFanout.js) — free without `run`; saved rankings come with it.
+async function fanoutFor(d) {
+  if (!d.brands[0] || d.status !== 'complete') return null;
+  const r = await S.api('/state-of-union/fanout', { id: d.id }).catch(() => null);
+  return r && r.queries ? r : null;
+}
+
 async function demandFor(d) {
   if (!d.brands[0] || d.status !== 'complete') return null;
   const r = await S.api('/state-of-union/demand', { id: d.id }).catch(() => null);
@@ -228,6 +235,7 @@ async function summaryHtml(d) {
   let h = statCards(d, colours) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells) + S.recommendHtml(sm.recommend, d, colours, { compact: true }) + S.personasHtml(d, colours) + modelTable(d, colours);
   if (dem) h += '<h2 class="h2b">Weighted by demand</h2>' + S.demandHtml(d, dem, S.demandBasisFor(d, dem), colours, { compact: true });
   h += S.citedHtml(await citedFor(d), d, colours, { max: 6 });
+  const fo = await fanoutFor(d); if (fo) h += S.fanoutHtml(fo, fo.rankings, d, colours, { compact: true });
   if (main) h += describeCompact(sm.describe, main.name);
   if (main && sm.facts && sm.facts.groups.length) {
     h += '<h2 class="h2b">What AI gets wrong about ' + esc(main.name) + '</h2><div class="lst">' + sm.facts.groups.slice(0, 3).map(g =>
@@ -252,7 +260,8 @@ async function reportHtml(d) {
   let h = statCards(d, colours) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells) + S.recommendHtml(sm.recommend, d, colours) + S.personasHtml(d, colours);
   if (dem) h += '<h2 class="h2b">Weighted by demand</h2>' + S.demandHtml(d, dem, S.demandBasisFor(d, dem), colours);
   if (main) h += S.describeHtml(sm.describe, main.name) + S.factsHtml(sm.facts, main.name);
-  h += citationsBlock(d) + S.citedHtml(await citedFor(d), d, colours, { max: 15 }) + S.discoveredHtml(sm.discovered, false);
+  const fo = await fanoutFor(d);
+  h += citationsBlock(d) + S.citedHtml(await citedFor(d), d, colours, { max: 15 }) + (fo ? S.fanoutHtml(fo, fo.rankings, d, colours) : '') + S.discoveredHtml(sm.discovered, false);
   if (main) {
     const briefs = (await Promise.all(d.prompts.map(p => S.api('/state-of-union/brief', { id: d.id, prompt: p, cached_only: true })))).filter(b => b && b.brief);
     if (briefs.length) h += '<h2 class="h2b">Prompt briefs</h2>' + byStake(d, dem, briefs).map(briefBlock).join('');

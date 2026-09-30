@@ -70,6 +70,8 @@ let demand = null, demandState = 'idle', demandBasis = 'ai';
 let crawl = null, crawlState = 'idle';
 // Which brands the cited third-party pages name (Worker: sotuCitedPages.js), loaded with the Brand mentions tab.
 let cited = null, citedState = 'idle';
+// The searches models ran while answering (Worker: sotuFanout.js); rankings for them only when asked (they cost a little).
+let fanout = null, fanoutState = 'idle';
 // Persona variants the run asked, in order: null is the plain question.
 const variants = d => { const ps = d.personas || []; if (!ps.length) return [null]; const has = new Set(d.cells.map(c => c.persona || null)); return [null, ...ps].filter(v => has.has(v)); };
 const personaName = S.personaName;
@@ -205,7 +207,7 @@ function brandsView(d) {
   const provs = shown(d).filter(p => p.available).map(p => p.id);
   const labelP = id => esc((d.providers.filter(p => p.id === id)[0] || {}).label || id);
   const note = '<p class="hint" style="margin:-18px 0 30px">Likely range: where the true rate probably sits (95%), given how many answers this run collected. More prompts, markets or repeats narrow it.</p>';
-  return '<h2 class="h2b">Who gets named</h2>' + overall + note + recommendSection(d) + demandHtml(d) + S.personasHtml(d, colours) + S.discoveredHtml(sm.discovered, !SHARE && !!d.watch_id) + (d.brands[0] ? S.describeHtml(sm.describe, d.brands[0].name) + S.factsHtml(sm.facts, d.brands[0].name) : '') + consistencyHtml(d) + citationsHtml(d) + pagesHtml(d) + citedSection(d) + crawlHtml(d) + briefsHtml(d) +
+  return '<h2 class="h2b">Who gets named</h2>' + overall + note + recommendSection(d) + demandHtml(d) + S.personasHtml(d, colours) + S.discoveredHtml(sm.discovered, !SHARE && !!d.watch_id) + (d.brands[0] ? S.describeHtml(sm.describe, d.brands[0].name) + S.factsHtml(sm.facts, d.brands[0].name) : '') + consistencyHtml(d) + citationsHtml(d) + pagesHtml(d) + citedSection(d) + (fanoutState === 'ready' ? S.fanoutHtml(fanout, fanout.rankings, d, colours, { owner: !SHARE }) : '') + crawlHtml(d) + briefsHtml(d) +
     '<h2 class="h2b">By model</h2>' + matrix(d, 'Model', provs, c => c.provider, labelP) +
     '<h2 class="h2b">By market</h2>' + matrix(d, 'Market', d.locations, c => c.location, l => S.market(l).flag + ' ' + esc(l)) +
     '<h2 class="h2b">By prompt</h2>' + matrix(d, 'Prompt', d.prompts, c => c.prompt, esc);
@@ -299,6 +301,15 @@ function citedSection(d) {
   if (SHARE) return '';
   return citedState === 'error' ? '<h2 class="h2b">Pages AI cites — who they mention</h2><p class="err">' + esc((cited && cited.error) || 'The cited pages could not be checked.') + '</p>'
     : '<h2 class="h2b">Pages AI cites — who they mention</h2><p class="hint">Reading the pages the answers cite… (up to half a minute)</p>';
+}
+let fanPoll = null;
+async function loadFanout(run, engine) {
+  clearTimeout(fanPoll);
+  const r = await S.api('/state-of-union/fanout', Object.assign({ id: data.id }, run ? { run: true, engine } : {}));
+  if (r && r.queries) { fanout = r; fanoutState = 'ready'; } else if (!run) fanoutState = 'error';
+  render();
+  // Rankings are checked in the background (a queue job, about two minutes): check back until they're saved.
+  if (fanout && fanout.running) fanPoll = setTimeout(() => loadFanout(), 6000);
 }
 async function loadCited(refresh) {
   citedState = 'loading'; if (refresh) render();
@@ -514,6 +525,8 @@ function render() {
   if (!SHARE && tab === 'brands' && d.status === 'complete' && d.brands.length && crawlState === 'idle') loadCrawl();
   if (!SHARE && tab === 'brands' && d.status === 'complete' && d.brands.length && citedState === 'idle' && (d.summary || {}).citations) loadCited();
   const cf = $('citedRefresh'); if (cf) cf.onclick = e => { e.preventDefault(); loadCited(true); };
+  if (!SHARE && tab === 'brands' && d.status === 'complete' && d.brands.length && fanoutState === 'idle') { fanoutState = 'loading'; loadFanout(); }
+  $('out').querySelectorAll('[data-fanrun]').forEach(b => b.onclick = () => loadFanout(true, b.dataset.fanrun));
   const cr = $('crawlRefresh'); if (cr) cr.onclick = e => { e.preventDefault(); loadCrawl(true); };
   const tb = $('trackBtn'); if (tb) tb.onclick = startTracking;
   const gc = $('gscConnect'); if (gc) gc.onclick = gscConnect;
@@ -552,6 +565,7 @@ async function load() {
     if (shared.demand && shared.demand.prompts) { demand = shared.demand; demandState = 'ready'; }
     if (shared.crawl && shared.crawl.pages) { crawl = shared.crawl; crawlState = 'ready'; }
     if (shared.cited && shared.cited.pages) { cited = shared.cited; citedState = 'ready'; }
+    if (shared.fanout && shared.fanout.queries) { fanout = Object.assign({}, shared.fanout, { rankings: shared.fanout_rankings || {} }); fanoutState = 'ready'; }
     Object.values(shared.briefs || {}).forEach(b => { briefs[b.prompt] = b; });
     $('agencyHead').innerHTML = S.sharedHeader(shared.branding);
     document.querySelector('.sidenav').style.display = 'none';

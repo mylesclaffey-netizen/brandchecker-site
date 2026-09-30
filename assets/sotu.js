@@ -167,6 +167,52 @@
       'Checked ' + ago(c.checked_at) + (opts.refresh ? ' · <a href="#" id="citedRefresh">check again</a>' : '') + '.</p>';
   }
 
+  // "What ChatGPT searched for" (Worker: sotuFanout.js): the searches models ran while answering — which vendors they
+  // looked up by name, the discovery searches, and (when checked) where each brand ranks for them. `rk`: { google?, bing? }
+  // saved rankings; `opts.owner`: show the buttons that check rankings (they cost a few cents); `opts.compact`: PDFs.
+  function fanoutHtml(f, rk, d, colours, opts) {
+    opts = opts || {}; rk = rk || {};
+    if (!f || !f.queries || !f.queries.length || !d.brands.length) return '';
+    var main = d.brands[0].name, total = f.queries.reduce(function (t, q) { return t + q.answers; }, 0);
+    var lk = f.lookups.filter(function (l) { return l.searches; }).sort(function (a, b) { return b.answers - a.answers; });
+    var you = f.lookups.filter(function (l) { return l.brand === main; })[0] || { answers: 0 };
+    var h = '<h2 class="h2b">What ChatGPT searched for</h2><p style="margin:0 0 10px">' + f.answers_with_searches + ' answers searched the web while answering — ' + f.queries.length + ' different searches. ' +
+      (lk.length ? 'It looked vendors up by name: ' + lk.map(function (l) { return (l.brand === main ? '<b>' + esc(l.brand) + '</b>' : esc(l.brand)) + ' ' + l.answers + '×'; }).join(' · ') + '.' : '') +
+      (!you.answers && lk.length ? ' <b>It never looked ' + esc(main) + ' up.</b>' : '') + '</p>';
+    if (!opts.compact) {
+      var disc = f.queries.filter(function (q) { return q.kind === 'discovery'; }).slice(0, 10);
+      if (disc.length) h += '<div class="tblwrap"><table class="tbl"><tr><th>Discovery searches (the ones that decide who gets considered)</th><th>Answers</th><th>Tracked brands in it</th></tr>' + disc.map(function (q) {
+        return '<tr><td>' + esc(q.query) + '</td><td class="num">' + q.answers + '</td><td>' + (q.brands.length ? q.brands.map(function (b) { return b === main ? '<b>' + esc(b) + '</b>' : esc(b); }).join(', ') : '—') + '</td></tr>';
+      }).join('') + '</table></div>';
+      if ((f.other_lookups || []).length) h += '<p class="hint" style="margin:-18px 0 22px">Also looked up by name: ' + f.other_lookups.map(function (o) { return '“' + esc(o.query) + '”'; }).join(' · ') + '.</p>';
+    }
+    // Rankings for the discovery searches, per engine that has been checked.
+    ['google', 'bing'].forEach(function (e) {
+      var r = rk[e];
+      if (!r || !r.searches) return;
+      var ok = r.searches.filter(function (x) { return !x.error; }), E = e === 'google' ? 'Google' : 'Bing';
+      var top10 = function (n) { return ok.filter(function (x) { return x.brands[n] && x.brands[n].rank <= 10; }).length; };
+      h += '<h3 style="margin:18px 0 8px">Where you rank on ' + E + ' for these searches</h3><p style="margin:0 0 10px">' + esc(main) + ' is on ' + E + '’s first page for <b>' + top10(main) + ' of ' + ok.length + '</b> of them' +
+        d.brands.slice(1).map(function (b) { return ' · ' + esc(b.name) + ' ' + top10(b.name); }).join('') + '.</p>';
+      if (!opts.compact) h += '<div class="tblwrap"><table class="tbl"><tr><th>Search</th><th>' + esc(main) + '</th><th>Best competitor</th><th>#1 result</th><th>Cited sites in top 20</th></tr>' + ok.slice(0, 15).map(function (x) {
+        var comp = d.brands.slice(1).map(function (b) { return { n: b.name, r: x.brands[b.name] }; }).filter(function (c) { return c.r; }).sort(function (a, b) { return a.r.rank - b.r.rank; })[0];
+        var mine = x.brands[main];
+        return '<tr><td>' + esc(x.query.slice(0, 90)) + '</td><td class="num">' + (mine ? '#' + mine.rank : '—') + '</td><td>' + (comp ? esc(comp.n) + ' #' + comp.r.rank : '—') + '</td><td>' + (x.top[0] ? esc(x.top[0].domain) : '—') + '</td><td class="num">' + x.cited_sites + ' of ' + x.of_sites + '</td></tr>';
+      }).join('') + '</table></div>';
+      var ex = r.explains || { searches: ok.length, with_cited_site: 0 };
+      h += '<p class="hint" style="margin:' + (opts.compact ? '0' : '-18px') + ' 0 22px">' + E + '’s top 20 contained a website the answer went on to cite for ' + ex.with_cited_site + ' of ' + ex.searches + ' searches' +
+        (ex.searches && ex.with_cited_site / ex.searches < 0.5 ? ' — so ChatGPT isn’t simply citing what ranks; treat these rankings as context, not the route into the answer.' : ' — rankings and citations line up here, so ranking for these searches is a route into the answer.') + ' Checked ' + ago(r.checked_at) + '.</p>';
+    });
+    var running = Object.keys(f.running || {});
+    if (opts.owner && running.length) h += '<p class="hint" style="margin:0 0 26px">Checking ' + running.map(function (e) { return e === 'google' ? 'Google' : 'Bing'; }).join(' and ') + ' rankings… about two minutes. You can leave this page — they’re saved with the report.</p>';
+    else if (opts.owner) {
+      var n = f.plan ? f.plan.to_rank : 0;
+      if (n) h += '<p style="margin:0 0 26px">' + (!rk.google ? '<button class="btn2 small solid" data-fanrun="google" type="button">Check Google rankings for ' + n + ' searches (about ' + money(n * 0.003) + ')</button> ' : '<button class="btn2 small" data-fanrun="google" type="button">Check Google again</button> ') +
+        (!rk.bing ? '<button class="btn2 small" data-fanrun="bing" type="button">Check Bing too (about ' + money(n * 0.004) + ')</button>' : '') + ' <span class="hint" id="fanMsg"></span></p>';
+    }
+    return h;
+  }
+
   // Agency branding for exports (Worker: branding.js) — the access code's name, logo, accent and white-label choice.
   // Fetched once per page; `refresh` re-reads it after a save.
   var brandingP = null;
@@ -479,6 +525,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, citedHtml: citedHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, citedHtml: citedHtml, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();

@@ -338,6 +338,24 @@
           }
         }
 
+        // What ChatGPT searched for (sotuFanout.js): who it looked up by name, and — if checked — where you rank for its searches.
+        var fo = await S.api('/state-of-union/fanout', { id: d.id }).catch(function () { return null; });
+        if (fo && fo.queries && fo.queries.length) {
+          var lk = fo.lookups.filter(function (l) { return l.searches; }).sort(function (a, b) { return b.answers - a.answers; });
+          var you = fo.lookups.filter(function (l) { return l.brand === name; })[0] || { answers: 0 };
+          s = deck.slide('What ChatGPT searched for', fo.queries.length + ' searches while answering — ' + (you.answers ? name + ' looked up ' + you.answers + '×' : name + ' never looked up'));
+          var g = fo.rankings && (fo.rankings.google || fo.rankings.bing), bullets = [];
+          if (lk.length) bullets.push('Vendors looked up by name: ' + lk.map(function (l) { return l.brand + ' ' + l.answers + '×'; }).join(' · ') + '.');
+          fo.queries.filter(function (q) { return q.kind === 'discovery'; }).slice(0, 4).forEach(function (q) { bullets.push('“' + clip(q.query, 110) + '”' + (q.answers > 1 ? ' (' + q.answers + ' answers)' : '')); });
+          deck.bullets(s, bullets, { y: 1.75, h: g ? 2.3 : 4.8, fs: 12 });
+          if (g) {
+            var okS = g.searches.filter(function (x) { return !x.error; });
+            var p1 = function (n) { return okS.filter(function (x) { return x.brands[n] && x.brands[n].rank <= 10; }).length; };
+            deck.bars(s, d.brands.map(function (b) { return b.name; }), [{ name: 'On ' + (g.engine === 'bing' ? 'Bing' : 'Google') + '’s first page for these searches', color: ORANGE, values: d.brands.map(function (b) { return okS.length ? p1(b.name) / okS.length : null; }) }], { y: 4.1, h: 2.0, bold: 0 });
+            deck.note(s, (g.engine === 'bing' ? 'Bing' : 'Google') + '’s top 20 held a website the answer cited for ' + g.explains.with_cited_site + ' of ' + g.explains.searches + ' searches' + (g.explains.searches && g.explains.with_cited_site / g.explains.searches < 0.5 ? ' — ChatGPT isn’t simply citing what ranks, so treat rankings as context.' : ' — rankings and citations line up here, so ranking for these searches is a route into the answer.'), 6.62, 0.35);
+          }
+        }
+
         // Crawler access: only when something needs attention.
         if (crawl) {
           var issues = crawl.pages.filter(function (p) { return p.blocked_us || p.status >= 400 || (p.page_rules || []).length || (p.ua_blocked || []).length || Object.values(p.robots || {}).some(function (v) { return v.allowed === false; }); });
