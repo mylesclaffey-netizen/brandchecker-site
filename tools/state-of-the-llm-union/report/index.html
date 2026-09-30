@@ -57,6 +57,8 @@ document.querySelectorAll('.sidenav-link').forEach(a => {
 let briefs = {};   // prompt -> { busy } | brief response (Worker: promptBrief.js)
 let gsc = null, gscPages = null, gscBusy = false;   // Search Console status and per-page metrics (Worker: gsc.js)
 let data = null, colours = {}, tab = 'compare', promptIdx = 0, marketSel = null, repSel = 1, personaSel = 0, pollTimer = null, pollCount = 0;
+// Demand behind each prompt (Worker: promptDemand.js), loaded when the Brand mentions tab first opens.
+let demand = null, demandState = 'idle', demandBasis = 'ai';
 // Persona variants the run asked, in order: null is the plain question.
 const variants = d => { const ps = d.personas || []; if (!ps.length) return [null]; const has = new Set(d.cells.map(c => c.persona || null)); return [null, ...ps].filter(v => has.has(v)); };
 const personaName = S.personaName;
@@ -191,10 +193,61 @@ function brandsView(d) {
   const provs = shown(d).filter(p => p.available).map(p => p.id);
   const labelP = id => esc((d.providers.filter(p => p.id === id)[0] || {}).label || id);
   const note = '<p class="hint" style="margin:-18px 0 30px">Likely range: where the true rate probably sits (95%), given how many answers this run collected. More prompts, markets or repeats narrow it.</p>';
-  return '<h2 class="h2b">Who gets named</h2>' + overall + note + S.personasHtml(d, colours) + S.discoveredHtml(sm.discovered, !!d.watch_id) + (d.brands[0] ? S.describeHtml(sm.describe, d.brands[0].name) + S.factsHtml(sm.facts, d.brands[0].name) : '') + consistencyHtml(d) + citationsHtml(d) + pagesHtml(d) + briefsHtml(d) +
+  return '<h2 class="h2b">Who gets named</h2>' + overall + note + demandHtml(d) + S.personasHtml(d, colours) + S.discoveredHtml(sm.discovered, !!d.watch_id) + (d.brands[0] ? S.describeHtml(sm.describe, d.brands[0].name) + S.factsHtml(sm.facts, d.brands[0].name) : '') + consistencyHtml(d) + citationsHtml(d) + pagesHtml(d) + briefsHtml(d) +
     '<h2 class="h2b">By model</h2>' + matrix(d, 'Model', provs, c => c.provider, labelP) +
     '<h2 class="h2b">By market</h2>' + matrix(d, 'Market', d.locations, c => c.location, l => S.market(l).flag + ' ' + esc(l)) +
     '<h2 class="h2b">By prompt</h2>' + matrix(d, 'Prompt', d.prompts, c => c.prompt, esc);
+}
+
+// Weight for one prompt in one market: its monthly searches on the chosen basis (AI tools or Google); 0 when unknown.
+function weightOf(p, m) {
+  const e = demand && demand.prompts.find(x => x.prompt === p), v = e && e.by_market[m];
+  return v ? (demandBasis === 'ai' ? v.ai : v.google) || 0 : 0;
+}
+// Searches a month where the main brand isn't named: Σ over markets of weight × (1 − rate).
+function missedOf(d, p) {
+  const main = d.brands[0], answered = S.answered(d.cells);
+  return d.locations.reduce((t, m) => { const r = S.rate(answered.filter(c => c.prompt === p && c.location === m), main.name); return t + (r == null ? 0 : weightOf(p, m) * (1 - r)); }, 0);
+}
+function demandHtml(d) {
+  const main = d.brands[0];
+  if (!main || d.status !== 'complete') return '';
+  const title = '<h2 class="h2b">Weighted by demand</h2>';
+  if (demandState === 'loading' || demandState === 'idle') return title + '<p class="hint">Looking up how often these questions are asked…</p>';
+  if (demandState === 'error' || !demand) return title + '<p class="err">' + esc((demand && demand.error) || 'Search demand could not be loaded.') + '</p>';
+  const answered = S.answered(d.cells), n = v => v == null ? '—' : Number(v).toLocaleString();
+  const total = d.prompts.reduce((t, p) => t + d.locations.reduce((u, m) => u + weightOf(p, m), 0), 0);
+  const basisBtns = '<div class="seg" style="margin:0 0 12px"><button data-basis="ai" aria-pressed="' + (demandBasis === 'ai') + '">AI searches</button><button data-basis="google" aria-pressed="' + (demandBasis === 'google') + '">Google searches</button></div>';
+  // Weighted share: each prompt × market counts in proportion to its searches.
+  const weighted = b => {
+    let num = 0, den = 0;
+    d.prompts.forEach(p => d.locations.forEach(m => { const r = S.rate(answered.filter(c => c.prompt === p && c.location === m), b.name), w = weightOf(p, m); if (r != null && w) { num += w * r; den += w; } }));
+    return den ? num / den : null;
+  };
+  let h = title + basisBtns;
+  if (!total) h += '<p class="hint">None of these questions has ' + (demandBasis === 'ai' ? 'an AI' : 'a Google') + ' search estimate — try the other basis, or correct the search keywords below.</p>';
+  else h += '<div class="tblwrap"><table class="tbl"><tr><th>Brand</th><th>Share of answers</th><th>Weighted by demand</th><th>Difference</th></tr>' + d.brands.map(b => {
+    const u = S.rate(answered, b.name), w = weighted(b), df = u != null && w != null ? w - u : null;
+    return '<tr><td><span class="dot" style="--bg:' + colours[b.name].bg + '"></span><b>' + esc(b.name) + '</b>' + (b === main ? ' <small>(you)</small>' : '') + '</td><td class="num">' + S.pct(u) + '</td><td class="num"><b>' + S.pct(w) + '</b></td><td class="num">' +
+      (df == null || Math.abs(df) < 0.005 ? '—' : (df > 0 ? '▲' : '▼') + Math.round(Math.abs(df) * 100) + ' pts') + '</td></tr>';
+  }).join('') + '</table></div>';
+  const rows = demand.prompts.map(e => {
+    const sum = k => d.locations.reduce((t, m) => { const v = e.by_market[m]; return v && v[k] != null ? (t || 0) + v[k] : t; }, null);
+    return { e, ai: sum('ai'), g: sum('google'), rate: S.rate(answered.filter(c => c.prompt === e.prompt), main.name), missed: missedOf(d, e.prompt) };
+  }).sort((a, b) => b.missed - a.missed);
+  h += '<div class="tblwrap"><table class="tbl"><tr><th>Prompt</th><th>Search keyword</th><th>AI searches / mo</th><th>Google searches / mo</th><th>' + esc(main.name) + ' named</th><th>Searches you miss / mo</th></tr>' + rows.map(r => {
+    const i = d.prompts.indexOf(r.e.prompt);
+    return '<tr><td>' + esc(r.e.prompt) + '</td><td style="white-space:nowrap"><input data-kw="' + i + '" value="' + esc(r.e.keyword) + '" style="width:170px;padding:4px 6px;font-size:13px"> <button class="btn2 small" data-kwsave="' + i + '" type="button">Save</button>' + (r.e.edited ? '<br><small>edited</small>' : '') + '</td>' +
+      '<td class="num">' + n(r.ai) + '</td><td class="num">' + n(r.g) + '</td><td class="num">' + S.pct(r.rate) + '</td><td class="num"><b>' + (r.missed ? Math.round(r.missed).toLocaleString() : '0') + '</b></td></tr>';
+  }).join('') + '</table></div>';
+  return h + '<p class="hint" style="margin:-18px 0 30px">Each prompt is matched to the short keyword people search for the same need (edit it if it’s wrong — trackers keep your edits). AI searches: DataForSEO’s estimate of monthly use in AI tools, based on Google’s People Also Ask data. Google searches: monthly Google volume. ' +
+    (d.locations.length > 1 ? 'Summed across this run’s markets. ' : '') + '“Searches you miss” = searches × the share of answers that don’t name ' + esc(main.name) + ' — the value at stake.' + (demand.note ? ' ' + esc(demand.note) + '.' : '') + '</p>';
+}
+async function loadDemand(keywords) {
+  demandState = 'loading';
+  const r = await S.api('/state-of-union/demand', Object.assign({ id: data.id }, keywords ? { keywords } : {}));
+  demand = r; demandState = r && !r.error && r.prompts ? 'ready' : 'error';
+  render();
 }
 
 function consistencyHtml(d) {
@@ -288,18 +341,20 @@ function briefsHtml(d) {
     const mine = S.rate(list, main.name);
     const rivals = d.brands.slice(1).map(b => ({ b, v: S.rate(list, b.name) })).filter(x => x.v != null).sort((a, b) => b.v - a.v);
     return { p, mine, top: rivals[0] && rivals[0].v > 0 ? rivals[0] : null };
-  }).sort((a, b) => (a.mine ?? 1) - (b.mine ?? 1));
+  });
+  const byDemand = demandState === 'ready' && d.prompts.some(p => missedOf(d, p) > 0);
+  rows.sort(byDemand ? (a, b) => missedOf(d, b.p) - missedOf(d, a.p) : (a, b) => (a.mine ?? 1) - (b.mine ?? 1));
   const card = r => {
     const st = briefs[r.p], idx = d.prompts.indexOf(r.p);
     const head = '<div style="display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap">' +
       '<div style="flex:1;min-width:240px"><b style="font-size:17px">' + esc(r.p) + '</b><br><small>' + esc(main.name) + ' named in ' + S.pct(r.mine) +
-      (r.top ? ' · ' + esc(r.top.b.name) + ' in ' + S.pct(r.top.v) : '') + '</small></div>' +
+      (r.top ? ' · ' + esc(r.top.b.name) + ' in ' + S.pct(r.top.v) : '') + (byDemand ? ' · ~' + Math.round(missedOf(d, r.p)).toLocaleString() + ' searches a month at stake' : '') + '</small></div>' +
       (st && st.brief ? '' : '<button class="btn2 small' + (r.mine != null && r.mine < 1 ? ' solid' : '') + '" data-brief="' + idx + '" type="button"' + (st && st.busy ? ' disabled' : '') + '>' +
         (st && st.busy ? 'Writing… (up to a minute)' : (r.mine != null && r.mine < 1 ? 'Why you lose this' : 'How to hold this')) + '</button>') + '</div>';
     return '<div class="card2" style="border:3px solid #0a0a0a;padding:16px;margin:0 0 16px;background:#fff">' + head +
       (st && st.error ? '<p class="err" style="margin-top:10px">' + esc(st.error) + '</p>' : '') + (st && st.brief ? briefBody(st, idx) : '') + '</div>';
   };
-  return '<h2 class="h2b">Why you lose these prompts</h2><p class="hint" style="margin:0 0 14px">Worst first. A brief reads this run’s answers, the pages they cite and the searches ChatGPT ran, and says who wins, why, and what to change. Each costs a few cents to write and is saved with the report.</p>' +
+  return '<h2 class="h2b">Why you lose these prompts</h2><p class="hint" style="margin:0 0 14px">' + (byDemand ? 'Most searches at stake first.' : 'Worst first.') + ' A brief reads this run’s answers, the pages they cite and the searches ChatGPT ran, and says who wins, why, and what to change. Each costs a few cents to write and is saved with the report.</p>' +
     rows.map(card).join('');
 }
 
@@ -386,6 +441,13 @@ function render() {
   $('out').querySelectorAll('[data-m]').forEach(b => b.onclick = () => { marketSel = b.dataset.m; render(); });
   $('out').querySelectorAll('[data-r]').forEach(b => b.onclick = () => { repSel = +b.dataset.r; render(); });
   $('out').querySelectorAll('[data-v]').forEach(b => b.onclick = () => { personaSel = +b.dataset.v; render(); });
+  $('out').querySelectorAll('[data-basis]').forEach(b => b.onclick = () => { demandBasis = b.dataset.basis; render(); });
+  $('out').querySelectorAll('[data-kwsave]').forEach(b => b.onclick = () => {
+    const i = b.dataset.kwsave, v = $('out').querySelector('[data-kw="' + i + '"]').value.trim();
+    b.disabled = true; b.textContent = 'Looking up…';
+    loadDemand({ [data.prompts[+i]]: v });
+  });
+  if (tab === 'brands' && d.status === 'complete' && d.brands.length && demandState === 'idle') loadDemand();
   const tb = $('trackBtn'); if (tb) tb.onclick = startTracking;
   const gc = $('gscConnect'); if (gc) gc.onclick = gscConnect;
   const pdfName = sfx => 'state-of-the-llm-union-' + (data.brand_name || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + String(data.created_at).slice(0, 10) + sfx + '.pdf';
