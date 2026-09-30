@@ -29,10 +29,12 @@
 </head>
 <body>
 <div class="sotu-wrap">
+  <div id="agencyHead"></div>
   <p class="eyebrow">State Of The LLM Union</p>
   <h1 id="rTitle">Loading…</h1>
   <p class="sotu-sub" id="rSub"></p>
   <div id="banner"></div>
+  <details class="brandbox" id="shareBox" hidden><summary>Share a read-only link</summary><div id="sharePanel"></div></details>
   <details class="brandbox" id="brandBox" hidden><summary>Your logo on PDFs and slides</summary><div id="brandPanel"></div></details>
   <div id="out"></div>
 
@@ -49,6 +51,9 @@
 if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
 const S = window.SOTU, esc = S.esc;
 const ID = new URLSearchParams(location.search).get('id') || '';
+// A read-only share link (?s=<token>, Worker: share.js): no access code, nothing that runs or spends.
+const SHARE = new URLSearchParams(location.search).get('s') || '';
+let shared = null;   // /state-of-union/share/get's response in share mode
 const $ = id => document.getElementById(id);
 document.querySelectorAll('.sidenav-link').forEach(a => {
   const u = new URL(a.getAttribute('href'), location.origin);
@@ -63,6 +68,8 @@ let data = null, colours = {}, tab = 'compare', promptIdx = 0, marketSel = null,
 let demand = null, demandState = 'idle', demandBasis = 'ai';
 // Crawler access to the cited pages (Worker: sotuCrawlerAccess.js), loaded with the Brand mentions tab.
 let crawl = null, crawlState = 'idle';
+// Which brands the cited third-party pages name (Worker: sotuCitedPages.js), loaded with the Brand mentions tab.
+let cited = null, citedState = 'idle';
 // Persona variants the run asked, in order: null is the plain question.
 const variants = d => { const ps = d.personas || []; if (!ps.length) return [null]; const has = new Set(d.cells.map(c => c.persona || null)); return [null, ...ps].filter(v => has.has(v)); };
 const personaName = S.personaName;
@@ -81,13 +88,14 @@ function statCards(d) {
   const range = S.range(ms), con = sm.consistency, cit = sm.citations;
   const cards = [
     { cls: 'accent', lbl: 'Mention rate', val: rateTxt, sub: main ? 'answers naming ' + esc(main.name) + (range ? ' · likely range ' + range : '') : 'add a brand to track mentions' },
+    sm.recommend && main && sm.recommend.by_brand[main.name] ? { lbl: 'Top pick', val: S.pct(sm.recommend.by_brand[main.name].top_rate), sub: 'answers where ' + esc(main.name) + ' is the single top recommendation' } : null,
     con && main ? { lbl: 'Named every time', val: con.always + '/' + con.groups, sub: 'model × prompt × market combos asked ' + d.repeats + '×; ' + con.sometimes + ' only sometimes' } : null,
     sm.facts && main ? { lbl: 'Wrong facts', val: sm.facts.with_issues + '/' + sm.facts.checked, sub: 'answers naming ' + esc(main.name) + ' that contradict your fact sheet' } : null,
     cit && main ? { lbl: 'Cited as a source', val: S.pct(cit.by_brand[main.name] ? cit.by_brand[main.name].rate : null), sub: cit.by_brand[main.name] && !cit.by_brand[main.name].has_domain ? 'add your website to count citations' : 'of ' + cit.answers_with_sources + ' answers that showed sources' } : null,
     { lbl: 'Prompts', val: d.prompts.length, sub: 'asked in each market' + (d.repeats > 1 ? ', ' + d.repeats + '× each' : '') },
     { lbl: 'Markets', val: d.locations.length, sub: d.locations.map(l => S.market(l).short).join(' · ') },
     { lbl: 'Models', val: shown(d).filter(p => p.available).length, sub: 'compared per prompt' },
-    { lbl: 'Run cost', val: S.money(d.total_cost || 0), sub: d.web ? 'web search on' : 'web search off' }
+    SHARE ? null : { lbl: 'Run cost', val: S.money(d.total_cost || 0), sub: d.web ? 'web search on' : 'web search off' }
   ].filter(Boolean);
   return '<div class="stats4">' + cards.map(c =>
     '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>'
@@ -197,7 +205,7 @@ function brandsView(d) {
   const provs = shown(d).filter(p => p.available).map(p => p.id);
   const labelP = id => esc((d.providers.filter(p => p.id === id)[0] || {}).label || id);
   const note = '<p class="hint" style="margin:-18px 0 30px">Likely range: where the true rate probably sits (95%), given how many answers this run collected. More prompts, markets or repeats narrow it.</p>';
-  return '<h2 class="h2b">Who gets named</h2>' + overall + note + demandHtml(d) + S.personasHtml(d, colours) + S.discoveredHtml(sm.discovered, !!d.watch_id) + (d.brands[0] ? S.describeHtml(sm.describe, d.brands[0].name) + S.factsHtml(sm.facts, d.brands[0].name) : '') + consistencyHtml(d) + citationsHtml(d) + pagesHtml(d) + crawlHtml(d) + briefsHtml(d) +
+  return '<h2 class="h2b">Who gets named</h2>' + overall + note + recommendSection(d) + demandHtml(d) + S.personasHtml(d, colours) + S.discoveredHtml(sm.discovered, !SHARE && !!d.watch_id) + (d.brands[0] ? S.describeHtml(sm.describe, d.brands[0].name) + S.factsHtml(sm.facts, d.brands[0].name) : '') + consistencyHtml(d) + citationsHtml(d) + pagesHtml(d) + citedSection(d) + crawlHtml(d) + briefsHtml(d) +
     '<h2 class="h2b">By model</h2>' + matrix(d, 'Model', provs, c => c.provider, labelP) +
     '<h2 class="h2b">By market</h2>' + matrix(d, 'Market', d.locations, c => c.location, l => S.market(l).flag + ' ' + esc(l)) +
     '<h2 class="h2b">By prompt</h2>' + matrix(d, 'Prompt', d.prompts, c => c.prompt, esc);
@@ -206,11 +214,12 @@ function brandsView(d) {
 function missedOf(d, p) { return S.demandMissed(d, demand, demandBasis, p); }
 function demandHtml(d) {
   if (!d.brands[0] || d.status !== 'complete') return '';
+  if (SHARE && demandState !== 'ready') return '';
   const title = '<h2 class="h2b">Weighted by demand</h2>';
   if (demandState === 'loading' || demandState === 'idle') return title + '<p class="hint">Looking up how often these questions are asked…</p>';
   if (demandState === 'error' || !demand) return title + '<p class="err">' + esc((demand && demand.error) || 'Search demand could not be loaded.') + '</p>';
   const basisBtns = '<div class="seg" style="margin:0 0 12px"><button data-basis="ai" aria-pressed="' + (demandBasis === 'ai') + '">AI searches</button><button data-basis="google" aria-pressed="' + (demandBasis === 'google') + '">Google searches</button></div>';
-  return title + basisBtns + S.demandHtml(d, demand, demandBasis, colours, { editable: true });
+  return title + basisBtns + S.demandHtml(d, demand, demandBasis, colours, { editable: !SHARE });
 }
 async function loadDemand(keywords) {
   demandState = 'loading';
@@ -222,6 +231,7 @@ async function loadDemand(keywords) {
 // Can AI crawlers reach the pages the answers cite, and the brand's own? One row per page, one column per AI service.
 function crawlHtml(d) {
   if (!d.brands.length || d.status !== 'complete') return '';
+  if (SHARE && crawlState !== 'ready') return '';
   const title = '<h2 class="h2b">Can AI crawlers reach these pages?</h2>';
   if (crawlState === 'loading' || crawlState === 'idle') return title + '<p class="hint">Checking robots.txt, page tags and firewalls for the cited pages… (up to half a minute)</p>';
   if (crawlState === 'error' || !crawl || !crawl.pages) return title + '<p class="err">' + esc((crawl && crawl.error) || 'The crawler check could not run.') + '</p>';
@@ -254,12 +264,46 @@ function crawlHtml(d) {
     crawl.pages.map(p => '<tr><td><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 60)) + '</a>' + (p.answers ? '<br><small>cited in ' + p.answers + ' answer' + (p.answers === 1 ? '' : 's') + '</small>' : '') + '</td><td>' + kindLabel(p) + '</td>' +
       groups.map(g => cell(p, g)).join('') + '<td><small>' + notes(p) + '</small></td></tr>').join('') + '</table></div>' +
     '<p class="hint" style="margin:-18px 0 30px">✓ = robots.txt lets that service’s crawlers fetch the page (ChatGPT: OAI-SearchBot, ChatGPT-User, GPTBot · Perplexity: PerplexityBot, Perplexity-User · Claude: Claude-SearchBot, Claude-User, ClaudeBot · Google: Googlebot, which feeds AI Overviews and AI Mode, and Google-Extended, which controls Gemini · Microsoft: Bingbot). Each page is also loaded as a browser (for noindex/nosnippet tags) and as OAI-SearchBot and PerplexityBot (for firewall rules). Our requests don’t come from those companies’ addresses, so a firewall that checks crawler IPs may treat them as impostors: a firewall flag is a thing to check, not proof. Checked ' + S.ago(crawl.checked_at) +
-    ' · <a href="#" id="crawlRefresh">check again</a>.</p>';
+    (SHARE ? '.' : ' · <a href="#" id="crawlRefresh">check again</a>.') + '</p>';
 }
 async function loadCrawl(refresh) {
   crawlState = 'loading'; if (refresh) render();
   const r = await S.api('/state-of-union/crawler-access', Object.assign({ id: data.id }, refresh ? { refresh: true } : {}));
   crawl = r; crawlState = r && r.pages ? 'ready' : 'error';
+  render();
+}
+
+// "Who AI recommends": the run's recommendation reading, or — for a run made without it — an offer to read it now.
+let recBusy = false;
+function recommendSection(d) {
+  const rec = (d.summary || {}).recommend;
+  if (rec) return S.recommendHtml(rec, d, colours);
+  if (SHARE || d.status !== 'complete' || !d.brands.length) return '';
+  const n = S.answered(d.cells).length;
+  return '<h2 class="h2b">Who AI recommends</h2><div class="banner2">Being named isn’t being recommended. Read each of these ' + n + ' answers for its top pick, what it recommends and what it warns against. ' +
+    '<button class="btn2 small solid" id="recRead" type="button"' + (recBusy ? ' disabled' : '') + '>' + (recBusy ? 'Reading… (about a minute)' : 'Read recommendations (about ' + S.money(n * 0.0045) + ')') + '</button></div>';
+}
+async function readRecommendations() {
+  recBusy = true; render();
+  for (let i = 0; i < 10; i++) {
+    const r = await S.api('/state-of-union/positions', { ids: [data.id] }).catch(() => ({ error: 'failed' }));
+    if (r.error || !r.remaining) break;
+  }
+  data = await S.api('/state-of-union/get', { id: ID });
+  recBusy = false; render();
+}
+
+function citedSection(d) {
+  if (!d.brands.length || d.status !== 'complete' || !((d.summary || {}).citations)) return '';
+  if (citedState === 'ready') return S.citedHtml(cited, d, colours, { refresh: !SHARE });
+  if (SHARE) return '';
+  return citedState === 'error' ? '<h2 class="h2b">Pages AI cites — who they mention</h2><p class="err">' + esc((cited && cited.error) || 'The cited pages could not be checked.') + '</p>'
+    : '<h2 class="h2b">Pages AI cites — who they mention</h2><p class="hint">Reading the pages the answers cite… (up to half a minute)</p>';
+}
+async function loadCited(refresh) {
+  citedState = 'loading'; if (refresh) render();
+  const r = await S.api('/state-of-union/cited-check', Object.assign({ id: data.id }, refresh ? { refresh: true } : {}));
+  cited = r; citedState = r && r.pages ? 'ready' : 'error';
   render();
 }
 
@@ -348,6 +392,7 @@ function pagesHtml(d) {
 function briefsHtml(d) {
   const main = d.brands[0];
   if (!main || d.status !== 'complete') return '';
+  if (SHARE && !d.prompts.some(p => briefs[p] && briefs[p].brief)) return '';
   const answered = S.answered(d.cells);
   const rows = d.prompts.map(p => {
     const list = answered.filter(c => c.prompt === p);
@@ -362,13 +407,13 @@ function briefsHtml(d) {
     const head = '<div style="display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap">' +
       '<div style="flex:1;min-width:240px"><b style="font-size:17px">' + esc(r.p) + '</b><br><small>' + esc(main.name) + ' named in ' + S.pct(r.mine) +
       (r.top ? ' · ' + esc(r.top.b.name) + ' in ' + S.pct(r.top.v) : '') + (byDemand ? ' · ~' + Math.round(missedOf(d, r.p)).toLocaleString() + ' searches a month at stake' : '') + '</small></div>' +
-      (st && st.brief ? '' : '<button class="btn2 small' + (r.mine != null && r.mine < 1 ? ' solid' : '') + '" data-brief="' + idx + '" type="button"' + (st && st.busy ? ' disabled' : '') + '>' +
+      (st && st.brief || SHARE ? '' : '<button class="btn2 small' + (r.mine != null && r.mine < 1 ? ' solid' : '') + '" data-brief="' + idx + '" type="button"' + (st && st.busy ? ' disabled' : '') + '>' +
         (st && st.busy ? 'Writing… (up to a minute)' : (r.mine != null && r.mine < 1 ? 'Why you lose this' : 'How to hold this')) + '</button>') + '</div>';
     return '<div class="card2" style="border:3px solid #0a0a0a;padding:16px;margin:0 0 16px;background:#fff">' + head +
       (st && st.error ? '<p class="err" style="margin-top:10px">' + esc(st.error) + '</p>' : '') + (st && st.brief ? briefBody(st, idx) : '') + '</div>';
   };
   return '<h2 class="h2b">Why you lose these prompts</h2><p class="hint" style="margin:0 0 14px">' + (byDemand ? 'Most searches at stake first.' : 'Worst first.') + ' A brief reads this run’s answers, the pages they cite and the searches ChatGPT ran, and says who wins, why, and what to change. Each costs a few cents to write and is saved with the report.</p>' +
-    rows.map(card).join('');
+    (SHARE ? rows.filter(r => briefs[r.p] && briefs[r.p].brief) : rows).map(card).join('');
 }
 
 function briefBody(st, idx) {
@@ -423,6 +468,7 @@ async function gscDisconnect(e) {
 }
 
 function bannerHtml(d) {
+  if (SHARE) return '<div class="banner2 done"><b>Shared report</b> · read-only · ' + S.answered(d.cells).length + ' answers · run ' + S.ago(d.completed_at || d.created_at) + '</div>';
   const attempted = d.cells.filter(c => c.status !== 'unavailable');
   const settled = attempted.filter(c => c.status === 'done' || c.status === 'failed').length;
   let html;
@@ -446,7 +492,8 @@ function render() {
     : 'How AI models answer these prompts, market by market.';
   $('banner').innerHTML = bannerHtml(d);
   // Agency branding for the exports: offered once the report is complete; the panel fills in on first open.
-  if (d.status === 'complete' && $('brandBox').hidden) { $('brandBox').hidden = false; $('brandBox').addEventListener('toggle', () => { if ($('brandBox').open && !$('brandPanel').childElementCount) S.brandingPanel($('brandPanel')); }); }
+  if (!SHARE && d.status === 'complete' && $('shareBox').hidden) { $('shareBox').hidden = false; $('shareBox').addEventListener('toggle', () => { if ($('shareBox').open) S.sharePanel($('sharePanel'), 'report', data.id); }); }
+  if (!SHARE && d.status === 'complete' && $('brandBox').hidden) { $('brandBox').hidden = false; $('brandBox').addEventListener('toggle', () => { if ($('brandBox').open && !$('brandPanel').childElementCount) S.brandingPanel($('brandPanel')); }); }
   $('out').innerHTML = statCards(d) +
     '<div class="seg"><button data-t="compare" aria-pressed="' + (tab === 'compare') + '">Compare answers</button><button data-t="brands" aria-pressed="' + (tab === 'brands') + '">Brand mentions</button></div>' +
     (tab === 'compare' ? compareView(d) : brandsView(d));
@@ -457,20 +504,23 @@ function render() {
   $('out').querySelectorAll('[data-r]').forEach(b => b.onclick = () => { repSel = +b.dataset.r; render(); });
   $('out').querySelectorAll('[data-v]').forEach(b => b.onclick = () => { personaSel = +b.dataset.v; render(); });
   $('out').querySelectorAll('[data-basis]').forEach(b => b.onclick = () => { demandBasis = b.dataset.basis; render(); });
+  const rr = $('recRead'); if (rr) rr.onclick = readRecommendations;
   $('out').querySelectorAll('[data-kwsave]').forEach(b => b.onclick = () => {
     const i = b.dataset.kwsave, v = $('out').querySelector('[data-kw="' + i + '"]').value.trim();
     b.disabled = true; b.textContent = 'Looking up…';
     loadDemand({ [data.prompts[+i]]: v });
   });
-  if (tab === 'brands' && d.status === 'complete' && d.brands.length && demandState === 'idle') loadDemand();
-  if (tab === 'brands' && d.status === 'complete' && d.brands.length && crawlState === 'idle') loadCrawl();
+  if (!SHARE && tab === 'brands' && d.status === 'complete' && d.brands.length && demandState === 'idle') loadDemand();
+  if (!SHARE && tab === 'brands' && d.status === 'complete' && d.brands.length && crawlState === 'idle') loadCrawl();
+  if (!SHARE && tab === 'brands' && d.status === 'complete' && d.brands.length && citedState === 'idle' && (d.summary || {}).citations) loadCited();
+  const cf = $('citedRefresh'); if (cf) cf.onclick = e => { e.preventDefault(); loadCited(true); };
   const cr = $('crawlRefresh'); if (cr) cr.onclick = e => { e.preventDefault(); loadCrawl(true); };
   const tb = $('trackBtn'); if (tb) tb.onclick = startTracking;
   const gc = $('gscConnect'); if (gc) gc.onclick = gscConnect;
   const pdfName = sfx => 'state-of-the-llm-union-' + (data.brand_name || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + String(data.created_at).slice(0, 10) + sfx + '.pdf';
   const pb = $('pdfBtn'); if (pb) pb.onclick = () => S.downloadPdf({ id: data.id }, pb, pdfName(''));
   const ps = $('pdfSumBtn'); if (ps) ps.onclick = () => S.downloadPdf({ id: data.id, summary: true }, ps, pdfName('-summary'));
-  const sb = $('slidesBtn'); if (sb) sb.onclick = () => window.SOTU_DECK.report(data, { demand: demandState === 'ready' ? demand : null, crawl: crawlState === 'ready' ? crawl : null }, sb);
+  const sb = $('slidesBtn'); if (sb) sb.onclick = () => window.SOTU_DECK.report(data, { demand: demandState === 'ready' ? demand : null, crawl: crawlState === 'ready' ? crawl : null, cited: citedState === 'ready' ? cited : null }, sb);
   $('out').querySelectorAll('[data-addcomp]').forEach(b => b.onclick = async () => {
     b.disabled = true;
     const r = await S.api('/state-of-union/watch/add-competitor', { id: data.watch_id, name: b.dataset.addcomp });
@@ -496,7 +546,17 @@ async function startTracking() {
 }
 
 async function load() {
-  const r = await S.api('/state-of-union/get', { id: ID });
+  if (SHARE) {
+    shared = await S.api('/state-of-union/share/get', { token: SHARE });
+    if (shared.error) { $('rTitle').textContent = 'Not available'; $('out').innerHTML = '<p class="err">' + esc(shared.error) + '</p>'; return; }
+    if (shared.demand && shared.demand.prompts) { demand = shared.demand; demandState = 'ready'; }
+    if (shared.crawl && shared.crawl.pages) { crawl = shared.crawl; crawlState = 'ready'; }
+    if (shared.cited && shared.cited.pages) { cited = shared.cited; citedState = 'ready'; }
+    Object.values(shared.briefs || {}).forEach(b => { briefs[b.prompt] = b; });
+    $('agencyHead').innerHTML = S.sharedHeader(shared.branding);
+    document.querySelector('.sidenav').style.display = 'none';
+  }
+  const r = SHARE ? shared.report : await S.api('/state-of-union/get', { id: ID });
   if (r.error) {
     // A muted "empty" box read as "nothing here" rather than "something went wrong" — this is the
     // same fix already made on every other report-backed tool page.
@@ -515,11 +575,12 @@ async function load() {
     if (back !== 'connected') alert(back === 'noscope' ? 'Search Console was not connected: the read-only permission was not granted.' : 'Search Console was not connected.');
   }
   render();
-  if (r.status === 'complete') loadGsc();
-  if (r.status !== 'complete' && pollCount < 200) { pollTimer = setTimeout(load, 6000); pollCount++; }
+  if (!SHARE && r.status === 'complete') loadGsc();
+  if (!SHARE && r.status !== 'complete' && pollCount < 200) { pollTimer = setTimeout(load, 6000); pollCount++; }
 }
 
-if (!S.CODE || !ID) {
+if (SHARE) load();
+else if (!S.CODE || !ID) {
   $('rTitle').textContent = 'No report';
   $('out').innerHTML = '<p class="err">This page needs a report link. Start a report from the State Of The LLM Union tool.</p>';
 } else {

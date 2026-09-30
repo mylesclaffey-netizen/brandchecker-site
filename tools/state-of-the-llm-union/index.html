@@ -123,6 +123,10 @@
         <div><b>Let models search the web</b><span>Off by default: the model answers from its own knowledge, which is far cheaper and shows what it already “knows” about your brand. Turn on to see which websites each answer cites (yours, competitors’, review sites). Perplexity, Gemini and Google AI Overviews always search, so they show sources either way. The ChatGPT app decides for itself, as it does for real users; this switch makes it search.</span></div></label>
     </div>
     <div class="field">
+      <label class="toggle"><input type="checkbox" id="positions" checked>
+        <div><b>Read who each answer recommends</b><span>Being named isn’t being recommended: each answer is also read for its top pick, what it recommends and what it warns against, so the report shows your share of recommendations as well as mentions. Adds about $0.005 per answer.</span></div></label>
+    </div>
+    <div class="field">
       <label for="repeats">Ask each prompt</label>
       <select id="repeats" style="width:auto"><option value="3">3 times (recommended)</option><option value="2">2 times</option><option value="1">once</option></select>
       <p class="hint">AI models answer differently each time. Asking 3 times shows whether your brand is named reliably or by luck, and gives each mention rate a range. AI Overviews and Gemini are asked once.</p>
@@ -204,7 +208,7 @@ function estimate() {
     if (!chosenModels.has(p.id)) return;
     const k = cells * (p.once ? 1 : reps);
     n += k;
-    usd += k * (p.always_web || $('web').checked ? p.estimate_on : p.estimate_off);
+    usd += k * ((p.always_web || $('web').checked ? p.estimate_on : p.estimate_off) + ($('positions').checked ? 0.0045 : 0));
   });
   const track = $('track').checked, freq = $('freq').value;
   $('est').innerHTML = n
@@ -223,7 +227,7 @@ async function submit() {
     aliases: $('aliases').value.split(',').map(s => s.trim()).filter(Boolean),
     competitors: lines('competitors'), prompts: lines('prompts'), locations: [...chosenMarkets],
     providers: [...chosenModels], web: $('web').checked, frequency: $('freq').value, repeats: +$('repeats').value || 1, facts: $('facts').value,
-    personas: lines('personas').slice(0, 4), persona_baseline: $('personaBase').checked,
+    personas: lines('personas').slice(0, 4), persona_baseline: $('personaBase').checked, positions: $('positions').checked,
     email: track ? $('alertEmail').value.trim() : ''
   };
   if (!body.prompts.length) return showErr('Add at least one prompt.');
@@ -270,7 +274,7 @@ async function init() {
   $('maxPrompts').textContent = r.limits.max_prompts;
   r.providers.forEach(p => { if (p.default && p.available) chosenModels.add(p.id); });
   renderMarkets(); renderModels(); estimate();
-  ['prompts', 'personas', 'personaBase', 'web', 'track', 'freq', 'repeats'].forEach(id => $(id).addEventListener('input', estimate));
+  ['prompts', 'personas', 'personaBase', 'positions', 'web', 'track', 'freq', 'repeats'].forEach(id => $(id).addEventListener('input', estimate));
   const syncAlert = () => { $('alertBox').style.display = $('track').checked ? 'block' : 'none'; };
   $('track').addEventListener('input', syncAlert); syncAlert();
   $('go').onclick = submit;

@@ -201,6 +201,9 @@
       if (demand && !demand.prompts) demand = null;
       if (main && !crawl) crawl = await S.api('/state-of-union/crawler-access', { id: d.id }).catch(function () { return null; });
       if (crawl && !crawl.pages) crawl = null;
+      var cited = extra.cited;
+      if (main && !cited) cited = await S.api('/state-of-union/cited-check', { id: d.id }).catch(function () { return null; });
+      if (cited && !cited.pages) cited = null;
       var briefs = main ? (await Promise.all(d.prompts.map(function (p) { return S.api('/state-of-union/brief', { id: d.id, prompt: p, cached_only: true }).catch(function () { return null; }); }))).filter(function (b) { return b && b.brief; }) : [];
       var basis = demand ? S.demandBasisFor(d, demand) : null;
       var provs = (d.providers || []).filter(function (p) { return d.cells.some(function (c) { return c.provider === p.id && c.status !== 'unavailable'; }); });
@@ -248,6 +251,19 @@
           }) });
         }
         deck.bars(s, d.brands.map(function (b) { return b.name; }), series, { y: 1.8, h: series.length > 1 ? 4.4 : 4.7, bold: 0 });
+
+        // Who AI recommends (runs that read recommendations): recommended and top pick per brand, and each model's top pick.
+        var rec = sm.recommend;
+        if (rec) {
+          var rm = rec.by_brand[main.name] || {};
+          s = deck.slide('Who AI recommends', name + ' is the top pick in ' + pct(rm.top_rate) + ' of answers' + (rec.top_picks[0] ? ' — most often: ' + rec.top_picks[0].name : ''));
+          deck.bars(s, d.brands.map(function (b) { return b.name; }), [
+            { name: 'Recommended', color: INK, values: d.brands.map(function (b) { return (rec.by_brand[b.name] || {}).rec_rate; }) },
+            { name: 'Top pick', color: ORANGE, values: d.brands.map(function (b) { return (rec.by_brand[b.name] || {}).top_rate; }) }
+          ], { y: 1.75, h: 3.3, bold: 0 });
+          var pv = Object.keys(rec.by_provider);
+          if (pv.length) deck.note(s, 'Most common top pick by model: ' + pv.map(function (p) { var v = rec.by_provider[p]; return S.providerLabel(p) + ' — ' + (v.leader ? v.leader + ' (' + v.leader_answers + ' of ' + v.answers + ')' : 'no single pick'); }).join(' · ') + '. Each answer read for its top pick, what it recommends and what it warns against.', 6.0, 0.9);
+        }
 
         // By model.
         if (provs.length > 1) {
@@ -308,6 +324,18 @@
           var other = (cit.pages && cit.pages.other || []).slice(0, 8);
           if (other.length) deck.table(s, ['Third-party pages to get onto', 'Answers'], other.map(function (p) { return [clip(p.url.replace(/^https?:\/\/(www\.)?/, ''), 60), { text: String(p.answers), options: { align: 'center' } }]; }), { x: 6.5, w: 6.23, colW: [5.33, 0.9], fs: 9, max: 8 });
           deck.note(s, 'Across ' + cit.answers_with_sources + ' answers that showed their sources. Third-party pages are the reviews and roundups AI draws on.', 6.4);
+        }
+
+        // Pages to get onto: cited third-party pages that name a competitor but not you (sotuCitedPages.js).
+        if (cited) {
+          var gap = cited.pages.filter(function (p) { return p.checked && p.missing_you && p.named.length; });
+          if (gap.length) {
+            s = deck.slide('Pages to get onto', gap.length + ' pages AI cites name a competitor but not ' + name);
+            deck.table(s, ['Page AI cites', 'Cited in', 'Names instead'], gap.slice(0, 10).map(function (p) {
+              return [clip(p.url.replace(/^https?:\/\/(www\.)?/, ''), 60) + (p.title ? '\n' + clip(p.title, 70) : ''), { text: String(p.answers), options: { align: 'center' } }, p.named.join(', ')];
+            }), { colW: [6.6, 1.2, 4.33], fs: 10, max: 10 });
+            deck.note(s, 'Each page the answers cite was read for the tracked brands. AI already trusts these pages — being on them is how to be in the answer.', 6.4);
+          }
         }
 
         // Crawler access: only when something needs attention.
@@ -399,6 +427,9 @@
         if (note) deck.note(sl, note, 6.62, 0.35);
       };
       line('Share of answers naming each brand, run by run', runs, 'Each point is one full run.');
+      if (runs.some(function (r) { return r.recommend; })) line('Top pick, run by run', runs.map(function (r) {
+        return Object.assign({}, r, { by_brand: r.recommend ? Object.fromEntries(Object.entries(r.recommend.by_brand).map(function (kv) { return [kv[0], { rate: kv[1].top_rate }]; })) : {} });
+      }), 'Share of answers where each brand is the single top recommendation. Runs made without reading recommendations are gaps.');
       if (wr) line('Weighted by demand, run by run', wr, 'Each prompt counts in proportion to its searches; the same weights for every run, so the lines move only when the answers do.');
 
       var bp = last.by_provider || {};

@@ -22,11 +22,13 @@
 </head>
 <body>
 <div class="sotu-wrap">
-  <p class="eyebrow">State Of The LLM Union</p>
+  <div id="agencyHead"></div>
+  <p class="eyebrow" id="eyebrowT">State Of The LLM Union</p>
   <h1>My trackers</h1>
   <p class="sotu-sub">Each tracker re-runs your prompts on a schedule and keeps every result, so you can see whether AI models name your brand more or less over time.</p>
   <div class="sotu-actions"><a class="btn2 solid" id="newBtn" href="/tools/state-of-the-llm-union/">New tracker</a></div>
   <div id="list"></div>
+  <details class="brandbox" id="shareBox" hidden><summary>Share a read-only link</summary><div id="sharePanel"></div></details>
   <details class="brandbox" id="brandBox" hidden><summary>Your logo on PDFs and slides</summary><div id="brandPanel"></div></details>
 <div id="detail"></div>
 
@@ -41,6 +43,10 @@
 <script>
 if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
 const S = window.SOTU, esc = S.esc, $ = id => document.getElementById(id);
+// A read-only share link (?s=<token>, Worker: share.js) opens one tracker the way the published Make tracker opens:
+// no access code, nothing that runs or spends.
+const SHARE = new URLSearchParams(location.search).get('s') || '';
+if (SHARE) window.SNAPSHOT = true;
 let watches = [], selected = new URLSearchParams(location.search).get('w') || '';
 // The trend shown, its demand (Worker: promptDemand.js — the latest run's, or a published tracker's saved copy) and the
 // chart mode: 'share' (share of answers) or 'weighted' (weighted by demand).
@@ -151,6 +157,7 @@ function renderTrend(d) {
   const wNow = trendDemand ? (weightedRuns(Object.assign({}, d, { runs: [last] }), trendDemand)[0].by_brand[main.name] || {}).rate : null;
   const cards = [
     { cls: 'accent', lbl: 'Mention rate now', val: S.pct(now), sub: esc(main.name) + ' · latest run' + (S.range(lastMain) ? ' · likely ' + S.range(lastMain) : '') },
+    last.recommend && last.recommend.by_brand[main.name] ? { lbl: 'Top pick', val: S.pct(last.recommend.by_brand[main.name].top_rate), sub: 'answers where ' + esc(main.name) + ' is the single top recommendation' } : null,
     wNow != null ? { lbl: 'Weighted by demand', val: S.pct(wNow), sub: 'the same, with each prompt counted by its searches' } : null,
     last.consistency ? { lbl: 'Named every time', val: last.consistency.always + '/' + last.consistency.groups, sub: 'combos asked ' + (d.repeats || 1) + '× · ' + last.consistency.sometimes + ' only sometimes' } : null,
     last.facts ? { lbl: 'Wrong facts', val: last.facts.with_issues + '/' + last.facts.checked, sub: 'answers naming ' + esc(main.name) + ' · latest run' } : null,
@@ -178,18 +185,25 @@ function renderTrend(d) {
     (window.SNAPSHOT ? '' : '<div class="sotu-actions" style="margin:-6px 0 18px"><button class="btn2 small solid" id="pdfSumBtn" type="button">Summary PDF</button> <button class="btn2 small" id="pdfBtn" type="button">Full PDF</button> <button class="btn2 small" id="slidesBtn" type="button">Slides (.pptx)</button> <a class="btn2 small" href="' + S.printUrl({ watch: d.watch.id }) + '" target="_blank" rel="noopener">Print view</a></div>') +
     changesHtml(last) + (window.SNAPSHOT ? '' : alertsHtml(d.watch)) +
     '<div class="stats4">' + cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
-    '<h2 class="h2b">Mention rate over time</h2>' + trendModeHtml(d) + legend + (trendMode === 'weighted' && trendDemand ? chart(Object.assign({}, d, { runs: weightedRuns(d, trendDemand) })) : chart(d)) +
+    '<h2 class="h2b">Mention rate over time</h2>' + trendModeHtml(d) + legend + (trendMode === 'weighted' && trendDemand ? chart(Object.assign({}, d, { runs: weightedRuns(d, trendDemand) })) : trendMode === 'toppick' ? chart(Object.assign({}, d, { runs: topPickRuns(d) })) : chart(d)) +
     (trendMode === 'weighted' && trendDemand ? '<p class="hint" style="margin:-8px 0 20px">Each prompt counts in proportion to how often it’s searched (' + (S.demandBasisFor(d, trendDemand) === 'ai' ? 'AI searches — DataForSEO’s estimate of monthly use in AI tools' : 'Google searches') + ', looked up ' + when(trendDemand.checked_at) + '). The same weights apply to every run, so the lines move only when the answers do. Search keywords can be corrected in a run’s report.</p>' : '') +
     (runs.length < 2 ? '<div class="banner2">The trend line appears after the next run' + (d.watch.next_run_at ? ' (due ' + when(d.watch.next_run_at) + ')' : '') + '. Each point is one full run.</div>' : '') +
-    S.describeTrendHtml(runs, main.name, when) + S.describeHtml(last.describe, main.name) + timeline(d) + S.factsHtml(last.facts, main.name) + S.discoveredHtml(last.discovered, !window.SNAPSHOT) +
+    (trendMode === 'toppick' ? '<p class="hint" style="margin:-8px 0 20px">Share of answers where each brand is the single top recommendation, run by run (runs made without reading recommendations show as gaps).</p>' : '') +
+    S.recommendHtml(last.recommend, { brands: d.brands, cells: [], locations: [] }, colours, { named: Object.fromEntries(d.brands.map(b => [b.name, (last.by_brand[b.name] || {}).rate])) }) + S.describeTrendHtml(runs, main.name, when) + S.describeHtml(last.describe, main.name) + timeline(d) + S.factsHtml(last.facts, main.name) + S.discoveredHtml(last.discovered, !window.SNAPSHOT) +
     '<h2 class="h2b">Latest run — ' + esc(main.name) + ' by model</h2><div class="tblwrap"><table class="tbl"><tr><th>Model</th><th>Mention rate</th><th>Answers</th></tr>' + provRows + '</table></div>' +
     citedHtml(d, last, colours) +
     '<h2 class="h2b">All runs</h2><div class="tblwrap"><table class="tbl"><tr><th>When</th><th>' + esc(main.name) + ' rate</th><th>Likely range</th><th>Avg position</th><th>Answers</th>' + (window.SNAPSHOT ? '' : '<th>Cost</th>') + '<th>Status</th>' + (window.SNAPSHOT ? '' : '<th></th>') + '</tr>' + hist + '</table></div>';
 }
 
+// Chart modes: share of answers, weighted by demand (when demand is known), top pick (when runs read recommendations).
 function trendModeHtml(d) {
-  if (!trendDemand) return '';
-  return '<div class="seg" style="margin:0 0 12px"><button data-tmode="share" aria-pressed="' + (trendMode === 'share') + '">Share of answers</button><button data-tmode="weighted" aria-pressed="' + (trendMode === 'weighted') + '">Weighted by demand</button></div>';
+  const modes = [['share', 'Share of answers']].concat(trendDemand ? [['weighted', 'Weighted by demand']] : []).concat(d.runs.some(r => r.recommend) ? [['toppick', 'Top pick']] : []);
+  if (modes.length < 2) return '';
+  return '<div class="seg" style="margin:0 0 12px">' + modes.map(([m, l]) => '<button data-tmode="' + m + '" aria-pressed="' + (trendMode === m) + '">' + l + '</button>').join('') + '</div>';
+}
+// Each run's top-pick rate per brand, shaped like by_brand so the same chart draws it (runs without the reading are gaps).
+function topPickRuns(d) {
+  return d.runs.map(r => Object.assign({}, r, { by_brand: r.recommend ? Object.fromEntries(Object.entries(r.recommend.by_brand).map(([n, x]) => [n, { rate: x.top_rate, mentioned: x.top, answered: r.recommend.answers, low: x.top_low, high: x.top_high }])) : {} }));
 }
 
 function citedHtml(d, last, colours) {
@@ -260,6 +274,7 @@ async function loadTrend() {
     return;
   }
   trendData = d; trendDemand = null;
+  if ($('shareBox').hidden) { $('shareBox').hidden = false; $('shareBox').addEventListener('toggle', () => { if ($('shareBox').open) S.sharePanel($('sharePanel'), 'tracker', selected); }); }
   if ($('brandBox').hidden) { $('brandBox').hidden = false; $('brandBox').addEventListener('toggle', () => { if ($('brandBox').open && !$('brandPanel').childElementCount) S.brandingPanel($('brandPanel')); }); }
   renderTrend(d);
   wireDetail();
@@ -281,8 +296,19 @@ async function loadList() {
 
 if (window.SNAPSHOT) {
   // Shared read-only view of one published tracker (see build-make-reports.py): no access code; live from the public-trend endpoint.
-  (window.PUBLIC_TRACKER ? S.api('/state-of-union/public-trend', { id: window.PUBLIC_TRACKER }) : fetch(window.SNAPSHOT).then(r => r.json()))
-    .then(d => { if (d.error) throw new Error(d.error); trendData = d; trendDemand = d.demand && d.demand.prompts ? d.demand : null; renderTrend(d); wireDetail(); }).catch(() => { $('detail').innerHTML = '<p class="err">This tracker could not be loaded.</p>'; });
+  if (SHARE) {
+    // The page's own intro is for the owner; a shared view shows the agency (if branded) and the tracker itself.
+    document.querySelector('h1').style.display = 'none';
+    ['.sotu-sub', '.sotu-actions', '.sidenav'].forEach(sel => { const el = document.querySelector(sel); if (el) el.style.display = 'none'; });
+  }
+  (SHARE ? S.api('/state-of-union/share/get', { token: SHARE }).then(r => {
+      if (r.error) return r;
+      $('agencyHead').innerHTML = S.sharedHeader(r.branding);
+      if (r.branding && r.branding.white_label) $('eyebrowT').textContent = 'AI visibility tracker';
+      return r.trend;
+    })
+    : window.PUBLIC_TRACKER ? S.api('/state-of-union/public-trend', { id: window.PUBLIC_TRACKER }) : fetch(window.SNAPSHOT).then(r => r.json()))
+    .then(d => { if (d.error) throw new Error(d.error); trendData = d; trendDemand = d.demand && d.demand.prompts ? d.demand : null; renderTrend(d); wireDetail(); }).catch(e => { $('detail').innerHTML = '<p class="err">' + esc(SHARE && e && e.message ? e.message : 'This tracker could not be loaded.') + '</p>'; });
 } else if (!S.CODE) $('list').innerHTML = '<div class="empty2">This page needs your access link.</div>';
 else loadList();
 </script>

@@ -116,3 +116,7 @@ mark.b{background:var(--bg);color:var(--fg);padding:0 3px;font-weight:700;border
 .brprev{margin-top:8px;display:flex;gap:10px;align-items:center;min-height:40px}
 .brprev img{max-height:48px;max-width:220px;border:1px solid #c9c9c9;background:#fff;padding:3px}
 @media(max-width:640px){.brgrid{grid-template-columns:1fr}}
+/* Shared (read-only) pages: the agency's logo and name above the report */
+.agencybar{display:flex;align-items:center;justify-content:space-between;gap:20px;margin:0 0 20px;padding:0 0 14px;border-bottom:3px solid #0a0a0a}
+.agencybar img{max-height:52px;max-width:240px;display:block;background:#fff}
+.agencybar span{font-size:14px}

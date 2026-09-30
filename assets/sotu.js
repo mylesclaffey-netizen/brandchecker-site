@@ -115,6 +115,58 @@
     mistral: 'Mistral', ai_overviews: 'AI Overviews', gemini: 'Gemini', copilot: 'Copilot' };
   function providerLabel(id) { return PROVIDER_LABELS[id] || id; }
 
+  // "Who AI recommends" (Worker: sotuStats.js recommendStats) — being named isn't being recommended. `opts.compact`: the
+  // summary PDF's version (no per-model table); `opts.named`: brand → named rate, when there are no cells (trackers).
+  function recommendHtml(rec, d, colours, opts) {
+    opts = opts || {};
+    if (!rec || !d.brands.length) return '';
+    var main = d.brands[0].name, list = answered(d.cells), m = rec.by_brand[main] || {}, lead = rec.top_picks[0];
+    var h = '<h2 class="h2b">Who AI recommends</h2><p style="margin:0 0 10px">' + esc(main) + ' is the <b>top pick in ' + pct(m.top_rate) + '</b> of answers' + (m.top_low != null ? ' (likely ' + Math.round(m.top_low * 100) + '–' + Math.round(m.top_high * 100) + '%)' : '') +
+      ' and recommended in ' + pct(m.rec_rate) + '.' + (lead ? ' Most common top pick: <b>' + esc(lead.name) + '</b> (' + lead.answers + ' answer' + (lead.answers === 1 ? '' : 's') + ').' : '') + '</p>';
+    h += '<div class="tblwrap"><table class="tbl"><tr><th>Brand</th><th>Named</th><th>Recommended</th><th>Top pick</th><th>Cautioned</th></tr>' + d.brands.map(function (b, i) {
+      var x = rec.by_brand[b.name] || {}, heatC = function (v) { return v == null ? '#f3f3ef' : 'rgba(255,61,0,' + (0.08 + 0.72 * v).toFixed(2) + ')'; };
+      return '<tr><td><span class="dot" style="--bg:' + ((colours[b.name] || PALETTE[0]).bg) + '"></span><b>' + esc(b.name) + '</b>' + (i === 0 ? ' <small>(you)</small>' : '') + '</td><td class="num">' + pct(opts.named ? opts.named[b.name] : rate(list, b.name)) + '</td>' +
+        '<td class="heat" style="background:' + heatC(x.rec_rate) + '">' + pct(x.rec_rate) + '</td><td class="heat" style="background:' + heatC(x.top_rate) + '"><b>' + pct(x.top_rate) + '</b></td><td class="num">' + (x.caution ? pct(x.caution_rate) : '—') + '</td></tr>';
+    }).join('') + '</table></div>';
+    var others = rec.top_picks.filter(function (t) { return !t.tracked; }).slice(0, 6);
+    if (!opts.compact) {
+      var provs = Object.keys(rec.by_provider);
+      h += '<div class="tblwrap"><table class="tbl"><tr><th>Model</th><th>Most common top pick</th><th>Answers read</th></tr>' + provs.map(function (p) {
+        var v = rec.by_provider[p];
+        return '<tr><td><b>' + esc(providerLabel(p)) + '</b></td><td>' + (v.leader ? (v.leader === main ? '<b>' + esc(v.leader) + '</b>' : esc(v.leader)) + ' <small>(' + v.leader_answers + ' of ' + v.answers + ')</small>' : '<span class="hint">no single pick</span>') + '</td><td class="num">' + v.answers + '</td></tr>';
+      }).join('') + '</table></div>';
+    }
+    return h + '<p class="hint" style="margin:-18px 0 30px">Each answer was read for how it positions every product it names: its single top pick, recommended, only listed or named as something to connect to, or named with a warning. ' +
+      (others.length ? 'Top picks you don’t track: ' + others.map(function (t) { return esc(t.name) + ' (' + t.answers + ')'; }).join(' · ') + '. ' : '') +
+      (rec.none ? rec.none + ' answer' + (rec.none === 1 ? '' : 's') + ' made no single pick. ' : '') + 'Read from ' + rec.answers + ' of ' + rec.of + ' answers.</p>';
+  }
+
+  // "Pages AI cites — who they mention" (Worker: sotuCitedPages.js): the outreach list. Pages that name competitors but
+  // not you first. `opts.max`: rows (the PDFs show fewer); `opts.refresh`: add the "check again" link (owner only).
+  function citedHtml(c, d, colours, opts) {
+    opts = opts || {};
+    if (!c || !c.pages || !c.pages.length || !d.brands.length) return '';
+    var main = d.brands[0].name, read = c.pages.filter(function (p) { return p.checked; });
+    var gap = read.filter(function (p) { return p.missing_you && p.named.length; }), none = read.filter(function (p) { return !p.named.length; });
+    var order = gap.concat(read.filter(function (p) { return !p.missing_you; })).concat(none);
+    var chips = function (p) {
+      return d.brands.map(function (b) {
+        var on = p.named.indexOf(b.name) !== -1, col = colours[b.name] || PALETTE[0];
+        return '<span class="chip2" style="--bg:' + (on ? col.bg : '#f3f3ef') + ';--fg:' + (on ? col.fg : '#8a8a8a') + ';' + (on ? '' : 'text-decoration:line-through;') + 'font-size:11.5px;padding:2px 7px">' + esc(b.name) + '</span>';
+      }).join(' ');
+    };
+    var h = '<h2 class="h2b">Pages AI cites — who they mention</h2><p style="margin:0 0 10px">Of the ' + read.length + ' third-party pages we could read, <b>' + gap.length + ' name a competitor but not ' + esc(main) + '</b>' +
+      (none.length ? ' and ' + none.length + ' name none of the tracked brands' : '') + '. Those are the pages to get onto: AI answers already trust them.</p>';
+    h += '<div class="tblwrap"><table class="tbl"><tr><th>Page AI cites</th><th>Cited in</th><th>Brands the page names</th></tr>' + order.slice(0, opts.max || 25).map(function (p) {
+      return '<tr' + (p.missing_you && p.named.length ? ' style="box-shadow:inset 5px 0 0 #ff3d00"' : '') + '><td><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 70)) + '</a>' +
+        (p.title ? '<br><small>' + esc(p.title.slice(0, 90)) + '</small>' : '') + '</td><td class="num">' + p.answers + '</td><td>' + chips(p) + '</td></tr>';
+    }).join('') + '</table></div>';
+    var skipped = c.pages.filter(function (p) { return !p.checked; });
+    return h + '<p class="hint" style="margin:-18px 0 30px">Each page was loaded and read for the tracked brands (a link to a brand’s website counts). ' +
+      (skipped.length ? 'Not checked: ' + skipped.map(function (p) { return esc(p.url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]) + ' (' + esc(p.video ? 'video' : p.blocked ? 'blocks automated reads' : p.error) + ')'; }).join(' · ') + '. ' : '') +
+      'Checked ' + ago(c.checked_at) + (opts.refresh ? ' · <a href="#" id="citedRefresh">check again</a>' : '') + '.</p>';
+  }
+
   // Agency branding for exports (Worker: branding.js) — the access code's name, logo, accent and white-label choice.
   // Fetched once per page; `refresh` re-reads it after a save.
   var brandingP = null;
@@ -182,6 +234,34 @@
     }
     el.innerHTML = '<p class="hint">Loading…</p>';
     branding().then(paint);
+  }
+
+  // "Share a read-only link" (Worker: share.js) for one report or tracker, filled into `el`: the link opens it without
+  // the access code, and can't run or spend anything.
+  function sharePanel(el, kind, id) {
+    var what = kind === 'tracker' ? 'tracker' : 'report';
+    function paint(r) {
+      el.innerHTML = r && r.token
+        ? '<p class="hint" style="margin:0 0 8px">Anyone with this link can view this ' + what + ' — read-only, without your access code. It can’t start runs or spend anything.</p>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="shUrl" type="text" readonly value="' + esc(r.url) + '" style="flex:1;min-width:240px;padding:8px 10px;font-size:14px">' +
+          '<button class="btn2 small solid" id="shCopy" type="button">Copy link</button> <button class="btn2 small" id="shOff" type="button">Stop sharing</button></div>'
+        : '<p class="hint" style="margin:0 0 8px">Make a link that opens this ' + what + ' read-only, without your access code — for clients and colleagues. It can’t start runs or spend anything, and you can turn it off at any time.</p>' +
+          '<button class="btn2 small solid" id="shOn" type="button">Create share link</button>';
+      var q = function (x) { return el.querySelector('#' + x); };
+      if (q('shOn')) q('shOn').onclick = function () { this.disabled = true; api('/state-of-union/share/create', { kind: kind, id: id }).then(paint); };
+      if (q('shCopy')) q('shCopy').onclick = function () {
+        var b = this; q('shUrl').select();
+        (navigator.clipboard ? navigator.clipboard.writeText(q('shUrl').value) : Promise.reject()).then(function () { b.textContent = 'Copied'; }).catch(function () { document.execCommand('copy'); b.textContent = 'Copied'; });
+      };
+      if (q('shOff')) q('shOff').onclick = function () { this.disabled = true; api('/state-of-union/share/revoke', { kind: kind, id: id }).then(function () { paint(null); }); };
+    }
+    el.innerHTML = '<p class="hint">Loading…</p>';
+    api('/state-of-union/share/status', { kind: kind, id: id }).then(paint);
+  }
+  // The agency header on a shared page: logo and "Prepared by", when the owner set branding.
+  function sharedHeader(br) {
+    if (!br || (!br.logo && !br.name)) return '';
+    return '<div class="agencybar">' + (br.logo ? '<img src="' + esc(br.logo) + '" alt="' + esc(br.name || '') + '">' : '<span></span>') + (br.name ? '<span>Prepared by <b>' + esc(br.name) + '</b></span>' : '') + '</div>';
   }
 
   // Demand weighting (Worker: promptDemand.js). `basis` is 'ai' (AI searches) or 'google'. A prompt × market's weight is its
@@ -399,6 +479,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, citedHtml: citedHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();
