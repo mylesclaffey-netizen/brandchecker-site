@@ -59,6 +59,8 @@ let gsc = null, gscPages = null, gscBusy = false;   // Search Console status and
 let data = null, colours = {}, tab = 'compare', promptIdx = 0, marketSel = null, repSel = 1, personaSel = 0, pollTimer = null, pollCount = 0;
 // Demand behind each prompt (Worker: promptDemand.js), loaded when the Brand mentions tab first opens.
 let demand = null, demandState = 'idle', demandBasis = 'ai';
+// Crawler access to the cited pages (Worker: sotuCrawlerAccess.js), loaded with the Brand mentions tab.
+let crawl = null, crawlState = 'idle';
 // Persona variants the run asked, in order: null is the plain question.
 const variants = d => { const ps = d.personas || []; if (!ps.length) return [null]; const has = new Set(d.cells.map(c => c.persona || null)); return [null, ...ps].filter(v => has.has(v)); };
 const personaName = S.personaName;
@@ -193,7 +195,7 @@ function brandsView(d) {
   const provs = shown(d).filter(p => p.available).map(p => p.id);
   const labelP = id => esc((d.providers.filter(p => p.id === id)[0] || {}).label || id);
   const note = '<p class="hint" style="margin:-18px 0 30px">Likely range: where the true rate probably sits (95%), given how many answers this run collected. More prompts, markets or repeats narrow it.</p>';
-  return '<h2 class="h2b">Who gets named</h2>' + overall + note + demandHtml(d) + S.personasHtml(d, colours) + S.discoveredHtml(sm.discovered, !!d.watch_id) + (d.brands[0] ? S.describeHtml(sm.describe, d.brands[0].name) + S.factsHtml(sm.facts, d.brands[0].name) : '') + consistencyHtml(d) + citationsHtml(d) + pagesHtml(d) + briefsHtml(d) +
+  return '<h2 class="h2b">Who gets named</h2>' + overall + note + demandHtml(d) + S.personasHtml(d, colours) + S.discoveredHtml(sm.discovered, !!d.watch_id) + (d.brands[0] ? S.describeHtml(sm.describe, d.brands[0].name) + S.factsHtml(sm.facts, d.brands[0].name) : '') + consistencyHtml(d) + citationsHtml(d) + pagesHtml(d) + crawlHtml(d) + briefsHtml(d) +
     '<h2 class="h2b">By model</h2>' + matrix(d, 'Model', provs, c => c.provider, labelP) +
     '<h2 class="h2b">By market</h2>' + matrix(d, 'Market', d.locations, c => c.location, l => S.market(l).flag + ' ' + esc(l)) +
     '<h2 class="h2b">By prompt</h2>' + matrix(d, 'Prompt', d.prompts, c => c.prompt, esc);
@@ -247,6 +249,50 @@ async function loadDemand(keywords) {
   demandState = 'loading';
   const r = await S.api('/state-of-union/demand', Object.assign({ id: data.id }, keywords ? { keywords } : {}));
   demand = r; demandState = r && !r.error && r.prompts ? 'ready' : 'error';
+  render();
+}
+
+// Can AI crawlers reach the pages the answers cite, and the brand's own? One row per page, one column per AI service.
+function crawlHtml(d) {
+  if (!d.brands.length || d.status !== 'complete') return '';
+  const title = '<h2 class="h2b">Can AI crawlers reach these pages?</h2>';
+  if (crawlState === 'loading' || crawlState === 'idle') return title + '<p class="hint">Checking robots.txt, page tags and firewalls for the cited pages… (up to half a minute)</p>';
+  if (crawlState === 'error' || !crawl || !crawl.pages) return title + '<p class="err">' + esc((crawl && crawl.error) || 'The crawler check could not run.') + '</p>';
+  const groups = ['ChatGPT', 'Perplexity', 'Claude', 'Google', 'Microsoft'];
+  const byGroup = g => crawl.crawlers.filter(c => c.group === g);
+  const cell = (p, g) => {
+    if (p.robots_unknown) return '<td class="num" title="robots.txt could not be read">?</td>';
+    const no = byGroup(g).filter(c => p.robots[c.id] && p.robots[c.id].allowed === false);
+    return no.length ? '<td style="background:#ffd9cc"><b>✗</b> <small>' + no.map(c => esc(c.name) + ' — ' + esc(p.robots[c.id].rule)).join('<br>') + '</small></td>' : '<td class="num">✓</td>';
+  };
+  const notes = p => {
+    const n = [];
+    if (p.blocked_us) n.push('Turns away our checker (' + p.status + ') — tags and firewall not checked.');
+    else if (p.error) n.push('Could not load: ' + esc(p.error) + '.');
+    else if (p.status >= 400) n.push('<b>Returns ' + p.status + '</b> — AI answers are citing a page that ' + (p.status === 404 || p.status === 410 ? 'no longer exists' : 'doesn’t load') + '.');
+    (p.page_rules || []).forEach(r => n.push('<b>' + esc(r) + '</b> ' + ({ noindex: '— kept out of search results', nosnippet: '— no text may be quoted from it', 'max-snippet:0': '— no text may be quoted from it', noai: '— asks AI not to use it', noimageai: '— asks AI not to use its images', nofollow: '' }[r] || '')));
+    (p.ua_blocked || []).forEach(u => n.push('<b>Turned away a request as ' + esc(u.crawler) + '</b> (' + esc(String(u.status || u.error)) + ') while a browser got in — probably a firewall bot rule.'));
+    return n.join('<br>') || '—';
+  };
+  const kindLabel = p => p.kind === 'own' ? '<b>' + esc(d.brands[0].name) + '</b>' : p.kind === 'competitor' ? esc(p.owner || 'Competitor') : 'Third party';
+  const issues = p => p.blocked_us || p.status >= 400 || (p.page_rules || []).length || (p.ua_blocked || []).length || Object.values(p.robots || {}).some(v => v.allowed === false);
+  const own = crawl.pages.filter(p => p.kind === 'own'), otherBad = crawl.pages.filter(p => p.kind !== 'own' && issues(p)).length;
+  const shut = p => !p.robots_unknown && Object.values(p.robots).some(v => v.allowed === false) || (p.page_rules || []).length || (p.ua_blocked || []).length;
+  const ownShut = own.filter(shut).length, ownUnread = own.filter(p => p.blocked_us && !shut(p)).length, name = esc(d.brands[0].name);
+  const lead = '<p style="margin:0 0 10px">' +
+    (ownShut ? '<b>' + ownShut + ' of ' + own.length + ' ' + name + ' pages</b> shut out at least one AI crawler. ' : own.length ? name + '’s robots.txt lets the AI crawlers in on all ' + own.length + ' of its pages checked. ' : '') +
+    (ownUnread ? ownUnread + ' of them turn away our checker, so their page tags and firewall rules couldn’t be read — check those with a real crawler (Search Console’s URL inspection, or your CDN’s bot log). ' : '') +
+    (otherBad ? otherBad + ' competitor or third-party page' + (otherBad === 1 ? ' has' : 's have') + ' an issue.' : '') + '</p>';
+  return title + lead + '<div class="tblwrap"><table class="tbl"><tr><th>Page</th><th>Belongs to</th>' + groups.map(g => '<th>' + g + '</th>').join('') + '<th>Notes</th></tr>' +
+    crawl.pages.map(p => '<tr><td><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 60)) + '</a>' + (p.answers ? '<br><small>cited in ' + p.answers + ' answer' + (p.answers === 1 ? '' : 's') + '</small>' : '') + '</td><td>' + kindLabel(p) + '</td>' +
+      groups.map(g => cell(p, g)).join('') + '<td><small>' + notes(p) + '</small></td></tr>').join('') + '</table></div>' +
+    '<p class="hint" style="margin:-18px 0 30px">✓ = robots.txt lets that service’s crawlers fetch the page (ChatGPT: OAI-SearchBot, ChatGPT-User, GPTBot · Perplexity: PerplexityBot, Perplexity-User · Claude: Claude-SearchBot, Claude-User, ClaudeBot · Google: Googlebot, which feeds AI Overviews and AI Mode, and Google-Extended, which controls Gemini · Microsoft: Bingbot). Each page is also loaded as a browser (for noindex/nosnippet tags) and as OAI-SearchBot and PerplexityBot (for firewall rules). Our requests don’t come from those companies’ addresses, so a firewall that checks crawler IPs may treat them as impostors: a firewall flag is a thing to check, not proof. Checked ' + S.ago(crawl.checked_at) +
+    ' · <a href="#" id="crawlRefresh">check again</a>.</p>';
+}
+async function loadCrawl(refresh) {
+  crawlState = 'loading'; if (refresh) render();
+  const r = await S.api('/state-of-union/crawler-access', Object.assign({ id: data.id }, refresh ? { refresh: true } : {}));
+  crawl = r; crawlState = r && r.pages ? 'ready' : 'error';
   render();
 }
 
@@ -448,6 +494,8 @@ function render() {
     loadDemand({ [data.prompts[+i]]: v });
   });
   if (tab === 'brands' && d.status === 'complete' && d.brands.length && demandState === 'idle') loadDemand();
+  if (tab === 'brands' && d.status === 'complete' && d.brands.length && crawlState === 'idle') loadCrawl();
+  const cr = $('crawlRefresh'); if (cr) cr.onclick = e => { e.preventDefault(); loadCrawl(true); };
   const tb = $('trackBtn'); if (tb) tb.onclick = startTracking;
   const gc = $('gscConnect'); if (gc) gc.onclick = gscConnect;
   const pdfName = sfx => 'state-of-the-llm-union-' + (data.brand_name || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + String(data.created_at).slice(0, 10) + sfx + '.pdf';
