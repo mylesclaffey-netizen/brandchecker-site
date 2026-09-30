@@ -78,9 +78,12 @@ const DEFAULT_COMPETITORS = ['n8n.io', 'zapier.com', 'workato.com', 'Microsoft C
 // Vendors counted straight from the text, tracked or not — "how do I…" answers name few, and it's the few that matter.
 const VENDORS = [['Make', /\bMake(\.com)?\b(?! (sure|it|a|an|the|your|this|that|decisions?)\b)|Integromat/], ['n8n', /\bn8n\b/i], ['Zapier', /zapier/i], ['Workato', /workato/i],
   ['Power Automate', /power automate/i], ['Copilot Studio', /copilot studio|microsoft copilot/i], ['ServiceNow', /servicenow/i], ['UiPath', /uipath/i], ['Salesforce Agentforce', /agentforce/i],
-  ['Moveworks', /moveworks/i], ['Aisera', /aisera/i], ['IBM watsonx', /watsonx|ibm watson/i], ['AWS Bedrock', /bedrock/i], ['Azure AI', /azure (ai|openai)/i], ['Google Vertex AI', /vertex ai|agentspace/i],
+  ['Moveworks', /moveworks/i], ['Aisera', /aisera/i], ['IBM watsonx', /watsonx|ibm watson/i], ['AWS Bedrock', /bedrock/i], ['Azure AI Foundry', /azure (ai|openai)|ai foundry/i], ['Google Vertex AI / Agent Builder', /vertex ai|agentspace|google(’s|'s)? agent builder|vertex ai agent builder/i],
   ['OpenAI', /\bopenai\b|chatgpt enterprise|agentkit/i], ['Anthropic / Claude', /anthropic|claude/i], ['LangChain / LangGraph', /langchain|langgraph/i], ['CrewAI', /crew ?ai/i], ['AutoGen', /autogen/i],
-  ['Relevance AI', /relevance ai/i], ['Lindy', /\blindy\b/i], ['Gumloop', /gumloop/i], ['Dify', /\bdify\b/i], ['Tines', /\btines\b/i], ['Torq', /\btorq\b/i]];
+  ['Relevance AI', /relevance ai/i], ['Lindy', /\blindy\b/i], ['Gumloop', /gumloop/i], ['Dify', /\bdify\b/i], ['Tines', /\btines\b/i], ['Torq', /\btorq\b/i],
+  // IT-automation agent vendors that search surfaces for IT-team prompts.
+  ['Resolve AgentLab', /agentlab|resolve\.io|resolve systems/i], ['Wavity', /wavity/i], ['Stack AI', /stack ?ai\b/i], ['Rezolve.ai', /rezolve/i], ['Scogo', /scogo/i], ['Abundly', /abundly/i],
+  ['Snaga', /snaga/i], ['Atomicwork', /atomicwork/i]];
 // What the answers tell you to judge a platform on.
 const CRITERIA = [['Security & access control', /security|sso\b|rbac|access control|least privilege|permissions?/i], ['Compliance (SOC 2, HIPAA…)', /compliance|soc ?2|hipaa|gdpr|fedramp|iso ?27001/i],
   ['Integrations with existing tools', /integrat/i], ['Governance & audit trail', /governance|audit (log|trail)|auditab/i], ['Human in the loop / approvals', /human[- ]in[- ]the[- ]loop|approval|hitl|escalat/i],
@@ -126,7 +129,7 @@ function render(off, on) {
   const vRows = VENDORS.map(([n]) => [n, A.filter(c => vendorsIn(c.result.text).includes(n)).length, B.filter(c => vendorsIn(c.result.text).includes(n)).length]).filter(r => r[1] || r[2] || r[0] === 'Make')
     .sort((a, b) => (b[1] + b[2]) - (a[1] + a[2]));
   const cmp = (x, y) => '<td class="num">' + pct(x, A.length) + '</td><td class="num ' + (y > x ? 'up' : y < x ? 'down' : '') + '">' + pct(y, B.length) + '</td>';
-  let h = '<h2 class="h2b">Which tools get named</h2><p class="hint" style="margin:0 0 10px">Share of answers naming each tool, whether or not you track it — as a platform to pick <i>or</i> as a system to connect to (ServiceNow is mostly the second: “integrates with ServiceNow, Jira…”). Read the answers below for which is which.</p>' +
+  let h = '<h2 class="h2b">Which tools get named</h2><p class="hint" style="margin:0 0 10px">Share of answers naming each tool, whether or not you track it (counted from a fixed list — a vendor it doesn’t know still shows up under the pages cited) — as a platform to pick <i>or</i> as a system to connect to (ServiceNow is mostly the second: “integrates with ServiceNow, Jira…”). Read the answers below for which is which.</p>' +
     '<div class="tblwrap"><table class="tbl"><tr><th>Tool</th><th>Search off</th><th>Search on</th></tr>' + vRows.map(([n, x, y]) => '<tr><td>' + (n === 'Make' ? '<b>Make</b>' : esc(n)) + '</td>' + cmp(x, y) + '</tr>').join('') + '</table></div>';
 
   // Criteria: what the answers tell you to judge a platform on.

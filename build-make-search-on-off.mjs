@@ -53,7 +53,7 @@ for (const id of ids) {
 }
 // The page reads exactly what /state-of-union/get returns, so a live pair and the snapshot render the same way.
 const [off, on] = runs;
-fs.writeFileSync('make/data/search-on-off.json', JSON.stringify({ created_at: new Date().toISOString(), off, on }));
+fs.writeFileSync(process.env.OUT || 'make/data/search-on-off.json', JSON.stringify({ created_at: new Date().toISOString(), off, on }));
 for (const [label, d] of [['off', off], ['on', on]]) {
   const cells = d.cells.filter(c => c.status === 'done' && c.result?.text);
   const make = cells.filter(c => (c.mentions || []).some(m => m.name === 'Make' && m.mentioned)).length;
