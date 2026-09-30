@@ -468,7 +468,7 @@ async function gscDisconnect(e) {
 }
 
 function bannerHtml(d) {
-  if (SHARE) return '<div class="banner2 done"><b>Shared report</b> · read-only · ' + S.answered(d.cells).length + ' answers · run ' + S.ago(d.completed_at || d.created_at) + '</div>';
+  if (SHARE) return '<div class="banner2 done"><b>Shared report</b> · read-only · ' + S.answered(d.cells).length + (S.answered(d.cells).length === 1 ? ' answer' : ' answers') + ' · run ' + S.ago(d.completed_at || d.created_at) + '</div>';
   const attempted = d.cells.filter(c => c.status !== 'unavailable');
   const settled = attempted.filter(c => c.status === 'done' || c.status === 'failed').length;
   let html;
