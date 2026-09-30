@@ -139,8 +139,11 @@ function modelSections(d, colours) {
       (p.always_web ? ' · searches the web' : p.decides_web ? ' · decides for itself whether to search' : (d.web ? ' · web search on' : ' · own knowledge only')) + '</p>' +
       (d.brands.length ? '<p style="margin:8px 0 14px">' + d.brands.map(b => '<span class="chip2" style="--bg:' + colours[b.name].bg + ';--fg:' + colours[b.name].fg + '">' + esc(b.name) + ' <small>' + S.pct(S.rate(mine, b.name)) + '</small></span>').join(' ') + '</p>' : '');
     const cards = [];
-    d.prompts.forEach(pr => d.locations.forEach(loc => {
-      const same = d.cells.filter(c => c.provider === p.id && c.prompt === pr && c.location === loc);
+    // One card per prompt × buyer (persona variant; null = the plain question) × market.
+    const ps = d.personas || [], has = new Set(d.cells.map(c => c.persona || null));
+    const vs = ps.length ? [null, ...ps].filter(v => has.has(v)) : [null];
+    d.prompts.forEach(pr => vs.forEach(persona => d.locations.forEach(loc => {
+      const same = d.cells.filter(c => c.provider === p.id && c.prompt === pr && c.location === loc && (c.persona || null) === persona);
       const c = same.filter(x => (x.rep || 1) === 1)[0] || same[0];
       if (!c) return;
       const r = c.result || {}, ms = c.mentions || [], mMain = main ? ms.filter(m => m.name === main.name)[0] : null;
@@ -156,9 +159,9 @@ function modelSections(d, colours) {
           '<div class="answer2">' + S.highlight(r.text, ms, colours) + '</div>' +
           (srcs.length ? '<div class="srcs">Sources: ' + srcs.map(s => esc(s.domain || s.url.replace(/^https?:\/\//, '').split('/')[0])).join(' · ') + '</div>' : '');
       }
-      cards.push('<div class="ans"><div class="ah"><div><b>“' + esc(pr) + '”</b><br><small>' + esc(loc) + (same.length > 1 ? ' · answer 1 of ' + same.length : '') + '</small></div>' +
+      cards.push('<div class="ans"><div class="ah"><div><b>“' + esc(pr) + '”</b><br><small>' + (vs.length > 1 ? esc(S.personaName(persona)) + ' · ' : '') + esc(loc) + (same.length > 1 ? ' · answer 1 of ' + same.length : '') + '</small></div>' +
         '<span class="badge2 ' + b.cls + '">' + b.text + '</span></div>' + body + '</div>');
-    }));
+    })));
     return head + cards.join('') + '</div>';
   }).join('');
 }
@@ -191,7 +194,7 @@ function describeCompact(ds, brand) {
 
 async function summaryHtml(d) {
   const colours = S.colourMap(d.brands), main = d.brands[0], sm = d.summary || {};
-  let h = statCards(d, colours) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells) + modelTable(d, colours);
+  let h = statCards(d, colours) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells) + S.personasHtml(d, colours) + modelTable(d, colours);
   if (main) h += describeCompact(sm.describe, main.name);
   if (main && sm.facts && sm.facts.groups.length) {
     h += '<h2 class="h2b">What AI gets wrong about ' + esc(main.name) + '</h2><div class="lst">' + sm.facts.groups.slice(0, 3).map(g =>
@@ -212,7 +215,7 @@ async function summaryHtml(d) {
 async function reportHtml(d) {
   if (SUMMARY) return summaryHtml(d);
   const colours = S.colourMap(d.brands), main = d.brands[0], sm = d.summary || {};
-  let h = statCards(d, colours) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells);
+  let h = statCards(d, colours) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells) + S.personasHtml(d, colours);
   if (main) h += S.describeHtml(sm.describe, main.name) + S.factsHtml(sm.facts, main.name);
   h += citationsBlock(d) + S.discoveredHtml(sm.discovered, false);
   if (main) {

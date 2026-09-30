@@ -56,7 +56,10 @@ document.querySelectorAll('.sidenav-link').forEach(a => {
 
 let briefs = {};   // prompt -> { busy } | brief response (Worker: promptBrief.js)
 let gsc = null, gscPages = null, gscBusy = false;   // Search Console status and per-page metrics (Worker: gsc.js)
-let data = null, colours = {}, tab = 'compare', promptIdx = 0, marketSel = null, repSel = 1, pollTimer = null, pollCount = 0;
+let data = null, colours = {}, tab = 'compare', promptIdx = 0, marketSel = null, repSel = 1, personaSel = 0, pollTimer = null, pollCount = 0;
+// Persona variants the run asked, in order: null is the plain question.
+const variants = d => { const ps = d.personas || []; if (!ps.length) return [null]; const has = new Set(d.cells.map(c => c.persona || null)); return [null, ...ps].filter(v => has.has(v)); };
+const personaName = S.personaName;
 
 function shown(d) {                       // providers that were part of this run, in registry order
   const used = new Set(d.cells.map(c => c.provider));
@@ -132,6 +135,7 @@ function modelCard(d, p, cell) {
 }
 
 function compareView(d) {
+  const vs = variants(d), persona = vs[Math.min(personaSel, vs.length - 1)];
   const prompt = d.prompts[promptIdx] || d.prompts[0];
   const mk = marketSel && d.locations.includes(marketSel) ? marketSel : d.locations[0];
   const pillsHtml = '<div class="pills">' + d.prompts.map((p, i) =>
@@ -142,16 +146,19 @@ function compareView(d) {
   }).join('') + '</div>';
   const mkt = S.market(mk);
   const ctx = '<div class="ctx"><span>Asked in English (' + esc(mkt.short) + '), as if from ' + esc(mk) + ' · ' + (d.web ? 'web search on' : 'web search off') + ' · run ' + S.ago(d.created_at) + '</span></div>';
+  const ctxP = (d.personas || []).length ? '<div class="ctx"><span>' + (persona == null ? 'Asked as the plain question' : 'Asked as: “I’m ' + esc(persona.replace(/^(i’m|i\'m|as)\s+/i, '')) + '. …”') + '</span></div>' : '';
   const reps = d.repeats || 1;
   const repHtml = reps > 1 ? '<div class="mtabs">' + Array.from({ length: reps }, (_, i) => i + 1).map(n =>
     '<button data-r="' + n + '" aria-pressed="' + (n === repSel) + '">Answer ' + n + ' of ' + reps + '</button>').join('') + '</div>' : '';
   // AI Overviews and Gemini are asked once, so they show their single answer whichever repeat is picked.
+  const personaHtml = vs.length > 1 ? '<div class="mtabs">' + vs.map((v, i) =>
+    '<button data-v="' + i + '" aria-pressed="' + (v === persona) + '">' + esc(personaName(v)) + '</button>').join('') + '</div>' : '';
   const cellFor = p => {
-    const same = d.cells.filter(c => c.provider === p.id && c.prompt === prompt && c.location === mk);
+    const same = d.cells.filter(c => c.provider === p.id && c.prompt === prompt && c.location === mk && (c.persona || null) === persona);
     return same.filter(c => (c.rep || 1) === repSel)[0] || same[0];
   };
   const cards = shown(d).map(p => modelCard(d, p, cellFor(p))).join('');
-  return pillsHtml + tabsHtml + repHtml + ctx + legend(d) + '<div class="mgrid">' + cards + '</div>';
+  return pillsHtml + personaHtml + tabsHtml + repHtml + ctx + ctxP + legend(d) + '<div class="mgrid">' + cards + '</div>';
 }
 
 function matrix(d, title, keys, keyOf, labelOf) {
@@ -184,7 +191,7 @@ function brandsView(d) {
   const provs = shown(d).filter(p => p.available).map(p => p.id);
   const labelP = id => esc((d.providers.filter(p => p.id === id)[0] || {}).label || id);
   const note = '<p class="hint" style="margin:-18px 0 30px">Likely range: where the true rate probably sits (95%), given how many answers this run collected. More prompts, markets or repeats narrow it.</p>';
-  return '<h2 class="h2b">Who gets named</h2>' + overall + note + S.discoveredHtml(sm.discovered, !!d.watch_id) + (d.brands[0] ? S.describeHtml(sm.describe, d.brands[0].name) + S.factsHtml(sm.facts, d.brands[0].name) : '') + consistencyHtml(d) + citationsHtml(d) + pagesHtml(d) + briefsHtml(d) +
+  return '<h2 class="h2b">Who gets named</h2>' + overall + note + S.personasHtml(d, colours) + S.discoveredHtml(sm.discovered, !!d.watch_id) + (d.brands[0] ? S.describeHtml(sm.describe, d.brands[0].name) + S.factsHtml(sm.facts, d.brands[0].name) : '') + consistencyHtml(d) + citationsHtml(d) + pagesHtml(d) + briefsHtml(d) +
     '<h2 class="h2b">By model</h2>' + matrix(d, 'Model', provs, c => c.provider, labelP) +
     '<h2 class="h2b">By market</h2>' + matrix(d, 'Market', d.locations, c => c.location, l => S.market(l).flag + ' ' + esc(l)) +
     '<h2 class="h2b">By prompt</h2>' + matrix(d, 'Prompt', d.prompts, c => c.prompt, esc);
@@ -378,6 +385,7 @@ function render() {
   $('out').querySelectorAll('[data-p]').forEach(b => b.onclick = () => { promptIdx = +b.dataset.p; render(); });
   $('out').querySelectorAll('[data-m]').forEach(b => b.onclick = () => { marketSel = b.dataset.m; render(); });
   $('out').querySelectorAll('[data-r]').forEach(b => b.onclick = () => { repSel = +b.dataset.r; render(); });
+  $('out').querySelectorAll('[data-v]').forEach(b => b.onclick = () => { personaSel = +b.dataset.v; render(); });
   const tb = $('trackBtn'); if (tb) tb.onclick = startTracking;
   const gc = $('gscConnect'); if (gc) gc.onclick = gscConnect;
   const pdfName = sfx => 'state-of-the-llm-union-' + (data.brand_name || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + String(data.created_at).slice(0, 10) + sfx + '.pdf';

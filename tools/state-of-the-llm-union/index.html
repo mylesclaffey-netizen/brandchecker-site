@@ -106,6 +106,13 @@
       <textarea id="prompts" placeholder="What are the best tools for …?&#10;Which … would you recommend?"></textarea>
       <p class="hint">Write them the way a customer would ask an AI assistant, or add them from the suggestions above.</p>
     </div>
+    <div class="field">
+      <label for="personas">Ask as different buyers (optional, up to 4, one per line)</label>
+      <textarea id="personas" rows="3" placeholder="a solo founder with no developers&#10;the IT lead at a 500-person company&#10;a marketing agency managing 20 clients"></textarea>
+      <label class="toggle" style="margin-top:8px"><input type="checkbox" id="personaBase" checked>
+        <div><b>Also ask the plain question</b><span>The baseline each buyer is compared with.</span></div></label>
+      <p class="hint">Each prompt is also asked as each buyer — “I’m the IT lead at a 500-person company. What’s the best…?” — so the report shows which kinds of buyer you win and which you lose. Every buyer adds a full set of answers to the cost.</p>
+    </div>
 
     <div class="field"><span class="fl">Markets</span><div class="opts" id="markets"></div></div>
     <div class="field"><span class="fl">Models</span><div class="opts" id="models"><span class="hint">Loading models…</span></div>
@@ -190,7 +197,8 @@ function renderModels() {
 const lines = id => $(id).value.split('\n').map(s => s.trim()).filter(Boolean);
 function estimate() {
   if (!options) return;
-  const cells = lines('prompts').length * chosenMarkets.size, reps = +$('repeats').value || 1;
+  const np = lines('personas').slice(0, 4).length;
+  const cells = lines('prompts').length * chosenMarkets.size * (np ? np + ($('personaBase').checked ? 1 : 0) : 1), reps = +$('repeats').value || 1;
   let usd = 0, n = 0;
   options.providers.forEach(p => {
     if (!chosenModels.has(p.id)) return;
@@ -201,7 +209,7 @@ function estimate() {
   const track = $('track').checked, freq = $('freq').value;
   $('est').innerHTML = n
     ? '<b>≈ ' + S.money(usd) + '</b> per run · ' + n + ' answers' + (track ? ' · about <b>' + S.money(usd * (freq === 'daily' ? 30 : 4.3)) + '</b> a month' : '') +
-      (n > options.limits.max_cells ? '<br><span class="err">Over the ' + options.limits.max_cells + '-answer limit per run: use fewer prompts, markets, models or repeats.</span>' : '')
+      (n > options.limits.max_cells ? '<br><span class="err">Over the ' + options.limits.max_cells + '-answer limit per run: use fewer prompts, markets, models, repeats or buyers.</span>' : '')
     : 'Add at least one prompt, market and model to see the estimated cost.';
 }
 
@@ -215,6 +223,7 @@ async function submit() {
     aliases: $('aliases').value.split(',').map(s => s.trim()).filter(Boolean),
     competitors: lines('competitors'), prompts: lines('prompts'), locations: [...chosenMarkets],
     providers: [...chosenModels], web: $('web').checked, frequency: $('freq').value, repeats: +$('repeats').value || 1, facts: $('facts').value,
+    personas: lines('personas').slice(0, 4), persona_baseline: $('personaBase').checked,
     email: track ? $('alertEmail').value.trim() : ''
   };
   if (!body.prompts.length) return showErr('Add at least one prompt.');
@@ -261,7 +270,7 @@ async function init() {
   $('maxPrompts').textContent = r.limits.max_prompts;
   r.providers.forEach(p => { if (p.default && p.available) chosenModels.add(p.id); });
   renderMarkets(); renderModels(); estimate();
-  ['prompts', 'web', 'track', 'freq', 'repeats'].forEach(id => $(id).addEventListener('input', estimate));
+  ['prompts', 'personas', 'personaBase', 'web', 'track', 'freq', 'repeats'].forEach(id => $(id).addEventListener('input', estimate));
   const syncAlert = () => { $('alertBox').style.display = $('track').checked ? 'block' : 'none'; };
   $('track').addEventListener('input', syncAlert); syncAlert();
   $('go').onclick = submit;

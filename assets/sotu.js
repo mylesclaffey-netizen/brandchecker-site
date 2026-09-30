@@ -115,6 +115,31 @@
     mistral: 'Mistral', ai_overviews: 'AI Overviews', gemini: 'Gemini', copilot: 'Copilot' };
   function providerLabel(id) { return PROVIDER_LABELS[id] || id; }
 
+  // Persona variants (Worker: sotuStats.js personaStats): each brand's rate per buyer, against the plain question.
+  function personaName(v) { return v == null ? 'Plain question' : v.charAt(0).toUpperCase() + v.slice(1); }
+  function personasHtml(d, colours) {
+    var bp = (d.summary || {}).by_persona;
+    if (!bp || bp.length < 2 || !d.brands.length) return '';
+    var base = bp.filter(function (v) { return v.persona == null; })[0];
+    var head = '<tr><th>Brand</th>' + bp.map(function (v) { return '<th>' + esc(personaName(v.persona)) + '<br><small style="font-weight:400">' + v.answers + ' answers</small></th>'; }).join('') + '</tr>';
+    var rows = d.brands.map(function (b, bi) {
+      return '<tr><td><span class="dot" style="--bg:' + (colours[b.name] || PALETTE[0]).bg + '"></span><b>' + esc(b.name) + '</b>' + (bi === 0 ? ' <small>(you)</small>' : '') + '</td>' + bp.map(function (v) {
+        var x = v.by_brand[b.name] || {}, r = x.rate, bg = r == null ? '#f3f3ef' : 'rgba(255,61,0,' + (0.08 + 0.72 * r).toFixed(2) + ')';
+        var b0 = base && v !== base ? (base.by_brand[b.name] || {}).rate : null;
+        var delta = b0 != null && r != null && Math.abs(r - b0) >= 0.05 ? ' <small>' + (r > b0 ? '▲' : '▼') + Math.round(Math.abs(r - b0) * 100) + '</small>' : '';
+        return '<td class="heat" style="background:' + bg + '">' + pct(r) + delta + '<br><small>' + (x.low != null ? Math.round(x.low * 100) + '–' + Math.round(x.high * 100) + '%' : '') + (x.first ? ' · first ' + pct(x.first_rate) : '') + '</small></td>';
+      }).join('') + '</tr>';
+    }).join('');
+    // The buyers where the main brand does best and worst, for a one-line takeaway.
+    var main = d.brands[0].name, ps = bp.filter(function (v) { return v.persona != null && (v.by_brand[main] || {}).rate != null; }), take = '';
+    if (ps.length > 1) {
+      var sorted = ps.slice().sort(function (a, b) { return b.by_brand[main].rate - a.by_brand[main].rate; }), hi = sorted[0], lo = sorted[sorted.length - 1];
+      if (hi.by_brand[main].rate > lo.by_brand[main].rate) take = '<p style="margin:0 0 10px">' + esc(main) + ' is named most for <b>' + esc(hi.persona) + '</b> (' + pct(hi.by_brand[main].rate) + ') and least for <b>' + esc(lo.persona) + '</b> (' + pct(lo.by_brand[main].rate) + ').</p>';
+    }
+    return '<h2 class="h2b">Which buyers name you</h2>' + take + '<div class="tblwrap"><table class="tbl">' + head + rows + '</table></div>' +
+      '<p class="hint" style="margin:-18px 0 30px">The same prompts asked as each buyer (“I’m … . What’s the best…?”). Share of answers naming each brand, its likely range, and how often it’s named first. ▲▼ = points above or below the plain question.</p>';
+  }
+
   // "What AI gets wrong about <brand>": fact-check groups from the Worker (sotuStats.js factStats).
   function factsHtml(facts, brand) {
     if (!facts) return '';
@@ -246,6 +271,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();
