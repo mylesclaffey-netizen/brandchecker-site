@@ -42,15 +42,24 @@ if (!ids) {
     ids.push(r.id);
   }
 }
-const runs = [];
-for (const id of ids) {
-  for (let i = 0; ; i++) {
-    const d = await api('/state-of-union/get', { id });
-    if (d.status === 'complete') { runs.push(d); break; }
-    if (i > 90) throw new Error('run ' + id + ' did not finish');
-    await sleep(10000);
+// Wait for both runs, then read how each answer positions the products it names (sotuPositions.js) — the page
+// shows it, and the snapshot is read without an access code, so it can't start the read itself.
+async function getAll() {
+  const out = [];
+  for (const id of ids) {
+    for (let i = 0; ; i++) {
+      const d = await api('/state-of-union/get', { id });
+      if (d.status === 'complete') { out.push(d); break; }
+      if (i > 90) throw new Error('run ' + id + ' did not finish');
+      await sleep(10000);
+    }
   }
+  return out;
 }
+await getAll();
+const pos = await api('/state-of-union/positions', { ids });
+console.log('positions: read', pos.read, 'failed', pos.failed, '$' + pos.cost);
+const runs = await getAll();
 // The page reads exactly what /state-of-union/get returns, so a live pair and the snapshot render the same way.
 const [off, on] = runs;
 fs.writeFileSync(process.env.OUT || 'make/data/search-on-off.json', JSON.stringify({ created_at: new Date().toISOString(), off, on }));

@@ -36,6 +36,7 @@
   .delta { font-size: 14px; margin: 0 0 12px; }
   .add { color: #2f6b2a; font-weight: 700; } .drop { color: #9a4a2e; font-weight: 700; }
   .yes { background: #0a0a0a; color: #fff; font-weight: 700; padding: 0 5px; }
+  .pos { margin: 6px 0 2px; }
   .outline { font-size: 13px; color: #3d3d3d; margin: 6px 0 0; padding-left: 18px; }
   .rtabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
   .tbl td.num.up { color: #2f6b2a; font-weight: 700; } .tbl td.num.down { color: #9a4a2e; font-weight: 700; }
@@ -72,12 +73,15 @@ const DEFAULT_COMPETITORS = ['n8n.io', 'zapier.com', 'workato.com', 'Microsoft C
 // Vendors counted straight from the text, tracked or not — "how do I…" answers name few, and it's the few that matter.
 const BASE_VENDORS = [['Make', /\bMake(\.com)?\b(?! (sure|it|a|an|the|your|this|that|decisions?)\b)|Integromat/], ['n8n', /\bn8n\b/i], ['Zapier', /zapier/i], ['Workato', /workato/i],
   ['Power Automate', /power automate/i], ['Copilot Studio', /copilot studio|microsoft copilot/i], ['ServiceNow', /servicenow/i], ['UiPath', /uipath/i], ['Salesforce Agentforce', /agentforce/i],
-  ['Moveworks', /moveworks/i], ['Aisera', /aisera/i], ['IBM watsonx', /watsonx|ibm watson/i], ['AWS Bedrock', /bedrock/i], ['Azure AI Foundry', /azure (ai|openai)|ai foundry/i], ['Google Vertex AI / Agent Builder', /vertex ai|agentspace|google(’s|'s)? agent builder|vertex ai agent builder/i],
+  ['Moveworks', /moveworks/i], ['Aisera', /aisera/i], ['IBM watsonx', /watsonx|ibm watson/i], ['AWS Bedrock', /bedrock/i], ['Azure AI Foundry', /azure (ai|openai)|ai foundry|microsoft foundry|foundry agent/i], ['Google Vertex AI / Agent Builder', /vertex ai|agentspace|google(’s|'s)? agent builder|vertex ai agent builder/i],
   ['OpenAI', /\bopenai\b|chatgpt enterprise|agentkit/i], ['Anthropic / Claude', /anthropic|claude/i], ['LangChain / LangGraph', /langchain|langgraph/i], ['CrewAI', /crew ?ai/i], ['AutoGen', /autogen/i],
   ['Relevance AI', /relevance ai/i], ['Lindy', /\blindy\b/i], ['Gumloop', /gumloop/i], ['Dify', /\bdify\b/i], ['Tines', /\btines\b/i], ['Torq', /\btorq\b/i],
   // IT-automation agent vendors that search surfaces for IT-team prompts.
-  ['Resolve AgentLab', /agentlab|resolve\.io|resolve systems/i], ['Wavity', /wavity/i], ['Stack AI', /stack ?ai\b/i], ['Rezolve.ai', /rezolve/i], ['Scogo', /scogo/i], ['Abundly', /abundly/i],
-  ['Snaga', /snaga/i], ['Atomicwork', /atomicwork/i]];
+  ['Resolve AgentLab', /agentlab|resolve\.io|resolve systems|^resolve$/i], ['Wavity', /wavity/i], ['Stack AI', /stack ?ai\b/i], ['Rezolve.ai', /rezolve/i], ['Scogo', /scogo/i], ['Abundly', /abundly/i],
+  ['Snaga', /snaga/i], ['Atomicwork', /atomicwork/i],
+  // Service-desk (ITSM) tools — for IT prompts they're named as often as agent platforms, under many names.
+  ['Jira Service Management', /jira|atlassian/i], ['Freshservice', /freshservice|freshworks|freddy/i], ['Zendesk', /zendesk/i], ['BMC Helix', /\bbmc\b|helix|remedy/i],
+  ['Ivanti', /ivanti/i], ['BigPanda', /bigpanda/i], ['Automation Anywhere', /automation anywhere/i], ['PagerDuty', /pagerduty/i], ['Salesforce', /salesforce(?! agentforce)/i]];
 // What the answers tell you to judge a platform on.
 const CRITERIA = [['Security & access control', /security|sso\b|rbac|access control|least privilege|permissions?/i], ['Compliance (SOC 2, HIPAA…)', /compliance|soc ?2|hipaa|gdpr|fedramp|iso ?27001/i],
   ['Integrations with existing tools', /integrat/i], ['Governance & audit trail', /governance|audit (log|trail)|auditab/i], ['Human in the loop / approvals', /human[- ]in[- ]the[- ]loop|approval|hitl|escalat/i],
@@ -111,6 +115,32 @@ const done = d => (d.cells || []).filter(c => c.status === 'done' && c.result &&
 const vendorsIn = t => VENDORS.filter(([, re]) => re.test(t)).map(v => v[0]);
 const knownIn = t => BASE_VENDORS.filter(([, re]) => re.test(t)).map(v => v[0]);
 const isCited = n => !BASE_VENDORS.some(v => v[0] === n);
+// Positions (worker: sotuPositions.js): each vendor's role in an answer. Names are merged onto the vendor list
+// ("ServiceNow AI / Now Assist" → ServiceNow); anything else is kept as the answer wrote it.
+const RANK = { top_pick: 5, recommended: 4, option: 3, caution: 2, integration: 1, other: 0 };
+// Key: the vendor-list entry it matches (or the cleaned name). Shown: the list's name, except for vendors found
+// through cited sites, where the answer's own name ("Algorims OpsIQ") reads better than the domain.
+const shown = {};
+function canon(n) {
+  const v = VENDORS.find(([, re]) => re.test(n));
+  if (!v) { const x = n.replace(/\s*\(.*\)$/, '').replace(/\s*\+.*$/, '').replace(/\s+(AI|agents?)$/i, '').trim(); return [x.toLowerCase(), x]; }
+  const k = v[0].toLowerCase();
+  if (isCited(v[0])) shown[k] ??= n.replace(/\s*\(.*\)$/, '').trim();
+  return [k, isCited(v[0]) ? shown[k] : v[0]];
+}
+function roles(c) {   // key → the strongest position the product has in this answer
+  const m = {};
+  (c.result.positions || []).forEach(p => { const [k, n] = canon(p.name); if (!m[k] || RANK[p.role] > RANK[m[k].role]) m[k] = { ...p, name: n }; });
+  return m;
+}
+const hasPos = list => list.length > 0 && list.every(c => Array.isArray(c.result.positions));
+const topPick = c => Object.values(roles(c)).find(p => p.role === 'top_pick');
+const posLine = c => {
+  if (!Array.isArray(c.result.positions)) return '';
+  const r = Object.values(roles(c)), by = role => r.filter(p => p.role === role).map(p => esc(p.name));
+  const parts = [['Top pick', by('top_pick')], ['Recommended', by('recommended')], ['Listed', by('option')], ['Cautioned', by('caution')], ['Connects to', by('integration')]].filter(x => x[1].length);
+  return parts.length ? '<div class="srcs pos">' + parts.map(([l, xs]) => '<b>' + l + ':</b> ' + xs.join(', ')).join(' · ') + '</div>' : '<div class="srcs pos">Recommends no product.</div>';
+};
 const pct = (n, d) => d ? Math.round(100 * n / d) + '%' : '—';
 const avg = xs => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
 const host = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
@@ -132,6 +162,8 @@ function render(off, on) {
   const pageList = Object.values(pages).sort((a, b) => b.n - a.n);
   const makeCited = pageList.filter(p => host(p.url).endsWith('make.com'));
   const shared = pageList.filter(p => p.models.size > 1).length;
+  const posOK = hasPos(A) && hasPos(B);
+  const makeRec = list => list.filter(c => { const m = roles(c).make; return m && (m.role === 'top_pick' || m.role === 'recommended'); }).length;
 
   $('sub').innerHTML = '“' + esc(prompt) + '” — asked ' + (off.repeats || 1) + '× per model with search off and ' + (on.repeats || 1) + '× with search on, ' + esc((on.locations || ['United States'])[0]) + ', ' +
     new Date(on.completed_at || on.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + '.';
@@ -140,8 +172,8 @@ function render(off, on) {
     { lbl: 'Known vendors per answer', val: vA.toFixed(1) + ' → ' + vB.toFixed(1), sub: 'search off → on' + (sB >= 0.1 ? ' · plus ' + sB.toFixed(1) + ' cited sites named per answer with search on' : '') },
     { lbl: 'Answers citing sources', val: withSrc.length + '/' + B.length, sub: pageList.length + ' pages cited · ' + shared + ' by more than one model' },
     { lbl: 'make.com cited', val: makeCited.length ? makeCited.reduce((t, p) => t + p.n, 0) : 0, sub: 'times, with search on' },
-    { lbl: 'Answer length', val: Math.round(avg(A.map(c => c.result.text.length)) / 100) / 10 + 'k → ' + Math.round(avg(B.map(c => c.result.text.length)) / 100) / 10 + 'k', sub: 'characters, search off → on' }
-  ];
+    posOK ? { lbl: 'Make recommended', val: makeRec(A) + ' → ' + makeRec(B), sub: 'answers where Make is the top pick or recommended, off → on' } : { lbl: 'Answer length', val: Math.round(avg(A.map(c => c.result.text.length)) / 100) / 10 + 'k → ' + Math.round(avg(B.map(c => c.result.text.length)) / 100) / 10 + 'k', sub: 'characters, search off → on' }
+  ].filter(Boolean);
   $('cards').innerHTML = cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('');
 
   // Vendors: share of answers naming each, off vs on.
@@ -150,6 +182,30 @@ function render(off, on) {
   const cmp = (x, y) => '<td class="num">' + pct(x, A.length) + '</td><td class="num ' + (y > x ? 'up' : y < x ? 'down' : '') + '">' + pct(y, B.length) + '</td>';
   let h = '<h2 class="h2b">Which tools get named</h2><p class="hint" style="margin:0 0 10px">Share of answers naming each tool, whether or not you track it (counted from a fixed list — a vendor it doesn’t know still shows up under the pages cited) — as a platform to pick <i>or</i> as a system to connect to (ServiceNow is mostly the second: “integrates with ServiceNow, Jira…”). Read the answers below for which is which.</p>' +
     '<div class="tblwrap"><table class="tbl"><tr><th>Tool</th><th>Search off</th><th>Search on</th></tr>' + vRows.map(([n, x, y]) => '<tr><td>' + (n === 'Make' ? '<b>Make</b>' : esc(n)) + (isCited(n) ? ' <small class="srcs">cited site — vendor or source, check the answers</small>' : '') + '</td>' + cmp(x, y) + '</tr>').join('') + '</table></div>';
+
+  // Positions: who the answers actually recommend, off vs on.
+  if (posOK) {
+    const names = {};
+    [...A, ...B].forEach(c => Object.entries(roles(c)).forEach(([k, p]) => { names[k] ??= p.name; }));
+    const count = (list, k, test) => list.filter(c => { const p = roles(c)[k]; return p && test(p.role); }).length;
+    const isTop = r => r === 'top_pick', isRec = r => r === 'top_pick' || r === 'recommended', isList = r => r === 'option' || r === 'integration' || r === 'other', isWarn = r => r === 'caution';
+    const rows = Object.keys(names).map(k => ({ k, n: names[k], t: [count(A, k, isTop), count(B, k, isTop)], r: [count(A, k, isRec), count(B, k, isRec)], l: [count(A, k, isList), count(B, k, isList)], w: [count(A, k, isWarn), count(B, k, isWarn)] }))
+      .filter(x => x.r[0] + x.r[1] + x.w[0] + x.w[1] > 0 || x.k === 'make').sort((a, b) => (b.t[0] + b.t[1]) * 3 + b.r[0] + b.r[1] - ((a.t[0] + a.t[1]) * 3 + a.r[0] + a.r[1])).slice(0, 18);
+    if (!rows.some(x => x.k === 'make')) rows.push({ k: 'make', n: 'Make', t: [0, 0], r: [0, 0], l: [0, 0], w: [0, 0] });
+    const two = ([x, y]) => '<td class="num">' + x + ' → <span class="' + (y > x ? 'add' : y < x ? 'drop' : '') + '">' + y + '</span></td>';
+    h += '<h2 class="h2b">Who gets recommended</h2><p class="hint" style="margin:0 0 10px">Being named isn’t being recommended. Each answer was read for how it positions every product it names — the top pick, recommended, just listed or named as a system to connect to, or named with a warning. Answers, search off → on (' + A.length + ' / ' + B.length + ').</p>' +
+      '<div class="tblwrap"><table class="tbl"><tr><th>Product</th><th>Top pick</th><th>Recommended<br><small>incl. top pick</small></th><th>Listed / connects to</th><th>Cautioned</th></tr>' +
+      rows.map(x => '<tr><td>' + (x.k === 'make' ? '<b>Make</b>' : esc(x.n)) + '</td>' + two(x.t) + two(x.r) + two(x.l) + two(x.w) + '</tr>').join('') + '</table></div>';
+    const provs0 = [...new Set([...A, ...B].map(c => c.provider))];
+    const picks = list => list.map(c => { const t = topPick(c); return t ? esc(t.name) : '<span class="srcs">no single pick</span>'; }).join('<br>');
+    h += '<div class="tblwrap"><table class="tbl"><tr><th>Model</th><th>Top pick, search off</th><th>Top pick, search on</th></tr>' +
+      provs0.map(p => '<tr><td><b>' + esc(label(p)) + '</b></td><td>' + picks(A.filter(c => c.provider === p)) + '</td><td>' + picks(B.filter(c => c.provider === p)) + '</td></tr>').join('') + '</table></div>';
+  }
+  // How Make is described, when it's named (the run's own description tags).
+  const dOff = off.summary && off.summary.describe, dOn = on.summary && on.summary.describe;
+  const hasD = d => d && (d.dims || []).some(x => x.pos + x.neg > 0);
+  if (hasD(dOff) || hasD(dOn)) h += '<h2 class="h2b">How Make is described</h2><p class="hint" style="margin:0 0 10px">When an answer names Make, how it describes it — search off, then search on.</p>' +
+    [['Search off', dOff], ['Search on', dOn]].map(([t, d]) => '<div class="mhead" style="font-size:18px;break-before:auto">' + t + '</div>' + (hasD(d) ? S.describeHtml(d, 'Make') : '<p class="srcs">No answer names Make.</p>')).join('');
 
   // Criteria: what the answers tell you to judge a platform on.
   const cRows = CRITERIA.map(([n, re]) => [n, A.filter(c => re.test(c.result.text)).length, B.filter(c => re.test(c.result.text)).length]).sort((a, b) => (b[1] + b[2]) - (a[1] + a[2]));
@@ -176,7 +232,7 @@ function render(off, on) {
       const side = (c, title) => {
         if (!c) return '<div><h4>' + title + '</h4><div class="answer2 empty">No answer.</div></div>';
         const colours = S.colourMap(on.brands || []), ol = outline(c.result.text), src = (c.result.sources || []).filter(s => s.url).slice(0, 5);
-        return '<div><h4>' + title + (reps > 1 ? ' · answer ' + (i + 1) : '') + '</h4><div class="answer2">' + S.highlight(c.result.text, c.mentions || [], colours) + '</div>' +
+        return '<div><h4>' + title + (reps > 1 ? ' · answer ' + (i + 1) : '') + '</h4><div class="answer2">' + S.highlight(c.result.text, c.mentions || [], colours) + '</div>' + posLine(c) +
           (ol.length ? '<details><summary class="srcs">Outline (' + ol.length + ')</summary><ol class="outline">' + ol.slice(0, 20).map(x => '<li>' + esc(x.slice(0, 90)) + '</li>').join('') + '</ol></details>' : '') +
           (src.length ? '<div class="srcs">Sources: ' + src.map(s => '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(host(s.url)) + '</a>').join(' · ') + '</div>' : '') + '</div>';
       };
@@ -184,7 +240,7 @@ function render(off, on) {
     }
   });
   $('out').innerHTML = h;
-  $('method').innerHTML = 'Method: two State Of The LLM Union runs with the same prompt, models and market — one with web search off (own knowledge), one with it on. Tools are counted from the answer text against a fixed list, tracked or not; criteria by keyword. ' +
+  $('method').innerHTML = 'Method: two State Of The LLM Union runs with the same prompt, models and market — one with web search off (own knowledge), one with it on. Tools are counted from the answer text against a fixed list plus the sites the answers cite; criteria by keyword; who gets recommended by one Claude Haiku read per answer (role and tone for every product it names, with its own words as evidence). ' +
     'ChatGPT, Llama and Mistral search through OpenRouter’s web plugin, Claude through Anthropic’s own search. Cost of this pair: $' + ((off.total_cost || 0) + (on.total_cost || 0)).toFixed(3) + '.';
 }
 
@@ -215,11 +271,20 @@ $('go').onclick = go;
 
 async function load(offId, onId, code) {
   const get = id => fetch(S.API + '/state-of-union/get', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, id }) }).then(r => r.json());
+  let triedPos = false;
   for (;;) {
     const [off, on] = await Promise.all([get(offId), get(onId)]);
     if (off.error || on.error) { $('sub').textContent = off.error || on.error; return; }
     const total = off.cells.length + on.cells.length, fin = [...off.cells, ...on.cells].filter(c => ['done', 'failed', 'unavailable'].includes(c.status)).length;
-    if (off.status === 'complete' && on.status === 'complete') { $('status').textContent = ''; $('go').disabled = false; render(off, on); return; }
+    if (off.status === 'complete' && on.status === 'complete') {
+      if ((!hasPos(done(off)) || !hasPos(done(on))) && !triedPos) {
+        triedPos = true;
+        $('sub').textContent = 'Reading how each answer positions the products it names…';
+        await fetch(S.API + '/state-of-union/positions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, ids: [offId, onId] }) }).catch(() => null);
+        continue;
+      }
+      $('status').textContent = ''; $('go').disabled = false; render(off, on); return;
+    }
     $('sub').textContent = 'Asking… ' + fin + ' of ' + total + ' answers back.';
     await new Promise(r => setTimeout(r, 8000));
   }
