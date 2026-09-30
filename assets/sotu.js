@@ -115,6 +115,75 @@
     mistral: 'Mistral', ai_overviews: 'AI Overviews', gemini: 'Gemini', copilot: 'Copilot' };
   function providerLabel(id) { return PROVIDER_LABELS[id] || id; }
 
+  // Agency branding for exports (Worker: branding.js) — the access code's name, logo, accent and white-label choice.
+  // Fetched once per page; `refresh` re-reads it after a save.
+  var brandingP = null;
+  function branding(refresh) {
+    if (!brandingP || refresh) brandingP = api('/branding/get').then(function (r) { return r && !r.error ? r : {}; }).catch(function () { return {}; });
+    return brandingP;
+  }
+  // Any image the browser can open (PNG, JPEG, SVG, WebP…) → a PNG of at most 600×200, proportions kept: { data, w, h }.
+  // Only this PNG is sent, so the Worker never stores or serves anything but a plain bitmap.
+  function logoFromFile(file) {
+    return new Promise(function (resolve, reject) {
+      var rd = new FileReader();
+      rd.onerror = function () { reject(new Error('That file could not be read.')); };
+      rd.onload = function () {
+        var img = new Image();
+        img.onerror = function () { reject(new Error('That file isn’t an image this browser can open.')); };
+        img.onload = function () {
+          var w = img.naturalWidth || 600, h = img.naturalHeight || 200, k = Math.min(1, 600 / w, 200 / h);
+          var c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          resolve({ data: c.toDataURL('image/png'), w: c.width, h: c.height });
+        };
+        img.src = rd.result;
+      };
+      rd.readAsDataURL(file);
+    });
+  }
+  // The "Your logo on PDFs and slides" panel, filled into `el` (report and tracker pages).
+  function brandingPanel(el) {
+    var pending = null;   // a new logo chosen but not saved yet; '' = remove
+    function paint(br) {
+      br = br || {};
+      el.innerHTML =
+        '<p class="hint" style="margin:0 0 12px">Shown on the PDFs and slide decks made with this access link — including the summary PDF attached to tracker alert emails.</p>' +
+        '<div class="brgrid"><div><label for="brName">Agency name</label><input id="brName" type="text" maxlength="80" placeholder="e.g. Northwind Digital" value="' + esc(br.name || '') + '"></div>' +
+        '<div><label for="brLogo">Logo</label><input id="brLogo" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif"><div id="brPrev" class="brprev">' +
+        (br.logo ? '<img src="' + esc(br.logo) + '" alt="Current logo"> <a href="#" id="brRemove">Remove</a>' : '<span class="hint">No logo yet</span>') + '</div></div></div>' +
+        '<div class="brgrid"><div><label for="brAcc">Accent colour</label><div style="display:flex;gap:10px;align-items:center"><input id="brAcc" type="color" value="' + esc(br.accent || '#1e3cff') + '" style="width:56px;height:38px;padding:2px">' +
+        '<label style="font-weight:500;display:flex;gap:6px;align-items:center"><input id="brAccOn" type="checkbox"' + (br.accent ? ' checked' : '') + '> Use it instead of ours</label></div></div>' +
+        '<div><label class="brwl"><input id="brWhite" type="checkbox"' + (br.white_label ? ' checked' : '') + '><span><b>White label</b><br>Leave “State Of The LLM Union · ' + esc(location.hostname.replace(/^www\./, '')) + '” off the exports.</span></label></div></div>' +
+        '<p style="margin:14px 0 0"><button class="btn2 small solid" id="brSave" type="button">Save branding</button> ' + (br.name || br.logo || br.accent ? '<button class="btn2 small" id="brClear" type="button">Remove all</button> ' : '') + '<span class="hint" id="brMsg"></span></p>';
+      var q = function (id) { return el.querySelector('#' + id); };
+      q('brLogo').onchange = function () {
+        var f = this.files && this.files[0];
+        if (!f) return;
+        logoFromFile(f).then(function (l) { pending = l; q('brPrev').innerHTML = '<img src="' + l.data + '" alt="New logo"> <span class="hint">new — save to keep it</span>'; })
+          .catch(function (e) { q('brMsg').textContent = e.message; });
+      };
+      var rm = q('brRemove'); if (rm) rm.onclick = function (e) { e.preventDefault(); pending = ''; q('brPrev').innerHTML = '<span class="hint">Logo will be removed when you save</span>'; };
+      q('brSave').onclick = function () {
+        var body = { name: q('brName').value.trim(), accent: q('brAccOn').checked ? q('brAcc').value : '', white_label: q('brWhite').checked };
+        if (pending === '') body.logo = '';
+        else if (pending) { body.logo = pending.data; body.logo_w = pending.w; body.logo_h = pending.h; }
+        q('brSave').disabled = true; q('brMsg').textContent = 'Saving…';
+        api('/branding/set', body).then(function (r) {
+          if (r.error) { q('brSave').disabled = false; q('brMsg').textContent = r.error; return; }
+          pending = null; branding(true); paint(r);
+          el.querySelector('#brMsg').textContent = 'Saved — your next PDF or slide deck will use it.';
+        });
+      };
+      var cl = q('brClear'); if (cl) cl.onclick = function () {
+        api('/branding/set', { clear: true }).then(function () { pending = null; branding(true); paint({}); el.querySelector('#brMsg').textContent = 'Branding removed.'; });
+      };
+    }
+    el.innerHTML = '<p class="hint">Loading…</p>';
+    branding().then(paint);
+  }
+
   // Demand weighting (Worker: promptDemand.js). `basis` is 'ai' (AI searches) or 'google'. A prompt × market's weight is its
   // monthly searches on that basis, 0 when unknown.
   function demandWeight(demand, basis, p, m) {
@@ -330,6 +399,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();

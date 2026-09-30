@@ -27,7 +27,8 @@
   <p class="sotu-sub">The same prompts are put to ChatGPT, Claude, Perplexity, Llama, Mistral and Google AI Overviews every week, and every result is kept, so you can see whether AI models name Make more or less over time.</p>
   <div class="sotu-actions" style="margin-top:8px"><a class="btn2 navb" href="/make/">← Brand Checker for Make</a> <a class="btn2 navb" href="/make/overview/">All models</a> <a class="btn2 navb" href="/make/claude/">Claude</a> <a class="btn2 navb" href="/make/chatgpt/">ChatGPT</a> <a class="btn2 navb" href="/make/deepseek/">DeepSeek</a> <a class="btn2 navb" href="/make/perplexity/">Perplexity</a> <a class="btn2 navb" href="/make/gemini/">Gemini</a> <a class="btn2 navb blue" href="/make/state-of-the-llm-union/tracker/" aria-current="page">Weekly tracker</a> <a class="btn2 navb" href="/make/app-pairs/">App pairs</a> <a class="btn2 navb" href="/make/zapier-alternatives/">Zapier alternatives</a> <a class="btn2 navb" href="/make/learning-curve/">Learning curve</a> <a class="btn2 navb" href="/make/ai-agents/">AI agents</a> <a class="btn2 navb" href="/make/search-on-off/">Search on / off</a></div>
   <div id="list"></div>
-  <div id="detail"></div>
+  <details class="brandbox" id="brandBox" hidden><summary>Your logo on PDFs and slides</summary><div id="brandPanel"></div></details>
+<div id="detail"></div>
 
   <div class="sidenav">
     <a href="/make/" class="sidenav-link">← Back to Brand Checker for Make</a>
@@ -259,6 +260,7 @@ async function loadTrend() {
     return;
   }
   trendData = d; trendDemand = null;
+  if ($('brandBox').hidden) { $('brandBox').hidden = false; $('brandBox').addEventListener('toggle', () => { if ($('brandBox').open && !$('brandPanel').childElementCount) S.brandingPanel($('brandPanel')); }); }
   renderTrend(d);
   wireDetail();
   const last = d.runs.length ? d.runs[d.runs.length - 1] : null;

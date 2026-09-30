@@ -27,7 +27,8 @@
   <p class="sotu-sub">Each tracker re-runs your prompts on a schedule and keeps every result, so you can see whether AI models name your brand more or less over time.</p>
   <div class="sotu-actions"><a class="btn2 solid" id="newBtn" href="/tools/state-of-the-llm-union/">New tracker</a></div>
   <div id="list"></div>
-  <div id="detail"></div>
+  <details class="brandbox" id="brandBox" hidden><summary>Your logo on PDFs and slides</summary><div id="brandPanel"></div></details>
+<div id="detail"></div>
 
   <div class="sidenav">
     <a href="/tools/state-of-the-llm-union/" class="sidenav-link">← New State Of The LLM Union report</a>
@@ -259,6 +260,7 @@ async function loadTrend() {
     return;
   }
   trendData = d; trendDemand = null;
+  if ($('brandBox').hidden) { $('brandBox').hidden = false; $('brandBox').addEventListener('toggle', () => { if ($('brandBox').open && !$('brandPanel').childElementCount) S.brandingPanel($('brandPanel')); }); }
   renderTrend(d);
   wireDetail();
   const last = d.runs.length ? d.runs[d.runs.length - 1] : null;

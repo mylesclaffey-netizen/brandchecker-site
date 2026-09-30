@@ -10,7 +10,15 @@
  */
 (function () {
   var S = window.SOTU;
-  var ORANGE = 'FF3D00', INK = '0A0A0A', MUTED = '5A5A5A', LIGHT = 'F3F3EF', WHITE = 'FFFFFF';
+  var ACCENT_DEFAULT = 'FF3D00', ORANGE = ACCENT_DEFAULT, INK = '0A0A0A', MUTED = '5A5A5A', LIGHT = 'F3F3EF', WHITE = 'FFFFFF';
+  var SITE = 'brandchecker.eu';
+  // The access code's agency branding (Worker: branding.js), set at the start of each export: name, logo, accent, white label.
+  var BRAND = {};
+  function useBranding(br) { BRAND = br || {}; ORANGE = BRAND.accent ? String(BRAND.accent).replace('#', '').toUpperCase() : ACCENT_DEFAULT; }
+  // "Prepared by <agency> · State Of The LLM Union", or just the agency when white-label, or our credit when unbranded.
+  function credit() { return BRAND.name ? 'Prepared by ' + BRAND.name + (BRAND.white_label ? '' : ' · State Of The LLM Union') : BRAND.white_label ? '' : 'State Of The LLM Union · ' + SITE; }
+  // The logo's size in inches at a given height, capped in width, keeping its proportions.
+  function logoSize(h, maxW) { var r = BRAND.logo_w && BRAND.logo_h ? BRAND.logo_w / BRAND.logo_h : 3; var w = Math.min(maxW, h * r); return { w: w, h: w / r }; }
   var HEAD = 'Arial Black', BODY = 'Arial';
   var W = 13.333, X = 0.6, CW = 12.13;   // LAYOUT_WIDE: 13.333 × 7.5 in
 
@@ -46,7 +54,7 @@
   function Deck(title, date) {
     this.p = new window.PptxGenJS();
     this.p.layout = 'LAYOUT_WIDE';
-    this.p.title = title; this.p.company = 'brandchecker.eu'; this.p.subject = 'State Of The LLM Union';
+    this.p.title = title; this.p.company = BRAND.name || SITE; this.p.subject = 'State Of The LLM Union';
     this.date = date; this.n = 0;
   }
   // A content slide: orange rule, kicker, title, footer with page number.
@@ -56,8 +64,10 @@
     s.background = { color: WHITE };
     s.addShape(this.p.ShapeType.rect, { x: 0, y: 0, w: W, h: 0.12, fill: { color: ORANGE }, line: { color: ORANGE } });
     if (kicker) s.addText(kicker.toUpperCase(), { x: X, y: 0.32, w: CW, h: 0.34, fontFace: BODY, fontSize: 11, bold: true, color: ORANGE, charSpacing: 2, margin: 0 });
-    if (title) s.addText(title, { x: X, y: 0.66, w: CW, h: 0.95, fontFace: HEAD, fontSize: 24, color: INK, valign: 'top', margin: 0, fit: 'shrink' });
-    s.addText('State Of The LLM Union · brandchecker.eu · ' + this.date, { x: X, y: 7.05, w: 9, h: 0.28, fontFace: BODY, fontSize: 9, color: MUTED, margin: 0 });
+    var lw = 0;
+    if (BRAND.logo) { var ls = logoSize(0.46, 1.9); lw = ls.w + 0.3; s.addImage({ data: BRAND.logo, x: W - 0.6 - ls.w, y: 0.3, w: ls.w, h: ls.h }); }
+    if (title) s.addText(title, { x: X, y: 0.66, w: CW - lw, h: 0.95, fontFace: HEAD, fontSize: 24, color: INK, valign: 'top', margin: 0, fit: 'shrink' });
+    s.addText([credit(), this.date].filter(Boolean).join(' · '), { x: X, y: 7.05, w: 9, h: 0.28, fontFace: BODY, fontSize: 9, color: MUTED, margin: 0 });
     s.addText(String(this.n), { x: W - 1.2, y: 7.05, w: 0.6, h: 0.28, fontFace: BODY, fontSize: 9, color: MUTED, align: 'right', margin: 0 });
     return s;
   };
@@ -66,10 +76,17 @@
     this.n++;
     s.background = { color: INK };
     s.addShape(this.p.ShapeType.rect, { x: 0, y: 0, w: 0.35, h: 7.5, fill: { color: ORANGE }, line: { color: ORANGE } });
+    // The agency's logo on a white card (logos are made for light backgrounds).
+    if (BRAND.logo) {
+      var ls = logoSize(0.7, 3.4);
+      s.addShape(this.p.ShapeType.rect, { x: 1, y: 0.4, w: ls.w + 0.4, h: ls.h + 0.3, fill: { color: WHITE }, line: { color: WHITE } });
+      s.addImage({ data: BRAND.logo, x: 1.2, y: 0.55, w: ls.w, h: ls.h });
+    }
+    if (BRAND.white_label) kicker = kicker.replace('State Of The LLM Union tracker', 'AI visibility tracker').replace('State Of The LLM Union', 'AI visibility report');
     s.addText(kicker.toUpperCase(), { x: 1, y: 1.6, w: 11, h: 0.4, fontFace: BODY, fontSize: 14, bold: true, color: ORANGE, charSpacing: 3, margin: 0 });
     s.addText(title, { x: 1, y: 2.1, w: 11.3, h: 2.2, fontFace: HEAD, fontSize: 44, color: WHITE, valign: 'top', margin: 0, fit: 'shrink' });
     s.addText(lines.map(function (l) { return { text: l, options: { breakLine: true } }; }), { x: 1, y: 4.6, w: 11.3, h: 1.8, fontFace: BODY, fontSize: 16, color: 'D9D9D9', valign: 'top', margin: 0, paraSpaceAfter: 6 });
-    s.addText('brandchecker.eu', { x: 1, y: 6.7, w: 6, h: 0.3, fontFace: BODY, fontSize: 11, color: MUTED, margin: 0 });
+    s.addText(BRAND.name ? 'Prepared by ' + BRAND.name : BRAND.white_label ? '' : SITE, { x: 1, y: 6.7, w: 8, h: 0.3, fontFace: BODY, fontSize: 11, color: MUTED, margin: 0 });
     return s;
   };
   // A table: header row in ink, cells as strings or { text, options }. Rows beyond `max` are dropped (noted in the caller).
@@ -175,6 +192,7 @@
     if (btn) { btn.disabled = true; btn.textContent = 'Building slides…'; }
     try {
       await lib();
+      useBranding(await S.branding());
       var main = d.brands[0], list = S.answered(d.cells), sm = d.summary || {}, colours = S.colourMap(d.brands);
       var name = main ? main.name : 'AI answers';
       // Extras the report loads lazily: fetch them if the Brand mentions tab was never opened.
@@ -190,7 +208,7 @@
       var deck = new Deck(name + ' in AI answers', day(d.completed_at || d.created_at));
       deck.cover('State Of The LLM Union', main ? name + ' in AI answers' : clip(d.prompts[0], 90), [
         d.prompts.length + ' prompt' + (d.prompts.length === 1 ? '' : 's') + ' · ' + d.locations.join(', ') + ' · ' + provs.map(function (p) { return p.label; }).join(', '),
-        (d.repeats > 1 ? 'Each asked ' + d.repeats + ' times · ' : '') + list.length + ' answers · web search ' + (d.web ? 'on' : 'off') + ((d.personas || []).length ? ' · ' + d.personas.length + ' buyer personas' : ''),
+        (d.repeats > 1 ? 'Each asked ' + d.repeats + ' times · ' : '') + list.length + ' answer' + (list.length === 1 ? '' : 's') + ' · web search ' + (d.web ? 'on' : 'off') + ((d.personas || []).length ? ' · ' + d.personas.length + ' buyer personas' : ''),
         day(d.completed_at || d.created_at)
       ]);
 
@@ -214,7 +232,7 @@
         ].filter(Boolean), 1.9);
         var con = sm.consistency;
         deck.bullets(s, [
-          'Asked ' + list.length + ' times across ' + provs.length + ' AI models' + (d.locations.length > 1 ? ' and ' + d.locations.length + ' markets' : '') + '.',
+          'Asked ' + list.length + ' time' + (list.length === 1 ? '' : 's') + ' across ' + provs.length + ' AI model' + (provs.length === 1 ? '' : 's') + (d.locations.length > 1 ? ' and ' + d.locations.length + ' markets' : '') + '.',
           con ? name + ' was named every time in ' + con.always + ' of ' + con.groups + ' model × prompt × market combinations, only sometimes in ' + con.sometimes + ' and never in ' + con.never + '.' : null,
           rivals.length ? 'Competitors: ' + rivals.map(function (x) { return x.b.name + ' ' + pct(x.v); }).join(' · ') + '.' : null
         ].filter(Boolean), { y: 4.2, h: 2.5, fs: 14 });
@@ -330,7 +348,7 @@
         '“Share of answers” counts answers that name a brand; the likely range is a 95% Wilson interval. “Named first” is the first brand an answer names.',
         demand ? 'Demand: each prompt is matched to a search keyword; weights are ' + (basis === 'ai' ? 'DataForSEO’s AI search volume (an estimate of monthly use in AI tools, from Google People Also Ask data)' : 'Google monthly search volume') + '.' : null,
         'Description tags, fact checks and briefs are written by AI models reading the answers; quotes are the answers’ own words.',
-        'Made with State Of The LLM Union on brandchecker.eu. Every chart and table in this deck is editable.'
+        BRAND.white_label ? 'Every chart and table in this deck is editable.' : 'Made with State Of The LLM Union on ' + SITE + '. Every chart and table in this deck is editable.'
       ].filter(Boolean), { fs: 13 });
 
       await deck.save('state-of-the-llm-union-' + slug(name) + '-' + String(d.completed_at || d.created_at).slice(0, 10) + '.pptx');
@@ -349,6 +367,7 @@
     if (btn) { btn.disabled = true; btn.textContent = 'Building slides…'; }
     try {
       await lib();
+      useBranding(await S.branding());
       var main = d.brands[0], runs = d.runs, last = runs[runs.length - 1], prev = runs.length > 1 ? runs[runs.length - 2] : null;
       var name = main.name, colours = S.colourMap(d.brands);
       var when = function (iso) { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); };

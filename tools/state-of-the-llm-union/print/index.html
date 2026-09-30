@@ -58,6 +58,10 @@
     h2, .model .meta, .model > p, .ans .ah { break-after: avoid; }
     a { color: inherit; text-decoration: none; }
   }
+  /* Agency branding (Worker: branding.js): logo and "Prepared by" above the title. */
+  .agency{display:flex;align-items:center;justify-content:space-between;gap:20px;margin:0 0 18px;padding:0 0 14px;border-bottom:2px solid #0a0a0a}
+  .agency img{max-height:52px;max-width:240px;display:block}
+  .agency span{font-size:13px;color:#3d3d3d}
 </style>
 </head>
 <body>
@@ -66,7 +70,8 @@
     <button class="btn2 solid" id="printBtn" type="button">Print / save as PDF</button>
     <a class="btn2" id="backBtn" href="/tools/state-of-the-llm-union/">← Back</a>
   </div>
-  <p class="eyebrow">State Of The LLM Union · AI visibility report</p>
+  <div class="agency" id="agency" hidden></div>
+  <p class="eyebrow" id="eyebrow">State Of The LLM Union · AI visibility report</p>
   <h1 id="title">Loading…</h1>
   <div id="meta"></div>
   <div id="out"></div>
@@ -254,7 +259,25 @@ function metaHtml(d, extra) {
     (d.brands.length > 1 ? '<p class="meta"><b>Compared with:</b> ' + d.brands.slice(1).map(b => esc(b.name)).join(', ') + '</p>' : '');
 }
 
+// The access code's agency branding, applied before anything renders: logo + "Prepared by", its accent, white label.
+let BR = {};
+async function applyBranding() {
+  BR = await S.branding();
+  if (!BR.name && !BR.logo && !BR.accent && !BR.white_label) return;
+  if (BR.logo || BR.name) {
+    $('agency').innerHTML = (BR.logo ? '<img src="' + esc(BR.logo) + '" alt="' + esc(BR.name || '') + '">' : '<span></span>') + (BR.name ? '<span>Prepared by <b>' + esc(BR.name) + '</b></span>' : '');
+    $('agency').hidden = false;
+  }
+  if (BR.accent) {
+    const st = document.createElement('style');
+    st.textContent = '.eyebrow{background:' + BR.accent + ' !important}.sc.accent{background:' + BR.accent + ' !important}';
+    document.head.appendChild(st);
+  }
+  if (BR.white_label) $('eyebrow').textContent = 'AI visibility report';
+}
+
 async function main() {
+  await applyBranding();
   let html = '', d;
   if (WATCH) {
     const t = await S.api('/state-of-union/trend', { id: WATCH });
@@ -280,10 +303,10 @@ async function main() {
     $('title').textContent = d.brands[0] ? d.brands[0].name + ' in AI answers' : '“' + d.prompts[0] + '”';
     $('meta').innerHTML = metaHtml(d);
   }
-  document.title = $('title').textContent + ' — State Of The LLM Union' + (SUMMARY ? ' (summary)' : '');
+  document.title = $('title').textContent + (BR.white_label ? (BR.name ? ' — ' + BR.name : '') : ' — State Of The LLM Union') + (SUMMARY ? ' (summary)' : '');
   html += await reportHtml(d);
   $('out').innerHTML = html;
-  $('foot').innerHTML = 'Generated ' + fullDate(new Date().toISOString()) + ' by State Of The LLM Union on brandchecker.eu. ' +
+  $('foot').innerHTML = 'Generated ' + fullDate(new Date().toISOString()) + (BR.white_label ? (BR.name ? ' by ' + esc(BR.name) + '. ' : '. ') : (BR.name ? ' by ' + esc(BR.name) + ' with State Of The LLM Union on brandchecker.eu. ' : ' by State Of The LLM Union on brandchecker.eu. ')) +
     (SUMMARY ? 'Summary: the full report adds every answer, model by model. ' : d.repeats > 1 ? 'Model sections show the first of the ' + d.repeats + ' answers to each prompt; rates use all of them. ' : '') +
     'AI summaries, description tags and fact checks are written by small AI models reading the answers; quotes are the models’ own words.';
 }

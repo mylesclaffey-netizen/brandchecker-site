@@ -33,6 +33,7 @@
   <h1 id="rTitle">Loading…</h1>
   <p class="sotu-sub" id="rSub"></p>
   <div id="banner"></div>
+  <details class="brandbox" id="brandBox" hidden><summary>Your logo on PDFs and slides</summary><div id="brandPanel"></div></details>
   <div id="out"></div>
 
   <div class="sidenav">
@@ -444,6 +445,8 @@ function render() {
     ? 'How often AI models name ' + d.brands[0].name + ' compared with ' + d.brands.slice(1).map(b => b.name).join(', ') + '.'
     : 'How AI models answer these prompts, market by market.';
   $('banner').innerHTML = bannerHtml(d);
+  // Agency branding for the exports: offered once the report is complete; the panel fills in on first open.
+  if (d.status === 'complete' && $('brandBox').hidden) { $('brandBox').hidden = false; $('brandBox').addEventListener('toggle', () => { if ($('brandBox').open && !$('brandPanel').childElementCount) S.brandingPanel($('brandPanel')); }); }
   $('out').innerHTML = statCards(d) +
     '<div class="seg"><button data-t="compare" aria-pressed="' + (tab === 'compare') + '">Compare answers</button><button data-t="brands" aria-pressed="' + (tab === 'brands') + '">Brand mentions</button></div>' +
     (tab === 'compare' ? compareView(d) : brandsView(d));
