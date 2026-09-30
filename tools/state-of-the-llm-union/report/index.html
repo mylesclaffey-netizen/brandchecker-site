@@ -201,49 +201,14 @@ function brandsView(d) {
     '<h2 class="h2b">By prompt</h2>' + matrix(d, 'Prompt', d.prompts, c => c.prompt, esc);
 }
 
-// Weight for one prompt in one market: its monthly searches on the chosen basis (AI tools or Google); 0 when unknown.
-function weightOf(p, m) {
-  const e = demand && demand.prompts.find(x => x.prompt === p), v = e && e.by_market[m];
-  return v ? (demandBasis === 'ai' ? v.ai : v.google) || 0 : 0;
-}
-// Searches a month where the main brand isn't named: Σ over markets of weight × (1 − rate).
-function missedOf(d, p) {
-  const main = d.brands[0], answered = S.answered(d.cells);
-  return d.locations.reduce((t, m) => { const r = S.rate(answered.filter(c => c.prompt === p && c.location === m), main.name); return t + (r == null ? 0 : weightOf(p, m) * (1 - r)); }, 0);
-}
+function missedOf(d, p) { return S.demandMissed(d, demand, demandBasis, p); }
 function demandHtml(d) {
-  const main = d.brands[0];
-  if (!main || d.status !== 'complete') return '';
+  if (!d.brands[0] || d.status !== 'complete') return '';
   const title = '<h2 class="h2b">Weighted by demand</h2>';
   if (demandState === 'loading' || demandState === 'idle') return title + '<p class="hint">Looking up how often these questions are asked…</p>';
   if (demandState === 'error' || !demand) return title + '<p class="err">' + esc((demand && demand.error) || 'Search demand could not be loaded.') + '</p>';
-  const answered = S.answered(d.cells), n = v => v == null ? '—' : Number(v).toLocaleString();
-  const total = d.prompts.reduce((t, p) => t + d.locations.reduce((u, m) => u + weightOf(p, m), 0), 0);
   const basisBtns = '<div class="seg" style="margin:0 0 12px"><button data-basis="ai" aria-pressed="' + (demandBasis === 'ai') + '">AI searches</button><button data-basis="google" aria-pressed="' + (demandBasis === 'google') + '">Google searches</button></div>';
-  // Weighted share: each prompt × market counts in proportion to its searches.
-  const weighted = b => {
-    let num = 0, den = 0;
-    d.prompts.forEach(p => d.locations.forEach(m => { const r = S.rate(answered.filter(c => c.prompt === p && c.location === m), b.name), w = weightOf(p, m); if (r != null && w) { num += w * r; den += w; } }));
-    return den ? num / den : null;
-  };
-  let h = title + basisBtns;
-  if (!total) h += '<p class="hint">None of these questions has ' + (demandBasis === 'ai' ? 'an AI' : 'a Google') + ' search estimate — try the other basis, or correct the search keywords below.</p>';
-  else h += '<div class="tblwrap"><table class="tbl"><tr><th>Brand</th><th>Share of answers</th><th>Weighted by demand</th><th>Difference</th></tr>' + d.brands.map(b => {
-    const u = S.rate(answered, b.name), w = weighted(b), df = u != null && w != null ? w - u : null;
-    return '<tr><td><span class="dot" style="--bg:' + colours[b.name].bg + '"></span><b>' + esc(b.name) + '</b>' + (b === main ? ' <small>(you)</small>' : '') + '</td><td class="num">' + S.pct(u) + '</td><td class="num"><b>' + S.pct(w) + '</b></td><td class="num">' +
-      (df == null || Math.abs(df) < 0.005 ? '—' : (df > 0 ? '▲' : '▼') + Math.round(Math.abs(df) * 100) + ' pts') + '</td></tr>';
-  }).join('') + '</table></div>';
-  const rows = demand.prompts.map(e => {
-    const sum = k => d.locations.reduce((t, m) => { const v = e.by_market[m]; return v && v[k] != null ? (t || 0) + v[k] : t; }, null);
-    return { e, ai: sum('ai'), g: sum('google'), rate: S.rate(answered.filter(c => c.prompt === e.prompt), main.name), missed: missedOf(d, e.prompt) };
-  }).sort((a, b) => b.missed - a.missed);
-  h += '<div class="tblwrap"><table class="tbl"><tr><th>Prompt</th><th>Search keyword</th><th>AI searches / mo</th><th>Google searches / mo</th><th>' + esc(main.name) + ' named</th><th>Searches you miss / mo</th></tr>' + rows.map(r => {
-    const i = d.prompts.indexOf(r.e.prompt);
-    return '<tr><td>' + esc(r.e.prompt) + '</td><td style="white-space:nowrap"><input data-kw="' + i + '" value="' + esc(r.e.keyword) + '" style="width:170px;padding:4px 6px;font-size:13px"> <button class="btn2 small" data-kwsave="' + i + '" type="button">Save</button>' + (r.e.edited ? '<br><small>edited</small>' : '') + '</td>' +
-      '<td class="num">' + n(r.ai) + '</td><td class="num">' + n(r.g) + '</td><td class="num">' + S.pct(r.rate) + '</td><td class="num"><b>' + (r.missed ? Math.round(r.missed).toLocaleString() : '0') + '</b></td></tr>';
-  }).join('') + '</table></div>';
-  return h + '<p class="hint" style="margin:-18px 0 30px">Each prompt is matched to the short keyword people search for the same need (edit it if it’s wrong — trackers keep your edits). AI searches: DataForSEO’s estimate of monthly use in AI tools, based on Google’s People Also Ask data. Google searches: monthly Google volume. ' +
-    (d.locations.length > 1 ? 'Summed across this run’s markets. ' : '') + '“Searches you miss” = searches × the share of answers that don’t name ' + esc(main.name) + ' — the value at stake.' + (demand.note ? ' ' + esc(demand.note) + '.' : '') + '</p>';
+  return title + basisBtns + S.demandHtml(d, demand, demandBasis, colours, { editable: true });
 }
 async function loadDemand(keywords) {
   demandState = 'loading';

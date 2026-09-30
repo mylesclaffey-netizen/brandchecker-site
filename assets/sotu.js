@@ -115,6 +115,65 @@
     mistral: 'Mistral', ai_overviews: 'AI Overviews', gemini: 'Gemini', copilot: 'Copilot' };
   function providerLabel(id) { return PROVIDER_LABELS[id] || id; }
 
+  // Demand weighting (Worker: promptDemand.js). `basis` is 'ai' (AI searches) or 'google'. A prompt × market's weight is its
+  // monthly searches on that basis, 0 when unknown.
+  function demandWeight(demand, basis, p, m) {
+    var e = demand && demand.prompts ? demand.prompts.filter(function (x) { return x.prompt === p; })[0] : null, v = e && e.by_market[m];
+    return v ? (basis === 'ai' ? v.ai : v.google) || 0 : 0;
+  }
+  // Searches a month where the main brand isn't named: Σ over markets of weight × (1 − rate).
+  function demandMissed(d, demand, basis, p) {
+    var main = d.brands[0], list = answered(d.cells);
+    return d.locations.reduce(function (t, m) {
+      var r = rate(list.filter(function (c) { return c.prompt === p && c.location === m; }), main.name);
+      return t + (r == null ? 0 : demandWeight(demand, basis, p, m) * (1 - r));
+    }, 0);
+  }
+  // AI searches unless none of the prompts has an AI estimate, then Google.
+  function demandBasisFor(d, demand) {
+    var ai = d.prompts.reduce(function (t, p) { return t + d.locations.reduce(function (u, m) { return u + demandWeight(demand, 'ai', p, m); }, 0); }, 0);
+    return ai ? 'ai' : 'google';
+  }
+  // The weighted-share table and the prompts-by-searches-at-stake table. opts.editable: keyword inputs (the report);
+  // opts.compact: the top 3 prompts and a short note (the summary PDF).
+  function demandHtml(d, demand, basis, colours, opts) {
+    opts = opts || {};
+    var main = d.brands[0], list = answered(d.cells);
+    var n = function (v) { return v == null ? '—' : Number(v).toLocaleString(); };
+    var total = d.prompts.reduce(function (t, p) { return t + d.locations.reduce(function (u, m) { return u + demandWeight(demand, basis, p, m); }, 0); }, 0);
+    if (!total) return '<p class="hint">None of these questions has ' + (basis === 'ai' ? 'an AI' : 'a Google') + ' search estimate' + (opts.editable ? ' — try the other basis, or correct the search keywords below' : '') + '.</p>';
+    var weighted = function (b) {
+      var num = 0, den = 0;
+      d.prompts.forEach(function (p) { d.locations.forEach(function (m) {
+        var r = rate(list.filter(function (c) { return c.prompt === p && c.location === m; }), b.name), w = demandWeight(demand, basis, p, m);
+        if (r != null && w) { num += w * r; den += w; }
+      }); });
+      return den ? num / den : null;
+    };
+    var h = '<div class="tblwrap"><table class="tbl"><tr><th>Brand</th><th>Share of answers</th><th>Weighted by ' + (basis === 'ai' ? 'AI' : 'Google') + ' searches</th><th>Difference</th></tr>' + d.brands.map(function (b) {
+      var u = rate(list, b.name), w = weighted(b), df = u != null && w != null ? w - u : null;
+      return '<tr><td><span class="dot" style="--bg:' + (colours[b.name] || PALETTE[0]).bg + '"></span><b>' + esc(b.name) + '</b>' + (b === main ? ' <small>(you)</small>' : '') + '</td><td class="num">' + pct(u) + '</td><td class="num"><b>' + pct(w) + '</b></td><td class="num">' +
+        (df == null || Math.abs(df) < 0.005 ? '—' : (df > 0 ? '▲' : '▼') + Math.round(Math.abs(df) * 100) + ' pts') + '</td></tr>';
+    }).join('') + '</table></div>';
+    var rows = demand.prompts.map(function (e) {
+      var sum = function (k) { return d.locations.reduce(function (t, m) { var v = e.by_market[m]; return v && v[k] != null ? (t || 0) + v[k] : t; }, null); };
+      return { e: e, ai: sum('ai'), g: sum('google'), r: rate(list.filter(function (c) { return c.prompt === e.prompt; }), main.name), missed: demandMissed(d, demand, basis, e.prompt) };
+    }).sort(function (a, b) { return b.missed - a.missed; });
+    if (opts.compact) rows = rows.slice(0, 3);
+    h += '<div class="tblwrap"><table class="tbl"><tr><th>Prompt</th><th>Search keyword</th><th>AI searches / mo</th><th>Google searches / mo</th><th>' + esc(main.name) + ' named</th><th>Searches you miss / mo</th></tr>' + rows.map(function (r) {
+      var i = d.prompts.indexOf(r.e.prompt);
+      var kw = opts.editable
+        ? '<input data-kw="' + i + '" value="' + esc(r.e.keyword) + '" style="width:170px;padding:4px 6px;font-size:13px"> <button class="btn2 small" data-kwsave="' + i + '" type="button">Save</button>' + (r.e.edited ? '<br><small>edited</small>' : '')
+        : esc(r.e.keyword) + (r.e.edited ? ' <small>(edited)</small>' : '');
+      return '<tr><td>' + esc(r.e.prompt) + '</td><td' + (opts.editable ? ' style="white-space:nowrap"' : '') + '>' + kw + '</td><td class="num">' + n(r.ai) + '</td><td class="num">' + n(r.g) + '</td><td class="num">' + pct(r.r) + '</td><td class="num"><b>' + (r.missed ? Math.round(r.missed).toLocaleString() : '0') + '</b></td></tr>';
+    }).join('') + '</table></div>';
+    var note = opts.compact
+      ? 'Top ' + rows.length + ' of ' + demand.prompts.length + ' prompts by searches at stake. Weighted by ' + (basis === 'ai' ? 'AI searches (DataForSEO’s estimate of monthly use in AI tools)' : 'Google searches') + '; “searches you miss” = searches × the share of answers that don’t name ' + esc(main.name) + '.'
+      : 'Each prompt is matched to the short keyword people search for the same need' + (opts.editable ? ' (edit it if it’s wrong — trackers keep your edits)' : '') + '. AI searches: DataForSEO’s estimate of monthly use in AI tools, based on Google’s People Also Ask data. Google searches: monthly Google volume. ' +
+        (opts.editable ? '' : 'Weighted here by ' + (basis === 'ai' ? 'AI' : 'Google') + ' searches. ') + (d.locations.length > 1 ? 'Summed across this run’s markets. ' : '') + '“Searches you miss” = searches × the share of answers that don’t name ' + esc(main.name) + ' — the value at stake.' + (demand.note ? ' ' + esc(demand.note) + '.' : '');
+    return h + '<p class="hint" style="margin:-18px 0 30px">' + note + '</p>';
+  }
+
   // Persona variants (Worker: sotuStats.js personaStats): each brand's rate per buyer, against the plain question.
   function personaName(v) { return v == null ? 'Plain question' : v.charAt(0).toUpperCase() + v.slice(1); }
   function personasHtml(d, colours) {
@@ -271,6 +330,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();
