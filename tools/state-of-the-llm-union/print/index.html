@@ -96,6 +96,7 @@ function statCards(d, colours) {
   const ms = main && sm.by_brand ? sm.by_brand[main.name] : null;
   const cards = [
     main ? { cls: 'accent', lbl: 'Mention rate', val: S.pct(S.rate(answered, main.name)), sub: 'answers naming ' + esc(main.name) + (S.range(ms) ? ' · likely ' + S.range(ms) : '') } : null,
+    sm.visibility && main && sm.visibility.by_brand[main.name] ? { lbl: 'Visibility score', val: sm.visibility.by_brand[main.name].score + '/100', sub: 'named, prominence, recommendations and citations in one number' } : null,
     sm.recommend && main && sm.recommend.by_brand[main.name] ? { lbl: 'Top pick', val: S.pct(sm.recommend.by_brand[main.name].top_rate), sub: 'answers where ' + esc(main.name) + ' is the top recommendation' } : null,
     sm.consistency && main ? { lbl: 'Named every time', val: sm.consistency.always + '/' + sm.consistency.groups, sub: 'combinations asked ' + d.repeats + '×' } : null,
     sm.citations && main && sm.citations.by_brand[main.name] ? { lbl: 'Cited as a source', val: S.pct(sm.citations.by_brand[main.name].rate), sub: 'of ' + sm.citations.answers_with_sources + ' answers with sources' } : null,
@@ -232,7 +233,7 @@ function byStake(d, dem, briefs) {
 async function summaryHtml(d) {
   const colours = S.colourMap(d.brands), main = d.brands[0], sm = d.summary || {};
   const dem = await demandFor(d);
-  let h = statCards(d, colours) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells) + S.recommendHtml(sm.recommend, d, colours, { compact: true }) + S.personasHtml(d, colours) + modelTable(d, colours);
+  let h = statCards(d, colours) + S.visibilityHtml(sm.visibility, d, colours, { compact: true }) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells) + S.recommendHtml(sm.recommend, d, colours, { compact: true }) + S.personasHtml(d, colours) + modelTable(d, colours);
   if (dem) h += '<h2 class="h2b">Weighted by demand</h2>' + S.demandHtml(d, dem, S.demandBasisFor(d, dem), colours, { compact: true });
   h += S.citedHtml(await citedFor(d), d, colours, { max: 6 });
   const fo = await fanoutFor(d); if (fo) h += S.fanoutHtml(fo, fo.rankings, d, colours, { compact: true });
@@ -257,7 +258,7 @@ async function reportHtml(d) {
   if (SUMMARY) return summaryHtml(d);
   const colours = S.colourMap(d.brands), main = d.brands[0], sm = d.summary || {};
   const dem = await demandFor(d);
-  let h = statCards(d, colours) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells) + S.recommendHtml(sm.recommend, d, colours) + S.personasHtml(d, colours);
+  let h = statCards(d, colours) + S.visibilityHtml(sm.visibility, d, colours) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells) + S.recommendHtml(sm.recommend, d, colours) + S.personasHtml(d, colours);
   if (dem) h += '<h2 class="h2b">Weighted by demand</h2>' + S.demandHtml(d, dem, S.demandBasisFor(d, dem), colours);
   if (main) h += S.describeHtml(sm.describe, main.name) + S.factsHtml(sm.facts, main.name);
   const fo = await fanoutFor(d);

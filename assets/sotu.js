@@ -115,6 +115,26 @@
     mistral: 'Mistral', ai_overviews: 'AI Overviews', gemini: 'Gemini', copilot: 'Copilot' };
   function providerLabel(id) { return PROVIDER_LABELS[id] || id; }
 
+  // The visibility score (Worker: sotuStats.js visibilityStats): one 0–100 number per brand. `opts.compact`: no parts table.
+  var VIS_LABEL = { named: 'Named', prominence: 'Prominence', recommended: 'Recommended', top_pick: 'Top pick', cited: 'Cited' };
+  function visibilityHtml(vis, d, colours, opts) {
+    opts = opts || {};
+    if (!vis || !d.brands.length) return '';
+    var main = d.brands[0].name, me = vis.by_brand[main] || {};
+    var ranked = d.brands.slice().sort(function (a, b) { return ((vis.by_brand[b.name] || {}).score || 0) - ((vis.by_brand[a.name] || {}).score || 0); });
+    var h = '<h2 class="h2b">Visibility score</h2><p style="margin:0 0 10px">' + esc(main) + ' scores <b>' + (me.score == null ? '—' : me.score) + '/100</b>' +
+      (d.brands.length > 1 ? ' — ' + ranked.filter(function (b) { return b.name !== main; }).slice(0, 4).map(function (b) { return esc(b.name) + ' ' + (vis.by_brand[b.name] || {}).score; }).join(', ') + '.' : '.') + '</p>';
+    h += '<div class="tblwrap"><table class="tbl"><tr><th>Brand</th><th style="width:32%">Score</th>' + (opts.compact ? '' : vis.parts_used.map(function (k) { return '<th>' + VIS_LABEL[k] + '<br><small style="font-weight:400">' + vis.weights[k] + '%</small></th>'; }).join('')) + '</tr>' +
+      ranked.map(function (b) {
+        var x = vis.by_brand[b.name] || { parts: {} }, col = (colours[b.name] || PALETTE[0]).bg;
+        return '<tr><td><span class="dot" style="--bg:' + col + '"></span><b>' + esc(b.name) + '</b>' + (b.name === main ? ' <small>(you)</small>' : '') + '</td>' +
+          '<td><div style="display:flex;align-items:center;gap:10px"><div class="bar" style="--bg:' + col + ';flex:1"><i style="width:' + (x.score || 0) + '%"></i></div><b style="min-width:32px;text-align:right">' + (x.score == null ? '—' : x.score) + '</b></div></td>' +
+          (opts.compact ? '' : vis.parts_used.map(function (k) { return '<td class="num">' + pct(x.parts[k]) + '</td>'; }).join('')) + '</tr>';
+      }).join('') + '</table></div>';
+    return h + '<p class="hint" style="margin:-18px 0 30px">One number for how visible each brand is in these answers: ' + vis.parts_used.map(function (k) { return VIS_LABEL[k].toLowerCase() + ' ' + vis.weights[k] + '%'; }).join(', ') +
+      '. Prominence gives full credit for being named first, half for second, a third for third. ' + (vis.parts_used.length < 5 ? 'Parts this run doesn’t have are left out and the rest scaled to 100, so compare scores between runs made the same way. ' : '') + '</p>';
+  }
+
   // "Who AI recommends" (Worker: sotuStats.js recommendStats) — being named isn't being recommended. `opts.compact`: the
   // summary PDF's version (no per-model table); `opts.named`: brand → named rate, when there are no cells (trackers).
   function recommendHtml(rec, d, colours, opts) {
@@ -476,7 +496,7 @@
       if (!pts.length) return;
       const c = colours[b.name].bg;
       if (pts.length > 1) svg += '<polyline class="ln" style="stroke:' + c + '" points="' + pts.map(p => p[0] + ',' + p[1]).join(' ') + '"/>';
-      pts.forEach(p => { svg += '<circle class="pt" cx="' + p[0] + '" cy="' + p[1] + '" r="7" fill="' + c + '"><title>' + esc(b.name) + ' · ' + when(p[3].created_at) + ' · ' + Math.round(p[2].rate * 100) + '% (' + p[2].mentioned + ' of ' + p[2].answered + ' answers' + (S.range(p[2]) ? ', likely ' + S.range(p[2]) : '') + ')</title></circle>'; });
+      pts.forEach(p => { svg += '<circle class="pt" cx="' + p[0] + '" cy="' + p[1] + '" r="7" fill="' + c + '"><title>' + esc(b.name) + ' · ' + when(p[3].created_at) + ' · ' + (p[2].label || Math.round(p[2].rate * 100) + '% (' + p[2].mentioned + ' of ' + p[2].answered + ' answers' + (S.range(p[2]) ? ', likely ' + S.range(p[2]) : '') + ')') + '</title></circle>'; });
     });
     return '<div class="chart">' + svg + '</svg></div>';
   }
@@ -525,6 +545,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, citedHtml: citedHtml, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, visibilityHtml: visibilityHtml, citedHtml: citedHtml, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();

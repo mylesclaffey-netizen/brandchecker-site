@@ -90,6 +90,7 @@ function statCards(d) {
   const range = S.range(ms), con = sm.consistency, cit = sm.citations;
   const cards = [
     { cls: 'accent', lbl: 'Mention rate', val: rateTxt, sub: main ? 'answers naming ' + esc(main.name) + (range ? ' · likely range ' + range : '') : 'add a brand to track mentions' },
+    sm.visibility && main && sm.visibility.by_brand[main.name] ? { lbl: 'Visibility score', val: sm.visibility.by_brand[main.name].score + '<small style="font-size:.45em">/100</small>', sub: 'named, prominence' + (sm.recommend ? ', recommendations' : '') + (sm.visibility.parts_used.indexOf('cited') !== -1 ? ', citations' : '') + ' in one number' } : null,
     sm.recommend && main && sm.recommend.by_brand[main.name] ? { lbl: 'Top pick', val: S.pct(sm.recommend.by_brand[main.name].top_rate), sub: 'answers where ' + esc(main.name) + ' is the single top recommendation' } : null,
     con && main ? { lbl: 'Named every time', val: con.always + '/' + con.groups, sub: 'model × prompt × market combos asked ' + d.repeats + '×; ' + con.sometimes + ' only sometimes' } : null,
     sm.facts && main ? { lbl: 'Wrong facts', val: sm.facts.with_issues + '/' + sm.facts.checked, sub: 'answers naming ' + esc(main.name) + ' that contradict your fact sheet' } : null,
@@ -207,7 +208,7 @@ function brandsView(d) {
   const provs = shown(d).filter(p => p.available).map(p => p.id);
   const labelP = id => esc((d.providers.filter(p => p.id === id)[0] || {}).label || id);
   const note = '<p class="hint" style="margin:-18px 0 30px">Likely range: where the true rate probably sits (95%), given how many answers this run collected. More prompts, markets or repeats narrow it.</p>';
-  return '<h2 class="h2b">Who gets named</h2>' + overall + note + recommendSection(d) + demandHtml(d) + S.personasHtml(d, colours) + S.discoveredHtml(sm.discovered, !SHARE && !!d.watch_id) + (d.brands[0] ? S.describeHtml(sm.describe, d.brands[0].name) + S.factsHtml(sm.facts, d.brands[0].name) : '') + consistencyHtml(d) + citationsHtml(d) + pagesHtml(d) + citedSection(d) + (fanoutState === 'ready' ? S.fanoutHtml(fanout, fanout.rankings, d, colours, { owner: !SHARE }) : '') + crawlHtml(d) + briefsHtml(d) +
+  return S.visibilityHtml(sm.visibility, d, colours) + '<h2 class="h2b">Who gets named</h2>' + overall + note + recommendSection(d) + demandHtml(d) + S.personasHtml(d, colours) + S.discoveredHtml(sm.discovered, !SHARE && !!d.watch_id) + (d.brands[0] ? S.describeHtml(sm.describe, d.brands[0].name) + S.factsHtml(sm.facts, d.brands[0].name) : '') + consistencyHtml(d) + citationsHtml(d) + pagesHtml(d) + citedSection(d) + (fanoutState === 'ready' ? S.fanoutHtml(fanout, fanout.rankings, d, colours, { owner: !SHARE }) : '') + crawlHtml(d) + briefsHtml(d) +
     '<h2 class="h2b">By model</h2>' + matrix(d, 'Model', provs, c => c.provider, labelP) +
     '<h2 class="h2b">By market</h2>' + matrix(d, 'Market', d.locations, c => c.location, l => S.market(l).flag + ' ' + esc(l)) +
     '<h2 class="h2b">By prompt</h2>' + matrix(d, 'Prompt', d.prompts, c => c.prompt, esc);

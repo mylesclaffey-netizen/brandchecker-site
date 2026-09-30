@@ -157,6 +157,7 @@ function renderTrend(d) {
   const wNow = trendDemand ? (weightedRuns(Object.assign({}, d, { runs: [last] }), trendDemand)[0].by_brand[main.name] || {}).rate : null;
   const cards = [
     { cls: 'accent', lbl: 'Mention rate now', val: S.pct(now), sub: esc(main.name) + ' · latest run' + (S.range(lastMain) ? ' · likely ' + S.range(lastMain) : '') },
+    last.visibility && last.visibility.by_brand[main.name] ? { lbl: 'Visibility score', val: last.visibility.by_brand[main.name].score + '/100', sub: prev && prev.visibility && prev.visibility.by_brand[main.name] && prev.visibility.parts_used.join() === last.visibility.parts_used.join() ? (last.visibility.by_brand[main.name].score - prev.visibility.by_brand[main.name].score >= 0 ? '+' : '') + (last.visibility.by_brand[main.name].score - prev.visibility.by_brand[main.name].score) + ' since the previous run' : 'latest run' } : null,
     last.recommend && last.recommend.by_brand[main.name] ? { lbl: 'Top pick', val: S.pct(last.recommend.by_brand[main.name].top_rate), sub: 'answers where ' + esc(main.name) + ' is the single top recommendation' } : null,
     wNow != null ? { lbl: 'Weighted by demand', val: S.pct(wNow), sub: 'the same, with each prompt counted by its searches' } : null,
     last.consistency ? { lbl: 'Named every time', val: last.consistency.always + '/' + last.consistency.groups, sub: 'combos asked ' + (d.repeats || 1) + '× · ' + last.consistency.sometimes + ' only sometimes' } : null,
@@ -185,11 +186,12 @@ function renderTrend(d) {
     (window.SNAPSHOT ? '' : '<div class="sotu-actions" style="margin:-6px 0 18px"><button class="btn2 small solid" id="pdfSumBtn" type="button">Summary PDF</button> <button class="btn2 small" id="pdfBtn" type="button">Full PDF</button> <button class="btn2 small" id="slidesBtn" type="button">Slides (.pptx)</button> <a class="btn2 small" href="' + S.printUrl({ watch: d.watch.id }) + '" target="_blank" rel="noopener">Print view</a></div>') +
     changesHtml(last) + (window.SNAPSHOT ? '' : alertsHtml(d.watch)) +
     '<div class="stats4">' + cards.map(c => '<div class="sc ' + (c.cls || '') + '"><div class="lbl">' + c.lbl + '</div><div class="val">' + c.val + '</div><div class="sub">' + c.sub + '</div></div>').join('') + '</div>' +
-    '<h2 class="h2b">Mention rate over time</h2>' + trendModeHtml(d) + legend + (trendMode === 'weighted' && trendDemand ? chart(Object.assign({}, d, { runs: weightedRuns(d, trendDemand) })) : trendMode === 'toppick' ? chart(Object.assign({}, d, { runs: topPickRuns(d) })) : chart(d)) +
+    '<h2 class="h2b">Mention rate over time</h2>' + trendModeHtml(d) + legend + (trendMode === 'weighted' && trendDemand ? chart(Object.assign({}, d, { runs: weightedRuns(d, trendDemand) })) : trendMode === 'score' ? chart(Object.assign({}, d, { runs: scoreRuns(d) })) : trendMode === 'toppick' ? chart(Object.assign({}, d, { runs: topPickRuns(d) })) : chart(d)) +
     (trendMode === 'weighted' && trendDemand ? '<p class="hint" style="margin:-8px 0 20px">Each prompt counts in proportion to how often it’s searched (' + (S.demandBasisFor(d, trendDemand) === 'ai' ? 'AI searches — DataForSEO’s estimate of monthly use in AI tools' : 'Google searches') + ', looked up ' + when(trendDemand.checked_at) + '). The same weights apply to every run, so the lines move only when the answers do. Search keywords can be corrected in a run’s report.</p>' : '') +
     (runs.length < 2 ? '<div class="banner2">The trend line appears after the next run' + (d.watch.next_run_at ? ' (due ' + when(d.watch.next_run_at) + ')' : '') + '. Each point is one full run.</div>' : '') +
+    (trendMode === 'score' ? '<p class="hint" style="margin:-8px 0 20px">Visibility score out of 100, run by run (the chart’s 50% line is a score of 50). Scores from runs with different parts — e.g. with and without reading recommendations — aren’t strictly comparable.</p>' : '') +
     (trendMode === 'toppick' ? '<p class="hint" style="margin:-8px 0 20px">Share of answers where each brand is the single top recommendation, run by run (runs made without reading recommendations show as gaps).</p>' : '') +
-    S.recommendHtml(last.recommend, { brands: d.brands, cells: [], locations: [] }, colours, { named: Object.fromEntries(d.brands.map(b => [b.name, (last.by_brand[b.name] || {}).rate])) }) + S.describeTrendHtml(runs, main.name, when) + S.describeHtml(last.describe, main.name) + timeline(d) + S.factsHtml(last.facts, main.name) + S.discoveredHtml(last.discovered, !window.SNAPSHOT) +
+    S.visibilityHtml(last.visibility, { brands: d.brands }, colours) + S.recommendHtml(last.recommend, { brands: d.brands, cells: [], locations: [] }, colours, { named: Object.fromEntries(d.brands.map(b => [b.name, (last.by_brand[b.name] || {}).rate])) }) + S.describeTrendHtml(runs, main.name, when) + S.describeHtml(last.describe, main.name) + timeline(d) + S.factsHtml(last.facts, main.name) + S.discoveredHtml(last.discovered, !window.SNAPSHOT) +
     '<h2 class="h2b">Latest run — ' + esc(main.name) + ' by model</h2><div class="tblwrap"><table class="tbl"><tr><th>Model</th><th>Mention rate</th><th>Answers</th></tr>' + provRows + '</table></div>' +
     citedHtml(d, last, colours) +
     '<h2 class="h2b">All runs</h2><div class="tblwrap"><table class="tbl"><tr><th>When</th><th>' + esc(main.name) + ' rate</th><th>Likely range</th><th>Avg position</th><th>Answers</th>' + (window.SNAPSHOT ? '' : '<th>Cost</th>') + '<th>Status</th>' + (window.SNAPSHOT ? '' : '<th></th>') + '</tr>' + hist + '</table></div>';
@@ -197,9 +199,13 @@ function renderTrend(d) {
 
 // Chart modes: share of answers, weighted by demand (when demand is known), top pick (when runs read recommendations).
 function trendModeHtml(d) {
-  const modes = [['share', 'Share of answers']].concat(trendDemand ? [['weighted', 'Weighted by demand']] : []).concat(d.runs.some(r => r.recommend) ? [['toppick', 'Top pick']] : []);
+  const modes = [['share', 'Share of answers']].concat(d.runs.some(r => r.visibility) ? [['score', 'Visibility score']] : []).concat(trendDemand ? [['weighted', 'Weighted by demand']] : []).concat(d.runs.some(r => r.recommend) ? [['toppick', 'Top pick']] : []);
   if (modes.length < 2) return '';
   return '<div class="seg" style="margin:0 0 12px">' + modes.map(([m, l]) => '<button data-tmode="' + m + '" aria-pressed="' + (trendMode === m) + '">' + l + '</button>').join('') + '</div>';
+}
+// Each run's visibility score per brand (0–100, drawn on the chart's 0–100% scale).
+function scoreRuns(d) {
+  return d.runs.map(r => Object.assign({}, r, { by_brand: r.visibility ? Object.fromEntries(Object.entries(r.visibility.by_brand).filter(([, x]) => x.score != null).map(([n, x]) => [n, { rate: x.score / 100, label: 'visibility score ' + x.score + '/100', low: null, high: null }])) : {} }));
 }
 // Each run's top-pick rate per brand, shaped like by_brand so the same chart draws it (runs without the reading are gaps).
 function topPickRuns(d) {

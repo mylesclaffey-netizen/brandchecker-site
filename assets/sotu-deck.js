@@ -121,7 +121,7 @@
     var gh = h / rows.length, bh = Math.min(0.42, (gh * 0.72) / series.length), p = this.p;
     [0, 0.25, 0.5, 0.75, 1].forEach(function (v) {
       s.addShape(p.ShapeType.line, { x: bx + bw * v, y: y0, w: 0, h: h, line: { color: 'DDDDDD', width: 0.75 } });
-      s.addText(Math.round(v * 100) + '%', { x: bx + bw * v - 0.4, y: y0 + h + 0.02, w: 0.8, h: 0.25, fontFace: BODY, fontSize: 9, color: MUTED, align: 'center', margin: 0 });
+      s.addText(Math.round(v * 100) + (o.suffix == null ? '%' : o.suffix), { x: bx + bw * v - 0.4, y: y0 + h + 0.02, w: 0.8, h: 0.25, fontFace: BODY, fontSize: 9, color: MUTED, align: 'center', margin: 0 });
     });
     rows.forEach(function (r, i) {
       var gy = y0 + gh * i, top = gy + (gh - bh * series.length) / 2;
@@ -129,7 +129,7 @@
       series.forEach(function (se, j) {
         var v = se.values[i], y = top + bh * j;
         if (v) s.addShape(p.ShapeType.rect, { x: bx, y: y, w: Math.max(0.02, bw * v), h: bh * 0.9, fill: { color: se.color }, line: { color: se.color, width: 0 } });
-        s.addText(v == null ? '—' : Math.round(v * 100) + '%', { x: bx + bw * (v || 0) + 0.06, y: y, w: 0.8, h: bh * 0.9, fontFace: BODY, fontSize: 10, bold: true, color: INK, valign: 'middle', margin: 0 });
+        s.addText(v == null ? '—' : Math.round(v * 100) + (o.suffix == null ? '%' : o.suffix), { x: bx + bw * (v || 0) + 0.06, y: y, w: 0.8, h: bh * 0.9, fontFace: BODY, fontSize: 10, bold: true, color: INK, valign: 'middle', margin: 0 });
       });
     });
     if (series.length > 1) this.legend(s, series, y0 + h + 0.35);
@@ -228,7 +228,7 @@
         var s = deck.slide('The headline', name + ' is named in ' + pct(mb.rate) + ' of AI answers' + (rivals[0] ? ' — ' + rivals[0].b.name + ' in ' + pct(rivals[0].v) : ''));
         deck.stats(s, [
           { lbl: 'Share of answers', val: pct(mb.rate), sub: (S.range(mb) ? 'likely ' + S.range(mb) + ' · ' : '') + (mb.mentioned || 0) + ' of ' + (mb.answered || 0) + ' answers' },
-          { lbl: 'Named first', val: pct(firstRate(list, main.name)), sub: 'answers where ' + name + ' is the first brand named' },
+          sm.visibility && sm.visibility.by_brand[main.name] ? { lbl: 'Visibility score', val: sm.visibility.by_brand[main.name].score + '/100', sub: 'named, prominence' + (sm.recommend ? ', recommendations' : '') + ' and citations in one number' } : { lbl: 'Named first', val: pct(firstRate(list, main.name)), sub: 'answers where ' + name + ' is the first brand named' },
           rivals[0] ? { lbl: 'Top competitor', val: pct(rivals[0].v), sub: rivals[0].b.name } : null,
           wMain != null ? { lbl: 'Weighted by demand', val: pct(wMain), sub: 'each prompt counted by its ' + (basis === 'ai' ? 'AI' : 'Google') + ' searches' } : null,
           cb && cb.has_domain ? { lbl: 'Cited as a source', val: pct(cb.rate), sub: 'of ' + cit.answers_with_sources + ' answers that show sources' } : null
@@ -239,6 +239,16 @@
           con ? name + ' was named every time in ' + con.always + ' of ' + con.groups + ' model × prompt × market combinations, only sometimes in ' + con.sometimes + ' and never in ' + con.never + '.' : null,
           rivals.length ? 'Competitors: ' + rivals.map(function (x) { return x.b.name + ' ' + pct(x.v); }).join(' · ') + '.' : null
         ].filter(Boolean), { y: 4.2, h: 2.5, fs: 14 });
+
+        // Visibility score per brand (sotuStats.js visibilityStats).
+        var vis = sm.visibility;
+        if (vis) {
+          var VL = { named: 'named', prominence: 'prominence', recommended: 'recommended', top_pick: 'top pick', cited: 'cited' };
+          var vr = d.brands.slice().sort(function (a, b) { return ((vis.by_brand[b.name] || {}).score || 0) - ((vis.by_brand[a.name] || {}).score || 0); });
+          s = deck.slide('Visibility score', name + ' scores ' + (vis.by_brand[main.name] || {}).score + '/100' + (vr[0].name !== main.name ? ' — ' + vr[0].name + ' leads with ' + (vis.by_brand[vr[0].name] || {}).score : ' — the highest of the brands tracked'));
+          deck.bars(s, vr.map(function (b) { return b.name; }), [{ name: 'Visibility score', color: ORANGE, values: vr.map(function (b) { var x = vis.by_brand[b.name]; return x && x.score != null ? x.score / 100 : null; }) }], { y: 1.8, h: 4.3, suffix: '', bold: vr.findIndex(function (b) { return b.name === main.name; }) });
+          deck.note(s, 'One number out of 100: ' + vis.parts_used.map(function (k) { return VL[k] + ' ' + vis.weights[k] + '%'; }).join(', ') + '. Prominence: full credit for being named first, half for second, a third for third.', 6.5, 0.45);
+        }
 
         // Share of answers by brand (a real chart; weighted by demand as a second series when known).
         s = deck.slide('Share of voice', 'How often each brand is named');
@@ -445,6 +455,9 @@
         if (note) deck.note(sl, note, 6.62, 0.35);
       };
       line('Share of answers naming each brand, run by run', runs, 'Each point is one full run.');
+      if (runs.some(function (r) { return r.visibility; })) line('Visibility score, run by run', runs.map(function (r) {
+        return Object.assign({}, r, { by_brand: r.visibility ? Object.fromEntries(Object.entries(r.visibility.by_brand).filter(function (kv) { return kv[1].score != null; }).map(function (kv) { return [kv[0], { rate: kv[1].score / 100 }]; })) : {} });
+      }), 'Score out of 100 (the 50% line is a score of 50). Named, prominence, recommendations and citations in one number.');
       if (runs.some(function (r) { return r.recommend; })) line('Top pick, run by run', runs.map(function (r) {
         return Object.assign({}, r, { by_brand: r.recommend ? Object.fromEntries(Object.entries(r.recommend.by_brand).map(function (kv) { return [kv[0], { rate: kv[1].top_rate }]; })) : {} });
       }), 'Share of answers where each brand is the single top recommendation. Runs made without reading recommendations are gaps.');
