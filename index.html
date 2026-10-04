@@ -107,6 +107,11 @@
   .shellhead .headHistory{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;
       text-transform:uppercase;color:#fff;text-decoration:none;white-space:nowrap}
   .shellhead .headHistory:hover{color:var(--you)}
+  .shellhead .headCredits{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+      color:#fff;text-decoration:none;white-space:nowrap;margin-right:22px;border:2px solid var(--you);padding:5px 10px}
+  .shellhead .headCredits:hover{background:var(--you)}
+  /* Phones: My history is in the tool menu anyway, so the header keeps just Credits and the menu button. */
+  @media (max-width:600px){ .shellhead .headHistory{display:none} .shellhead .headCredits{margin-right:12px} }
   .navtoggle{display:none;background:none;border:2px solid #fff;color:#fff;
       border-radius:0;width:36px;height:36px;font-size:16px;cursor:pointer;flex:none}
   .shellbody{display:flex;flex:1;min-height:0}
@@ -141,6 +146,7 @@
   <header class="shellhead">
     <a class="home" href="/">Brand Checker</a>
     <span class="spacer"></span>
+    <a class="headCredits" href="/account/" id="headCredits">Credits</a>
     <a class="headHistory" href="/tools/history/">My history →</a>
     <button class="navtoggle" id="navToggle" aria-label="Toggle tool menu">☰</button>
   </header>
@@ -1058,6 +1064,15 @@
   sidebar.insertBefore(historyEntry, sidebar.firstChild);
 
   document.querySelector('.headHistory').addEventListener('click', function(e){ e.preventDefault(); openTool('history'); });
+
+  // Signed in to a credit account (assets/visitor.js): show the balance in the header's Credits link.
+  if (window.BC_ACCOUNT) {
+    fetch('https://mc2seo-tools-api.mylesclaffey.workers.dev/api/account/balance', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: window.BC_ACCOUNT })
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d && typeof d.balance === 'number') document.getElementById('headCredits').textContent = Math.round(d.balance).toLocaleString('en') + ' credits';
+    }).catch(function(){ /* keep the plain label */ });
+  }
 
   // Every "Open the tool" card button opens in-app instead of navigating away
   homeView.querySelectorAll('a.btn').forEach(function(btn){
