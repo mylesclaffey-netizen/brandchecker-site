@@ -95,6 +95,13 @@
     </div>
     <p class="note">Credits are valid for 12 months from purchase and the oldest are used first. A paid run costs its real data cost × <span id="mk">3</span>, shown in credits; free tools cost nothing. Payment is handled by Stripe.</p>
 
+    <h2>Use Brand Checker in Claude</h2>
+    <p class="note">Add Brand Checker as a connector and ask Claude to run the tools for you. It uses this account's credits, up to 500 a day.</p>
+    <div class="field" style="margin-top:10px"><label for="mcpUrl">Connector URL</label>
+      <input id="mcpUrl" readonly value="https://mc2seo-tools-api.mylesclaffey.workers.dev/mcp" onclick="this.select()"></div>
+    <p class="note">claude.ai: Settings › Connectors › Add custom connector, paste the URL. Claude Code: <code>claude mcp add --transport http brand-checker https://mc2seo-tools-api.mylesclaffey.workers.dev/mcp</code></p>
+    <div id="conns"></div>
+
     <h2>Used in the last month</h2>
     <div id="usage"></div>
 
@@ -149,6 +156,17 @@ async function loadAccount(code) {
     ? '<table><tr><th>Added</th><th>From</th><th class="num">Credits</th><th>Expires</th></tr>' +
       d.purchases.map(l => `<tr><td>${day(l.created_at)}</td><td>${l.source === 'welcome' ? 'Welcome credits' : l.source === 'stripe' ? 'Purchase' : esc(l.source)}</td><td class="num">${fmt(l.credits)}</td><td>${day(l.expires_at)}</td></tr>`).join('') + '</table>'
     : '<p class="note">None yet.</p>';
+  call('/account/connections', { code }).then(c => {
+    const list = c.connections || [];
+    $('conns').innerHTML = list.length
+      ? '<table><tr><th>Connected app</th><th>Since</th><th></th></tr>' + list.map(x => `<tr><td>${esc(x.app)}</td><td>${day(x.since)}</td><td class="num"><button class="linkbtn" data-grant="${esc(x.id)}" type="button">Disconnect</button></td></tr>`).join('') + '</table>'
+      : '';
+    $('conns').querySelectorAll('[data-grant]').forEach(b => b.addEventListener('click', async () => {
+      b.disabled = true;
+      try { await call('/account/connections/revoke', { code, grant: b.dataset.grant }); b.closest('tr').remove(); }
+      catch (err) { note(err.message, 'err'); b.disabled = false; }
+    }));
+  }).catch(() => { /* connections are optional */ });
   return d;
 }
 
