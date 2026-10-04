@@ -46,6 +46,9 @@
   .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);display:flex;gap:18px;flex-wrap:wrap}
   .sidenav a,.linkbtn{font-size:12px;color:var(--muted);background:none;border:0;cursor:pointer;font-family:inherit;text-decoration:none}
   .sidenav a:hover,.linkbtn:hover{color:var(--ink)}
+  .trials{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .trial{font-size:11px;border:1px solid var(--line);border-radius:20px;padding:5px 10px}
+  .trial.used{color:var(--muted);border-color:#cfcfcf;text-decoration:line-through}
   [hidden]{display:none!important}
 </style>
 <link rel="stylesheet" href="/assets/theme.css">
@@ -57,7 +60,7 @@
 
   <section id="signin" hidden>
     <h1>Sign in or create an account</h1>
-    <p class="lede">The free tools need no account. The paid tools run on prepaid credits: 1,000 credits for $10, valid for 12 months. New accounts start with 100 free credits.</p>
+    <p class="lede">The free tools need no account. Your first run of every paid tool is free. After that the paid tools run on prepaid credits: 1,000 credits for $10, valid for 12 months.</p>
     <form id="loginForm">
       <div class="field"><label for="email">Email</label>
         <input id="email" type="email" autocomplete="email" required placeholder="you@agency.com"></div>
@@ -79,6 +82,10 @@
       <div><div class="n" id="bal">–</div><div class="sub">credits left</div></div>
       <div class="sub" id="expiry"></div>
     </div>
+
+    <h2>Free first runs</h2>
+    <p class="note" id="trialsNote"></p>
+    <div class="trials" id="trials"></div>
 
     <h2>Buy credits</h2>
     <div class="packs">
@@ -130,6 +137,9 @@ async function loadAccount(code) {
   $('bal').textContent = fmt(d.balance);
   $('mk').textContent = d.markup;
   $('expiry').textContent = d.next_expiry ? fmt(d.next_expiry.credits) + ' expire on ' + day(d.next_expiry.at) : '';
+  const left = (d.free_trials || []).filter(t => !t.used);
+  $('trialsNote').textContent = left.length ? left.length + ' of ' + d.free_trials.length + ' tools still have a free first run on this account.' : 'You have used the free first run of every paid tool.';
+  $('trials').innerHTML = (d.free_trials || []).map(t => `<span class="trial${t.used ? ' used' : ''}">${esc(t.tool)}</span>`).join('');
   $('histLink').href = '/tools/history/?k=' + encodeURIComponent(code);
   $('usage').innerHTML = d.used_last_month.length
     ? '<table><tr><th>Tool</th><th>Last used</th><th class="num">Credits</th></tr>' +
@@ -168,7 +178,7 @@ document.querySelectorAll('.pack').forEach(b => b.addEventListener('click', asyn
     try {
       const d = await call('/account/verify', { token });
       save(d.code);
-      note(d.created ? 'Welcome! Your account is ready with ' + fmt(d.balance) + ' free credits.' : 'You are signed in.', 'ok');
+      note(d.created ? 'Welcome! Your account is ready: your first run of every paid tool is free.' : 'You are signed in.', 'ok');
     } catch (err) { note(err.message, 'err'); }
   }
   const code = saved();
