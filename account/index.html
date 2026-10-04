@@ -60,7 +60,7 @@
 
   <section id="signin" hidden>
     <h1>Sign in or create an account</h1>
-    <p class="lede">The free tools need no account. Your first run of every paid tool is free. After that the paid tools run on prepaid credits: 1,000 credits for $10, valid for 12 months.</p>
+    <p class="lede">The free tools need no account. Your first run of every paid tool is free, and new accounts also get 300 credits to keep testing. After that the paid tools run on prepaid credits: 1,000 credits for $10, valid for 12 months.</p>
     <form id="loginForm">
       <div class="field"><label for="email">Email</label>
         <input id="email" type="email" autocomplete="email" required placeholder="you@agency.com"></div>
@@ -178,7 +178,7 @@ document.querySelectorAll('.pack').forEach(b => b.addEventListener('click', asyn
     try {
       const d = await call('/account/verify', { token });
       save(d.code);
-      note(d.created ? 'Welcome! Your account is ready: your first run of every paid tool is free.' : 'You are signed in.', 'ok');
+      note(d.created ? 'Welcome! Your first run of every paid tool is free, and you have ' + fmt(d.balance) + ' credits to keep testing.' : 'You are signed in.', 'ok');
     } catch (err) { note(err.message, 'err'); }
   }
   const code = saved();
