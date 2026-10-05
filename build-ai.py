@@ -63,6 +63,34 @@ m_start = src.index('<div class="category-menu">') + len('<div class="category-m
 m_end = src.rindex('</details>') + len('</details>')
 src = src[:m_start] + '\n' + menu + src[m_end:]
 
+# Tools here get path addresses — /ai/search-on-off/ rather than /ai/?tool=search-on-off. Each one is a copy of this
+# shell; the swaps below make the shell read the tool from its path and write paths back. Old ?tool= links still work.
+slugs_all = [s for _, _, slugs in GROUPS for s in slugs]
+for slug in slugs_all:
+    swap('href="/tools/' + slug + '/"', 'href="/ai/' + slug + '/"')
+swap("var BASE = location.pathname.replace(/[^\\/]*$/, '');",
+     "var BASE = '/ai/';\n  function here(slug){ return BASE + (slug ? slug + '/' : ''); }\n"
+     "  function pathTool(){ var m = location.pathname.match(/^\\/ai\\/([a-z0-9-]+)\\/?$/); return m ? m[1] : null; }")
+swap("return href.replace(/^\\/tools\\//,'').replace(/\\/$/,'');", "return href.replace(/^\\/(tools|ai)\\//,'').replace(/\\/$/,'');")
+swap("""    var sp = forwardedParams(currentSlug ? { tool: currentSlug } : null);
+    var qs = sp.toString();
+    history.replaceState(history.state, '', BASE + (qs ? '?' + qs : ''));""",
+     """    var qs = forwardedParams().toString();
+    history.replaceState(history.state, '', here(currentSlug) + (qs ? '?' + qs : ''));""")
+swap("""      var sp = forwardedParams({ tool: slug });
+      history.pushState({ tool: slug }, '', BASE + '?' + sp.toString());""",
+     """      var qs = forwardedParams().toString();
+      history.pushState({ tool: slug }, '', here(slug) + (qs ? '?' + qs : ''));""")
+swap("    var tool = p.get('tool');", "    var tool = p.get('tool') || pathTool();")
+swap("""    var sp0 = forwardedParams(currentSlug ? { tool: currentSlug } : null);
+    var qs0 = sp0.toString();
+    history.replaceState(history.state, '', BASE + (qs0 ? '?' + qs0 : ''));""",
+     """    var qs0 = forwardedParams().toString();
+    history.replaceState(history.state, '', here(currentSlug) + (qs0 ? '?' + qs0 : ''));""")
+
 os.makedirs('ai', exist_ok=True)
 open('ai/index.html', 'w', encoding='utf-8').write(src)
-print('wrote ai/index.html')
+for slug in slugs_all:
+    os.makedirs('ai/' + slug, exist_ok=True)
+    open('ai/' + slug + '/index.html', 'w', encoding='utf-8').write(src)
+print('wrote ai/index.html and ai/<tool>/ for ' + str(len(slugs_all)) + ' tools')
