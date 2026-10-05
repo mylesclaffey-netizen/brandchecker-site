@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<script src="/assets/visitor.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Search on / off</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brand Checker">
+<meta property="og:url" content="https://brandchecker.eu/tools/search-on-off/">
+<meta property="og:title" content="Search on / off | Brand Checker">
+<meta property="og:description" content="Ask AI models one question twice, from their own knowledge and with web search on, and see which brands and sources the search brings in.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--you:#ff3d00}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#fff;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;line-height:1.5;padding:22px 16px 60px;font-size:16px}
+  .wrap{max-width:820px;margin:0 auto}
+  .field{margin:0 0 22px}
+  .field label,.fl{display:block;font-weight:800;font-size:14px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.05em}
+  .hint{font-size:13.5px;color:#3d3d3d;margin:6px 0 0}
+  input[type=text],textarea,select{width:100%;padding:13px 14px;font-size:16px}
+  textarea{min-height:104px;resize:vertical}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:620px){.row2{grid-template-columns:1fr}}
+  .opts{display:flex;flex-wrap:wrap;gap:10px}
+  .opt{display:flex;align-items:center;gap:8px;padding:9px 13px;border:2px solid #0a0a0a;background:#fff;cursor:pointer;font-weight:700;font-size:14px;user-select:none}
+  .opt input{position:absolute;opacity:0;pointer-events:none}
+  .opt.on{background:#0a0a0a;color:#fff}
+  .opt.off{opacity:.45;cursor:not-allowed;text-decoration:line-through}
+  .opt small{font-weight:500;opacity:.8;font-size:12px}
+  .toggle{display:flex;align-items:flex-start;gap:12px;padding:14px;border:3px solid #0a0a0a;background:#fff;cursor:pointer}
+  .field label.toggle{text-transform:none;letter-spacing:0;font-weight:400;font-size:16px;margin:0}
+  .toggle b{text-transform:uppercase;letter-spacing:.04em;font-size:15px}
+  .toggle input{margin-top:4px;width:18px;height:18px;accent-color:#ff3d00}
+  .toggle b{display:block;font-size:16px}
+  .toggle span{font-size:13.5px;color:#3d3d3d}
+  .est{border:3px solid #0a0a0a;padding:14px 16px;margin:0 0 20px;background:#f3f3ef;font-size:15px;box-shadow:5px 5px 0 #0a0a0a}
+  .est b{font-family:'Archivo',sans-serif;font-size:22px;font-weight:900}
+  .err{margin:0 0 16px}
+  .sidenav{margin-top:36px;padding-top:20px;border-top:3px solid #0a0a0a;display:flex;flex-direction:column;gap:13px}
+  .sidenav-link{font-size:14px;font-weight:600}
+  body.embed .sidenav{display:none}
+  #gate{display:none}
+  .sugg{border:3px solid #0a0a0a;padding:16px;margin:0 0 22px;background:#f3f3ef}
+  .sugg .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .sugg .row > div{flex:1;min-width:220px}
+  .slist{display:flex;flex-direction:column;gap:6px;margin:14px 0 0;max-height:360px;overflow:auto}
+  .sitem{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:2px solid #0a0a0a;background:#fff;cursor:pointer;font-size:15px}
+  .sitem input{margin-top:4px;width:17px;height:17px;accent-color:#ff3d00;flex:none}
+  .sitem small{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3d3d3d;text-transform:uppercase;letter-spacing:.05em}
+</style>
+<style>
+  .wrap .stats4{margin-top:26px}
+  .stats4 .sc .val{font-size:28px;white-space:nowrap}
+  .h2b{font-family:'Archivo',sans-serif;font-weight:900;font-size:24px;margin:34px 0 8px}
+  .tblwrap{overflow-x:auto}
+  .tbl td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tbl td.up{color:#2f6b2a;font-weight:700} .tbl td.down{color:#9a4a2e;font-weight:700}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:0 0 22px}
+  .pair > div{min-width:0}
+  .pair h4{margin:0 0 6px;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+  .pair .answer2.answer2{max-height:300px}
+  .mhead{font-family:'Archivo',sans-serif;font-weight:900;font-size:20px;margin:22px 0 8px}
+  .you{background:#ff3d00;color:#fff;font-weight:700;padding:0 5px}
+  #result{display:none}
+  #formBox{margin-top:28px}
+  @media(max-width:760px){.pair{grid-template-columns:1fr}}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+<link rel="stylesheet" href="/assets/sotu.css">
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Brand visibility in AI answers</p>
+  <h1>Search on / off</h1>
+  <p class="lede">Ask AI models one question twice: once from their own knowledge, once with web search on. See which brands and sources the search brings in — and whether yours is one of them.</p>
+
+  <div id="formBox">
+    <div class="field"><label for="prompt">Question to ask</label>
+      <textarea id="prompt" maxlength="400" rows="2" style="min-height:70px" placeholder="e.g. What's the best project management tool for a 50-person agency?"></textarea>
+      <p class="hint">Write it the way a buyer would ask an AI assistant. Leave your brand name out, or every answer will “mention” it.</p></div>
+    <div class="field row2">
+      <div><label for="brand">Your brand</label><input id="brand" type="text" placeholder="e.g. Acme" maxlength="80"></div>
+      <div><label for="domain">Your website (optional)</label><input id="domain" type="text" placeholder="acme.com" maxlength="120"></div>
+    </div>
+    <div class="field"><label for="competitors">Competitors (optional, up to 5, one per line)</label>
+      <textarea id="competitors" rows="4" placeholder="rival.com&#10;another-rival.com"></textarea></div>
+    <div class="field"><span class="fl">Market</span><div class="opts" id="markets"></div></div>
+    <div class="field"><span class="fl">Models</span><div class="opts" id="models"><span class="hint">Loading models…</span></div>
+      <p class="hint">Only models that can answer with search both off and on. Perplexity, Gemini and Google's AI answers always search, so they can't show the difference.</p></div>
+    <div class="est" id="est">Pick at least one model to see the estimated cost.</div>
+    <p class="err" id="err" style="display:none"></p>
+    <button class="btn2 solid" id="go" type="button">Ask both ways</button>
+    <p class="hint" style="margin-top:12px">Each model answers twice with search off and twice with it on, because answers vary and one of each proves little.</p>
+  </div>
+
+  <div id="result">
+    <p class="sotu-sub" id="sub"></p>
+    <div class="stats4" id="cards"></div>
+    <div id="out"></div>
+    <p class="hint" id="method"></p>
+    <p style="margin-top:22px"><button class="btn2" id="again" type="button">Ask another question</button></p>
+  </div>
+
+  <div class="sidenav">
+    <a href="/tools/state-of-the-llm-union/" class="sidenav-link">State Of The LLM Union — many questions, markets and models →</a>
+    <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+    <a href="/ai/" class="sidenav-link">← Back to AI tools</a>
+  </div>
+</div>
+
+<script src="/assets/sotu.js"></script>
+<script>
+if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
+const S = window.SOTU, esc = S.esc, $ = id => document.getElementById(id);
+const Q = new URLSearchParams(location.search);
+const DEFAULT_MODELS = ['chatgpt', 'claude', 'llama', 'mistral'];
+let options = null, market = 'United States';
+const chosen = new Set();
+
+document.querySelectorAll('.sidenav-link').forEach(a => {
+  const u = new URL(a.getAttribute('href'), location.origin);
+  if (S.CODE && u.pathname.startsWith('/tools/')) u.searchParams.set('k', S.CODE);
+  a.setAttribute('href', S.withPreset(u.pathname + u.search));
+});
+
+// Models that can answer both ways: not ones that always search, nor the ChatGPT app (it decides for itself).
+const usable = () => options.providers.filter(p => !p.always_web && !p.decides_web);
+
+function renderMarkets() {
+  $('markets').innerHTML = S.MARKETS.map(m => '<label class="opt' + (m.name === market ? ' on' : '') + '" data-m="' + esc(m.name) + '">' + m.flag + ' ' + esc(m.name) + '</label>').join('');
+  $('markets').querySelectorAll('[data-m]').forEach(el => el.onclick = () => { market = el.dataset.m; renderMarkets(); });
+}
+function renderModels() {
+  $('models').innerHTML = usable().map(p => {
+    const dis = !p.available;
+    return '<label class="opt' + (chosen.has(p.id) ? ' on' : '') + (dis ? ' off' : '') + '" data-p="' + p.id + '">' + esc(p.label) + ' <small>' + esc(p.family) + (dis ? ' · not connected' : '') + '</small></label>';
+  }).join('');
+  $('models').querySelectorAll('[data-p]').forEach(el => el.onclick = () => {
+    const p = usable().find(x => x.id === el.dataset.p);
+    if (!p.available) return;
+    chosen.has(p.id) ? chosen.delete(p.id) : chosen.add(p.id);
+    renderModels(); estimate();
+  });
+}
+function estimate() {
+  if (!options) return;
+  let usd = 0, n = 0;
+  usable().forEach(p => { if (chosen.has(p.id)) { n += 4; usd += 2 * (p.estimate_off + p.estimate_on); } });
+  $('est').innerHTML = n ? '<b>≈ ' + S.money(usd) + '</b> · ' + n + ' answers (2 with search off, 2 with it on, per model)' : 'Pick at least one model to see the estimated cost.';
+}
+function showErr(m) { $('err').textContent = m; $('err').style.display = 'block'; }
+
+async function go() {
+  $('err').style.display = 'none';
+  const prompt = $('prompt').value.trim();
+  if (!prompt) return showErr('Enter a question to ask.');
+  if (!chosen.size) return showErr('Pick at least one model.');
+  const base = {
+    brand_name: $('brand').value.trim(), domain: $('domain').value.trim(),
+    competitors: $('competitors').value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 5),
+    prompts: [prompt], locations: [market], providers: [...chosen], repeats: 2
+  };
+  $('go').disabled = true; $('go').textContent = 'Starting…';
+  const [off, on] = await Promise.all([S.api('/state-of-union/submit', { ...base, web: false }), S.api('/state-of-union/submit', { ...base, web: true })]);
+  if (off.error || on.error) { $('go').disabled = false; $('go').textContent = 'Ask both ways'; return showErr(off.error || on.error); }
+  history.pushState(null, '', '?off=' + encodeURIComponent(off.id) + '&on=' + encodeURIComponent(on.id) + (S.PRESET ? '&preset=' + encodeURIComponent(S.PRESET) : ''));
+  load(off.id, on.id);
+}
+
+async function load(offId, onId) {
+  $('formBox').style.display = 'none'; $('result').style.display = 'block';
+  $('sub').textContent = 'Starting…';
+  for (;;) {
+    const [off, on] = await Promise.all([S.api('/state-of-union/get', { id: offId }), S.api('/state-of-union/get', { id: onId })]);
+    if (off.error || on.error) { $('sub').textContent = (off.error || on.error) + (/not found/.test(off.error || on.error) ? ' — comparisons can only be opened in the browser or account that ran them.' : ''); return; }
+    const all = [...off.cells, ...on.cells], fin = all.filter(c => ['done', 'failed', 'unavailable'].includes(c.status)).length;
+    if (off.status === 'complete' && on.status === 'complete') return render(off, on);
+    $('sub').textContent = 'Asking… ' + fin + ' of ' + all.length + ' answers back.';
+    await new Promise(r => setTimeout(r, 8000));
+  }
+}
+
+const pctOf = v => v == null ? '–' : Math.round(v * 100) + '%';
+function render(off, on) {
+  const brands = on.brands.length ? on.brands : off.brands, colours = S.colourMap(brands), you = off.brand_name || '';
+  const A = off.cells.filter(c => c.status === 'done' && c.result?.text), B = on.cells.filter(c => c.status === 'done' && c.result?.text);
+  const bo = off.summary?.by_brand || {}, bn = on.summary?.by_brand || {};
+  const top = on.summary?.citations?.top_domains || [];
+  $('sub').innerHTML = '<b>“' + esc(off.prompts[0]) + '”</b> · ' + esc(off.locations.join(', ')) + ' · ' + A.length + ' answers with search off, ' + B.length + ' with it on.';
+
+  const cards = [];
+  if (you && bo[you]) cards.push({ lbl: you + ' named', val: pctOf(bo[you].rate) + ' → ' + pctOf(bn[you]?.rate), sub: 'of answers, search off → on' });
+  const named = (d, list) => brands.filter(b => (d[b.name]?.mentioned || 0) > 0).length;
+  if (brands.length) cards.push({ lbl: 'Your brands named', val: named(bo) + ' → ' + named(bn), sub: 'of the ' + brands.length + ' you listed, off → on' });
+  if (top[0]) cards.push({ lbl: 'Most-cited site', val: top[0].domain.length > 16 ? top[0].domain.slice(0, 15) + '…' : top[0].domain, sub: 'in ' + top[0].answers + ' of ' + B.length + ' answers with search on' });
+  cards.push({ lbl: 'Answer length', val: Math.round(avg(A) / 100) / 10 + 'k → ' + Math.round(avg(B) / 100) / 10 + 'k', sub: 'characters, search off → on' });
+  $('cards').innerHTML = cards.map(c => '<div class="sc"><div class="lbl">' + esc(c.lbl) + '</div><div class="val">' + esc(c.val) + '</div><div class="sub">' + esc(c.sub) + '</div></div>').join('');
+
+  let h = '';
+  if (brands.length) {
+    h += '<h2 class="h2b">Who gets named</h2><p class="hint" style="margin:0 0 10px">Share of answers that name each brand.</p><div class="tblwrap"><table class="tbl"><tr><th>Brand</th><th>Search off</th><th>Search on</th></tr>' +
+      brands.map(b => { const x = bo[b.name]?.rate ?? 0, y = bn[b.name]?.rate ?? 0;
+        return '<tr><td>' + (b.name === you ? '<span class="you">' + esc(b.name) + '</span>' : esc(b.name)) + '</td><td class="num">' + pctOf(x) + '</td><td class="num ' + (y > x ? 'up' : y < x ? 'down' : '') + '">' + pctOf(y) + '</td></tr>'; }).join('') + '</table></div>';
+  }
+  if (top.length) {
+    h += '<h2 class="h2b">What the search brought in</h2><p class="hint" style="margin:0 0 10px">The sites answers cited once search was on. With search off there are no sources — only what the model already knows.</p><div class="tblwrap"><table class="tbl"><tr><th>Site</th><th>Answers citing it</th></tr>' +
+      top.slice(0, 12).map(t => '<tr><td>' + esc(t.domain) + (t.owner ? ' <small class="hint">' + esc(t.owner) + '</small>' : '') + '</td><td class="num">' + t.answers + '</td></tr>').join('') + '</table></div>';
+  }
+  h += '<h2 class="h2b">The answers, side by side</h2>';
+  const models = [...new Set([...A, ...B].map(c => c.provider))];
+  models.forEach(p => {
+    const a = A.filter(c => c.provider === p), b = B.filter(c => c.provider === p);
+    h += '<div class="mhead">' + esc(S.providerLabel(p)) + '</div>';
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+      const cell = c => c ? '<div class="answer2">' + S.highlight(c.result.text, c.mentions, colours) + '</div>' : '<div class="answer2 empty">No answer.</div>';
+      h += '<div class="pair"><div><h4>Search off · answer ' + (i + 1) + '</h4>' + cell(a[i]) + '</div><div><h4>Search on · answer ' + (i + 1) + '</h4>' + cell(b[i]) + '</div></div>';
+    }
+  });
+  $('out').innerHTML = h;
+  $('method').innerHTML = 'Method: two State Of The LLM Union runs with the same question, models and market — one with web search off, one with it on. Cost of this comparison: ' + S.money((off.total_cost || 0) + (on.total_cost || 0)) + '.';
+}
+const avg = list => list.length ? list.reduce((t, c) => t + c.result.text.length, 0) / list.length : 0;
+
+$('again').onclick = () => { history.pushState(null, '', location.pathname + (S.PRESET ? '?preset=' + encodeURIComponent(S.PRESET) : '')); $('result').style.display = 'none'; $('formBox').style.display = 'block'; $('go').disabled = false; $('go').textContent = 'Ask both ways'; };
+$('go').onclick = go;
+
+(async () => {
+  renderMarkets();
+  options = await S.api('/state-of-union/options');
+  if (options.error) { $('models').innerHTML = '<span class="err">' + esc(options.error) + '</span>'; return; }
+  usable().forEach(p => { if (p.available && DEFAULT_MODELS.includes(p.id)) chosen.add(p.id); });
+  renderModels(); estimate();
+  if (Q.get('off') && Q.get('on')) load(Q.get('off'), Q.get('on'));
+})();
+</script>
+<script src="/assets/presets.js"></script>
+</body>
+</html>

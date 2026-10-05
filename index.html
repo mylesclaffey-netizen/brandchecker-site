@@ -107,11 +107,13 @@
   .shellhead .headHistory{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;
       text-transform:uppercase;color:#fff;text-decoration:none;white-space:nowrap}
   .shellhead .headHistory:hover{color:var(--you)}
+  .shellhead .headAi{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#fff;text-decoration:none;white-space:nowrap;margin-right:18px}
+  .shellhead .headAi:hover{color:var(--you)}
   .shellhead .headCredits{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;
       color:#fff;text-decoration:none;white-space:nowrap;margin-right:22px;border:2px solid var(--you);padding:5px 10px}
   .shellhead .headCredits:hover{background:var(--you)}
   /* Phones: My history is in the tool menu anyway, so the header keeps just Credits and the menu button. */
-  @media (max-width:600px){ .shellhead .headHistory{display:none} .shellhead .headCredits{margin-right:12px} }
+  @media (max-width:600px){ .shellhead .headHistory,.shellhead .headAi{display:none} .shellhead .headCredits{margin-right:12px} }
   .navtoggle{display:none;background:none;border:2px solid #fff;color:#fff;
       border-radius:0;width:36px;height:36px;font-size:16px;cursor:pointer;flex:none}
   .shellbody{display:flex;flex:1;min-height:0}
@@ -146,6 +148,7 @@
   <header class="shellhead">
     <a class="home" href="/">Brand Checker</a>
     <span class="spacer"></span>
+    <a class="headAi" href="/ai/">AI tools</a>
     <a class="headCredits" href="/account/" id="headCredits">Credits</a>
     <a class="headHistory" href="/tools/history/">My history →</a>
     <button class="navtoggle" id="navToggle" aria-label="Toggle tool menu">☰</button>
@@ -415,7 +418,7 @@
       <div class="cattitle">AI Search Visibility</div>
       <p class="catlede">Whether AI assistants can reach your site, cite it, and get your facts right — a different question from whether Google ranks you.</p>
     </div>
-    <div class="catmeta"><span class="catcount">7 tools</span><span class="chev">›</span></div>
+    <div class="catmeta"><span class="catcount">8 tools</span><span class="chev">›</span></div>
   </summary>
   <div class="live-grid">
 
@@ -442,6 +445,19 @@
       <li>Your brand and competitors colour-coded inside each answer</li>
     </ul>
     <a class="btn" href="/tools/model-compare/">Open the tool</a>
+    <p class="note">No access code needed — open to anyone.</p>
+  </div>
+
+  <div class="live">
+    <span class="tag"><i></i>Live</span><span class="usage-tag light">Light Token Usage</span>
+    <h3>Search on / off</h3>
+    <p>Ask AI models one question twice — once from their own knowledge, once with web search on — and see which brands and sources the search brings in, and whether yours is one of them.</p>
+    <ul>
+      <li>ChatGPT, Claude, Llama and Mistral, each asked twice both ways</li>
+      <li>Each brand's share of answers with search off and on, side by side</li>
+      <li>The sites the answers cite once they search, and every answer to read in full</li>
+    </ul>
+    <a class="btn" href="/tools/search-on-off/">Open the tool</a>
     <p class="note">No access code needed — open to anyone.</p>
   </div>
 

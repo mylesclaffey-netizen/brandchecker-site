@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<script src="/assets/visitor.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Visibility Tools — Brand Checker</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
+<meta name="description" content="Free tools for brands selling into more than one country: international rank checking, local map-grid rank checking, SERP preview, schema analysis, share of search and brand bidding monitoring.">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Brand Checker — bold, high-contrast. Black ink, white paper, one loud accent.
+     Hard 2-3px borders, square corners, offset shadows, oversized type. */
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;
+        --you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000;--gold:#0a0a0a;
+        --shade:#f3f3ef}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'Archivo',system-ui,sans-serif;
+       line-height:1.5;padding:22px 16px 60px;font-size:16px}
+  .wrap{max-width:1080px;margin:0 auto}
+  .home{font-family:'Archivo',sans-serif;font-weight:900;font-size:15px;letter-spacing:.06em;
+        text-transform:uppercase;color:#fff;text-decoration:none;display:inline-block}
+  .home:hover{color:var(--you)}
+  .eyebrow{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;
+       letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:var(--you);
+       padding:5px 11px;border:2px solid var(--ink)}
+  h1{font-family:'Archivo',sans-serif;font-size:clamp(44px,7.4vw,92px);font-weight:900;
+     letter-spacing:-.045em;line-height:.94;margin:18px 0 22px;color:var(--ink);text-align:left;
+     text-transform:uppercase}
+  .lede{font-size:19px;color:var(--ink);line-height:1.5;margin:0 0 44px;max-width:44ch;text-align:left;
+     font-weight:500;border-left:6px solid var(--you);padding-left:18px}
+  h2{font-family:'Archivo',sans-serif;font-size:12px;font-weight:800;letter-spacing:.1em;
+     text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+
+  /* Category menu */
+  .category-menu{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:44px}
+  @media(max-width:660px){.category-menu{grid-template-columns:1fr}}
+  .category{background:var(--card);border:3px solid var(--ink);border-radius:0;
+      box-shadow:7px 7px 0 var(--ink);transition:transform .12s ease,box-shadow .12s ease}
+  .category:hover{transform:translate(-2px,-2px);box-shadow:9px 9px 0 var(--you)}
+  .category[open]{grid-column:1 / -1;box-shadow:9px 9px 0 var(--you);transform:none}
+  /* Visual order only — DOM order stays as-is so the sidebar's
+     tool-dedup logic (which credits each shared tool to whichever
+     category it meets first in source order) still lands them under
+     their more specific category instead of all piling into this one. */
+  .cat-last{order:99;grid-column:1 / -1}
+  .category summary{list-style:none;cursor:pointer;padding:26px 28px;display:flex;
+      justify-content:space-between;align-items:flex-start;gap:18px}
+  .category summary::-webkit-details-marker{display:none}
+  .category .cattitle{font-family:'Archivo',sans-serif;font-size:31px;font-weight:900;
+      letter-spacing:-.03em;margin-bottom:10px;line-height:1;text-transform:uppercase}
+  .category .catlede{font-size:15px;color:var(--muted);line-height:1.5;margin:0;max-width:46ch}
+  .category .catmeta{display:flex;flex-direction:column;align-items:flex-end;gap:14px;flex:none}
+  .category .catcount{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;color:#fff;
+      background:var(--ink);white-space:nowrap;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px}
+  .category .chev{color:var(--ink);font-size:30px;font-weight:900;line-height:1;transition:transform .2s ease;flex:none}
+  .category:hover .chev{color:var(--you)}
+  .category[open] .chev{transform:rotate(90deg);color:var(--you)}
+
+  .live-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;padding:28px;
+      border-top:3px solid var(--ink);background:var(--shade)}
+  @media(max-width:760px){.live-grid{grid-template-columns:1fr}}
+  .live{background:#fff;border:2px solid var(--ink);border-radius:0;padding:22px;
+        display:flex;flex-direction:column}
+  .live > .btn{margin-top:auto}
+  .tag{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;
+       font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--ok);margin-bottom:8px;align-self:flex-start}
+  .tag i{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
+  .usage-tag{display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;
+       font-weight:500;letter-spacing:.08em;text-transform:uppercase;margin:0 0 14px;padding:3px 9px;
+       border:2px solid var(--ink);border-radius:0;align-self:flex-start}
+  .usage-tag.free{color:var(--ink);background:#c8f169}
+  .usage-tag.light{color:var(--ink);background:#fff}
+  .usage-tag.heavy{color:#fff;background:var(--ink)}
+  .live h3{font-family:'Archivo',sans-serif;font-size:24px;font-weight:800;letter-spacing:-.02em;
+       line-height:1.1;margin-bottom:10px}
+  .live p{font-size:15px;color:var(--muted);line-height:1.55;margin-bottom:14px}
+  .live ul{list-style:none;margin-bottom:22px}
+  .live ul li{font-size:14px;color:var(--ink);padding:4px 0 4px 20px;position:relative}
+  .live ul li::before{content:'→';position:absolute;left:0;color:var(--you);font-weight:900}
+  .btn{display:inline-block;font-family:'Archivo',sans-serif;font-size:14px;font-weight:800;letter-spacing:.06em;
+       text-transform:uppercase;background:var(--ink);color:#fff;text-decoration:none;border:2px solid var(--ink);
+       border-radius:0;padding:13px 22px;transition:background .12s ease,color .12s ease}
+  .btn:hover{background:var(--you);color:var(--ink)}
+  .note{font-size:12.5px;color:var(--muted);margin-top:12px}
+  .note a{color:var(--ink);font-weight:700;text-decoration-thickness:2px}
+
+  .soon{border-top:2px solid var(--ink)}
+  .soon .row{border-bottom:2px solid var(--ink);padding:17px 0}
+  .soon h3{font-family:'Archivo',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px}
+  .soon p{font-size:13px;color:var(--muted);line-height:1.6;max-width:56ch}
+  .soon .when{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+              float:right;margin-left:14px}
+
+  .foot{margin-top:38px;font-size:14px;color:var(--muted);line-height:1.7}
+  .foot a{color:var(--ink);font-weight:700}
+
+  /* --- App shell --- */
+  html,body{height:100%}
+  body{padding:0}
+  .shell{display:flex;flex-direction:column;height:100vh}
+  .shellhead{display:flex;align-items:center;gap:16px;padding:16px 22px;background:var(--ink);
+      border-bottom:4px solid var(--you);flex:none}
+  .shellhead .home{margin:0;flex:none}
+  .shellhead .spacer{flex:1}
+  .shellhead .headHistory{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;
+      text-transform:uppercase;color:#fff;text-decoration:none;white-space:nowrap}
+  .shellhead .headHistory:hover{color:var(--you)}
+  .shellhead .headAi{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#fff;text-decoration:none;white-space:nowrap;margin-right:18px}
+  .shellhead .headAi:hover{color:var(--you)}
+  .shellhead .headCredits{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+      color:#fff;text-decoration:none;white-space:nowrap;margin-right:22px;border:2px solid var(--you);padding:5px 10px}
+  .shellhead .headCredits:hover{background:var(--you)}
+  /* Phones: My history is in the tool menu anyway, so the header keeps just Credits and the menu button. */
+  @media (max-width:600px){ .shellhead .headHistory,.shellhead .headAi{display:none} .shellhead .headCredits{margin-right:12px} }
+  .navtoggle{display:none;background:none;border:2px solid #fff;color:#fff;
+      border-radius:0;width:36px;height:36px;font-size:16px;cursor:pointer;flex:none}
+  .shellbody{display:flex;flex:1;min-height:0}
+  .sidebar{width:340px;flex:none;background:var(--ink);overflow-y:auto;padding:18px 0}
+  .sidebar .scat{padding:20px 24px 8px;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.12em;
+      text-transform:uppercase;color:var(--you)}
+  .sidebar .scat:first-child{padding-top:4px}
+  .sidebar a.sidetool{display:flex;align-items:center;gap:12px;padding:11px 24px;
+      font-family:'Archivo',sans-serif;font-weight:600;font-size:17px;color:#fff;text-decoration:none;
+      border-left:5px solid transparent}
+  .sidebar a.sidetool:hover{background:#1c1c1c}
+  .sidebar a.sidetool.active{border-left-color:var(--you);background:#fff;color:var(--ink);font-weight:800}
+  .sidebar a.sidetool .dot{width:8px;height:8px;border-radius:0;flex:none}
+  .sidebar a.sidetool .dot.free{background:#c8f169}
+  .sidebar a.sidetool .dot.light{background:#fff}
+  .sidebar a.sidetool .dot.heavy{background:var(--you)}
+  .sidebar a.sidetool.active .dot.light{background:var(--ink)}
+  .content{flex:1;min-width:0;overflow-y:auto;position:relative;background:var(--paper)}
+  .content > .wrap{padding:36px 22px 70px}
+  .toolframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--paper)}
+  @media(max-width:860px){
+    .sidebar{position:fixed;left:0;top:69px;bottom:0;transform:translateX(-100%);
+        transition:transform .2s ease;z-index:20;box-shadow:4px 0 0 var(--you)}
+    .sidebar.open{transform:translateX(0)}
+    .navtoggle{display:block}
+    .category .cattitle{font-size:26px}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="shellhead">
+    <a class="home" href="/">Brand Checker</a>
+    <span class="spacer"></span>
+    <a class="headAi" href="/ai/">AI tools</a>
+    <a class="headCredits" href="/account/" id="headCredits">Credits</a>
+    <a class="headHistory" href="/tools/history/">My history →</a>
+    <button class="navtoggle" id="navToggle" aria-label="Toggle tool menu">☰</button>
+  </header>
+  <div class="shellbody">
+    <nav class="sidebar" id="sidebar"></nav>
+    <main class="content" id="content">
+    <div class="wrap" id="homeView">
+
+  <p class="eyebrow">AI tools</p>
+  <h1>How AI answers talk about your brand</h1>
+  <p class="lede">Ranking in Google and being named by ChatGPT, Claude or Gemini are different questions. A brand can rank first and still be missing from the answer an AI assistant gives. These tools ask the models directly: whether they name you, how they describe you, which sources they lean on, and whether they can read your site at all.</p>
+  <p class="lede" style="margin-top:14px"><a href="/">← All tools</a></p>
+
+  <div class="category-menu">
+
+  <details class="category" open>
+  <summary>
+    <div>
+      <div class="cattitle">What AI says about you</div>
+      <p class="catlede">Ask the models your buyers use and read what comes back: who gets named, recommended and cited.</p>
+    </div>
+    <div class="catmeta"><span class="catcount">6 tools</span><span class="chev">›</span></div>
+  </summary>
+  <div class="live-grid">
+
+  <div class="live">
+    <span class="tag"><i></i>Live</span><span class="usage-tag light">Light Token Usage</span>
+    <h3>State Of The LLM Union</h3>
+    <p>Ask AI models the same prompts in each English-language market and count how often they name your brand versus your competitors — once, or tracked every week so you can watch it change. Your brand and competitors are colour-coded right inside each answer.</p>
+    <ul>
+      <li>ChatGPT, Claude, Perplexity, Llama, Mistral and Google AI Overviews side by side</li>
+      <li>Mention rate, list position and cited sources for you and each competitor</li>
+      <li>Weekly tracking keeps every run, with a trend chart</li>
+    </ul>
+    <a class="btn" href="/tools/state-of-the-llm-union/">Open the tool</a>
+    <p class="note">No access code needed — open to anyone.</p>
+  </div>
+
+  <div class="live">
+    <span class="tag"><i></i>Live</span><span class="usage-tag light">Light Token Usage</span>
+    <h3>Search on / off</h3>
+    <p>Ask AI models one question twice — once from their own knowledge, once with web search on — and see which brands and sources the search brings in, and whether yours is one of them.</p>
+    <ul>
+      <li>ChatGPT, Claude, Llama and Mistral, each asked twice both ways</li>
+      <li>Each brand's share of answers with search off and on, side by side</li>
+      <li>The sites the answers cite once they search, and every answer to read in full</li>
+    </ul>
+    <a class="btn" href="/tools/search-on-off/">Open the tool</a>
+    <p class="note">No access code needed — open to anyone.</p>
+  </div>
+
+  <div class="live">
+    <span class="tag"><i></i>Live</span><span class="usage-tag light">Light Token Usage</span>
+    <h3>LLM Time Machine</h3>
+    <p>Ask one prompt to several models of the same AI family — Claude, ChatGPT or Perplexity — and read the answers side by side. See whether older or smaller models know your brand, and which version names you and your competitors.</p>
+    <ul>
+      <li>Each family's models compared on the same prompt, with the cost and speed of every answer</li>
+      <li>Web search off by default, so you see what each model already knows about you</li>
+      <li>Your brand and competitors colour-coded inside each answer</li>
+    </ul>
+    <a class="btn" href="/tools/model-compare/">Open the tool</a>
+    <p class="note">No access code needed — open to anyone.</p>
+  </div>
+
+  <div class="live">
+    <span class="tag"><i></i>Live</span><span class="usage-tag light">Light Token Usage</span>
+    <h3>AI brand mentions</h3>
+    <p>Does an AI even mention your brand when someone asks it a category question — checked against real, live-grounded Gemini answers, not a guess about what a chatbot might say.</p>
+    <ul>
+      <li>Up to 5 of your own category or comparison questions, each run 3 times</li>
+      <li>Mention rate per question, plus the actual search queries and sources behind each answer</li>
+      <li>Grounded in real Google Search results, not just the model's training data</li>
+    </ul>
+    <a class="btn" href="/tools/ai-mentions/">Open the tool</a>
+    <p class="note">No access code needed — open to anyone.</p>
+  </div>
+
+  <div class="live">
+    <span class="tag"><i></i>Live</span><span class="usage-tag light">Light Token Usage</span>
+    <h3>Brand sentiment</h3>
+    <p>Not "does an AI bring you up unprompted" — when someone asks an AI assistant about your brand by name, what does it actually say? A fixed panel of direct questions, scored so the silence rate is visible on its own.</p>
+    <ul>
+      <li>5 direct questions, each asked 3 times, currently against Gemini (grounded in real Google Search)</li>
+      <li>Every answer classified positive, neutral, negative, or not mentioned — with the real answer shown as evidence, never just a score</li>
+      <li>Built to add ChatGPT and Claude as they become available, without changing the report format</li>
+    </ul>
+    <a class="btn" href="/tools/brand-sentiment/">Open the tool</a>
+    <p class="note">No access code needed — open to anyone.</p>
+  </div>
+
+  <div class="live">
+    <span class="tag"><i></i>Live</span><span class="usage-tag free">Free Token Usage</span>
+    <h3>Brand questions</h3>
+    <p>What is Google actually finishing when someone starts typing your brand name? Real autocomplete data, grouped so the "is it a scam" questions are apart from the "where do I log in" ones.</p>
+    <ul>
+      <li>Sweeps ~24 brand-focused patterns — complaints, trust, comparisons, pricing, account/support</li>
+      <li>Pulled live from Google and YouTube's own autocomplete, deduped and ranked by how often each one comes up</li>
+      <li>An animated question wheel plus a full readable list — tap any question to copy it</li>
+      <li>Optional: add real search volume, CPC and genuine Google "People Also Ask" questions for a market of your choice</li>
+    </ul>
+    <a class="btn" href="/tools/brand-questions/">Open the tool</a>
+    <p class="note">No access code needed — open to anyone.</p>
+  </div>
+
+  </div>
+  </details>
+
+  <details class="category" open>
+  <summary>
+    <div>
+      <div class="cattitle">Make sure AI can read you</div>
+      <p class="catlede">Free checks and files that decide whether AI crawlers can reach your site and understand it.</p>
+    </div>
+    <div class="catmeta"><span class="catcount">2 tools</span><span class="chev">›</span></div>
+  </summary>
+  <div class="live-grid">
+
+  <div class="live">
+    <span class="tag"><i></i>Live</span><span class="usage-tag free">Free Token Usage</span>
+    <h3>AI crawler access checker</h3>
+    <p>Is your own robots.txt quietly blocking ChatGPT, Claude and Perplexity from reading your site? A blocked crawler is often the real reason a brand never gets mentioned by name.</p>
+    <ul>
+      <li>Checks GPTBot, ClaudeBot, PerplexityBot, Google-Extended and more, one by one</li>
+      <li>Flags whether you have an llms.txt file, and previews it if you do</li>
+      <li>Reads your robots.txt directly — nothing is crawled or changed</li>
+    </ul>
+    <a class="btn" href="/tools/crawler-check/">Open the tool</a>
+    <p class="note">No access code needed — open to anyone.</p>
+  </div>
+
+  <div class="live">
+    <span class="tag"><i></i>Live</span><span class="usage-tag free">Free Token Usage</span>
+    <h3>llms.txt generator</h3>
+    <p>A curated map of your site for AI assistants to read — the same idea as robots.txt or a sitemap, but written for language models instead of crawlers. Fill in a form, copy the file.</p>
+    <ul>
+      <li>Site summary, extra context, and any number of linked sections — Docs, Products, Guides, whatever fits</li>
+      <li>Follows the real llms.txt convention, including the "Optional" section models can skip if short on room</li>
+      <li>No lookups, no API calls — genuinely free, every time</li>
+    </ul>
+    <a class="btn" href="/tools/llms-txt/">Open the tool</a>
+    <p class="note">No access code needed — open to anyone.</p>
+  </div>
+
+  </div>
+  </details>
+
+
+  </div>
+
+  <p class="foot">Tools are free and access is by request while they're new — mostly so we can keep the data costs sane. <a href="mailto:mylesclaffey@gmail.com?subject=Brand%20Checker%20access%20code">Get in touch</a> and we'll send you a code.</p>
+    </div>
+    <iframe id="toolFrame" class="toolframe" hidden title="Tool"></iframe>
+    </main>
+  </div>
+</div>
+<script>
+(function(){
+  var params = new URLSearchParams(location.search);
+  // The same shell is served at / and at /make/ (generated by build-make.py). BASE keeps
+  // the address bar on whichever one you're on; PRESET is passed to every tool so its
+  // inputs come pre-filled (see assets/presets.js).
+  var BASE = location.pathname.replace(/[^\/]*$/, '');
+  var PRESET = params.get('preset') || (BASE === '/make/' ? 'make' : '');
+  var sidebar = document.getElementById('sidebar');
+  var homeView = document.getElementById('homeView');
+  var toolFrame = document.getElementById('toolFrame');
+  var navToggle = document.getElementById('navToggle');
+  var currentSlug = null;
+
+  // One access code unlocks every tool: read it from the URL or fall back
+  // to whatever was saved from a previous visit, then keep it in
+  // localStorage so it survives across sessions without needing ?k= every
+  // time. setCode() is also how a code typed into a tool's own gate (see
+  // the toolFrame 'load' listener below) propagates to every other tool.
+  var CODE_KEY = 'mc2seo_code';
+  var CODE = params.get('k') || (function(){ try { return localStorage.getItem(CODE_KEY) || ''; } catch(e){ return ''; } })();
+
+  function setCode(code){
+    if (!code || code === CODE) return;
+    CODE = code;
+    try { localStorage.setItem(CODE_KEY, CODE); } catch(e){}
+    var sp = forwardedParams(currentSlug ? { tool: currentSlug } : null);
+    var qs = sp.toString();
+    history.replaceState(history.state, '', BASE + (qs ? '?' + qs : ''));
+  }
+
+  function slugFromHref(href){
+    return href.replace(/^\/tools\//,'').replace(/\/$/,'');
+  }
+
+  // Build the sidebar from the category cards already in the page —
+  // one source of truth, no duplicated tool data to keep in sync.
+  //
+  // Dedup still walks categories in DOM (source) order, same as always,
+  // so a shared tool (e.g. schema-builder) is still credited to its
+  // first-listed, more-specific category rather than all piling into
+  // Free To Use Tools. Rendering is buffered separately so a `.cat-last`
+  // category's section can be appended after every other one — matching
+  // where it visually sits in the card grid — without changing which
+  // category "wins" a given tool.
+  var seen = {};
+  var lastFrag = document.createDocumentFragment();
+  document.querySelectorAll('.category').forEach(function(cat){
+    var cards = Array.prototype.filter.call(cat.querySelectorAll('.live'), function(card){
+      var slug = slugFromHref(card.querySelector('a.btn').getAttribute('href'));
+      if (seen[slug]) return false;
+      seen[slug] = true;
+      return true;
+    });
+    if (!cards.length) return;
+    var target = cat.classList.contains('cat-last') ? lastFrag : sidebar;
+    var heading = document.createElement('div');
+    heading.className = 'scat';
+    heading.textContent = cat.querySelector('.cattitle').textContent;
+    target.appendChild(heading);
+    cards.forEach(function(card){
+      var btn = card.querySelector('a.btn');
+      var href = btn.getAttribute('href');
+      var slug = slugFromHref(href);
+      var usage = card.querySelector('.usage-tag');
+      var tier = usage ? (usage.classList.contains('light') ? 'light' : usage.classList.contains('heavy') ? 'heavy' : 'free') : 'free';
+      var a = document.createElement('a');
+      a.className = 'sidetool';
+      a.href = href;
+      a.dataset.slug = slug;
+      a.innerHTML = '<span class="dot ' + tier + '"></span>' + card.querySelector('h3').textContent;
+      a.addEventListener('click', function(e){ e.preventDefault(); openTool(slug); closeSidebarMobile(); });
+      target.appendChild(a);
+    });
+  });
+  sidebar.appendChild(lastFrag);
+
+  var historyEntry = document.createElement('a');
+  historyEntry.className = 'sidetool';
+  historyEntry.href = '/tools/history/';
+  historyEntry.dataset.slug = 'history';
+  historyEntry.innerHTML = '<span class="dot free"></span>My history';
+  historyEntry.addEventListener('click', function(e){ e.preventDefault(); openTool('history'); closeSidebarMobile(); });
+  sidebar.insertBefore(historyEntry, sidebar.firstChild);
+
+  document.querySelector('.headHistory').addEventListener('click', function(e){ e.preventDefault(); openTool('history'); });
+
+  // Signed in to a credit account (assets/visitor.js): show the balance in the header's Credits link.
+  if (window.BC_ACCOUNT) {
+    fetch('https://mc2seo-tools-api.mylesclaffey.workers.dev/api/account/balance', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: window.BC_ACCOUNT })
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d && typeof d.balance === 'number') document.getElementById('headCredits').textContent = Math.round(d.balance).toLocaleString('en') + ' credits';
+    }).catch(function(){ /* keep the plain label */ });
+  }
+
+  // Every "Open the tool" card button opens in-app instead of navigating away
+  homeView.querySelectorAll('a.btn').forEach(function(btn){
+    var slug = slugFromHref(btn.getAttribute('href'));
+    btn.addEventListener('click', function(e){ e.preventDefault(); openTool(slug); });
+  });
+
+  function forwardedParams(extra){
+    var p = new URLSearchParams(params);
+    p.delete('tool');
+    if (BASE === '/make/') p.delete('preset');
+    if (CODE) p.set('k', CODE); else p.delete('k');
+    if (extra) Object.keys(extra).forEach(function(k){ p.set(k, extra[k]); });
+    return p;
+  }
+
+  // A tool with no code yet shows its own gate; submitting it navigates
+  // that iframe (same-origin) to its own URL with ?k=<code> — replacing
+  // the whole query string, which also wipes out our own ?embed=1 and
+  // brings back that tool's redundant nav row. Catch both: pick up the
+  // code so it unlocks every other tool too, then restore embed=1.
+  toolFrame.addEventListener('load', function(){
+    try {
+      var frameLoc = toolFrame.contentWindow.location;
+      if (frameLoc.href === 'about:blank') return;
+      var fp = new URLSearchParams(frameLoc.search);
+      var k = fp.get('k');
+      if (k && !/^v-/.test(k)) setCode(k);   // a visitor id stays private to the tool pages, out of the address bar
+      if (currentSlug && fp.get('embed') !== '1') {
+        var p2 = forwardedParams();
+        p2.set('embed', '1');
+        if (PRESET) p2.set('preset', PRESET);
+        toolFrame.contentWindow.location.replace(frameLoc.pathname + '?' + p2.toString());
+      }
+    } catch (e) { /* cross-origin or not yet navigable — ignore */ }
+  });
+
+  function navigateFrame(url){
+    // A plain `src` assignment adds its own entry to the browser's joint
+    // session history on every navigation, which fights our own
+    // pushState calls (one shell click ends up needing two "back"
+    // presses). location.replace() swaps the frame's document without
+    // adding an entry, so the shell's pushState is the only thing
+    // driving back/forward.
+    if (!toolFrame.dataset.loaded) {
+      toolFrame.src = url;
+      toolFrame.dataset.loaded = '1';
+    } else {
+      toolFrame.contentWindow.location.replace(url);
+    }
+  }
+
+  function openTool(slug, push){
+    currentSlug = slug;
+    var p = forwardedParams();
+    p.set('embed', '1');
+    if (PRESET) p.set('preset', PRESET);
+    navigateFrame('/tools/' + slug + '/?' + p.toString());
+    toolFrame.hidden = false;
+    homeView.hidden = true;
+    sidebar.querySelectorAll('.sidetool').forEach(function(a){
+      a.classList.toggle('active', a.dataset.slug === slug);
+    });
+    if (push !== false) {
+      var sp = forwardedParams({ tool: slug });
+      history.pushState({ tool: slug }, '', BASE + '?' + sp.toString());
+    }
+  }
+
+  function showHome(push){
+    currentSlug = null;
+    toolFrame.hidden = true;
+    if (toolFrame.dataset.loaded) navigateFrame('about:blank');
+    homeView.hidden = false;
+    sidebar.querySelectorAll('.sidetool').forEach(function(a){ a.classList.remove('active'); });
+    if (push !== false) {
+      var sp = forwardedParams();
+      var qs = sp.toString();
+      history.pushState({}, '', BASE + (qs ? '?' + qs : ''));
+    }
+  }
+
+  function renderFromLocation(){
+    var p = new URLSearchParams(location.search);
+    var tool = p.get('tool');
+    if (tool) openTool(tool, false); else showHome(false);
+  }
+
+  function closeSidebarMobile(){ sidebar.classList.remove('open'); }
+
+  window.addEventListener('popstate', renderFromLocation);
+  navToggle.addEventListener('click', function(){ sidebar.classList.toggle('open'); });
+
+  renderFromLocation();
+
+  // A code recovered from localStorage (not the URL) should still show up
+  // in the address bar, so refreshing or copying the link keeps working.
+  if (CODE && params.get('k') !== CODE) {
+    var sp0 = forwardedParams(currentSlug ? { tool: currentSlug } : null);
+    var qs0 = sp0.toString();
+    history.replaceState(history.state, '', BASE + (qs0 ? '?' + qs0 : ''));
+  }
+})();
+</script>
+</body>
+</html>
