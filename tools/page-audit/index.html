@@ -111,7 +111,7 @@
 
   <div id="results">
     <button class="backbtn" id="back">&larr; Audit another page</button>
-    <p class="eyebrow">Page audit</p>
+    <p class="eyebrow" id="eyebrow">Page audit</p>
     <h1 id="rTitle" style="font-size:20px">Checking…</h1>
     <div class="overview">
       <div class="big" id="bigRing"></div>
@@ -140,13 +140,14 @@ const COLOURS = { ok: 'var(--ok)', warn: 'var(--warn)', error: 'var(--bad)' };
 // The sections, in report order. `tool` is the full tool each one links to.
 const SECTIONS = [
   { id: 'indexing', title: 'Can it be indexed?', sub: 'Status, redirects, HTTPS, noindex and canonical.' },
+  { id: 'site', title: 'Site-wide', sub: 'Checked because this is the homepage: one address for the site, robots.txt and sitemap, and who the brand is.', home: true },
   { id: 'ai', title: 'AI readiness', sub: 'Can AI assistants reach the page, read it, and trust what it says?', ai: true },
   { id: 'content', title: 'On-page basics', sub: 'Title, description, headings, links, language and sharing tags.' },
   { id: 'images', title: 'Images', sub: 'Alt text, sizes, broken or heavy files.', tool: 'image-audit' },
   { id: 'intl', title: 'International', sub: 'hreflang tags for other languages and countries.', tool: 'hreflang-audit' },
   { id: 'speed', title: 'Speed', sub: 'Google PageSpeed Insights, mobile and desktop. Takes 20–40 seconds.', tool: 'pagespeed' }
 ];
-let rows = {}, waiting = {}, runId = 0;
+let rows = {}, waiting = {}, runId = 0, ACTIVE = SECTIONS.filter(s => !s.home);
 
 function post(path, body) {
   return fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, ...body }) })
@@ -182,20 +183,21 @@ function renderSection(s) {
 
 function renderOverview() {
   const all = Object.values(rows).flat(), c = counted(all);
-  const done = SECTIONS.filter(s => rows[s.id]).length;
+  const done = ACTIVE.filter(s => rows[s.id]).length;
   $('bigRing').innerHTML = ring(passed(all), c.length, 112);
   animateRings($('bigRing'));
   const n = sev => all.filter(r => r.severity === sev).length;
   $('tally').innerHTML = '<b>' + passed(all) + ' of ' + c.length + ' checks pass</b><br>' +
     '<span class="dotk" style="background:var(--bad)"></span>' + n('error') + ' to fix · <span class="dotk" style="background:var(--warn)"></span>' + n('warn') + ' warnings · <span class="dotk" style="background:var(--ok)"></span>' + n('ok') + ' pass' +
-    (done < SECTIONS.length ? '<br><span style="color:var(--muted)">' + done + ' of ' + SECTIONS.length + ' sections in — still checking…</span>' : '');
-  const fixes = SECTIONS.flatMap(s => (rows[s.id] || []).filter(r => r.severity === 'error' || r.severity === 'warn').map(r => ({ ...r, where: s.title })))
+    (done < ACTIVE.length ? '<br><span style="color:var(--muted)">' + done + ' of ' + ACTIVE.length + ' sections in — still checking…</span>' : '');
+  const fixes = ACTIVE.flatMap(s => (rows[s.id] || []).filter(r => r.severity === 'error' || r.severity === 'warn').map(r => ({ ...r, where: s.title })))
     .sort((a, b) => (a.severity === 'error' ? 0 : 1) - (b.severity === 'error' ? 0 : 1)).slice(0, 5);
   $('fixes').innerHTML = fixes.length ? '<h2>Fix these first</h2><ol>' + fixes.map(f => '<li><span class="where">' + esc(f.where) + ' · ' + esc(f.label) + '</span><br>' + esc(f.message) + '</li>').join('') + '</ol>' : '';
 }
 
 const add = (id, severity, label, message) => (rows[id] = rows[id] || []).push({ severity, label, message });
 const LABELS = { status: 'Status', redirects: 'Redirects', https: 'HTTPS', noindex: 'Indexing', nofollow: 'Links followed', canonical: 'Canonical', title: 'Title', description: 'Meta description', h1: 'H1', heading_order: 'Heading order', words: 'Text in the HTML', links: 'Links', lang: 'Language', viewport: 'Mobile', open_graph: 'Sharing tags' };
+LABELS.org_schema = 'Organization schema'; LABELS.org_logo = 'Logo'; LABELS.org_sameas = 'Profiles (sameAs)'; LABELS.website_schema = 'WebSite schema'; LABELS.brand_title = 'Brand in title'; LABELS.robots = 'robots.txt';
 const SIGNAL = { author: 'Author', freshness: 'Freshness', thin_content: 'Content depth', citations: 'Citations', https: 'HTTPS', trust_pages: 'About / Contact' };
 
 async function run(fresh) {
@@ -208,10 +210,12 @@ async function run(fresh) {
   $('rTitle').textContent = url; $('fixes').innerHTML = ''; $('share').innerHTML = ''; $('recheck').innerHTML = '';
   const saved = [];   // when each cached section's result was saved
   const keep = d => { if (d && d.checked_at) saved.push(new Date(d.checked_at).getTime()); return d; };
-  $('sections').innerHTML = SECTIONS.map(s => '<div class="sec' + (s.ai ? ' ai' : '') + '" id="sec-' + s.id + '"></div>').join('');
+  ACTIVE = SECTIONS.filter(s => !s.home);
+  const drawSections = () => { $('sections').innerHTML = ACTIVE.map(s => '<div class="sec' + (s.ai ? ' ai' : '') + '" id="sec-' + s.id + '"></div>').join(''); ACTIVE.forEach(renderSection); };
+  $('eyebrow').textContent = 'Page audit';
+  drawSections();
   waiting.speed = 'Asking Google PageSpeed Insights — usually 20–40 seconds';
-  SECTIONS.forEach(renderSection);
-  const done = (ids) => { if (me === runId) ids.forEach(id => renderSection(SECTIONS.find(s => s.id === id))); };
+  const done = (ids) => { if (me === runId) ids.forEach(id => renderSection(ACTIVE.find(s => s.id === id))); };
 
   // On-page basics first: it says whether the page exists at all.
   const basics = await post('/page-audit', { url });
@@ -219,12 +223,18 @@ async function run(fresh) {
   if (basics.error) { $('sections').innerHTML = '<p class="err">' + esc(basics.error) + '</p>'; $('bigRing').innerHTML = ''; $('tally').textContent = 'The page could not be audited.'; return; }
   $('rTitle').textContent = basics.final_url;
   $('share').innerHTML = shareHtml(url);
+  if (basics.is_home) {   // homepage mode: add the Site-wide section after "Can it be indexed?"
+    ACTIVE = SECTIONS.slice();
+    $('eyebrow').textContent = 'Page audit · homepage';
+    const rowsBefore = rows; drawSections(); rows = rowsBefore;
+  }
   basics.checks.forEach(c => add(c.section === 'content' && c.type === 'words' ? 'ai' : c.section, c.severity, LABELS[c.type] || c.type, c.message));
   if (basics.status >= 400) {
-    SECTIONS.filter(s => !rows[s.id]).forEach(s => rows[s.id] = [{ severity: 'info', label: 'Skipped', message: 'Not checked — the page returns an error.' }]);
-    return done(SECTIONS.map(s => s.id));
+    ACTIVE.filter(s => !rows[s.id]).forEach(s => rows[s.id] = [{ severity: 'info', label: 'Skipped', message: 'Not checked — the page didn\'t load for this checker.' }]);
+    return done(ACTIVE.map(s => s.id));
   }
   done(['indexing', 'content']);
+  const home = !!basics.is_home;
   const page = basics.final_url;
 
   // AI readiness: crawler access + llms.txt, structured data, E-E-A-T trust signals (plus the text check above).
@@ -242,8 +252,34 @@ async function run(fresh) {
       (sc.findings || []).forEach(f => add('ai', f.severity === 'error' ? 'error' : f.severity === 'warn' ? 'warn' : 'info', 'Structured data', f.message));
     }
     if (ee.error) add('ai', 'info', 'Trust signals', 'Couldn\'t check: ' + ee.error);
-    else (ee.signals || []).filter(s => s.type !== 'https' && s.type !== 'thin_content').forEach(s => add('ai', s.severity === 'ok' ? 'ok' : 'warn', SIGNAL[s.type] || s.type, s.message));
-    done(['ai']);
+    else (ee.signals || []).filter(s => s.type !== 'https' && s.type !== 'thin_content' && !(home && ['author', 'freshness', 'citations'].includes(s.type)))
+      .forEach(s => add(home && s.type === 'trust_pages' ? 'site' : 'ai', s.severity === 'ok' ? 'ok' : 'warn', SIGNAL[s.type] || s.type, s.message));
+    done(home ? ['ai', 'site'] : ['ai']);
+  });
+
+  // Homepage only: do all four addresses (http/https, www/non-www) end at one URL in one hop? And the sitemap.
+  const siteWide = !home ? Promise.resolve() : Promise.all([
+    post('/canonical-check', { domain: new URL(page).hostname }),
+    post('/sitemap-audit', { url: new URL(page).origin, fresh }).then(keep)
+  ]).then(([cv, sm]) => {
+    if (cv.error) add('site', 'info', 'One address', 'Couldn\'t check the address variants: ' + cv.error);
+    else if (cv.all_good) add('site', 'ok', 'One address', 'http/https and www/non-www all end at ' + cv.canonical + ' in one hop.');
+    else {
+      const twins = cv.variants.filter(v => v.flags[0] === 'duplicate_canonical');
+      if (twins.length) add('site', 'error', 'One address', 'The homepage loads at ' + twins.map(v => v.start).join(' and ') + ' without redirecting — two copies of the same page. Redirect one to the other.');
+      cv.variants.forEach(v => {
+        const f = v.flags[0];
+        if (f === 'broken' || f === 'loop' || f === 'too_many_hops') add('site', 'error', 'One address', v.start + ' doesn\'t load' + (f === 'loop' ? ' (redirect loop)' : '') + '.');
+        else if (f === 'wrong_destination') add('site', 'error', 'One address', v.start + ' ends at ' + v.final + ', not ' + cv.canonical + '.');
+        else if (f === 'chain') add('site', 'warn', 'One address', v.start + ' takes ' + v.hops + ' redirects to reach ' + cv.canonical + ' — make it one.');
+      });
+    }
+    if (sm.error) add('site', 'info', 'Sitemap', 'Couldn\'t check: ' + sm.error);
+    else {
+      if (sm.found) add('site', 'ok', 'Sitemap', 'Sitemap found at ' + sm.sitemap_url + ' with ' + sm.url_count + ' ' + (sm.type === 'sitemapindex' ? 'child sitemaps' : 'URLs') + '.');
+      (sm.issues || []).forEach(i => add('site', i.severity === 'error' ? 'error' : i.severity === 'warn' ? 'warn' : 'info', 'Sitemap', i.message));
+    }
+    done(['site']);
   });
 
   const img = post('/image-audit', { url: page, fresh }).then(keep).then(d => {
@@ -275,7 +311,7 @@ async function run(fresh) {
     }
     done(['speed']);
   });
-  await Promise.all([ai, img, intl]);
+  await Promise.all([ai, img, intl, siteWide]);
   // Schema, trust signals, images and hreflang are saved for a few hours: say how old, and offer a live re-check.
   const oldest = saved.length ? Math.round((Date.now() - Math.min(...saved)) / 60000) : 0;
   if (me === runId && oldest >= 2) $('recheck').innerHTML = '<span>Some sections are saved results from ' + (oldest < 90 ? oldest + ' min' : Math.round(oldest / 60) + ' h') + ' ago — changed the page since?</span><button type="button" class="sharebtn" id="recheckBtn">Re-check now</button>';
