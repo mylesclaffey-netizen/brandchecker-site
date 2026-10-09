@@ -47,6 +47,8 @@
   .overview .big{flex:none}
   .overview .tally{font-size:12.5px;line-height:1.7}
   .overview .tally b{font-family:'Archivo',sans-serif;font-size:15px}
+  .recheck{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;font-size:11.5px;color:var(--muted)}
+  .recheck:empty{display:none}
   .dotk{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
   .fixes{margin:0 0 30px}
   .fixes h2,.sec h2{font-family:'Archivo',sans-serif;font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:-.01em}
@@ -113,7 +115,7 @@
     <h1 id="rTitle" style="font-size:20px">Checking…</h1>
     <div class="overview">
       <div class="big" id="bigRing"></div>
-      <div class="tally" id="tally">Running the checks…</div>
+      <div><div class="tally" id="tally">Running the checks…</div><div class="recheck" id="recheck"></div></div>
     </div>
     <div class="fixes" id="fixes"></div>
     <div id="sections"></div>
@@ -196,13 +198,16 @@ const add = (id, severity, label, message) => (rows[id] = rows[id] || []).push({
 const LABELS = { status: 'Status', redirects: 'Redirects', https: 'HTTPS', noindex: 'Indexing', nofollow: 'Links followed', canonical: 'Canonical', title: 'Title', description: 'Meta description', h1: 'H1', heading_order: 'Heading order', words: 'Text in the HTML', links: 'Links', lang: 'Language', viewport: 'Mobile', open_graph: 'Sharing tags' };
 const SIGNAL = { author: 'Author', freshness: 'Freshness', thin_content: 'Content depth', citations: 'Citations', https: 'HTTPS', trust_pages: 'About / Contact' };
 
-async function run() {
+async function run(fresh) {
+  fresh = fresh === true;
   const url = $('url').value.trim();
   if (!url || url === 'https://') { $('go').textContent = 'Add a page URL first'; setTimeout(() => $('go').textContent = 'Audit this page', 2000); return; }
   const me = ++runId;
   rows = {}; waiting = {};
   $('form').style.display = 'none'; $('results').style.display = 'block'; window.scrollTo(0, 0);
-  $('rTitle').textContent = url; $('fixes').innerHTML = ''; $('share').innerHTML = '';
+  $('rTitle').textContent = url; $('fixes').innerHTML = ''; $('share').innerHTML = ''; $('recheck').innerHTML = '';
+  const saved = [];   // when each cached section's result was saved
+  const keep = d => { if (d && d.checked_at) saved.push(new Date(d.checked_at).getTime()); return d; };
   $('sections').innerHTML = SECTIONS.map(s => '<div class="sec' + (s.ai ? ' ai' : '') + '" id="sec-' + s.id + '"></div>').join('');
   waiting.speed = 'Asking Google PageSpeed Insights — usually 20–40 seconds';
   SECTIONS.forEach(renderSection);
@@ -223,7 +228,7 @@ async function run() {
   const page = basics.final_url;
 
   // AI readiness: crawler access + llms.txt, structured data, E-E-A-T trust signals (plus the text check above).
-  const ai = Promise.all([post('/crawler-check', { url: page }), post('/schema-audit', { url: page }), post('/eeat-audit', { url: page })]).then(([cc, sc, ee]) => {
+  const ai = Promise.all([post('/crawler-check', { url: page }), post('/schema-audit', { url: page, fresh }).then(keep), post('/eeat-audit', { url: page, fresh }).then(keep)]).then(([cc, sc, ee]) => {
     if (cc.error) add('ai', 'info', 'AI crawlers', 'Couldn\'t read robots.txt: ' + cc.error);
     else {
       const blocked = cc.crawlers.filter(c => c.blocked);
@@ -241,7 +246,7 @@ async function run() {
     done(['ai']);
   });
 
-  const img = post('/image-audit', { url: page }).then(d => {
+  const img = post('/image-audit', { url: page, fresh }).then(keep).then(d => {
     if (d.error) add('images', 'info', 'Images', 'Couldn\'t check: ' + d.error);
     else if (!d.image_count) add('images', 'info', 'Images', 'No images on the page.');
     else {
@@ -251,7 +256,7 @@ async function run() {
     done(['images']);
   });
 
-  const intl = post('/hreflang-audit', { url: page }).then(d => {
+  const intl = post('/hreflang-audit', { url: page, fresh }).then(keep).then(d => {
     if (d.error) add('intl', 'info', 'hreflang', 'Couldn\'t check: ' + d.error);
     else if (!d.hreflang_count) add('intl', 'info', 'hreflang', 'No hreflang tags — fine for a page in one language for one market.');
     else {
@@ -270,7 +275,11 @@ async function run() {
     }
     done(['speed']);
   });
-  await Promise.all([ai, img, intl, speed]);
+  await Promise.all([ai, img, intl]);
+  // Schema, trust signals, images and hreflang are saved for a few hours: say how old, and offer a live re-check.
+  const oldest = saved.length ? Math.round((Date.now() - Math.min(...saved)) / 60000) : 0;
+  if (me === runId && oldest >= 2) $('recheck').innerHTML = '<span>Some sections are saved results from ' + (oldest < 90 ? oldest + ' min' : Math.round(oldest / 60) + ' h') + ' ago — changed the page since?</span><button type="button" class="sharebtn" id="recheckBtn">Re-check now</button>';
+  await speed;
 }
 
 function shareHtml(url) {
@@ -285,7 +294,8 @@ document.addEventListener('click', e => {
   navigator.clipboard?.writeText(link).then(() => { e.target.textContent = 'Copied!'; setTimeout(() => e.target.textContent = 'Copy link', 1800); });
 });
 
-$('go').onclick = run;
+$('go').onclick = () => run();
+document.addEventListener('click', e => { if (e.target.id === 'recheckBtn') run(true); });
 $('url').onkeydown = e => { if (e.key === 'Enter') run(); };
 $('back').onclick = () => { runId++; $('results').style.display = 'none'; $('form').style.display = 'block'; };
 const Q = new URLSearchParams(location.search);

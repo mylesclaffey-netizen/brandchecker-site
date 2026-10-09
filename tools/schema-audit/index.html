@@ -91,6 +91,7 @@
   .sidenav-link.accent{color:var(--you);font-weight:500}
   .sidenav-link.accent:hover{color:#ff3d00}
   body.embed .sidenav{display:none}
+  .recheck{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:18px;font-size:11.5px;color:var(--muted)}
 </style>
 <link rel="stylesheet" href="/assets/theme.css">
 </head>
@@ -171,7 +172,15 @@ $('go').onclick = run;
 $('url').onkeydown = e => { if (e.key === 'Enter') run(); };
 $('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; };
 
-async function run(){
+// "Re-check now": these results are saved for a few hours; fresh skips the saved one and checks live.
+function recheckHtml(at){
+  const mins = at ? Math.round((Date.now() - new Date(at).getTime()) / 60000) : null;
+  if (mins == null || isNaN(mins)) return '';
+  const when = mins < 2 ? 'Checked just now.' : 'Saved result from ' + (mins < 90 ? mins + ' min' : Math.round(mins / 60) + ' h') + ' ago — changed the page since?';
+  return '<div class="recheck"><span>' + when + '</span>' + (mins >= 2 ? '<button type="button" class="sharebtn" onclick="run(true)">Re-check now</button>' : '') + '</div>';
+}
+
+async function run(fresh){
   const url = $('url').value.trim();
   if (!url || url === 'https://'){
     $('go').textContent = 'Add a page URL first';
@@ -190,7 +199,7 @@ async function run(){
   try {
     const res = await fetch(API + '/schema-audit', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: CODE, url })
+      body: JSON.stringify({ code: CODE, url, fresh: fresh === true })
     });
     d = await res.json();
   } catch (e) { d = { error: 'could not reach the API' }; }
@@ -210,7 +219,7 @@ async function run(){
   } else {
     $('rRedirect').style.display = 'none';
   }
-  $('out').innerHTML = renderResults(d) + renderShare(url);
+  $('out').innerHTML = renderResults(d) + recheckHtml(d.checked_at) + renderShare(url);
 }
 
 function renderResults(d){
