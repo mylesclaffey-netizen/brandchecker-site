@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<script src="/assets/visitor.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page audit</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brand Checker">
+<meta property="og:url" content="https://brandchecker.eu/tools/page-audit/">
+<meta property="og:title" content="Page Audit — Free SEO &amp; AI Readiness Check | Brand Checker">
+<meta property="og:description" content="One URL, one report: indexing, on-page basics, AI readiness, images, international tags and speed. Free, no signup.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta name="twitter:title" content="Page Audit — Free SEO &amp; AI Readiness Check | Brand Checker">
+<meta name="twitter:description" content="One URL, one report: indexing, on-page basics, AI readiness, images, international tags and speed. Free, no signup.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2335c48d'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;
+        --you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000;--gold:#0a0a0a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:760px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Archivo',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.14;margin:8px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:anywhere}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  input:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:12px}
+  .submit{width:100%;font-family:'Archivo',sans-serif;font-size:15px;font-weight:700;background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer;margin-top:6px}
+  .submit:hover{background:#d92f00}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+  .empty{font-size:12.5px;color:var(--muted)}
+  #results{display:none;margin-top:10px}
+  .backbtn{font-size:14px;color:var(--you);background:none;border:0;cursor:pointer;margin-bottom:16px;font-family:'IBM Plex Mono',monospace}
+
+  .overview{display:flex;gap:22px;align-items:center;border:3px solid var(--line);padding:18px 20px;margin:18px 0 26px;box-shadow:5px 5px 0 var(--line)}
+  .overview .big{flex:none}
+  .overview .tally{font-size:12.5px;line-height:1.7}
+  .overview .tally b{font-family:'Archivo',sans-serif;font-size:15px}
+  .dotk{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .fixes{margin:0 0 30px}
+  .fixes h2,.sec h2{font-family:'Archivo',sans-serif;font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:-.01em}
+  .fixes ol{margin:10px 0 0 22px;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:7px}
+  .fixes .where{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em}
+
+  .sec{border:3px solid var(--line);margin:0 0 22px;background:var(--card)}
+  .sec.ai{border-color:var(--you);box-shadow:5px 5px 0 var(--you)}
+  .sechead{display:flex;gap:14px;align-items:center;padding:14px 16px;border-bottom:2px solid var(--line)}
+  .sec.ai .sechead{border-bottom-color:var(--you)}
+  .sechead .t{flex:1;min-width:0}
+  .sechead p{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .sechead a{font-size:11px;color:var(--you);white-space:nowrap}
+  .rows{display:flex;flex-direction:column}
+  .row{display:flex;gap:10px;padding:10px 16px;border-top:1px solid #e3e3e3;font-size:12.5px;line-height:1.5}
+  .row:first-child{border-top:0}
+  .badge{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:20px;flex:none;height:fit-content;min-width:52px;text-align:center}
+  .row.ok .badge{color:var(--ok);background:rgba(0,132,74,.1)}
+  .row.warn .badge{color:var(--warn);background:rgba(180,95,0,.12)}
+  .row.error .badge{color:#fff;background:var(--bad)}
+  .row.info .badge{color:var(--muted);background:#efefef}
+  .row .label{color:var(--muted);font-size:10.5px;display:block;text-transform:uppercase;letter-spacing:.04em}
+  .row .msg{min-width:0;overflow-wrap:anywhere}
+  .pending{padding:14px 16px;font-size:12px;color:var(--muted)}
+  .pending::after{content:'';display:inline-block;width:10px;height:10px;margin-left:8px;border:2px solid var(--muted);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-1px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .ring circle{fill:none;stroke-width:7}
+  .ring .track{stroke:#ececec}
+  .ring .val{stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1)}
+  .ring text{font-family:'Archivo',sans-serif;font-weight:900;fill:var(--ink)}
+
+  .foot{font-size:10.5px;color:var(--muted);margin-top:20px;line-height:1.6}
+  .share{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+  .sharelabel{font-size:11px;color:var(--muted)}
+  .sharebtn{font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 13px;cursor:pointer;text-decoration:none;display:inline-block}
+  .sharebtn:hover{border-color:var(--you);color:var(--you)}
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted)}
+  body.embed .sidenav{display:none}
+  @media(max-width:560px){.overview{flex-direction:column;align-items:flex-start}.sechead a{display:none}}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div id="form">
+    <p class="eyebrow">Free tool · no access code needed</p>
+    <h1>Page audit</h1>
+    <p class="lede">One URL, one report. Checks whether search engines can index the page, the on-page basics, whether AI assistants can read and trust it, its images, international tags and speed — with the fixes that matter most first.</p>
+    <div class="field"><label for="url">Page URL</label><input id="url" type="text" placeholder="https://yoursite.com/page" value="https://"></div>
+    <button class="submit" id="go" type="button">Audit this page</button>
+    <p class="after">Reads this one page (plus robots.txt and llms.txt for the AI checks). Nothing on your site is changed.</p>
+    <div class="sidenav">
+      <a href="/" class="sidenav-link">← Back to tools</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <button class="backbtn" id="back">&larr; Audit another page</button>
+    <p class="eyebrow">Page audit</p>
+    <h1 id="rTitle" style="font-size:20px">Checking…</h1>
+    <div class="overview">
+      <div class="big" id="bigRing"></div>
+      <div class="tally" id="tally">Running the checks…</div>
+    </div>
+    <div class="fixes" id="fixes"></div>
+    <div id="sections"></div>
+    <p class="foot">Each check is a pass, warning or problem on its own — the ring counts how many pass, it isn't a ranking score. Most checks read the page's HTML as a crawler gets it, so content drawn later by JavaScript can be missed (that is also what many AI crawlers see). Speed comes from Google's PageSpeed Insights lab test.</p>
+    <div id="share"></div>
+    <div class="sidenav">
+      <a href="/" class="sidenav-link">← Back to tools</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || window.MC_VISITOR || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const COLOURS = { ok: 'var(--ok)', warn: 'var(--warn)', error: 'var(--bad)' };
+
+// The sections, in report order. `tool` is the full tool each one links to.
+const SECTIONS = [
+  { id: 'indexing', title: 'Can it be indexed?', sub: 'Status, redirects, HTTPS, noindex and canonical.' },
+  { id: 'ai', title: 'AI readiness', sub: 'Can AI assistants reach the page, read it, and trust what it says?', ai: true },
+  { id: 'content', title: 'On-page basics', sub: 'Title, description, headings, links, language and sharing tags.' },
+  { id: 'images', title: 'Images', sub: 'Alt text, sizes, broken or heavy files.', tool: 'image-audit' },
+  { id: 'intl', title: 'International', sub: 'hreflang tags for other languages and countries.', tool: 'hreflang-audit' },
+  { id: 'speed', title: 'Speed', sub: 'Google PageSpeed Insights, mobile and desktop. Takes 20–40 seconds.', tool: 'pagespeed' }
+];
+let rows = {}, waiting = {}, runId = 0;
+
+function post(path, body) {
+  return fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, ...body }) })
+    .then(r => r.json()).catch(() => ({ error: 'could not reach the checker' }));
+}
+
+function ring(ok, total, size) {
+  const r = size / 2 - 6, c = 2 * Math.PI * r, pct = total ? ok / total : 0;
+  const col = pct >= .85 ? COLOURS.ok : pct >= .6 ? COLOURS.warn : COLOURS.error;
+  return '<svg class="ring" width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">' +
+    '<circle class="track" cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '"/>' +
+    '<circle class="val" cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" style="stroke:' + col + ';stroke-dasharray:' + c + ';stroke-dashoffset:' + c + '" data-to="' + (c * (1 - pct)) + '"/>' +
+    '<text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-size="' + Math.round(size >= 100 ? size / 4.2 : size / 5.4) + '">' + (total ? Math.round(pct * 100) + '%' : '–') + '</text></svg>';
+}
+function animateRings(el) { requestAnimationFrame(() => requestAnimationFrame(() => el.querySelectorAll('.ring .val').forEach(v => v.style.strokeDashoffset = v.dataset.to))); }
+const counted = list => list.filter(r => r.severity !== 'info');
+const passed = list => list.filter(r => r.severity === 'ok').length;
+
+function renderSection(s) {
+  const el = $('sec-' + s.id), list = rows[s.id];
+  const head = '<div class="sechead"><div class="ringbox">' + (list ? ring(passed(list), counted(list).length, 54) : ring(0, 0, 54)) + '</div>' +
+    '<div class="t"><h2>' + esc(s.title) + '</h2><p>' + esc(s.sub) + '</p></div>' +
+    (s.tool ? '<a href="/tools/' + s.tool + '/?url=' + encodeURIComponent($('url').value.trim()) + '" target="_top">Full tool →</a>' : '') + '</div>';
+  const order = { error: 0, warn: 1, ok: 2, info: 3 };
+  const body = !list ? '<div class="pending">' + esc(waiting[s.id] || 'Checking') + '</div>'
+    : '<div class="rows">' + list.slice().sort((a, b) => order[a.severity] - order[b.severity]).map(r =>
+      '<div class="row ' + r.severity + '"><span class="badge">' + ({ ok: 'Pass', warn: 'Warn', error: 'Fix', info: 'Note' }[r.severity]) + '</span>' +
+      '<div class="msg"><span class="label">' + esc(r.label) + '</span>' + esc(r.message) + '</div></div>').join('') + '</div>';
+  el.innerHTML = head + body;
+  if (list) animateRings(el);
+  renderOverview();
+}
+
+function renderOverview() {
+  const all = Object.values(rows).flat(), c = counted(all);
+  const done = SECTIONS.filter(s => rows[s.id]).length;
+  $('bigRing').innerHTML = ring(passed(all), c.length, 112);
+  animateRings($('bigRing'));
+  const n = sev => all.filter(r => r.severity === sev).length;
+  $('tally').innerHTML = '<b>' + passed(all) + ' of ' + c.length + ' checks pass</b><br>' +
+    '<span class="dotk" style="background:var(--bad)"></span>' + n('error') + ' to fix · <span class="dotk" style="background:var(--warn)"></span>' + n('warn') + ' warnings · <span class="dotk" style="background:var(--ok)"></span>' + n('ok') + ' pass' +
+    (done < SECTIONS.length ? '<br><span style="color:var(--muted)">' + done + ' of ' + SECTIONS.length + ' sections in — still checking…</span>' : '');
+  const fixes = SECTIONS.flatMap(s => (rows[s.id] || []).filter(r => r.severity === 'error' || r.severity === 'warn').map(r => ({ ...r, where: s.title })))
+    .sort((a, b) => (a.severity === 'error' ? 0 : 1) - (b.severity === 'error' ? 0 : 1)).slice(0, 5);
+  $('fixes').innerHTML = fixes.length ? '<h2>Fix these first</h2><ol>' + fixes.map(f => '<li><span class="where">' + esc(f.where) + ' · ' + esc(f.label) + '</span><br>' + esc(f.message) + '</li>').join('') + '</ol>' : '';
+}
+
+const add = (id, severity, label, message) => (rows[id] = rows[id] || []).push({ severity, label, message });
+const LABELS = { status: 'Status', redirects: 'Redirects', https: 'HTTPS', noindex: 'Indexing', nofollow: 'Links followed', canonical: 'Canonical', title: 'Title', description: 'Meta description', h1: 'H1', heading_order: 'Heading order', words: 'Text in the HTML', links: 'Links', lang: 'Language', viewport: 'Mobile', open_graph: 'Sharing tags' };
+const SIGNAL = { author: 'Author', freshness: 'Freshness', thin_content: 'Content depth', citations: 'Citations', https: 'HTTPS', trust_pages: 'About / Contact' };
+
+async function run() {
+  const url = $('url').value.trim();
+  if (!url || url === 'https://') { $('go').textContent = 'Add a page URL first'; setTimeout(() => $('go').textContent = 'Audit this page', 2000); return; }
+  const me = ++runId;
+  rows = {}; waiting = {};
+  $('form').style.display = 'none'; $('results').style.display = 'block'; window.scrollTo(0, 0);
+  $('rTitle').textContent = url; $('fixes').innerHTML = ''; $('share').innerHTML = '';
+  $('sections').innerHTML = SECTIONS.map(s => '<div class="sec' + (s.ai ? ' ai' : '') + '" id="sec-' + s.id + '"></div>').join('');
+  waiting.speed = 'Asking Google PageSpeed Insights — usually 20–40 seconds';
+  SECTIONS.forEach(renderSection);
+  const done = (ids) => { if (me === runId) ids.forEach(id => renderSection(SECTIONS.find(s => s.id === id))); };
+
+  // On-page basics first: it says whether the page exists at all.
+  const basics = await post('/page-audit', { url });
+  if (me !== runId) return;
+  if (basics.error) { $('sections').innerHTML = '<p class="err">' + esc(basics.error) + '</p>'; $('bigRing').innerHTML = ''; $('tally').textContent = 'The page could not be audited.'; return; }
+  $('rTitle').textContent = basics.final_url;
+  $('share').innerHTML = shareHtml(url);
+  basics.checks.forEach(c => add(c.section === 'content' && c.type === 'words' ? 'ai' : c.section, c.severity, LABELS[c.type] || c.type, c.message));
+  if (basics.status >= 400) {
+    SECTIONS.filter(s => !rows[s.id]).forEach(s => rows[s.id] = [{ severity: 'info', label: 'Skipped', message: 'Not checked — the page returns an error.' }]);
+    return done(SECTIONS.map(s => s.id));
+  }
+  done(['indexing', 'content']);
+  const page = basics.final_url;
+
+  // AI readiness: crawler access + llms.txt, structured data, E-E-A-T trust signals (plus the text check above).
+  const ai = Promise.all([post('/crawler-check', { url: page }), post('/schema-audit', { url: page }), post('/eeat-audit', { url: page })]).then(([cc, sc, ee]) => {
+    if (cc.error) add('ai', 'info', 'AI crawlers', 'Couldn\'t read robots.txt: ' + cc.error);
+    else {
+      const blocked = cc.crawlers.filter(c => c.blocked);
+      if (blocked.length) add('ai', 'error', 'AI crawlers', blocked.length + ' of ' + cc.crawlers.length + ' AI crawlers are blocked by robots.txt: ' + blocked.map(c => c.name).join(', ') + '.');
+      else add('ai', 'ok', 'AI crawlers', 'All ' + cc.crawlers.length + ' AI crawlers checked are allowed' + (cc.robots_found ? ' by robots.txt.' : ' (no robots.txt, so nothing is blocked).'));
+      add('ai', cc.llms_txt_found ? 'ok' : 'warn', 'llms.txt', cc.llms_txt_found ? 'The site has an llms.txt — a curated guide for AI assistants.' : 'No llms.txt — a short guide that tells AI assistants what the site is and where the key pages are.');
+    }
+    if (sc.error) add('ai', 'info', 'Structured data', 'Couldn\'t check: ' + sc.error);
+    else {
+      if (sc.schemas_found.length) add('ai', 'ok', 'Structured data', 'Found: ' + sc.schemas_found.join(', ') + '.');
+      (sc.findings || []).forEach(f => add('ai', f.severity === 'error' ? 'error' : f.severity === 'warn' ? 'warn' : 'info', 'Structured data', f.message));
+    }
+    if (ee.error) add('ai', 'info', 'Trust signals', 'Couldn\'t check: ' + ee.error);
+    else (ee.signals || []).filter(s => s.type !== 'https' && s.type !== 'thin_content').forEach(s => add('ai', s.severity === 'ok' ? 'ok' : 'warn', SIGNAL[s.type] || s.type, s.message));
+    done(['ai']);
+  });
+
+  const img = post('/image-audit', { url: page }).then(d => {
+    if (d.error) add('images', 'info', 'Images', 'Couldn\'t check: ' + d.error);
+    else if (!d.image_count) add('images', 'info', 'Images', 'No images on the page.');
+    else {
+      (d.issues || []).forEach(i => add('images', i.severity === 'error' ? 'error' : i.severity === 'warn' ? 'warn' : 'info', 'Images', i.message));
+      if (!(d.issues || []).some(i => i.severity === 'error' || i.severity === 'warn')) add('images', 'ok', 'Images', d.image_count + ' image' + (d.image_count === 1 ? '' : 's') + ', no problems found.');
+    }
+    done(['images']);
+  });
+
+  const intl = post('/hreflang-audit', { url: page }).then(d => {
+    if (d.error) add('intl', 'info', 'hreflang', 'Couldn\'t check: ' + d.error);
+    else if (!d.hreflang_count) add('intl', 'info', 'hreflang', 'No hreflang tags — fine for a page in one language for one market.');
+    else {
+      (d.issues || []).forEach(i => add('intl', i.severity === 'error' ? 'error' : i.severity === 'warn' ? 'warn' : 'info', 'hreflang', i.message));
+      if (!(d.issues || []).some(i => i.severity === 'error' || i.severity === 'warn')) add('intl', 'ok', 'hreflang', d.hreflang_count + ' hreflang tags, no problems found.');
+    }
+    done(['intl']);
+  });
+
+  const speed = post('/pagespeed/site', { url: page }).then(d => {
+    if (d.error) add('speed', 'info', 'PageSpeed', 'Couldn\'t test: ' + d.error);
+    else for (const [k, label] of [['mobile', 'Mobile'], ['desktop', 'Desktop']]) {
+      const r = d[k];
+      if (!r || r.error) { add('speed', 'info', label, 'PageSpeed couldn\'t test it' + (r?.error ? ': ' + r.error : '.')); continue; }
+      add('speed', r.score >= 90 ? 'ok' : r.score >= 50 ? 'warn' : 'error', label, 'Performance score ' + r.score + '/100' + (r.lcp?.display ? ' · largest content shows at ' + r.lcp.display : '') + (r.cls?.display ? ' · layout shift ' + r.cls.display : '') + '.');
+    }
+    done(['speed']);
+  });
+  await Promise.all([ai, img, intl, speed]);
+}
+
+function shareHtml(url) {
+  const link = location.origin + location.pathname + '?url=' + encodeURIComponent(url);
+  return '<div class="share"><span class="sharelabel">Share this audit (it re-runs live):</span>' +
+    '<a class="sharebtn" href="mailto:?subject=' + encodeURIComponent('Page audit') + '&body=' + encodeURIComponent(link) + '">Email</a>' +
+    '<button class="sharebtn" type="button" id="copyShare">Copy link</button></div>';
+}
+document.addEventListener('click', e => {
+  if (e.target.id !== 'copyShare') return;
+  const link = location.origin + location.pathname + '?url=' + encodeURIComponent($('url').value.trim());
+  navigator.clipboard?.writeText(link).then(() => { e.target.textContent = 'Copied!'; setTimeout(() => e.target.textContent = 'Copy link', 1800); });
+});
+
+$('go').onclick = run;
+$('url').onkeydown = e => { if (e.key === 'Enter') run(); };
+$('back').onclick = () => { runId++; $('results').style.display = 'none'; $('form').style.display = 'block'; };
+const Q = new URLSearchParams(location.search);
+const START = Q.get('url') || Q.get('u');
+if (START) { $('url').value = START; if (Q.get('url')) run(); }
+</script>
+<script src="/assets/presets.js"></script>
+</body>
+</html>

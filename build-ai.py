@@ -46,7 +46,9 @@ GROUPS = [
 missing = [s for _, _, slugs in GROUPS for s in slugs if s not in cards]
 if missing:
     sys.exit('build-ai.py: not in the homepage AI category: ' + ', '.join(missing))
-left = set(cards) - {s for _, _, slugs in GROUPS for s in slugs}
+# Cards on the homepage's AI category that deliberately stay off /ai/.
+NOT_ON_AI = {'page-audit'}
+left = set(cards) - {s for _, _, slugs in GROUPS for s in slugs} - NOT_ON_AI
 if left:
     sys.exit('build-ai.py: AI category has cards not placed in a group here: ' + ', '.join(sorted(left)))
 
