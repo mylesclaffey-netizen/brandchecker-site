@@ -49,6 +49,12 @@
   .overview .tally b{font-family:'Archivo',sans-serif;font-size:15px}
   .recheck{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;font-size:11.5px;color:var(--muted)}
   .recheck:empty{display:none}
+  .pdfbox{margin:-12px 0 24px}
+  .pdfbox:empty{display:none}
+  .pdfbtn{font-family:'Archivo',sans-serif;font-size:14px;font-weight:700;background:var(--ink);color:#fff;border:0;border-radius:8px;padding:11px 18px;cursor:pointer}
+  .pdfbtn:hover{background:var(--you)}
+  .pdfbtn[disabled]{opacity:.6;cursor:wait}
+  .pdfnote{font-size:11px;color:var(--muted);margin-left:10px}
   .dotk{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
   .fixes{margin:0 0 30px}
   .fixes h2,.sec h2{font-family:'Archivo',sans-serif;font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:-.01em}
@@ -117,6 +123,7 @@
       <div class="big" id="bigRing"></div>
       <div><div class="tally" id="tally">Running the checks…</div><div class="recheck" id="recheck"></div></div>
     </div>
+    <div class="pdfbox" id="pdfBox"></div>
     <div class="fixes" id="fixes"></div>
     <div id="sections"></div>
     <p class="foot">Each check is a pass, warning or problem on its own — the ring counts how many pass, it isn't a ranking score. Most checks read the page's HTML as a crawler gets it, so content drawn later by JavaScript can be missed (that is also what many AI crawlers see). Speed comes from Google's PageSpeed Insights lab test.</p>
@@ -147,7 +154,7 @@ const SECTIONS = [
   { id: 'intl', title: 'International', sub: 'hreflang tags for other languages and countries.', tool: 'hreflang-audit' },
   { id: 'speed', title: 'Speed', sub: 'Google PageSpeed Insights, mobile and desktop. Takes 20–40 seconds.', tool: 'pagespeed' }
 ];
-let rows = {}, waiting = {}, runId = 0, ACTIVE = SECTIONS.filter(s => !s.home);
+let report = null, rows = {}, waiting = {}, runId = 0, ACTIVE = SECTIONS.filter(s => !s.home);
 
 function post(path, body) {
   return fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, ...body }) })
@@ -207,7 +214,7 @@ async function run(fresh) {
   const me = ++runId;
   rows = {}; waiting = {};
   $('form').style.display = 'none'; $('results').style.display = 'block'; window.scrollTo(0, 0);
-  $('rTitle').textContent = url; $('fixes').innerHTML = ''; $('share').innerHTML = ''; $('recheck').innerHTML = '';
+  $('rTitle').textContent = url; $('fixes').innerHTML = ''; $('share').innerHTML = ''; $('recheck').innerHTML = ''; $('pdfBox').innerHTML = ''; report = null;
   const saved = [];   // when each cached section's result was saved
   const keep = d => { if (d && d.checked_at) saved.push(new Date(d.checked_at).getTime()); return d; };
   ACTIVE = SECTIONS.filter(s => !s.home);
@@ -236,6 +243,7 @@ async function run(fresh) {
   done(['indexing', 'content']);
   const home = !!basics.is_home;
   const page = basics.final_url;
+  report = { url: page, is_home: !!basics.is_home, checked_at: basics.checked_at };
 
   // AI readiness: crawler access + llms.txt, structured data, E-E-A-T trust signals (plus the text check above).
   const ai = Promise.all([post('/crawler-check', { url: page }), post('/schema-audit', { url: page, fresh }).then(keep), post('/eeat-audit', { url: page, fresh }).then(keep)]).then(([cc, sc, ee]) => {
@@ -316,6 +324,25 @@ async function run(fresh) {
   const oldest = saved.length ? Math.round((Date.now() - Math.min(...saved)) / 60000) : 0;
   if (me === runId && oldest >= 2) $('recheck').innerHTML = '<span>Some sections are saved results from ' + (oldest < 90 ? oldest + ' min' : Math.round(oldest / 60) + ' h') + ' ago — changed the page since?</span><button type="button" class="sharebtn" id="recheckBtn">Re-check now</button>';
   await speed;
+  if (me === runId && report) $('pdfBox').innerHTML = '<button type="button" class="pdfbtn" id="pdfBtn">Download PDF</button><span class="pdfnote" id="pdfNote">An A4 copy of this report.</span>';
+}
+
+// "Download PDF": send the finished report to the Worker, which prints it on an A4 layout (/tools/page-audit/print/).
+async function downloadPdf(btn) {
+  const sections = ACTIVE.map(s => ({ title: s.title, sub: s.sub, rows: rows[s.id] || [] }));
+  const fixes = ACTIVE.flatMap(s => (rows[s.id] || []).filter(r => r.severity === 'error' || r.severity === 'warn').map(r => ({ ...r, where: s.title })))
+    .sort((a, b) => (a.severity === 'error' ? 0 : 1) - (b.severity === 'error' ? 0 : 1)).slice(0, 5);
+  btn.disabled = true; btn.textContent = 'Making PDF…'; $('pdfNote').textContent = 'Usually 5–15 seconds.';
+  try {
+    const r = await fetch(API + '/page-audit/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, report: { ...report, sections, fixes } }) });
+    if ((r.headers.get('Content-Type') || '').indexOf('application/pdf') === -1) throw new Error((await r.json().catch(() => ({}))).error || 'The PDF could not be made.');
+    const blob = await r.blob(), a = document.createElement('a');
+    const name = 'page-audit-' + report.url.replace(/^https?:\/\//, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase().slice(0, 50) + '-' + String(report.checked_at).slice(0, 10) + '.pdf';
+    a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    $('pdfNote').textContent = 'Downloaded.';
+  } catch (e) { $('pdfNote').textContent = e.message; }
+  btn.disabled = false; btn.textContent = 'Download PDF';
 }
 
 function shareHtml(url) {
@@ -331,7 +358,7 @@ document.addEventListener('click', e => {
 });
 
 $('go').onclick = () => run();
-document.addEventListener('click', e => { if (e.target.id === 'recheckBtn') run(true); });
+document.addEventListener('click', e => { if (e.target.id === 'recheckBtn') run(true); if (e.target.id === 'pdfBtn') downloadPdf(e.target); });
 $('url').onkeydown = e => { if (e.key === 'Enter') run(); };
 $('back').onclick = () => { runId++; $('results').style.display = 'none'; $('form').style.display = 'block'; };
 const Q = new URLSearchParams(location.search);

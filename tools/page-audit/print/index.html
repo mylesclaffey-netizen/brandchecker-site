@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page audit — PDF</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 14mm 12mm 16mm; }
+  :root{--ink:#0a0a0a;--muted:#555;--you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'IBM Plex Mono',monospace;color:var(--ink);background:#fff;font-size:11px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .wrap{max-width:760px;margin:0 auto;padding:10px 0}
+  .brand{font-family:'Archivo',sans-serif;font-weight:900;font-size:13px;letter-spacing:.02em;text-transform:uppercase;border-bottom:3px solid var(--ink);padding-bottom:8px;display:flex;justify-content:space-between;align-items:baseline}
+  .brand span{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:10px;color:var(--muted);text-transform:none}
+  .eyebrow{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:18px}
+  h1{font-family:'Archivo',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.01em;line-height:1.2;margin:4px 0 2px;overflow-wrap:anywhere}
+  .when{font-size:10px;color:var(--muted)}
+  .overview{display:flex;gap:18px;align-items:center;border:2px solid var(--ink);padding:12px 14px;margin:16px 0 18px}
+  .overview .tally{font-size:11px;line-height:1.7}
+  .overview .tally b{font-family:'Archivo',sans-serif;font-size:14px}
+  .dotk{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  h2{font-family:'Archivo',sans-serif;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:-.005em}
+  .fixes{margin:0 0 18px;break-inside:avoid}
+  .fixes ol{margin:8px 0 0 18px;display:flex;flex-direction:column;gap:5px}
+  .where{color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.05em}
+  .sec{border:2px solid var(--ink);margin:0 0 14px;break-inside:auto}
+  .sec.ai{border-color:var(--you)}
+  .sechead{display:flex;gap:12px;align-items:center;padding:9px 12px;border-bottom:1.5px solid var(--ink);break-after:avoid;break-inside:avoid}
+  .sec.ai .sechead{border-bottom-color:var(--you)}
+  .sechead p{font-size:9.5px;color:var(--muted);margin-top:1px}
+  .row{display:flex;gap:9px;padding:6px 12px;border-top:1px solid #e3e3e3;break-inside:avoid}
+  .row:first-child{border-top:0}
+  .badge{font-size:8px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:10px;flex:none;height:fit-content;min-width:40px;text-align:center}
+  .ok .badge{color:var(--ok);background:rgba(0,132,74,.1)} .warn .badge{color:var(--warn);background:rgba(180,95,0,.12)}
+  .error .badge{color:#fff;background:var(--bad)} .info .badge{color:var(--muted);background:#efefef}
+  .label{color:var(--muted);font-size:8.5px;display:block;text-transform:uppercase;letter-spacing:.04em}
+  .msg{overflow-wrap:anywhere}
+  .ring circle{fill:none;stroke-width:6} .ring .track{stroke:#ececec} .ring .val{stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%}
+  .ring text{font-family:'Archivo',sans-serif;font-weight:900;fill:var(--ink)}
+  .foot{font-size:9px;color:var(--muted);margin-top:14px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">Brand Checker <span>brandchecker.eu/tools/page-audit</span></div>
+  <p class="eyebrow" id="eyebrow">Page audit</p>
+  <h1 id="title">Loading…</h1>
+  <p class="when" id="when"></p>
+  <div id="body"></div>
+</div>
+<script>
+// Served from localhost (local testing with `wrangler dev` on 8799): read the report from the local Worker.
+const API = location.hostname === 'localhost' ? 'http://localhost:8799/api' : 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const COLOURS = { ok: 'var(--ok)', warn: 'var(--warn)', error: 'var(--bad)' };
+const counted = l => l.filter(r => r.severity !== 'info'), passed = l => l.filter(r => r.severity === 'ok').length;
+function ring(ok, total, size) {
+  const r = size / 2 - 5, c = 2 * Math.PI * r, pct = total ? ok / total : 0;
+  const col = pct >= .85 ? COLOURS.ok : pct >= .6 ? COLOURS.warn : COLOURS.error;
+  return '<svg class="ring" width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '"><circle class="track" cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '"/>' +
+    '<circle class="val" cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" style="stroke:' + col + ';stroke-dasharray:' + c + ';stroke-dashoffset:' + (c * (1 - pct)) + '"/>' +
+    '<text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-size="' + Math.round(size >= 80 ? size / 4.2 : size / 5.4) + '">' + (total ? Math.round(pct * 100) + '%' : '–') + '</text></svg>';
+}
+const BADGE = { ok: 'Pass', warn: 'Warn', error: 'Fix', info: 'Note' }, ORDER = { error: 0, warn: 1, ok: 2, info: 3 };
+
+function render(d) {
+  $('title').textContent = d.url;
+  $('eyebrow').textContent = d.is_home ? 'Page audit · homepage' : 'Page audit';
+  $('when').textContent = 'Checked ' + new Date(d.checked_at).toLocaleString('en-GB', { dateStyle: 'long', timeStyle: 'short', timeZone: 'UTC' }) + ' UTC';
+  const all = d.sections.flatMap(s => s.rows), n = sev => all.filter(r => r.severity === sev).length;
+  let h = '<div class="overview">' + ring(passed(all), counted(all).length, 84) + '<div class="tally"><b>' + passed(all) + ' of ' + counted(all).length + ' checks pass</b><br>' +
+    '<span class="dotk" style="background:var(--bad)"></span>' + n('error') + ' to fix · <span class="dotk" style="background:var(--warn)"></span>' + n('warn') + ' warnings · <span class="dotk" style="background:var(--ok)"></span>' + n('ok') + ' pass</div></div>';
+  if (d.fixes.length) h += '<div class="fixes"><h2>Fix these first</h2><ol>' + d.fixes.map(f => '<li><span class="where">' + esc(f.where) + ' · ' + esc(f.label) + '</span><br>' + esc(f.message) + '</li>').join('') + '</ol></div>';
+  h += d.sections.map(s => '<div class="sec' + (s.title === 'AI readiness' ? ' ai' : '') + '"><div class="sechead">' + ring(passed(s.rows), counted(s.rows).length, 40) +
+    '<div><h2>' + esc(s.title) + '</h2><p>' + esc(s.sub) + '</p></div></div>' +
+    s.rows.slice().sort((a, b) => ORDER[a.severity] - ORDER[b.severity]).map(r => '<div class="row ' + r.severity + '"><span class="badge">' + BADGE[r.severity] + '</span><div class="msg"><span class="label">' + esc(r.label) + '</span>' + esc(r.message) + '</div></div>').join('') + '</div>').join('');
+  h += '<p class="foot">Each check is a pass, warning or problem on its own — the ring counts how many pass, it isn\'t a ranking score. Most checks read the page\'s HTML as a crawler gets it, so content drawn later by JavaScript can be missed. Speed comes from Google\'s PageSpeed Insights lab test. Run it again any time at brandchecker.eu/tools/page-audit.</p>';
+  $('body').innerHTML = h;
+}
+
+(async () => {
+  const t = new URLSearchParams(location.search).get('t') || '';
+  let d;
+  try { d = await (await fetch(API + '/page-audit/pdf-data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t }) })).json(); }
+  catch (e) { d = { error: 'could not reach the server' }; }
+  if (d.error || !d.sections) { $('title').textContent = 'Could not load this report'; $('title').dataset.failed = '1'; }
+  else render(d);
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  window.PRINT_READY = true;
+})();
+</script>
+</body>
+</html>
