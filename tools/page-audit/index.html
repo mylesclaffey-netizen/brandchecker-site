@@ -50,6 +50,9 @@
   .recheck{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;font-size:11.5px;color:var(--muted)}
   .recheck:empty{display:none}
   .pdfbox{margin:-12px 0 24px}
+  .gscbox{border:2px dashed var(--line);padding:12px 16px;margin:0 0 24px;font-size:12.5px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .gscbox:empty{display:none}
+  .gscbox b{font-family:'Archivo',sans-serif}
   .pdfbox:empty{display:none}
   .pdfbtn{font-family:'Archivo',sans-serif;font-size:14px;font-weight:700;background:var(--ink);color:#fff;border:0;border-radius:8px;padding:11px 18px;cursor:pointer}
   .pdfbtn:hover{background:var(--you)}
@@ -124,6 +127,7 @@
       <div><div class="tally" id="tally">Running the checks…</div><div class="recheck" id="recheck"></div></div>
     </div>
     <div class="pdfbox" id="pdfBox"></div>
+    <div class="gscbox" id="gscBox"></div>
     <div class="fixes" id="fixes"></div>
     <div id="sections"></div>
     <p class="foot">Each check is a pass, warning or problem on its own — the ring counts how many pass, it isn't a ranking score. Most checks read the page's HTML as a crawler gets it, so content drawn later by JavaScript can be missed (that is also what many AI crawlers see). Speed comes from Google's PageSpeed Insights lab test.</p>
@@ -147,6 +151,7 @@ const COLOURS = { ok: 'var(--ok)', warn: 'var(--warn)', error: 'var(--bad)' };
 // The sections, in report order. `tool` is the full tool each one links to.
 const SECTIONS = [
   { id: 'indexing', title: 'Can it be indexed?', sub: 'Status, redirects, HTTPS, noindex and canonical.' },
+  { id: 'google', title: 'Google’s view', sub: 'From your Search Console: is the page indexed, and what does it earn in Google search?', gsc: true },
   { id: 'site', title: 'Site-wide', sub: 'Checked because this is the homepage: one address for the site, robots.txt and sitemap, and who the brand is.', home: true },
   { id: 'ai', title: 'AI readiness', sub: 'Can AI assistants reach the page, read it, and trust what it says?', ai: true },
   { id: 'content', title: 'On-page basics', sub: 'Title, description, headings, links, language and sharing tags.' },
@@ -154,7 +159,9 @@ const SECTIONS = [
   { id: 'intl', title: 'International', sub: 'hreflang tags for other languages and countries.', tool: 'hreflang-audit' },
   { id: 'speed', title: 'Speed', sub: 'Google PageSpeed Insights, mobile and desktop. Takes 20–40 seconds.', tool: 'pagespeed' }
 ];
-let report = null, rows = {}, waiting = {}, runId = 0, ACTIVE = SECTIONS.filter(s => !s.home);
+let report = null, rows = {}, waiting = {}, runId = 0, showHome = false, showGsc = false;
+const pick = () => SECTIONS.filter(s => (!s.home || showHome) && (!s.gsc || showGsc));
+let ACTIVE = pick();
 
 function post(path, body) {
   return fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, ...body }) })
@@ -196,6 +203,7 @@ function renderOverview() {
   const n = sev => all.filter(r => r.severity === sev).length;
   $('tally').innerHTML = '<b>' + passed(all) + ' of ' + c.length + ' checks pass</b><br>' +
     '<span class="dotk" style="background:var(--bad)"></span>' + n('error') + ' to fix · <span class="dotk" style="background:var(--warn)"></span>' + n('warn') + ' warnings · <span class="dotk" style="background:var(--ok)"></span>' + n('ok') + ' pass' +
+    (report && report.google_clicks != null ? '<br>This page earned <b>' + fmtN(report.google_clicks) + '</b> Google clicks in the last 28 days.' : '') +
     (done < ACTIVE.length ? '<br><span style="color:var(--muted)">' + done + ' of ' + ACTIVE.length + ' sections in — still checking…</span>' : '');
   const fixes = ACTIVE.flatMap(s => (rows[s.id] || []).filter(r => r.severity === 'error' || r.severity === 'warn').map(r => ({ ...r, where: s.title })))
     .sort((a, b) => (a.severity === 'error' ? 0 : 1) - (b.severity === 'error' ? 0 : 1)).slice(0, 5);
@@ -207,6 +215,49 @@ const LABELS = { status: 'Status', redirects: 'Redirects', https: 'HTTPS', noind
 LABELS.org_schema = 'Organization schema'; LABELS.org_logo = 'Logo'; LABELS.org_sameas = 'Profiles (sameAs)'; LABELS.website_schema = 'WebSite schema'; LABELS.brand_title = 'Brand in title'; LABELS.robots = 'robots.txt';
 const SIGNAL = { author: 'Author', freshness: 'Freshness', thin_content: 'Content depth', citations: 'Citations', https: 'HTTPS', trust_pages: 'About / Contact' };
 
+// Search Console calls go with the signed-in account when there is one (window.BC_ACCOUNT, from visitor.js) — the
+// connection belongs to the account, not to this browser's visitor id.
+const gscApi = (path, body) => fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: window.BC_ACCOUNT || CODE, ...(body || {}) }) }).then(r => r.json()).catch(() => ({ error: 'could not reach Search Console' }));
+const auditPath = () => '/tools/page-audit/?url=' + encodeURIComponent($('url').value.trim());
+async function gscConnect() {
+  const r = await gscApi('/gsc/start', { return_url: location.origin + auditPath() });
+  if (r.signin_required) return gscSignIn();
+  if (r.error || !r.url) return alert(r.error || 'Could not start the Search Console connection.');
+  window.top.location.href = r.url;   // Google's consent screen won't load inside the tools frame
+}
+function gscSignIn() { window.top.location.href = '/account/?return=' + encodeURIComponent(auditPath()); }
+
+const fmtN = n => Number(n || 0).toLocaleString('en');
+const dayOf = s => new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+function googleRows(g) {
+  if (g.error) return add('google', 'info', 'Search Console', g.error);
+  const ix = g.index;
+  if (!ix) add('google', 'info', 'Index status', 'Google’s index status isn’t available for this page right now.');
+  else {
+    const cov = ix.coverage || ix.verdict;
+    if (ix.verdict === 'PASS') add('google', 'ok', 'Indexed', 'Google has indexed this page (' + cov + ').');
+    else if (ix.verdict === 'FAIL') add('google', 'error', 'Indexed', 'Google has not indexed this page: ' + cov + '.');
+    else add('google', 'warn', 'Indexed', 'Google: ' + cov + '.');
+    if (ix.google_canonical && ix.user_canonical && ix.google_canonical !== ix.user_canonical)
+      add('google', 'warn', 'Google’s canonical', 'You declare ' + ix.user_canonical + ' as the canonical, but Google chose ' + ix.google_canonical + '.');
+    else if (ix.google_canonical) add('google', 'ok', 'Google’s canonical', 'Google agrees this page is the canonical (' + ix.google_canonical + ').');
+    if (ix.last_crawl) {
+      const days = Math.round((Date.now() - new Date(ix.last_crawl)) / 864e5);
+      add('google', days > 90 ? 'warn' : 'info', 'Last crawled', dayOf(ix.last_crawl) + (ix.crawled_as ? ', by Google’s ' + ix.crawled_as.toLowerCase() + ' crawler' : '') + (days > 90 ? ' — over three months ago.' : '.'));
+    }
+  }
+  const t = g.traffic, p = g.traffic_previous;
+  if (t && !t.impressions) add('google', 'info', 'Google traffic', 'No Google search impressions for this page in the last 28 days.');
+  else if (t) {
+    const change = p && p.clicks >= 10 ? Math.round((t.clicks - p.clicks) / p.clicks * 100) : null;
+    add('google', change != null && change <= -30 ? 'warn' : 'info', 'Google traffic (28 days)',
+      fmtN(t.clicks) + ' clicks · ' + fmtN(t.impressions) + ' impressions · CTR ' + (t.ctr * 100).toFixed(1) + '% · average position ' + t.position +
+      (change != null ? ' — ' + (change >= 0 ? 'up ' : 'down ') + Math.abs(change) + '% on the 28 days before' : '') + '.');
+  }
+  if (g.queries && g.queries.length) add('google', 'info', 'Top queries', g.queries.slice(0, 5).map(q => '“' + q.query + '” (' + fmtN(q.clicks) + ' clicks, position ' + q.position + ')').join(' · '));
+  report && (report.google_clicks = t ? t.clicks : null);
+}
+
 async function run(fresh) {
   fresh = fresh === true;
   const url = $('url').value.trim();
@@ -217,7 +268,7 @@ async function run(fresh) {
   $('rTitle').textContent = url; $('fixes').innerHTML = ''; $('share').innerHTML = ''; $('recheck').innerHTML = ''; $('pdfBox').innerHTML = ''; report = null;
   const saved = [];   // when each cached section's result was saved
   const keep = d => { if (d && d.checked_at) saved.push(new Date(d.checked_at).getTime()); return d; };
-  ACTIVE = SECTIONS.filter(s => !s.home);
+  showHome = false; showGsc = false; ACTIVE = pick(); $('gscBox').innerHTML = '';
   const drawSections = () => { $('sections').innerHTML = ACTIVE.map(s => '<div class="sec' + (s.ai ? ' ai' : '') + '" id="sec-' + s.id + '"></div>').join(''); ACTIVE.forEach(renderSection); };
   $('eyebrow').textContent = 'Page audit';
   drawSections();
@@ -231,7 +282,7 @@ async function run(fresh) {
   $('rTitle').textContent = basics.final_url;
   $('share').innerHTML = shareHtml(url);
   if (basics.is_home) {   // homepage mode: add the Site-wide section after "Can it be indexed?"
-    ACTIVE = SECTIONS.slice();
+    showHome = true; ACTIVE = pick();
     $('eyebrow').textContent = 'Page audit · homepage';
     const rowsBefore = rows; drawSections(); rows = rowsBefore;
   }
@@ -290,6 +341,21 @@ async function run(fresh) {
     done(['site']);
   });
 
+  // Google's view (Search Console, read-only): only when it is set up on the server. Without a connection, offer one.
+  const google = gscApi('/gsc/status').then(async st => {
+    if (me !== runId || !st || !st.configured) return;
+    if (st.signin_required || !st.connected) {
+      $('gscBox').innerHTML = '<span><b>Add Google’s own data.</b> Connect Search Console (read-only) to see whether Google has indexed this page, which canonical it chose, and the clicks and queries it earns.</span>' +
+        '<button type="button" class="sharebtn" id="' + (st.signin_required ? 'gscSigninBtn' : 'gscConnectBtn') + '">' + (st.signin_required ? 'Sign in to connect' : 'Connect Search Console') + '</button>';
+      return;
+    }
+    showGsc = true; ACTIVE = pick(); const rowsBefore = rows; drawSections(); rows = rowsBefore; ACTIVE.forEach(renderSection);
+    const g = keep(await gscApi('/gsc/page', { url: page, fresh }));
+    if (me !== runId) return;
+    googleRows(g);
+    done(['google']);
+  });
+
   const img = post('/image-audit', { url: page, fresh }).then(keep).then(d => {
     if (d.error) add('images', 'info', 'Images', 'Couldn\'t check: ' + d.error);
     else if (!d.image_count) add('images', 'info', 'Images', 'No images on the page.');
@@ -319,7 +385,7 @@ async function run(fresh) {
     }
     done(['speed']);
   });
-  await Promise.all([ai, img, intl, siteWide]);
+  await Promise.all([ai, img, intl, siteWide, google]);
   // Schema, trust signals, images and hreflang are saved for a few hours: say how old, and offer a live re-check.
   const oldest = saved.length ? Math.round((Date.now() - Math.min(...saved)) / 60000) : 0;
   if (me === runId && oldest >= 2) $('recheck').innerHTML = '<span>Some sections are saved results from ' + (oldest < 90 ? oldest + ' min' : Math.round(oldest / 60) + ' h') + ' ago — changed the page since?</span><button type="button" class="sharebtn" id="recheckBtn">Re-check now</button>';
@@ -358,7 +424,7 @@ document.addEventListener('click', e => {
 });
 
 $('go').onclick = () => run();
-document.addEventListener('click', e => { if (e.target.id === 'recheckBtn') run(true); if (e.target.id === 'pdfBtn') downloadPdf(e.target); });
+document.addEventListener('click', e => { if (e.target.id === 'recheckBtn') run(true); if (e.target.id === 'pdfBtn') downloadPdf(e.target); if (e.target.id === 'gscConnectBtn') gscConnect(); if (e.target.id === 'gscSigninBtn') gscSignIn(); });
 $('url').onkeydown = e => { if (e.key === 'Enter') run(); };
 $('back').onclick = () => { runId++; $('results').style.display = 'none'; $('form').style.display = 'block'; };
 const Q = new URLSearchParams(location.search);
