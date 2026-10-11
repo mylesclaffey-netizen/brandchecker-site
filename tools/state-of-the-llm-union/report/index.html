@@ -367,7 +367,9 @@ function pagesHtml(d) {
   const withGsc = gscPages && !gscPages.error;
   let html = '<h2 class="h2b">Which of your pages get cited</h2>';
 
-  if (gsc && gsc.configured && !gsc.connected) {
+  if (gsc && gsc.configured && gsc.signin_required) {
+    html += '<div class="banner2"><b>Add Google data to this list.</b> Sign in to connect Search Console (read-only) and see each cited page’s Google clicks, impressions and position, and which of your best Google pages no AI answer cites. The connection is saved to your account, so it works on any device. <button class="btn2 small solid" id="gscSignin" type="button">Sign in to connect</button></div>';
+  } else if (gsc && gsc.configured && !gsc.connected) {
     html += '<div class="banner2"><b>Add Google data to this list.</b> Connect Search Console (read-only) to see each cited page’s Google clicks, impressions and position, and which of your best Google pages no AI answer cites. <button class="btn2 small solid" id="gscConnect" type="button">Connect Search Console</button></div>';
   } else if (gsc && gsc.connected) {
     html += '<p class="hint" style="margin:0 0 12px">' + (gscBusy ? 'Loading Search Console…' : withGsc
@@ -455,27 +457,37 @@ async function writeBrief(idx, refresh) {
   render();
 }
 
+// Search Console is tied to a signed-in account, not to whichever code opened this report: a report started
+// anonymously (visitor id in ?k=) still uses the account once you sign in. Without an account, the Worker answers
+// signin_required. (window.BC_ACCOUNT comes from visitor.js; on mc2seo.com it is absent and the report's code is used.)
+const gscApi = (path, body) => fetch(S.API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ code: window.BC_ACCOUNT || S.CODE }, body || {})) }).then(r => r.json());
+function gscSignIn() {
+  const u = new URL(location.href); u.searchParams.delete('gsc'); u.hash = 'brands';
+  location.href = '/account/?return=' + encodeURIComponent(u.pathname + u.search + u.hash);
+}
+
 async function loadGsc() {
   if (gsc !== null || !data || !data.summary || !data.summary.citations) return;
-  gsc = await S.api('/gsc/status');
+  gsc = await gscApi('/gsc/status');
   const main = data.brands[0], domain = main && (main.domains || [])[0];
   if (gsc.connected && domain) {
     gscBusy = true; render();
-    gscPages = await S.api('/gsc/pages', { domain, urls: data.summary.citations.pages.own.map(p => p.url) });
+    gscPages = await gscApi('/gsc/pages', { domain, urls: data.summary.citations.pages.own.map(p => p.url) });
     gscBusy = false;
   }
   render();
 }
 async function gscConnect() {
   const u = new URL(location.href); u.searchParams.delete('gsc'); u.hash = 'brands';
-  const r = await S.api('/gsc/start', { return_url: u.toString() });
+  const r = await gscApi('/gsc/start', { return_url: u.toString() });
+  if (r.signin_required) return gscSignIn();
   if (r.error || !r.url) return alert(r.error || 'Could not start the Search Console connection.');
   location.href = r.url;
 }
 async function gscDisconnect(e) {
   e.preventDefault();
   if (!confirm('Disconnect Search Console? This report will stop showing Google data until you connect again.')) return;
-  await S.api('/gsc/disconnect');
+  await gscApi('/gsc/disconnect');
   gsc = null; gscPages = null; loadGsc();
 }
 
@@ -531,6 +543,7 @@ function render() {
   const cr = $('crawlRefresh'); if (cr) cr.onclick = e => { e.preventDefault(); loadCrawl(true); };
   const tb = $('trackBtn'); if (tb) tb.onclick = startTracking;
   const gc = $('gscConnect'); if (gc) gc.onclick = gscConnect;
+  const gsi = $('gscSignin'); if (gsi) gsi.onclick = gscSignIn;
   const pdfName = sfx => 'state-of-the-llm-union-' + (data.brand_name || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + String(data.created_at).slice(0, 10) + sfx + '.pdf';
   const pb = $('pdfBtn'); if (pb) pb.onclick = () => S.downloadPdf({ id: data.id }, pb, pdfName(''));
   const ps = $('pdfSumBtn'); if (ps) ps.onclick = () => S.downloadPdf({ id: data.id, summary: true }, ps, pdfName('-summary'));

@@ -127,6 +127,18 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 function saved() { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
 function save(code) { try { code ? localStorage.setItem(KEY, code) : localStorage.removeItem(KEY); } catch (e) { /* blocked */ } }
 
+// ?return=/path: where to go back to once signed in (e.g. a report's "Sign in to connect Search Console"). Only paths
+// on this site. Kept for an hour in this browser, since the sign-in link arrives by email and opens a new tab.
+const RET = 'bc_return';
+const safePath = p => typeof p === 'string' && /^\/(?![\/\\])/.test(p) && !/[\\\s]/.test(p);
+function keepReturn(p) { if (safePath(p)) try { localStorage.setItem(RET, JSON.stringify({ p, t: Date.now() })); } catch (e) { /* blocked */ } }
+function takeReturn() {
+  try {
+    const r = JSON.parse(localStorage.getItem(RET) || 'null'); localStorage.removeItem(RET);
+    return r && safePath(r.p) && Date.now() - r.t < 3600e3 ? r.p : '';
+  } catch (e) { return ''; }
+}
+
 function show(id) { ['signin', 'sent', 'account'].forEach(s => $(s).hidden = s !== id); $('signout').hidden = id !== 'account'; }
 function note(text, kind) { const n = $('note'); n.className = 'msg ' + (kind || ''); n.textContent = text; n.hidden = !text; }
 
@@ -190,6 +202,7 @@ document.querySelectorAll('.pack').forEach(b => b.addEventListener('click', asyn
 }));
 
 (async function start() {
+  if (Q.get('return')) { keepReturn(Q.get('return')); history.replaceState(null, '', '/account/'); }
   const token = Q.get('t');
   if (token) {
     history.replaceState(null, '', '/account/');
@@ -200,7 +213,12 @@ document.querySelectorAll('.pack').forEach(b => b.addEventListener('click', asyn
     } catch (err) { note(err.message, 'err'); }
   }
   const code = saved();
-  if (!code) return show('signin');
+  if (!code) {
+    try { if (localStorage.getItem(RET)) note('Sign in, and you’ll go straight back to where you were.'); } catch (e) { /* blocked */ }
+    return show('signin');
+  }
+  const back = takeReturn();
+  if (back) { note('Signed in — taking you back…', 'ok'); location.href = back; return; }
   try {
     const d = await loadAccount(code);
     if (Q.get('paid')) {
