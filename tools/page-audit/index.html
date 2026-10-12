@@ -203,8 +203,10 @@ function renderSection(s) {
   renderOverview();
 }
 
+// A finding can appear in two sections (structured data shows in AI readiness and in Structured data): count it once.
+const uniq = list => { const seen = new Set(); return list.filter(r => { const k = r.severity + '|' + r.message; if (seen.has(k)) return false; seen.add(k); return true; }); };
 function renderOverview() {
-  const all = Object.values(rows).flat(), c = counted(all);
+  const all = uniq(Object.values(rows).flat()), c = counted(all);
   const done = ACTIVE.filter(s => rows[s.id]).length;
   $('bigRing').innerHTML = ring(passed(all), c.length, 112);
   animateRings($('bigRing'));
@@ -213,7 +215,7 @@ function renderOverview() {
     '<span class="dotk" style="background:var(--bad)"></span>' + n('error') + ' to fix · <span class="dotk" style="background:var(--warn)"></span>' + n('warn') + ' warnings · <span class="dotk" style="background:var(--ok)"></span>' + n('ok') + ' pass' +
     (report && report.google_clicks != null ? '<br>This page earned <b>' + fmtN(report.google_clicks) + '</b> Google clicks in the last 28 days.' : '') +
     (done < ACTIVE.length ? '<br><span style="color:var(--muted)">' + done + ' of ' + ACTIVE.length + ' sections in — still checking…</span>' : '');
-  const fixes = ACTIVE.flatMap(s => (rows[s.id] || []).filter(r => r.severity === 'error' || r.severity === 'warn').map(r => ({ ...r, where: s.title })))
+  const fixes = uniq(ACTIVE.flatMap(s => (rows[s.id] || []).filter(r => r.severity === 'error' || r.severity === 'warn').map(r => ({ ...r, where: s.title }))))
     .sort((a, b) => (a.severity === 'error' ? 0 : 1) - (b.severity === 'error' ? 0 : 1)).slice(0, 5);
   $('fixes').innerHTML = fixes.length ? '<h2>Fix these first</h2><ol>' + fixes.map(f => '<li><span class="where">' + esc(f.where) + ' · ' + esc(f.label) + '</span><br>' + esc(f.message) + '</li>').join('') + '</ol>' : '';
 }
@@ -321,16 +323,17 @@ async function run(fresh) {
       else add('ai', 'ok', 'AI crawlers', 'All ' + cc.crawlers.length + ' AI crawlers checked are allowed' + (cc.robots_found ? ' by robots.txt.' : ' (no robots.txt, so nothing is blocked).'));
       add('ai', cc.llms_txt_found ? 'ok' : 'warn', 'llms.txt', cc.llms_txt_found ? 'The site has an llms.txt — a curated guide for AI assistants.' : 'No llms.txt — a short guide that tells AI assistants what the site is and where the key pages are.');
     }
-    // Structured data has its own section; AI readiness keeps a one-line pointer (a note, so nothing is counted twice).
+    // Structured data shows in full in both AI readiness (it's how AI systems confirm facts) and its own section;
+    // the overview and "Fix these first" count each finding once (uniq).
     if (sc.error) add('schema', 'info', 'Structured data', 'Couldn\'t check: ' + sc.error);
     else {
       const found = sc.schemas_found || [], fl = sc.findings || [];
-      const problems = fl.filter(f => f.severity === 'error' || f.severity === 'warn').length;
-      if (found.length) add('schema', 'ok', 'Types found', found.length + ' type' + (found.length === 1 ? '' : 's') + ': ' + found.join(', ') + (sc.js_rendered ? ' (found after JavaScript ran — some crawlers won’t see them).' : '.'));
-      fl.forEach(f => add('schema', f.severity === 'error' ? 'error' : f.severity === 'warn' ? 'warn' : 'info', f.type && f.type !== 'none' && f.type !== 'mismatch' ? f.type : 'Structured data', f.message));
-      add('ai', 'info', 'Structured data', found.length
-        ? found.length + ' schema type' + (found.length === 1 ? '' : 's') + (problems ? ', ' + problems + ' problem' + (problems === 1 ? '' : 's') : ', no problems') + ' — details in Structured data below.'
-        : 'No structured data — see Structured data below.');
+      const typesMsg = found.length + ' type' + (found.length === 1 ? '' : 's') + ': ' + found.join(', ') + (sc.js_rendered ? ' (found after JavaScript ran — some crawlers won’t see them).' : '.');
+      for (const [sec, prefix] of [['ai', 'Structured data · '], ['schema', '']]) {
+        if (found.length) add(sec, 'ok', prefix ? 'Structured data' : 'Types found', typesMsg);
+        fl.forEach(f => add(sec, f.severity === 'error' ? 'error' : f.severity === 'warn' ? 'warn' : 'info',
+          f.type && f.type !== 'none' && f.type !== 'mismatch' ? prefix + f.type : 'Structured data', f.message));
+      }
     }
     if (ee.error) add('ai', 'info', 'Trust signals', 'Couldn\'t check: ' + ee.error);
     else (ee.signals || []).filter(s => s.type !== 'https' && s.type !== 'thin_content' && !(home && ['author', 'freshness', 'citations'].includes(s.type)))
@@ -418,7 +421,7 @@ async function run(fresh) {
 // "Download PDF": send the finished report to the Worker, which prints it on an A4 layout (/tools/page-audit/print/).
 async function downloadPdf(btn) {
   const sections = ACTIVE.map(s => ({ title: s.title, sub: s.sub, rows: rows[s.id] || [] }));
-  const fixes = ACTIVE.flatMap(s => (rows[s.id] || []).filter(r => r.severity === 'error' || r.severity === 'warn').map(r => ({ ...r, where: s.title })))
+  const fixes = uniq(ACTIVE.flatMap(s => (rows[s.id] || []).filter(r => r.severity === 'error' || r.severity === 'warn').map(r => ({ ...r, where: s.title }))))
     .sort((a, b) => (a.severity === 'error' ? 0 : 1) - (b.severity === 'error' ? 0 : 1)).slice(0, 5);
   btn.disabled = true; btn.textContent = 'Making PDF…'; $('pdfNote').textContent = 'Usually 5–15 seconds.';
   try {

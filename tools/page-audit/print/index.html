@@ -70,7 +70,9 @@ function render(d) {
   $('title').textContent = d.url;
   $('eyebrow').textContent = d.is_home ? 'Page audit · homepage' : 'Page audit';
   $('when').textContent = 'Checked ' + new Date(d.checked_at).toLocaleString('en-GB', { dateStyle: 'long', timeStyle: 'short', timeZone: 'UTC' }) + ' UTC';
-  const all = d.sections.flatMap(s => s.rows), n = sev => all.filter(r => r.severity === sev).length;
+  // A finding shown in two sections (structured data: AI readiness and Structured data) counts once in the totals.
+  const seen = new Set(), all = d.sections.flatMap(s => s.rows).filter(r => { const k = r.severity + '|' + r.message; if (seen.has(k)) return false; seen.add(k); return true; });
+  const n = sev => all.filter(r => r.severity === sev).length;
   let h = '<div class="overview">' + ring(passed(all), counted(all).length, 84) + '<div class="tally"><b>' + passed(all) + ' of ' + counted(all).length + ' checks pass</b><br>' +
     '<span class="dotk" style="background:var(--bad)"></span>' + n('error') + ' to fix · <span class="dotk" style="background:var(--warn)"></span>' + n('warn') + ' warnings · <span class="dotk" style="background:var(--ok)"></span>' + n('ok') + ' pass</div></div>';
   if (d.fixes.length) h += '<div class="fixes"><h2>Fix these first</h2><ol>' + d.fixes.map(f => '<li><span class="where">' + esc(f.where) + ' · ' + esc(f.label) + '</span><br>' + esc(f.message) + '</li>').join('') + '</ol></div>';
