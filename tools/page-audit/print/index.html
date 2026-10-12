@@ -37,6 +37,7 @@
   .error .badge{color:#fff;background:var(--bad)} .info .badge{color:var(--muted);background:#efefef}
   .label{color:var(--muted);font-size:8.5px;display:block;text-transform:uppercase;letter-spacing:.04em}
   .msg{overflow-wrap:anywhere}
+  .rowlink{color:var(--you);font-size:10px;text-decoration:underline}
   .ring circle{fill:none;stroke-width:6} .ring .track{stroke:#ececec} .ring .val{stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%}
   .ring text{font-family:'Archivo',sans-serif;font-weight:900;fill:var(--ink)}
   .foot{font-size:9px;color:var(--muted);margin-top:14px;line-height:1.6}
@@ -64,6 +65,8 @@ function ring(ok, total, size) {
     '<circle class="val" cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" style="stroke:' + col + ';stroke-dasharray:' + c + ';stroke-dashoffset:' + (c * (1 - pct)) + '"/>' +
     '<text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-size="' + Math.round(size >= 80 ? size / 4.2 : size / 5.4) + '">' + (total ? Math.round(pct * 100) + '%' : '–') + '</text></svg>';
 }
+// One link per row at most: Google Search Console's inspection report (Google's view). Clickable in the PDF.
+const rowLink = r => r.link && /^https:\/\/search\.google\.com\//.test(r.link) ? '<br><a class="rowlink" href="' + esc(r.link) + '">Open the full inspection in Search Console →</a>' : '';
 const BADGE = { ok: 'Pass', warn: 'Warn', error: 'Fix', info: 'Note' }, ORDER = { error: 0, warn: 1, ok: 2, info: 3 };
 
 function render(d) {
@@ -78,7 +81,7 @@ function render(d) {
   if (d.fixes.length) h += '<div class="fixes"><h2>Fix these first</h2><ol>' + d.fixes.map(f => '<li><span class="where">' + esc(f.where) + ' · ' + esc(f.label) + '</span><br>' + esc(f.message) + '</li>').join('') + '</ol></div>';
   h += d.sections.map(s => '<div class="sec' + (s.title === 'AI readiness' ? ' ai' : '') + '"><div class="sechead">' + ring(passed(s.rows), counted(s.rows).length, 40) +
     '<div><h2>' + esc(s.title) + '</h2><p>' + esc(s.sub) + '</p></div></div>' +
-    s.rows.slice().sort((a, b) => ORDER[a.severity] - ORDER[b.severity]).map(r => '<div class="row ' + r.severity + '"><span class="badge">' + BADGE[r.severity] + '</span><div class="msg"><span class="label">' + esc(r.label) + '</span>' + esc(r.message) + '</div></div>').join('') + '</div>').join('');
+    s.rows.slice().sort((a, b) => ORDER[a.severity] - ORDER[b.severity]).map(r => '<div class="row ' + r.severity + '"><span class="badge">' + BADGE[r.severity] + '</span><div class="msg"><span class="label">' + esc(r.label) + '</span>' + esc(r.message) + rowLink(r) + '</div></div>').join('') + '</div>').join('');
   h += '<p class="foot">Each check is a pass, warning or problem on its own — the ring counts how many pass, it isn\'t a ranking score. Most checks read the page\'s HTML as a crawler gets it, so content drawn later by JavaScript can be missed. Speed comes from Google\'s PageSpeed Insights lab test. Run it again any time at brandchecker.eu/tools/page-audit.</p>';
   $('body').innerHTML = h;
 }
