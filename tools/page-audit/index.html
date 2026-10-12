@@ -218,7 +218,9 @@ const SIGNAL = { author: 'Author', freshness: 'Freshness', thin_content: 'Conten
 // Search Console calls go with the signed-in account when there is one (window.BC_ACCOUNT, from visitor.js) — the
 // connection belongs to the account, not to this browser's visitor id.
 const gscApi = (path, body) => fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: window.BC_ACCOUNT || CODE, ...(body || {}) }) }).then(r => r.json()).catch(() => ({ error: 'could not reach Search Console' }));
-const auditPath = () => '/tools/page-audit/?url=' + encodeURIComponent($('url').value.trim());
+// Back to this audit after Google's consent screen or sign-in, keeping an access code from the link (?k=) — that
+// code is what the Search Console connection is saved under when there is no signed-in account.
+const auditPath = () => { const k = new URLSearchParams(location.search).get('k'); return '/tools/page-audit/?' + (k ? 'k=' + encodeURIComponent(k) + '&' : '') + 'url=' + encodeURIComponent($('url').value.trim()); };
 async function gscConnect() {
   const r = await gscApi('/gsc/start', { return_url: location.origin + auditPath() });
   if (r.signin_required) return gscSignIn();
