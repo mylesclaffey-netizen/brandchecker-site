@@ -85,9 +85,12 @@ function render(d) {
 
 (async () => {
   const t = new URLSearchParams(location.search).get('t') || '';
-  let d;
-  try { d = await (await fetch(API + '/page-audit/pdf-data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t }) })).json(); }
-  catch (e) { d = { error: 'could not reach the server' }; }
+  // The PDF renderer hands the report over directly; reading it back by token is only the fallback.
+  let d = window.PAGE_AUDIT_REPORT || null;
+  if (!d) {
+    try { d = await (await fetch(API + '/page-audit/pdf-data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t }) })).json(); }
+    catch (e) { d = { error: 'could not reach the server' }; }
+  }
   if (d.error || !d.sections) { $('title').textContent = 'Could not load this report'; $('title').dataset.failed = '1'; }
   else render(d);
   if (document.fonts && document.fonts.ready) await document.fonts.ready;
