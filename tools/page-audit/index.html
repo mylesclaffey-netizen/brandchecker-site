@@ -161,6 +161,7 @@ const SECTIONS = [
   { id: 'google', title: 'Google’s view', sub: 'From your Search Console: is the page indexed, and what does it earn in Google search?', gsc: true },
   { id: 'site', title: 'Site-wide', sub: 'Checked because this is the homepage: one address for the site, robots.txt and sitemap, and who the brand is.', home: true },
   { id: 'ai', title: 'AI readiness', sub: 'Can AI assistants reach the page, read it, and trust what it says?', ai: true },
+  { id: 'schema', title: 'Structured data', sub: 'Schema (JSON-LD) on the page: which types it declares, and where the markup claims something the page doesn’t show.', tool: 'schema-audit' },
   { id: 'content', title: 'On-page basics', sub: 'Title, description, headings, links, language and sharing tags.' },
   { id: 'images', title: 'Images', sub: 'Alt text, sizes, broken or heavy files.', tool: 'image-audit' },
   { id: 'intl', title: 'International', sub: 'hreflang tags for other languages and countries.', tool: 'hreflang-audit' },
@@ -320,15 +321,21 @@ async function run(fresh) {
       else add('ai', 'ok', 'AI crawlers', 'All ' + cc.crawlers.length + ' AI crawlers checked are allowed' + (cc.robots_found ? ' by robots.txt.' : ' (no robots.txt, so nothing is blocked).'));
       add('ai', cc.llms_txt_found ? 'ok' : 'warn', 'llms.txt', cc.llms_txt_found ? 'The site has an llms.txt — a curated guide for AI assistants.' : 'No llms.txt — a short guide that tells AI assistants what the site is and where the key pages are.');
     }
-    if (sc.error) add('ai', 'info', 'Structured data', 'Couldn\'t check: ' + sc.error);
+    // Structured data has its own section; AI readiness keeps a one-line pointer (a note, so nothing is counted twice).
+    if (sc.error) add('schema', 'info', 'Structured data', 'Couldn\'t check: ' + sc.error);
     else {
-      if (sc.schemas_found.length) add('ai', 'ok', 'Structured data', 'Found: ' + sc.schemas_found.join(', ') + '.');
-      (sc.findings || []).forEach(f => add('ai', f.severity === 'error' ? 'error' : f.severity === 'warn' ? 'warn' : 'info', 'Structured data', f.message));
+      const found = sc.schemas_found || [], fl = sc.findings || [];
+      const problems = fl.filter(f => f.severity === 'error' || f.severity === 'warn').length;
+      if (found.length) add('schema', 'ok', 'Types found', found.length + ' type' + (found.length === 1 ? '' : 's') + ': ' + found.join(', ') + (sc.js_rendered ? ' (found after JavaScript ran — some crawlers won’t see them).' : '.'));
+      fl.forEach(f => add('schema', f.severity === 'error' ? 'error' : f.severity === 'warn' ? 'warn' : 'info', f.type && f.type !== 'none' && f.type !== 'mismatch' ? f.type : 'Structured data', f.message));
+      add('ai', 'info', 'Structured data', found.length
+        ? found.length + ' schema type' + (found.length === 1 ? '' : 's') + (problems ? ', ' + problems + ' problem' + (problems === 1 ? '' : 's') : ', no problems') + ' — details in Structured data below.'
+        : 'No structured data — see Structured data below.');
     }
     if (ee.error) add('ai', 'info', 'Trust signals', 'Couldn\'t check: ' + ee.error);
     else (ee.signals || []).filter(s => s.type !== 'https' && s.type !== 'thin_content' && !(home && ['author', 'freshness', 'citations'].includes(s.type)))
       .forEach(s => add(home && s.type === 'trust_pages' ? 'site' : 'ai', s.severity === 'ok' ? 'ok' : 'warn', SIGNAL[s.type] || s.type, s.message));
-    done(home ? ['ai', 'site'] : ['ai']);
+    done(home ? ['ai', 'schema', 'site'] : ['ai', 'schema']);
   });
 
   // Homepage only: do all four addresses (http/https, www/non-www) end at one URL in one hop? And the sitemap.
