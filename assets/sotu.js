@@ -187,6 +187,58 @@
       'Checked ' + ago(c.checked_at) + (opts.refresh ? ' · <a href="#" id="citedRefresh">check again</a>' : '') + '.</p>';
   }
 
+  // "What kind of sites the answers cite" (Worker: sotuSourceTypes.js → summary.citations.by_type): the share of
+  // citations that go to video, review sites, best-of articles, news, your own site and competitors', with the biggest
+  // sites in each kind. Says plainly which models showed sources — a model with web search off cites nothing.
+  var PROVIDER_NAMES = { chatgpt: 'ChatGPT', claude: 'Claude', perplexity: 'Perplexity', llama: 'Llama', mistral: 'Mistral', ai_overviews: 'AI Overviews', ai_mode: 'AI Mode', gemini: 'Gemini', copilot: 'Copilot' };
+  function sourceTypesHtml(cit, d, colours) {
+    if (!cit || !cit.by_type || !cit.by_type.length) return '';
+    var main = d.brands && d.brands[0];
+    var fill = function (t) { return t === 'own' ? (main && colours[main.name] ? colours[main.name].bg : '#34517A') : t === 'competitors' ? '#C99A3E' : '#6FA0C4'; };
+    var share = function (v) { return v > 0 && v < 0.01 ? '<1%' : pct(v); };
+    var rows = cit.by_type.map(function (t) {
+      return '<tr><td><b>' + esc(t.label) + '</b></td>' +
+        '<td><div class="bar" style="--bg:' + fill(t.type) + '"><i style="width:' + Math.max(2, Math.round(t.share * 100)) + '%"></i></div></td>' +
+        '<td class="num">' + share(t.share) + '</td>' +
+        '<td><small>' + t.domains.map(function (x) { return esc(x.domain) + ' (' + x.answers + ')'; }).join(' · ') + '</small></td></tr>';
+    }).join('');
+    var name = function (id) { return esc(PROVIDER_NAMES[id] || id); };
+    var from = (cit.by_provider || []).filter(function (p) { return p.with_sources; });
+    var none = (cit.by_provider || []).filter(function (p) { return !p.with_sources; });
+    var coverage = from.length
+      ? 'Sources came from ' + from.map(function (p) { return name(p.provider) + ' (' + p.with_sources + ' of ' + p.answers + ' answers)'; }).join(', ') + '.' +
+        (none.length ? ' ' + none.map(function (p) { return name(p.provider); }).join(', ') + (d.web ? ' showed no sources.' : ' answered from their own knowledge (web search off), so they cite nothing.') : '')
+      : '';
+    return '<h2 class="h2b">What kind of sites the answers cite</h2>' +
+      '<div class="tblwrap"><table class="tbl"><tr><th>Kind of site</th><th colspan="2">Share of citations</th><th>Biggest sites (answers citing each)</th></tr>' + rows + '</table></div>' +
+      '<p class="hint" style="margin:-18px 0 30px">Each site counted once per answer, across the ' + cit.answers_with_sources + ' answers that showed sources. ' + coverage +
+      ' “Best-of &amp; comparison articles” are pages whose address or title reads like “best…”, “top 10…”, “alternatives” or “A vs B”; sites we don’t recognise are “Other sites”.</p>';
+  }
+
+  // The same breakdown run by run (tracker): one column per run, newest last. Kinds under 3% in every run are left out.
+  function sourceMixTrendHtml(runs, whenFn) {
+    var withCit = (runs || []).filter(function (r) { return r.citations && r.citations.by_type && r.citations.by_type.length; });
+    if (withCit.length < 2) return '';
+    var shown = withCit.slice(-8), latest = shown[shown.length - 1], labels = {}, order = [];
+    shown.forEach(function (r) { r.citations.by_type.forEach(function (t) { labels[t.type] = t.label; }); });
+    var shareIn = function (r, type) { var t = r.citations.by_type.filter(function (x) { return x.type === type; })[0]; return t ? t.share : 0; };
+    Object.keys(labels).forEach(function (type) {
+      var top = Math.max.apply(null, shown.map(function (r) { return shareIn(r, type); }));
+      if (top >= 0.03 || type === 'own') order.push(type);
+    });
+    order.sort(function (a, b) { return shareIn(latest, b) - shareIn(latest, a); });
+    var head = '<tr><th>Kind of site</th>' + shown.map(function (r) { return '<th class="num">' + esc(whenFn(r.created_at)) + '</th>'; }).join('') + '</tr>';
+    var body = order.map(function (type) {
+      return '<tr><td><b>' + esc(labels[type]) + '</b></td>' + shown.map(function (r, i) {
+        var v = shareIn(r, type), cell = v > 0 && v < 0.01 ? '<1%' : pct(v);
+        return '<td class="num">' + (i === shown.length - 1 ? '<b>' + cell + '</b>' : cell) + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+    return '<h2 class="h2b">Where the answers get their information, run by run</h2>' +
+      '<div class="tblwrap"><table class="tbl">' + head + body + '</table></div>' +
+      '<p class="hint" style="margin:-18px 0 30px">Share of citations by kind of site, from the answers that showed sources in each run. Only models that search the web show sources, so this follows Perplexity and AI Overviews unless web search is on.</p>';
+  }
+
   // "What ChatGPT searched for" (Worker: sotuFanout.js): the searches models ran while answering — which vendors they
   // looked up by name, the discovery searches, and (when checked) where each brand ranks for them. `rk`: { google?, bing? }
   // saved rankings; `opts.owner`: show the buttons that check rankings (they cost a few cents); `opts.compact`: PDFs.
@@ -545,6 +597,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, visibilityHtml: visibilityHtml, citedHtml: citedHtml, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, visibilityHtml: visibilityHtml, citedHtml: citedHtml, sourceTypesHtml: sourceTypesHtml, sourceMixTrendHtml: sourceMixTrendHtml, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();

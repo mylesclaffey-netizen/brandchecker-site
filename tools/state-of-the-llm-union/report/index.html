@@ -343,7 +343,7 @@ function citationsHtml(d) {
     return '<tr><td><b>' + esc(x.domain) + '</b></td><td>' + (c ? '<span class="chip2" style="--bg:' + c.bg + ';--fg:' + c.fg + '">' + esc(x.owner) + '</span>' : 'Third party') + '</td>' +
       '<td class="num">' + x.answers + '</td><td class="num">' + S.pct(x.share) + '</td></tr>';
   }).join('');
-  return '<h2 class="h2b">Who gets cited</h2>' + split +
+  return S.sourceTypesHtml(cit, d, colours) + '<h2 class="h2b">Who gets cited</h2>' + split +
     '<p class="hint" style="margin:0 0 16px">Share of all citations across the ' + cit.answers_with_sources + ' answers that showed sources. Domains are matched to brands by the websites you entered.</p>' +
     '<div class="tblwrap"><table class="tbl"><tr><th>Most-cited domains</th><th>Belongs to</th><th>Answers citing it</th><th>Share of answers</th></tr>' + rows + '</table></div>';
 }

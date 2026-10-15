@@ -219,7 +219,7 @@ function citedHtml(d, last, colours) {
     const c = x.owner ? colours[x.owner] : null;
     return '<tr><td><b>' + esc(x.domain) + '</b></td><td>' + (c ? '<span class="chip2" style="--bg:' + c.bg + ';--fg:' + c.fg + '">' + esc(x.owner) + '</span>' : 'Third party') + '</td><td class="num">' + x.answers + '</td><td class="num">' + S.pct(x.share) + '</td></tr>';
   }).join('');
-  return '<h2 class="h2b">Latest run — most-cited websites</h2>' +
+  return S.sourceTypesHtml(cit, d, colours) + S.sourceMixTrendHtml(d.runs, when) + '<h2 class="h2b">Latest run — most-cited websites</h2>' +
     '<p class="hint" style="margin:0 0 12px">You ' + S.pct(cit.share.own) + ' · competitors ' + S.pct(cit.share.competitors) + ' · other sites ' + S.pct(cit.share.other) + ' of all citations, across ' + cit.answers_with_sources + ' answers that showed sources.</p>' +
     '<div class="tblwrap"><table class="tbl"><tr><th>Domain</th><th>Belongs to</th><th>Answers citing it</th><th>Share of answers</th></tr>' + rows + '</table></div>';
 }
