@@ -614,6 +614,35 @@
       }).join('');
   }
 
+  // "What AI says about <brand> — fact-checked" (Worker: factCheck.js readAbout `claims`, grouped in sotuStats.js claimStats):
+  // every checkable claim the answers make about the brand, true / false / unverified against the fact sheet. False first,
+  // with the answer's own words; unverified means the sheet doesn't cover it. '' when the run has no three-state claims
+  // (older runs) — the caller falls back to factsHtml.
+  function claimsHtml(facts, brand) {
+    var c = facts && facts.claims;
+    if (!c) return '';
+    var head = '<h2 class="h2b">What AI says about ' + esc(brand) + ' — fact-checked</h2>';
+    if (!c.groups.length) return head + '<div class="empty2">None of the ' + c.answers_read + ' answers that name ' + esc(brand) + ' made a claim your fact sheet can check.</div>';
+    var look = { 'true': ['✓ TRUE', '#1b7040', '#fff', '#1b7040'], 'false': ['✗ FALSE', '#c0321f', '#fff', '#c0321f'], unverified: ['– UNVERIFIED', '#e4e4de', '#3d3d3d', '#8a8a8a'] };
+    var chip = function (v) { var m = look[v]; return '<span class="chip2" style="--bg:' + m[1] + ';--fg:' + m[2] + ';font-size:11.5px;padding:2px 8px;white-space:nowrap">' + m[0] + '</span>'; };
+    var TOPICS = { pricing: 'Pricing', free_plan: 'Free plan', headquarters: 'Where it’s based', founded: 'Founding', ownership: 'Ownership', certifications: 'Certifications', integrations: 'Integrations', customers: 'Customers', features: 'Features', markets: 'Markets served' };
+    var rows = c.groups.map(function (g) {
+      var ex = g.examples[0] || {};
+      var text = g.verdict === 'true' ? esc(g.label) : g.verdict === 'unverified' && TOPICS[g.topic] ? esc(TOPICS[g.topic]) : esc(ex.claim || g.label);
+      var sub = g.verdict === 'false' ? '<br><small>Your fact sheet: <b>' + esc(g.label) + '</b></small>'
+        : g.verdict === 'unverified' ? '<br><small>Not on your fact sheet — add it if it’s true, or check it.</small>' : '';
+      var quotes = g.verdict === 'true' ? '' : g.examples.slice(0, 2).map(function (x) {
+        return x.quote ? '<div class="quote" style="--bg:' + look[g.verdict][3] + ';margin:6px 0 0">“' + esc(x.quote.replace(/\*\*|__/g, '').trim()) + '”<br><small>' + esc(providerLabel(x.provider)) + (x.location ? ', ' + esc(x.location) : '') + '</small></div>' : '';
+      }).join('');
+      return '<tr><td>' + chip(g.verdict) + '</td><td>' + text + sub + quotes + '</td><td class="num">' + g.answers + '</td>' +
+        '<td style="font-size:13px">' + g.providers.map(providerLabel).map(esc).join(', ') + '</td></tr>';
+    }).join('');
+    return head + '<p style="font-size:17px;margin:0 0 14px"><b style="color:#1b7040">' + c.totals['true'] + ' true</b> · <b style="color:#c0321f">' + c.totals['false'] + ' false</b> · <b>' + c.totals.unverified + ' unverified</b>' +
+      ' <small style="font-size:14px">claims across the ' + c.answers_read + ' answers that name ' + esc(brand) + '</small></p>' +
+      '<div class="tblwrap"><table class="tbl"><tr><th>Verdict</th><th>What the answers say</th><th>Answers</th><th>Models</th></tr>' + rows + '</table></div>' +
+      '<p class="hint" style="margin:-18px 0 30px">Each claim is judged by a small AI model against your fact sheet, using the answer’s own words, so confirm before acting. “Unverified” only means your sheet doesn’t cover it — a claim you haven’t checked, not a wrong one.</p>';
+  }
+
   // "How models describe <brand>": per-dimension favourable/unfavourable counts and the answers' own phrases
   // (Worker: factCheck.js readAbout traits, aggregated in sotuStats.js describeStats).
   var GOOD = '#1b7040', BAD = '#c0321f';
@@ -728,6 +757,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, visibilityHtml: visibilityHtml, citedHtml: citedHtml, sourceTypesHtml: sourceTypesHtml, sourceMixTrendHtml: sourceMixTrendHtml, googleVsAiHtml: googleVsAiHtml, perceptionHtml: perceptionHtml, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, visibilityHtml: visibilityHtml, citedHtml: citedHtml, sourceTypesHtml: sourceTypesHtml, sourceMixTrendHtml: sourceMixTrendHtml, googleVsAiHtml: googleVsAiHtml, perceptionHtml: perceptionHtml, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, claimsHtml: claimsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();
