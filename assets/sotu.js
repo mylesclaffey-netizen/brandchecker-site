@@ -196,23 +196,32 @@
     var main = d.brands && d.brands[0];
     var fill = function (t) { return t === 'own' ? (main && colours[main.name] ? colours[main.name].bg : '#34517A') : t === 'competitors' ? '#C99A3E' : '#6FA0C4'; };
     var share = function (v) { return v > 0 && v < 0.01 ? '<1%' : pct(v); };
+    var biggest = Math.max.apply(null, cit.by_type.map(function (t) { return t.share; })) || 1;
+    // Bars are scaled to the biggest kind (the percentage beside each is the real share), so small kinds stay visible.
     var rows = cit.by_type.map(function (t) {
       return '<tr><td><b>' + esc(t.label) + '</b></td>' +
-        '<td><div class="bar" style="--bg:' + fill(t.type) + '"><i style="width:' + Math.max(2, Math.round(t.share * 100)) + '%"></i></div></td>' +
+        '<td><div class="bar" style="--bg:' + fill(t.type) + ';height:22px"><i style="width:' + Math.max(3, Math.round(t.share / biggest * 100)) + '%"></i></div></td>' +
         '<td class="num">' + share(t.share) + '</td>' +
         '<td><small>' + t.domains.map(function (x) { return esc(x.domain) + ' (' + x.answers + ')'; }).join(' · ') + '</small></td></tr>';
     }).join('');
     var name = function (id) { return esc(PROVIDER_NAMES[id] || id); };
     var from = (cit.by_provider || []).filter(function (p) { return p.with_sources; });
     var none = (cit.by_provider || []).filter(function (p) { return !p.with_sources; });
+    // The one caveat that matters, up front: only some models show sources at all.
     var coverage = from.length
-      ? 'Sources came from ' + from.map(function (p) { return name(p.provider) + ' (' + p.with_sources + ' of ' + p.answers + ' answers)'; }).join(', ') + '.' +
-        (none.length ? ' ' + none.map(function (p) { return name(p.provider); }).join(', ') + (d.web ? ' showed no sources.' : ' answered from their own knowledge (web search off), so they cite nothing.') : '')
+      ? 'Only ' + from.map(function (p) { return name(p.provider); }).join(' and ') + ' showed sources (' + cit.answers_with_sources + ' answers).' +
+        (none.length ? ' ' + none.map(function (p) { return name(p.provider); }).join(', ') + (d.web ? ' showed none.' : ' answered from their own knowledge (web search off), so they cite nothing.') : '')
       : '';
-    return '<h2 class="h2b">What kind of sites the answers cite</h2>' +
+    // The takeaway in one line: the biggest recognised kind of site, and what share goes to the user's own site.
+    var top = cit.by_type.filter(function (t) { return t.type !== 'other' && t.type !== 'own'; })[0];
+    var own = cit.by_type.filter(function (t) { return t.type === 'own'; })[0];
+    var lead = top ? '<p style="font-size:17px;margin:0 0 14px"><b>' + share(top.share) + '</b> of citations go to ' + esc(top.label.toLowerCase()) + '.' +
+      (main ? ' ' + esc(main.name) + '’s own site gets <b>' + share(own ? own.share : 0) + '</b>.' : '') + '</p>' : '';
+    return '<h2 class="h2b">What kind of sites the answers cite</h2>' + lead +
+      (coverage ? '<div class="banner2" style="margin:0 0 16px">' + coverage + '</div>' : '') +
       '<div class="tblwrap"><table class="tbl"><tr><th>Kind of site</th><th colspan="2">Share of citations</th><th>Biggest sites (answers citing each)</th></tr>' + rows + '</table></div>' +
-      '<p class="hint" style="margin:-18px 0 30px">Each site counted once per answer, across the ' + cit.answers_with_sources + ' answers that showed sources. ' + coverage +
-      ' “Best-of &amp; comparison articles” are pages whose address or title reads like “best…”, “top 10…”, “alternatives” or “A vs B”; sites we don’t recognise are “Other sites”.</p>';
+      '<details class="hint" style="margin:-18px 0 30px"><summary style="cursor:pointer">How this is counted</summary>' +
+      '<p style="margin:6px 0 0">Each site is counted once per answer. “Best-of &amp; comparison articles” are pages whose address or title reads like “best…”, “top 10…”, “alternatives” or “A vs B”. A site we don’t recognise and that doesn’t look like one of those is “Unclassified”.</p></details>';
   }
 
   // The same breakdown run by run (tracker): one column per run, newest last. Kinds under 3% in every run are left out.
