@@ -248,6 +248,47 @@
       '<p class="hint" style="margin:-18px 0 30px">Share of citations by kind of site, from the answers that showed sources in each run. Only models that search the web show sources, so this follows Perplexity and AI Overviews unless web search is on.</p>';
   }
 
+  // "Google next to the AI answers" (Worker: sotuStats.js googleVsAi): for each prompt × market, where each brand's
+  // website first appears in Google's top 10 — from the same search as the Google AI Overview answer — beside how many
+  // AI answers named the main brand. Says in words when the two disagree.
+  function googleVsAiHtml(g, d, colours) {
+    if (!g || !g.rows || !g.rows.length || !d.brands || !d.brands.length) return '';
+    var main = d.brands[0], mainHas = g.has_domain.indexOf(main.name) !== -1;
+    var placed = d.brands.filter(function (b) { return g.has_domain.indexOf(b.name) !== -1; });
+    var missing = d.brands.filter(function (b) { return g.has_domain.indexOf(b.name) === -1; });
+    var named = 0, answered = 0, ranked = 0;
+    var body = g.rows.map(function (row) {
+      var mine = mainHas ? row.ranks[main.name] : null;
+      var rate = row.ai && row.ai.answered ? row.ai.named / row.ai.answered : null;
+      if (row.ai) { named += row.ai.named; answered += row.ai.answered; }
+      if (mine) ranked++;
+      var read = '';
+      if (mainHas && rate != null) {
+        if (!mine && rate >= 0.5) read = 'AI names you; Google doesn’t rank you';
+        else if (mine && mine.rank <= 3 && rate < 0.5) read = 'Google ranks you; AI rarely names you';
+      }
+      var chips = placed.map(function (b) {
+        var hit = row.ranks[b.name], col = colours[b.name] || PALETTE[0];
+        return hit
+          ? '<span class="chip2" title="' + esc(hit.url || '') + '" style="--bg:' + col.bg + ';--fg:' + col.fg + ';font-size:11.5px;padding:2px 7px">' + esc(b.name) + ' #' + hit.rank + '</span>'
+          : '<span class="chip2" style="--bg:#f3f3ef;--fg:#8a8a8a;text-decoration:line-through;font-size:11.5px;padding:2px 7px">' + esc(b.name) + '</span>';
+      }).join(' ');
+      var m = market(row.location);
+      return '<tr><td>' + esc(row.prompt) + (row.top && row.top[0] ? '<br><small>Google #1: ' + esc(row.top[0].domain) + '</small>' : '') + '</td>' +
+        '<td>' + m.flag + ' ' + esc(m.short) + '</td><td>' + chips + '</td>' +
+        '<td class="num">' + (row.ai ? row.ai.named + ' of ' + row.ai.answered + (rate != null ? ' · ' + pct(rate) : '') : '—') + '</td>' +
+        '<td style="font-size:13px">' + esc(read) + '</td></tr>';
+    }).join('');
+    var lead = mainHas
+      ? '<p style="font-size:17px;margin:0 0 14px"><b>' + esc(main.name) + '</b>’s website is in Google’s top 10 for <b>' + ranked + ' of ' + g.rows.length + '</b> searches' +
+        (answered ? '; AI names it in <b>' + pct(named / answered) + '</b> of answers for the same searches' : '') + '.</p>'
+      : '<p style="margin:0 0 14px">Add ' + esc(main.name) + '’s website to see where it ranks in Google.</p>';
+    return '<h2 class="h2b">Google next to the AI answers</h2>' + lead +
+      '<div class="tblwrap"><table class="tbl"><tr><th>Search</th><th>Market</th><th>Where each website ranks in Google</th><th>AI answers naming ' + esc(main.name) + '</th><th></th></tr>' + body + '</table></div>' +
+      '<p class="hint" style="margin:-18px 0 30px">Google’s top 10 is from the same search as the Google AI Overview answer, in the same market. A chip shows where that brand’s website first appears; a struck-through chip means it isn’t in the top 10.' +
+      (missing.length ? ' Add a website for ' + missing.map(function (b) { return esc(b.name); }).join(', ') + ' to see where it ranks.' : '') + '</p>';
+  }
+
   // "What ChatGPT searched for" (Worker: sotuFanout.js): the searches models ran while answering — which vendors they
   // looked up by name, the discovery searches, and (when checked) where each brand ranks for them. `rk`: { google?, bing? }
   // saved rankings; `opts.owner`: show the buttons that check rankings (they cost a few cents); `opts.compact`: PDFs.
@@ -606,6 +647,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, visibilityHtml: visibilityHtml, citedHtml: citedHtml, sourceTypesHtml: sourceTypesHtml, sourceMixTrendHtml: sourceMixTrendHtml, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, visibilityHtml: visibilityHtml, citedHtml: citedHtml, sourceTypesHtml: sourceTypesHtml, sourceMixTrendHtml: sourceMixTrendHtml, googleVsAiHtml: googleVsAiHtml, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();

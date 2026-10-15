@@ -145,6 +145,16 @@ function timeline(d) {
     '<p class="hint">One answer per model per run (the first that names ' + esc(main.name) + '). The summary is written by a small AI model; the quoted sentence is the model’s own words.</p>';
 }
 
+// Share of voice for the latest run, and how it moved since the one before.
+function sovTrackerCard(last, prev, name) {
+  const sov = last.share_of_voice;
+  if (!sov || sov.by_brand[name] == null) return null;
+  const v = sov.by_brand[name], before = prev && prev.share_of_voice ? prev.share_of_voice.by_brand[name] : null;
+  const delta = before != null ? Math.round((v - before) * 100) : null;
+  const rank = Object.values(sov.by_brand).filter(x => x > v).length + 1;
+  return { lbl: 'Share of voice', val: S.pct(v), sub: '#' + rank + ' of ' + Object.keys(sov.by_brand).length + ' tracked brands' + (delta == null ? '' : ' · ' + (delta > 0 ? '+' : '') + delta + ' pts since last run') };
+}
+
 function renderTrend(d) {
   const colours = S.colourMap(d.brands), main = d.brands[0], runs = d.runs;
   if (!runs.length) { $('detail').innerHTML = '<div class="empty2">No runs yet.</div>'; return; }
@@ -157,6 +167,7 @@ function renderTrend(d) {
   const wNow = trendDemand ? (weightedRuns(Object.assign({}, d, { runs: [last] }), trendDemand)[0].by_brand[main.name] || {}).rate : null;
   const cards = [
     { cls: 'accent', lbl: 'Mention rate now', val: S.pct(now), sub: esc(main.name) + ' · latest run' + (S.range(lastMain) ? ' · likely ' + S.range(lastMain) : '') },
+    sovTrackerCard(last, prev, main.name),
     last.visibility && last.visibility.by_brand[main.name] ? { lbl: 'Visibility score', val: last.visibility.by_brand[main.name].score + '/100', sub: prev && prev.visibility && prev.visibility.by_brand[main.name] && prev.visibility.parts_used.join() === last.visibility.parts_used.join() ? (last.visibility.by_brand[main.name].score - prev.visibility.by_brand[main.name].score >= 0 ? '+' : '') + (last.visibility.by_brand[main.name].score - prev.visibility.by_brand[main.name].score) + ' since the previous run' : 'latest run' } : null,
     last.recommend && last.recommend.by_brand[main.name] ? { lbl: 'Top pick', val: S.pct(last.recommend.by_brand[main.name].top_rate), sub: 'answers where ' + esc(main.name) + ' is the single top recommendation' } : null,
     wNow != null ? { lbl: 'Weighted by demand', val: S.pct(wNow), sub: 'the same, with each prompt counted by its searches' } : null,
@@ -176,7 +187,7 @@ function renderTrend(d) {
   const hist = runs.slice().reverse().map(r => {
     const s = r.by_brand[main.name];
     return '<tr><td>' + new Date(r.created_at).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + '</td>' +
-      '<td class="num">' + S.pct(s ? s.rate : null) + '</td><td class="num">' + (S.range(s) || '—') + '</td><td class="num">' + (s && s.avg_position ? '#' + s.avg_position : '—') + '</td>' +
+      '<td class="num">' + S.pct(s ? s.rate : null) + '</td><td class="num">' + (S.range(s) || '—') + '</td><td class="num">' + (r.share_of_voice && r.share_of_voice.by_brand[main.name] != null ? S.pct(r.share_of_voice.by_brand[main.name]) : '—') + '</td><td class="num">' + (s && s.avg_position ? '#' + s.avg_position : '—') + '</td>' +
       '<td class="num">' + r.answers + '</td>' + (window.SNAPSHOT ? '' : '<td class="num">' + S.money(r.cost) + '</td>') + '<td>' + r.status + '</td>' +
       (window.SNAPSHOT ? '' : '<td><a href="' + link('/tools/state-of-the-llm-union/report/', { id: r.id }) + '">Open report →</a></td>') + '</tr>';
   }).join('');
@@ -193,8 +204,8 @@ function renderTrend(d) {
     (trendMode === 'toppick' ? '<p class="hint" style="margin:-8px 0 20px">Share of answers where each brand is the single top recommendation, run by run (runs made without reading recommendations show as gaps).</p>' : '') +
     S.visibilityHtml(last.visibility, { brands: d.brands }, colours) + S.recommendHtml(last.recommend, { brands: d.brands, cells: [], locations: [] }, colours, { named: Object.fromEntries(d.brands.map(b => [b.name, (last.by_brand[b.name] || {}).rate])) }) + S.describeTrendHtml(runs, main.name, when) + S.describeHtml(last.describe, main.name) + timeline(d) + S.factsHtml(last.facts, main.name) + S.discoveredHtml(last.discovered, !window.SNAPSHOT) +
     '<h2 class="h2b">Latest run — ' + esc(main.name) + ' by model</h2><div class="tblwrap"><table class="tbl"><tr><th>Model</th><th>Mention rate</th><th>Answers</th></tr>' + provRows + '</table></div>' +
-    citedHtml(d, last, colours) +
-    '<h2 class="h2b">All runs</h2><div class="tblwrap"><table class="tbl"><tr><th>When</th><th>' + esc(main.name) + ' rate</th><th>Likely range</th><th>Avg position</th><th>Answers</th>' + (window.SNAPSHOT ? '' : '<th>Cost</th>') + '<th>Status</th>' + (window.SNAPSHOT ? '' : '<th></th>') + '</tr>' + hist + '</table></div>';
+    S.googleVsAiHtml(last.google, d, colours) + citedHtml(d, last, colours) +
+    '<h2 class="h2b">All runs</h2><div class="tblwrap"><table class="tbl"><tr><th>When</th><th>' + esc(main.name) + ' rate</th><th>Likely range</th><th>Share of voice</th><th>Avg position</th><th>Answers</th>' + (window.SNAPSHOT ? '' : '<th>Cost</th>') + '<th>Status</th>' + (window.SNAPSHOT ? '' : '<th></th>') + '</tr>' + hist + '</table></div>';
 }
 
 // Chart modes: share of answers, weighted by demand (when demand is known), top pick (when runs read recommendations).
