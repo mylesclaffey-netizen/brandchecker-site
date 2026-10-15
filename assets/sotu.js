@@ -289,6 +289,87 @@
       (missing.length ? ' Add a website for ' + missing.map(function (b) { return esc(b.name); }).join(', ') + ' to see where it ranks.' : '') + '</p>';
   }
 
+  // "How AI describes you vs your competitors" (Worker: sotuStats.js perceptionStats): per fixed dimension (ease of use,
+  // price, integrations…) each brand's net score — favourable minus unfavourable mentions as a share of the answers
+  // that name the brand. A radar of you against the competitors' average, a grid of every brand, and the two biggest
+  // differences in words. Brands read from fewer than MIN_READ answers are shown faded and left out of the average.
+  var DIM_ORDER = ['ease_of_use', 'power', 'price', 'integrations', 'support', 'reliability', 'scalability', 'enterprise', 'features'];
+  var MIN_READ = 5, MIN_MENTIONS = 3;
+  function perceptionHtml(p, d, colours) {
+    if (!p || !p.dims || !p.dims.length || !d.brands || d.brands.length < 2) return '';
+    var main = d.brands[0], mine = p.by_brand[main.name];
+    if (!mine || !mine.answers) return '';
+    var dims = p.dims.slice().sort(function (a, b) { return DIM_ORDER.indexOf(a.dim) - DIM_ORDER.indexOf(b.dim); });
+    var rivals = d.brands.slice(1).filter(function (b) { return p.by_brand[b.name] && p.by_brand[b.name].answers >= MIN_READ; });
+    if (!rivals.length) return '';
+    var cell = function (name, dim) { var v = p.by_brand[name]; return v && v.dims[dim] ? v.dims[dim] : null; };
+    var pctNet = function (v) { return Math.round(v * 100) + '%'; };
+
+    // The two things worth saying in words: what AI links the brand with most, and where a rival is furthest ahead.
+    var strong = null, worst = null;
+    dims.forEach(function (x) {
+      var m = cell(main.name, x.dim); if (!m || m.mentions < MIN_MENTIONS) return;
+      var top = null;
+      rivals.forEach(function (b) { var c = cell(b.name, x.dim); if (c && c.mentions >= MIN_MENTIONS && (!top || c.net > top.net)) top = { name: b.name, net: c.net }; });
+      if (m.net > 0 && (!strong || m.net > strong.mine)) strong = { label: x.label, mine: m.net, rival: top };
+      if (top && m.net - top.net < -0.1 && (!worst || m.net - top.net < worst.gap)) worst = { label: x.label, gap: m.net - top.net, mine: m.net, rival: top };
+    });
+    var lines = '';
+    if (strong) {
+      var r = strong.rival, gap = r ? strong.mine - r.net : null;
+      lines += '<p style="font-size:17px;margin:0 0 6px">AI links ' + esc(main.name) + ' most with <b>' + esc(strong.label) + '</b> (' + pctNet(strong.mine) + ')' +
+        (!r ? '.' : gap > 0.1 ? ', ahead of ' + esc(r.name) + ' (' + pctNet(r.net) + ').' : gap >= -0.1 ? ' — about level with ' + esc(r.name) + ' (' + pctNet(r.net) + ').' : ', but ' + esc(r.name) + ' scores ' + pctNet(r.net) + '.') + '</p>';
+    }
+    if (worst) lines += '<p style="font-size:17px;margin:0 0 6px">A rival leads on <b>' + esc(worst.label) + '</b>: ' + esc(worst.rival.name) + ' ' + pctNet(worst.rival.net) + ' vs ' + esc(main.name) + ' ' + pctNet(worst.mine) + '.</p>';
+
+    // Radar: you against the average of the competitors with enough answers. Spokes run 0–100% (a negative net draws at 0).
+    var radar = '';
+    if (dims.length >= 3) {
+      var W = 600, H = 410, cx = W / 2, cy = 205, R = 128, n = dims.length;
+      var pt = function (i, f) { var a = -Math.PI / 2 + 2 * Math.PI * i / n; return [cx + Math.cos(a) * R * f, cy + Math.sin(a) * R * f]; };
+      var clamp = function (v) { return Math.max(0, Math.min(1, v || 0)); };
+      var shape = function (vals) { return dims.map(function (x, i) { return pt(i, clamp(vals[i])).map(function (c) { return c.toFixed(1); }).join(','); }).join(' '); };
+      var mineVals = dims.map(function (x) { var c = cell(main.name, x.dim); return c ? c.net : 0; });
+      var rivalVals = dims.map(function (x) {
+        var v = rivals.map(function (b) { var c = cell(b.name, x.dim); return c ? c.net : 0; });
+        return v.reduce(function (a, b) { return a + b; }, 0) / v.length;
+      });
+      var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="How AI describes ' + esc(main.name) + ' compared with its competitors, by dimension" style="max-width:600px;width:100%;display:block;margin:0 auto 6px">';
+      [0.25, 0.5, 0.75, 1].forEach(function (f) { svg += '<polygon points="' + dims.map(function (x, i) { return pt(i, f).map(function (c) { return c.toFixed(1); }).join(','); }).join(' ') + '" fill="none" stroke="#c9c9c9" stroke-width="1"/>'; });
+      dims.forEach(function (x, i) {
+        var e = pt(i, 1), l = pt(i, 1.17), anchor = Math.abs(l[0] - cx) < 8 ? 'middle' : (l[0] > cx ? 'start' : 'end');
+        svg += '<line x1="' + cx + '" y1="' + cy + '" x2="' + e[0].toFixed(1) + '" y2="' + e[1].toFixed(1) + '" stroke="#c9c9c9" stroke-width="1"/>' +
+          '<text x="' + l[0].toFixed(1) + '" y="' + (l[1] + 4).toFixed(1) + '" text-anchor="' + anchor + '" style="font-size:14px;fill:#3d3d3d">' + esc(x.label) + '</text>';
+      });
+      var mc = colours[main.name] || PALETTE[0];
+      svg += '<polygon points="' + shape(rivalVals) + '" fill="#C99A3E" fill-opacity=".18" stroke="#C99A3E" stroke-width="2.5"/>' +
+        '<polygon points="' + shape(mineVals) + '" fill="' + mc.bg + '" fill-opacity=".22" stroke="' + mc.bg + '" stroke-width="3"/></svg>';
+      radar = svg + '<div class="legend" style="justify-content:center;margin:0 0 24px"><span class="chip2" style="--bg:' + mc.bg + ';--fg:' + mc.fg + '">' + esc(main.name) + '</span>' +
+        '<span class="chip2" style="--bg:#C99A3E;--fg:#0a0a0a">Competitors’ average</span></div>';
+    }
+
+    // Grid: every brand, every dimension.
+    var heat = function (v) { return v > 0.2 ? 'rgba(27,112,64,' + (0.12 + 0.4 * Math.min(1, v)).toFixed(2) + ')' : v < -0.2 ? 'rgba(192,50,31,' + (0.12 + 0.4 * Math.min(1, -v)).toFixed(2) + ')' : '#f3f3ef'; };
+    var heads = d.brands.map(function (b) {
+      var v = p.by_brand[b.name], thin = !v || v.answers < MIN_READ, c = colours[b.name] || PALETTE[0];
+      return '<th><span class="dot" style="--bg:' + c.bg + '"></span>' + esc(b.name) + '<br><small style="font-weight:400">' + (v ? v.answers : 0) + ' answers' + (thin ? ' — too few' : '') + '</small></th>';
+    }).join('');
+    var rows = dims.map(function (x) {
+      var vals = d.brands.map(function (b) { var c = cell(b.name, x.dim), v = p.by_brand[b.name]; return c && v && v.answers >= MIN_READ && c.mentions >= MIN_MENTIONS ? c.net : null; });
+      var top = Math.max.apply(null, vals.map(function (v) { return v == null ? -9 : v; }));
+      return '<tr><td><b>' + esc(x.label) + '</b></td>' + d.brands.map(function (b, i) {
+        var c = cell(b.name, x.dim), v = p.by_brand[b.name], thin = !v || v.answers < MIN_READ;
+        if (!c) return '<td class="num" style="color:#8a8a8a">—</td>';
+        var faded = thin || c.mentions < MIN_MENTIONS, lead = vals[i] != null && vals[i] === top && top > 0.2;
+        return '<td class="num" style="background:' + heat(c.net) + (faded ? ';opacity:.55' : '') + '">' + (lead ? '<b>' + pctNet(c.net) + '</b>' : pctNet(c.net)) + ' <small>(' + c.mentions + ')</small></td>';
+      }).join('') + '</tr>';
+    }).join('');
+    return '<h2 class="h2b">How AI describes ' + esc(main.name) + ' vs competitors</h2>' + lines + (lines ? '<div style="height:10px"></div>' : '') + radar +
+      '<div class="tblwrap"><table class="tbl"><tr><th>Dimension</th>' + heads + '</tr>' + rows + '</table></div>' +
+      '<details class="hint" style="margin:-18px 0 30px"><summary style="cursor:pointer">Each cell: favourable minus unfavourable mentions, as a share of that brand’s answers (mentions in brackets). Bold leads the row. How this is read</summary>' +
+      '<p style="margin:6px 0 0">So 75% means the point came up favourably in about three of every four answers that name the brand. Faded cells rest on fewer than ' + MIN_MENTIONS + ' mentions, and brands read from fewer than ' + MIN_READ + ' answers are left out of the comparison and the competitors’ average. Each answer is tagged by a small AI model from its own words, so treat small gaps as noise.</p></details>';
+  }
+
   // "What ChatGPT searched for" (Worker: sotuFanout.js): the searches models ran while answering — which vendors they
   // looked up by name, the discovery searches, and (when checked) where each brand ranks for them. `rk`: { google?, bing? }
   // saved rankings; `opts.owner`: show the buttons that check rankings (they cost a few cents); `opts.compact`: PDFs.
@@ -647,6 +728,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, visibilityHtml: visibilityHtml, citedHtml: citedHtml, sourceTypesHtml: sourceTypesHtml, sourceMixTrendHtml: sourceMixTrendHtml, googleVsAiHtml: googleVsAiHtml, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, visibilityHtml: visibilityHtml, citedHtml: citedHtml, sourceTypesHtml: sourceTypesHtml, sourceMixTrendHtml: sourceMixTrendHtml, googleVsAiHtml: googleVsAiHtml, perceptionHtml: perceptionHtml, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();
