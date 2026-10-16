@@ -102,6 +102,17 @@
       </div>
       <p class="hint">Pulls Google’s People Also Ask questions, autocomplete and related searches for the first market you pick, plus “alternatives” and “vs” searches for the competitors you list, and turns them into questions for an AI assistant. Questions that already name your brand are left out, since they would always “mention” it. Tick the ones to add.</p>
       <div id="suggOut"></div>
+      <div style="margin-top:18px;padding-top:16px;border-top:2px solid #0a0a0a">
+        <span class="fl">Or start from B2B SaaS buyer prompts</span>
+        <div class="row">
+          <div><label for="saasFor" class="fl" style="font-size:12px">Who it’s for (optional)</label><input id="saasFor" type="text" placeholder="e.g. sales teams" maxlength="60"></div>
+          <div><label for="saasInt" class="fl" style="font-size:12px">An integration buyers ask about (optional)</label><input id="saasInt" type="text" placeholder="e.g. Salesforce" maxlength="40"></div>
+        </div>
+        <label class="toggle" style="margin-top:10px"><input type="checkbox" id="saasPersonas">
+          <div><b>Also ask as four typical software buyers</b><span>Fills “Ask as different buyers” below with a marketing lead, an IT lead, a founder and a procurement manager. Every buyer adds a full set of answers to the cost.</span></div></label>
+        <p style="margin:10px 0 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button type="button" class="btn2 small" id="saasBtn">Add B2B SaaS buyer prompts</button><span class="hint" id="saasMsg" style="margin:0"></span></p>
+        <p class="hint">Uses what you sell (above) and your competitors to write the questions a software buyer asks an AI — best in your category, for your kind of team, alternatives to each competitor, with a given integration. None names your brand, so being named means the AI chose you.</p>
+      </div>
     </div>
     <div class="field">
       <label for="prompts">Prompts (up to <span id="maxPrompts">25</span>, one per line)</label>
@@ -269,6 +280,34 @@ async function suggest() {
   });
 }
 
+// B2B SaaS buyer prompts: written from what you sell and your competitors, no search needed. None names the brand.
+function saasPrompts() {
+  const cat = $('topic').value.trim(), msg = $('saasMsg');
+  if (!cat) { msg.textContent = 'Type what you sell first (above), e.g. “project management software”.'; msg.style.color = '#d40000'; return; }
+  msg.style.color = '';
+  const nameOf = c => { const x = c.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0]; return /\./.test(x) ? x.split('.')[0].replace(/^./, ch => ch.toUpperCase()) : x; };
+  const rivals = lines('competitors').map(nameOf).filter(Boolean).slice(0, 3);
+  const aud = $('saasFor').value.trim(), integ = $('saasInt').value.trim();
+  const list = ['What are the best ' + cat + '?'];
+  if (aud) list.push('What is the best ' + cat + ' for ' + aud + '?');
+  list.push('Which ' + cat + ' should a growing B2B company choose?');
+  list.push('What is the best free or low-cost ' + cat + '?');
+  list.push('Which ' + cat + ' is easiest to set up for a team of 20?');
+  rivals.forEach(r => list.push('What are the best alternatives to ' + r + '?'));
+  if (rivals.length > 1) list.push(rivals[0] + ' or ' + rivals[1] + ': which ' + cat + ' should I choose?');
+  if (integ) list.push('What is the best ' + cat + ' that integrates with ' + integ + '?');
+  const cur = lines('prompts'), have = new Set(cur.map(x => x.toLowerCase()));
+  const max = options ? options.limits.max_prompts : 25;
+  let added = 0;
+  list.forEach(p => { if (cur.length < max && !have.has(p.toLowerCase())) { cur.push(p); have.add(p.toLowerCase()); added++; } });
+  $('prompts').value = cur.join('\n');
+  if ($('saasPersonas').checked && !lines('personas').length) {
+    $('personas').value = ['the head of marketing at a 50-person B2B company', 'the IT lead at a 500-person company who cares about security', 'a startup founder with no developers on the team', 'a procurement manager comparing vendors on price'].join('\n');
+  }
+  msg.textContent = added ? 'Added ' + added + ' prompt' + (added > 1 ? 's' : '') + ' below.' + (rivals.length ? '' : ' Add competitors above to get “alternatives to…” prompts too.') : 'Those prompts are already in the box.';
+  estimate();
+}
+
 async function init() {
   const r = await S.api('/state-of-union/options');
   if (r.error) { $('models').innerHTML = '<span class="err">' + esc(r.error) + '</span>'; return; }
@@ -281,6 +320,7 @@ async function init() {
   $('track').addEventListener('input', syncAlert); syncAlert();
   $('go').onclick = submit;
   $('suggestBtn').onclick = suggest;
+  $('saasBtn').onclick = saasPrompts;
   $('factsDraft').onclick = () => S.draftFacts({ textarea: $('facts'), domain: $('domain').value, brand: $('brand').value.trim(), button: $('factsDraft'), msg: $('factsDraftMsg'), list: $('factsDraftSrc') });
   $('topic').onkeydown = e => { if (e.key === 'Enter') suggest(); };
 }
