@@ -121,7 +121,8 @@ const TOOLS = [
   { id: 'review-link',  label: 'Google review link generator' },
   { id: 'brand-builder', label: 'Brand Builder' },
   { id: 'state-of-the-union', label: 'State Of The LLM Union' },
-  { id: 'model-compare', label: 'LLM Time Machine' }
+  { id: 'model-compare', label: 'LLM Time Machine' },
+  { id: 'pricing-check', label: 'Does AI know your pricing?' }
 ];
 const TOOL_LABEL = Object.fromEntries(TOOLS.map(t => [t.id, t.label]));
 
@@ -141,7 +142,8 @@ const REPORT_LINK = {
   'brand-sentiment': (code, id) => `/tools/brand-sentiment/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
   'brand-builder': (code, id) => `/tools/brand-builder/report/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
   'state-of-the-union': (code, id) => `/tools/state-of-the-llm-union/report/?k=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`,
-  'model-compare': (code, id) => `/tools/model-compare/?k=${encodeURIComponent(code)}&r=${encodeURIComponent(id)}`
+  'model-compare': (code, id) => `/tools/model-compare/?k=${encodeURIComponent(code)}&r=${encodeURIComponent(id)}`,
+  'pricing-check': (code, id) => `/tools/pricing-check/?r=${encodeURIComponent(id)}`
 };
 
 function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
