@@ -191,37 +191,46 @@
   // citations that go to video, review sites, best-of articles, news, your own site and competitors', with the biggest
   // sites in each kind. Says plainly which models showed sources — a model with web search off cites nothing.
   var PROVIDER_NAMES = { chatgpt: 'ChatGPT', claude: 'Claude', perplexity: 'Perplexity', llama: 'Llama', mistral: 'Mistral', ai_overviews: 'AI Overviews', ai_mode: 'AI Mode', gemini: 'Gemini', copilot: 'Copilot' };
-  function sourceTypesHtml(cit, d, colours) {
-    if (!cit || !cit.by_type || !cit.by_type.length) return '';
+  // The words and numbers behind "what kind of sites the answers cite", as plain text — shared by the page, the PDFs and the slides.
+  function sourceTypesFacts(cit, d) {
+    if (!cit || !cit.by_type || !cit.by_type.length) return null;
     var main = d.brands && d.brands[0];
-    var fill = function (t) { return t === 'own' ? (main && colours[main.name] ? colours[main.name].bg : '#34517A') : t === 'competitors' ? '#C99A3E' : '#6FA0C4'; };
     var share = function (v) { return v > 0 && v < 0.01 ? '<1%' : pct(v); };
-    var biggest = Math.max.apply(null, cit.by_type.map(function (t) { return t.share; })) || 1;
-    // Bars are scaled to the biggest kind (the percentage beside each is the real share), so small kinds stay visible.
-    var rows = cit.by_type.map(function (t) {
-      return '<tr><td><b>' + esc(t.label) + '</b></td>' +
-        '<td><div class="bar" style="--bg:' + fill(t.type) + ';height:22px"><i style="width:' + Math.max(3, Math.round(t.share / biggest * 100)) + '%"></i></div></td>' +
-        '<td class="num">' + share(t.share) + '</td>' +
-        '<td><small>' + t.domains.map(function (x) { return esc(x.domain) + ' (' + x.answers + ')'; }).join(' · ') + '</small></td></tr>';
-    }).join('');
-    var name = function (id) { return esc(PROVIDER_NAMES[id] || id); };
+    var nameOf = function (id) { return PROVIDER_NAMES[id] || id; };
     var from = (cit.by_provider || []).filter(function (p) { return p.with_sources; });
     var none = (cit.by_provider || []).filter(function (p) { return !p.with_sources; });
     // The one caveat that matters, up front: only some models show sources at all.
     var coverage = from.length
-      ? 'Only ' + from.map(function (p) { return name(p.provider); }).join(' and ') + ' showed sources (' + cit.answers_with_sources + ' answers).' +
-        (none.length ? ' ' + none.map(function (p) { return name(p.provider); }).join(', ') + (d.web ? ' showed none.' : ' answered from their own knowledge (web search off), so they cite nothing.') : '')
+      ? 'Only ' + from.map(function (p) { return nameOf(p.provider); }).join(' and ') + ' showed sources (' + cit.answers_with_sources + ' answers).' +
+        (none.length ? ' ' + none.map(function (p) { return nameOf(p.provider); }).join(', ') + (d.web ? ' showed none.' : ' answered from their own knowledge (web search off), so they cite nothing.') : '')
       : '';
     // The takeaway in one line: the biggest recognised kind of site, and what share goes to the user's own site.
     var top = cit.by_type.filter(function (t) { return t.type !== 'other' && t.type !== 'own'; })[0];
     var own = cit.by_type.filter(function (t) { return t.type === 'own'; })[0];
-    var lead = top ? '<p style="font-size:17px;margin:0 0 14px"><b>' + share(top.share) + '</b> of citations go to ' + esc(top.label.toLowerCase()) + '.' +
-      (main ? ' ' + esc(main.name) + '’s own site gets <b>' + share(own ? own.share : 0) + '</b>.' : '') + '</p>' : '';
+    return { main: main, share: share, coverage: coverage, top: top, own: own,
+      lead: top ? { pct: share(top.share), kind: top.label.toLowerCase(), you: main ? main.name + '’s own site gets ' + share(own ? own.share : 0) + '.' : '' } : null };
+  }
+
+  function sourceTypesHtml(cit, d, colours, opts) {
+    var f = sourceTypesFacts(cit, d);
+    if (!f) return '';
+    opts = opts || {};
+    var main = f.main, share = f.share;
+    var fill = function (t) { return t === 'own' ? (main && colours[main.name] ? colours[main.name].bg : '#34517A') : t === 'competitors' ? '#C99A3E' : '#6FA0C4'; };
+    var biggest = Math.max.apply(null, cit.by_type.map(function (t) { return t.share; })) || 1;
+    // Bars are scaled to the biggest kind (the percentage beside each is the real share), so small kinds stay visible.
+    var rows = (opts.compact ? cit.by_type.slice(0, 6) : cit.by_type).map(function (t) {
+      return '<tr><td><b>' + esc(t.label) + '</b></td>' +
+        '<td><div class="bar" style="--bg:' + fill(t.type) + ';height:' + (opts.compact ? 14 : 22) + 'px"><i style="width:' + Math.max(3, Math.round(t.share / biggest * 100)) + '%"></i></div></td>' +
+        '<td class="num">' + share(t.share) + '</td>' +
+        '<td><small>' + t.domains.map(function (x) { return esc(x.domain) + ' (' + x.answers + ')'; }).join(' · ') + '</small></td></tr>';
+    }).join('');
+    var lead = f.lead ? '<p style="font-size:' + (opts.compact ? 13 : 17) + 'px;margin:0 0 ' + (opts.compact ? 6 : 14) + 'px"><b>' + f.lead.pct + '</b> of citations go to ' + esc(f.lead.kind) + '. ' + esc(f.lead.you).replace(/^(.*?) gets (\S+)\.$/, '$1 gets <b>$2</b>.') + '</p>' : '';
     return '<h2 class="h2b">What kind of sites the answers cite</h2>' + lead +
-      (coverage ? '<div class="banner2" style="margin:0 0 16px">' + coverage + '</div>' : '') +
+      (f.coverage ? (opts.compact ? '<p class="hint" style="margin:0 0 6px">' + esc(f.coverage) + '</p>' : '<div class="banner2" style="margin:0 0 16px">' + esc(f.coverage) + '</div>') : '') +
       '<div class="tblwrap"><table class="tbl"><tr><th>Kind of site</th><th colspan="2">Share of citations</th><th>Biggest sites (answers citing each)</th></tr>' + rows + '</table></div>' +
-      '<details class="hint" style="margin:-18px 0 30px"><summary style="cursor:pointer">How this is counted</summary>' +
-      '<p style="margin:6px 0 0">Each site is counted once per answer. “Best-of &amp; comparison articles” are pages whose address or title reads like “best…”, “top 10…”, “alternatives” or “A vs B”. A site we don’t recognise and that doesn’t look like one of those is “Unclassified”.</p></details>';
+      (opts.compact ? '' : '<details class="hint" style="margin:-18px 0 30px"><summary style="cursor:pointer">How this is counted</summary>' +
+      '<p style="margin:6px 0 0">Each site is counted once per answer. “Best-of &amp; comparison articles” are pages whose address or title reads like “best…”, “top 10…”, “alternatives” or “A vs B”. A site we don’t recognise and that doesn’t look like one of those is “Unclassified”.</p></details>');
   }
 
   // The same breakdown run by run (tracker): one column per run, newest last. Kinds under 3% in every run are left out.
@@ -248,16 +257,15 @@
       '<p class="hint" style="margin:-18px 0 30px">Share of citations by kind of site, from the answers that showed sources in each run. Only models that search the web show sources, so this follows Perplexity and AI Overviews unless web search is on.</p>';
   }
 
-  // "Google next to the AI answers" (Worker: sotuStats.js googleVsAi): for each prompt × market, where each brand's
-  // website first appears in Google's top 10 — from the same search as the Google AI Overview answer — beside how many
-  // AI answers named the main brand. Says in words when the two disagree.
-  function googleVsAiHtml(g, d, colours) {
-    if (!g || !g.rows || !g.rows.length || !d.brands || !d.brands.length) return '';
+  // Where each brand ranks in Google's top 10 for each prompt × market, next to how many AI answers named the main brand —
+  // as plain data for the page, the PDFs and the slides.
+  function googleFacts(g, d) {
+    if (!g || !g.rows || !g.rows.length || !d.brands || !d.brands.length) return null;
     var main = d.brands[0], mainHas = g.has_domain.indexOf(main.name) !== -1;
     var placed = d.brands.filter(function (b) { return g.has_domain.indexOf(b.name) !== -1; });
     var missing = d.brands.filter(function (b) { return g.has_domain.indexOf(b.name) === -1; });
     var named = 0, answered = 0, ranked = 0;
-    var body = g.rows.map(function (row) {
+    var rows = g.rows.map(function (row) {
       var mine = mainHas ? row.ranks[main.name] : null;
       var rate = row.ai && row.ai.answered ? row.ai.named / row.ai.answered : null;
       if (row.ai) { named += row.ai.named; answered += row.ai.answered; }
@@ -267,45 +275,60 @@
         if (!mine && rate >= 0.5) read = 'AI names you; Google doesn’t rank you';
         else if (mine && mine.rank <= 3 && rate < 0.5) read = 'Google ranks you; AI rarely names you';
       }
-      var chips = placed.map(function (b) {
+      return { prompt: row.prompt, location: row.location, ranks: row.ranks, ai: row.ai, rate: rate, read: read, top: row.top && row.top[0] ? row.top[0].domain : '' };
+    });
+    var lead = mainHas ? main.name + '’s website is in Google’s top 10 for ' + ranked + ' of ' + rows.length + ' searches' + (answered ? '; AI names it in ' + pct(named / answered) + ' of answers for the same searches' : '') + '.' : 'Add ' + main.name + '’s website to see where it ranks in Google.';
+    return { main: main, mainHas: mainHas, placed: placed, missing: missing, rows: rows, ranked: ranked, named: named, answered: answered, lead: lead };
+  }
+
+  // "Google next to the AI answers" (Worker: sotuStats.js googleVsAi): for each prompt × market, where each brand's
+  // website first appears in Google's top 10 — from the same search as the Google AI Overview answer — beside how many
+  // AI answers named the main brand. Says in words when the two disagree. `opts.compact` (the summary PDF): the
+  // sentence, then only the rows where the two disagree (or the first few).
+  function googleVsAiHtml(g, d, colours, opts) {
+    var f = googleFacts(g, d);
+    if (!f) return '';
+    opts = opts || {};
+    var main = f.main;
+    var list = f.rows;
+    if (opts.compact) { var gaps = f.rows.filter(function (r) { return r.read; }); list = (gaps.length ? gaps : f.rows).slice(0, 4); }
+    var body = list.map(function (row) {
+      var chips = f.placed.map(function (b) {
         var hit = row.ranks[b.name], col = colours[b.name] || PALETTE[0];
         return hit
           ? '<span class="chip2" title="' + esc(hit.url || '') + '" style="--bg:' + col.bg + ';--fg:' + col.fg + ';font-size:11.5px;padding:2px 7px">' + esc(b.name) + ' #' + hit.rank + '</span>'
           : '<span class="chip2" style="--bg:#f3f3ef;--fg:#8a8a8a;text-decoration:line-through;font-size:11.5px;padding:2px 7px">' + esc(b.name) + '</span>';
       }).join(' ');
       var m = market(row.location);
-      return '<tr><td>' + esc(row.prompt) + (row.top && row.top[0] ? '<br><small>Google #1: ' + esc(row.top[0].domain) + '</small>' : '') + '</td>' +
+      return '<tr><td>' + esc(row.prompt) + (row.top ? '<br><small>Google #1: ' + esc(row.top) + '</small>' : '') + '</td>' +
         '<td>' + m.flag + ' ' + esc(m.short) + '</td><td>' + chips + '</td>' +
-        '<td class="num">' + (row.ai ? row.ai.named + ' of ' + row.ai.answered + (rate != null ? ' · ' + pct(rate) : '') : '—') + '</td>' +
-        '<td style="font-size:13px">' + esc(read) + '</td></tr>';
+        '<td class="num">' + (row.ai ? row.ai.named + ' of ' + row.ai.answered + (row.rate != null ? ' · ' + pct(row.rate) : '') : '—') + '</td>' +
+        '<td style="font-size:13px">' + esc(row.read) + '</td></tr>';
     }).join('');
-    var lead = mainHas
-      ? '<p style="font-size:17px;margin:0 0 14px"><b>' + esc(main.name) + '</b>’s website is in Google’s top 10 for <b>' + ranked + ' of ' + g.rows.length + '</b> searches' +
-        (answered ? '; AI names it in <b>' + pct(named / answered) + '</b> of answers for the same searches' : '') + '.</p>'
-      : '<p style="margin:0 0 14px">Add ' + esc(main.name) + '’s website to see where it ranks in Google.</p>';
+    var lead = f.mainHas
+      ? '<p style="font-size:' + (opts.compact ? 13 : 17) + 'px;margin:0 0 ' + (opts.compact ? 6 : 14) + 'px"><b>' + esc(main.name) + '</b>’s website is in Google’s top 10 for <b>' + f.ranked + ' of ' + f.rows.length + '</b> searches' +
+        (f.answered ? '; AI names it in <b>' + pct(f.named / f.answered) + '</b> of answers for the same searches' : '') + '.</p>'
+      : '<p style="margin:0 0 14px">' + esc(f.lead) + '</p>';
     return '<h2 class="h2b">Google next to the AI answers</h2>' + lead +
       '<div class="tblwrap"><table class="tbl"><tr><th>Search</th><th>Market</th><th>Where each website ranks in Google</th><th>AI answers naming ' + esc(main.name) + '</th><th></th></tr>' + body + '</table></div>' +
       '<p class="hint" style="margin:-18px 0 30px">Google’s top 10 is from the same search as the Google AI Overview answer, in the same market. A chip shows where that brand’s website first appears; a struck-through chip means it isn’t in the top 10.' +
-      (missing.length ? ' Add a website for ' + missing.map(function (b) { return esc(b.name); }).join(', ') + ' to see where it ranks.' : '') + '</p>';
+      (opts.compact && list.length < f.rows.length ? ' Showing ' + list.length + ' of ' + f.rows.length + ' searches.' : '') +
+      (f.missing.length ? ' Add a website for ' + f.missing.map(function (b) { return esc(b.name); }).join(', ') + ' to see where it ranks.' : '') + '</p>';
   }
 
-  // "How AI describes you vs your competitors" (Worker: sotuStats.js perceptionStats): per fixed dimension (ease of use,
-  // price, integrations…) each brand's net score — favourable minus unfavourable mentions as a share of the answers
-  // that name the brand. A radar of you against the competitors' average, a grid of every brand, and the two biggest
-  // differences in words. Brands read from fewer than MIN_READ answers are shown faded and left out of the average.
   var DIM_ORDER = ['ease_of_use', 'power', 'price', 'integrations', 'support', 'reliability', 'scalability', 'enterprise', 'features'];
   var MIN_READ = 5, MIN_MENTIONS = 3;
-  function perceptionHtml(p, d, colours) {
-    if (!p || !p.dims || !p.dims.length || !d.brands || d.brands.length < 2) return '';
+  var pctNet = function (v) { return Math.round(v * 100) + '%'; };
+  // The numbers behind the comparison, shared by the page, the PDFs and the slides: dimensions in a fixed order, the
+  // competitors with enough answers to count, each brand's cell, the competitors' average, and the two things worth saying.
+  function perceptionModel(p, d) {
+    if (!p || !p.dims || !p.dims.length || !d.brands || d.brands.length < 2) return null;
     var main = d.brands[0], mine = p.by_brand[main.name];
-    if (!mine || !mine.answers) return '';
+    if (!mine || !mine.answers) return null;
     var dims = p.dims.slice().sort(function (a, b) { return DIM_ORDER.indexOf(a.dim) - DIM_ORDER.indexOf(b.dim); });
     var rivals = d.brands.slice(1).filter(function (b) { return p.by_brand[b.name] && p.by_brand[b.name].answers >= MIN_READ; });
-    if (!rivals.length) return '';
+    if (!rivals.length) return null;
     var cell = function (name, dim) { var v = p.by_brand[name]; return v && v.dims[dim] ? v.dims[dim] : null; };
-    var pctNet = function (v) { return Math.round(v * 100) + '%'; };
-
-    // The two things worth saying in words: what AI links the brand with most, and where a rival is furthest ahead.
     var strong = null, worst = null;
     dims.forEach(function (x) {
       var m = cell(main.name, x.dim); if (!m || m.mentions < MIN_MENTIONS) return;
@@ -314,13 +337,33 @@
       if (m.net > 0 && (!strong || m.net > strong.mine)) strong = { label: x.label, mine: m.net, rival: top };
       if (top && m.net - top.net < -0.1 && (!worst || m.net - top.net < worst.gap)) worst = { label: x.label, gap: m.net - top.net, mine: m.net, rival: top };
     });
-    var lines = '';
+    var mineVals = dims.map(function (x) { var c = cell(main.name, x.dim); return c ? c.net : 0; });
+    var rivalVals = dims.map(function (x) {
+      var v = rivals.map(function (b) { var c = cell(b.name, x.dim); return c ? c.net : 0; });
+      return v.reduce(function (a, b) { return a + b; }, 0) / v.length;
+    });
+    // The two sentences, as plain text (the page bolds the dimension names itself).
+    var lines = [];
     if (strong) {
       var r = strong.rival, gap = r ? strong.mine - r.net : null;
-      lines += '<p style="font-size:17px;margin:0 0 6px">AI links ' + esc(main.name) + ' most with <b>' + esc(strong.label) + '</b> (' + pctNet(strong.mine) + ')' +
-        (!r ? '.' : gap > 0.1 ? ', ahead of ' + esc(r.name) + ' (' + pctNet(r.net) + ').' : gap >= -0.1 ? ' — about level with ' + esc(r.name) + ' (' + pctNet(r.net) + ').' : ', but ' + esc(r.name) + ' scores ' + pctNet(r.net) + '.') + '</p>';
+      lines.push({ lead: 'AI links ' + main.name + ' most with ', bold: strong.label, tail: ' (' + pctNet(strong.mine) + ')' +
+        (!r ? '.' : gap > 0.1 ? ', ahead of ' + r.name + ' (' + pctNet(r.net) + ').' : gap >= -0.1 ? ' — about level with ' + r.name + ' (' + pctNet(r.net) + ').' : ', but ' + r.name + ' scores ' + pctNet(r.net) + '.') });
     }
-    if (worst) lines += '<p style="font-size:17px;margin:0 0 6px">A rival leads on <b>' + esc(worst.label) + '</b>: ' + esc(worst.rival.name) + ' ' + pctNet(worst.rival.net) + ' vs ' + esc(main.name) + ' ' + pctNet(worst.mine) + '.</p>';
+    if (worst) lines.push({ lead: 'A rival leads on ', bold: worst.label, tail: ': ' + worst.rival.name + ' ' + pctNet(worst.rival.net) + ' vs ' + main.name + ' ' + pctNet(worst.mine) + '.' });
+    return { main: main, mine: mine, dims: dims, rivals: rivals, cell: cell, mineVals: mineVals, rivalVals: rivalVals, lines: lines };
+  }
+
+  // "How AI describes you vs your competitors" (Worker: sotuStats.js perceptionStats): per fixed dimension (ease of use,
+  // price, integrations…) each brand's net score — favourable minus unfavourable mentions as a share of the answers
+  // that name the brand. A radar of you against the competitors' average, a grid of every brand, and the two biggest
+  // differences in words. Brands read from fewer than MIN_READ answers are shown faded and left out of the average.
+  // `opts.compact` (the summary PDF): the sentences and the radar, without the grid.
+  function perceptionHtml(p, d, colours, opts) {
+    var m = perceptionModel(p, d);
+    if (!m) return '';
+    opts = opts || {};
+    var main = m.main, dims = m.dims, rivals = m.rivals, cell = m.cell;
+    var lines = m.lines.map(function (l) { return '<p style="font-size:17px;margin:0 0 6px">' + esc(l.lead) + '<b>' + esc(l.bold) + '</b>' + esc(l.tail) + '</p>'; }).join('');
 
     // Radar: you against the average of the competitors with enough answers. Spokes run 0–100% (a negative net draws at 0).
     var radar = '';
@@ -329,12 +372,7 @@
       var pt = function (i, f) { var a = -Math.PI / 2 + 2 * Math.PI * i / n; return [cx + Math.cos(a) * R * f, cy + Math.sin(a) * R * f]; };
       var clamp = function (v) { return Math.max(0, Math.min(1, v || 0)); };
       var shape = function (vals) { return dims.map(function (x, i) { return pt(i, clamp(vals[i])).map(function (c) { return c.toFixed(1); }).join(','); }).join(' '); };
-      var mineVals = dims.map(function (x) { var c = cell(main.name, x.dim); return c ? c.net : 0; });
-      var rivalVals = dims.map(function (x) {
-        var v = rivals.map(function (b) { var c = cell(b.name, x.dim); return c ? c.net : 0; });
-        return v.reduce(function (a, b) { return a + b; }, 0) / v.length;
-      });
-      var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="How AI describes ' + esc(main.name) + ' compared with its competitors, by dimension" style="max-width:600px;width:100%;display:block;margin:0 auto 6px">';
+      var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="How AI describes ' + esc(main.name) + ' compared with its competitors, by dimension" style="max-width:' + (opts.compact ? 460 : 600) + 'px;width:100%;display:block;margin:0 auto 6px">';
       [0.25, 0.5, 0.75, 1].forEach(function (f) { svg += '<polygon points="' + dims.map(function (x, i) { return pt(i, f).map(function (c) { return c.toFixed(1); }).join(','); }).join(' ') + '" fill="none" stroke="#c9c9c9" stroke-width="1"/>'; });
       dims.forEach(function (x, i) {
         var e = pt(i, 1), l = pt(i, 1.17), anchor = Math.abs(l[0] - cx) < 8 ? 'middle' : (l[0] > cx ? 'start' : 'end');
@@ -342,11 +380,13 @@
           '<text x="' + l[0].toFixed(1) + '" y="' + (l[1] + 4).toFixed(1) + '" text-anchor="' + anchor + '" style="font-size:14px;fill:#3d3d3d">' + esc(x.label) + '</text>';
       });
       var mc = colours[main.name] || PALETTE[0];
-      svg += '<polygon points="' + shape(rivalVals) + '" fill="#C99A3E" fill-opacity=".18" stroke="#C99A3E" stroke-width="2.5"/>' +
-        '<polygon points="' + shape(mineVals) + '" fill="' + mc.bg + '" fill-opacity=".22" stroke="' + mc.bg + '" stroke-width="3"/></svg>';
-      radar = svg + '<div class="legend" style="justify-content:center;margin:0 0 24px"><span class="chip2" style="--bg:' + mc.bg + ';--fg:' + mc.fg + '">' + esc(main.name) + '</span>' +
+      svg += '<polygon points="' + shape(m.rivalVals) + '" fill="#C99A3E" fill-opacity=".18" stroke="#C99A3E" stroke-width="2.5"/>' +
+        '<polygon points="' + shape(m.mineVals) + '" fill="' + mc.bg + '" fill-opacity=".22" stroke="' + mc.bg + '" stroke-width="3"/></svg>';
+      radar = svg + '<div class="legend" style="justify-content:center;margin:0 0 ' + (opts.compact ? 8 : 24) + 'px"><span class="chip2" style="--bg:' + mc.bg + ';--fg:' + mc.fg + '">' + esc(main.name) + '</span>' +
         '<span class="chip2" style="--bg:#C99A3E;--fg:#0a0a0a">Competitors’ average</span></div>';
     }
+    var head = '<h2 class="h2b">How AI describes ' + esc(main.name) + ' vs competitors</h2>' + lines + (lines ? '<div style="height:10px"></div>' : '') + radar;
+    if (opts.compact) return head;
 
     // Grid: every brand, every dimension.
     var heat = function (v) { return v > 0.2 ? 'rgba(27,112,64,' + (0.12 + 0.4 * Math.min(1, v)).toFixed(2) + ')' : v < -0.2 ? 'rgba(192,50,31,' + (0.12 + 0.4 * Math.min(1, -v)).toFixed(2) + ')' : '#f3f3ef'; };
@@ -364,7 +404,7 @@
         return '<td class="num" style="background:' + heat(c.net) + (faded ? ';opacity:.55' : '') + '">' + (lead ? '<b>' + pctNet(c.net) + '</b>' : pctNet(c.net)) + ' <small>(' + c.mentions + ')</small></td>';
       }).join('') + '</tr>';
     }).join('');
-    return '<h2 class="h2b">How AI describes ' + esc(main.name) + ' vs competitors</h2>' + lines + (lines ? '<div style="height:10px"></div>' : '') + radar +
+    return head +
       '<div class="tblwrap"><table class="tbl"><tr><th>Dimension</th>' + heads + '</tr>' + rows + '</table></div>' +
       '<details class="hint" style="margin:-18px 0 30px"><summary style="cursor:pointer">Each cell: favourable minus unfavourable mentions, as a share of that brand’s answers (mentions in brackets). Bold leads the row. How this is read</summary>' +
       '<p style="margin:6px 0 0">So 75% means the point came up favourably in about three of every four answers that name the brand. Faded cells rest on fewer than ' + MIN_MENTIONS + ' mentions, and brands read from fewer than ' + MIN_READ + ' answers are left out of the comparison and the competitors’ average. Each answer is tagged by a small AI model from its own words, so treat small gaps as noise.</p></details>';
@@ -618,20 +658,23 @@
   // every checkable claim the answers make about the brand, true / false / unverified against the fact sheet. False first,
   // with the answer's own words; unverified means the sheet doesn't cover it. '' when the run has no three-state claims
   // (older runs) — the caller falls back to factsHtml.
-  function claimsHtml(facts, brand) {
+  function claimsHtml(facts, brand, opts) {
     var c = facts && facts.claims;
     if (!c) return '';
+    opts = opts || {};
     var head = '<h2 class="h2b">What AI says about ' + esc(brand) + ' — fact-checked</h2>';
     if (!c.groups.length) return head + '<div class="empty2">None of the ' + c.answers_read + ' answers that name ' + esc(brand) + ' made a claim your fact sheet can check.</div>';
     var look = { 'true': ['✓ TRUE', '#1b7040', '#fff', '#1b7040'], 'false': ['✗ FALSE', '#c0321f', '#fff', '#c0321f'], unverified: ['– UNVERIFIED', '#e4e4de', '#3d3d3d', '#8a8a8a'] };
     var chip = function (v) { var m = look[v]; return '<span class="chip2" style="--bg:' + m[1] + ';--fg:' + m[2] + ';font-size:11.5px;padding:2px 8px;white-space:nowrap">' + m[0] + '</span>'; };
     var TOPICS = { pricing: 'Pricing', free_plan: 'Free plan', headquarters: 'Where it’s based', founded: 'Founding', ownership: 'Ownership', certifications: 'Certifications', integrations: 'Integrations', customers: 'Customers', features: 'Features', markets: 'Markets served' };
-    var rows = c.groups.map(function (g) {
+    // The summary PDF: the false and unverified claims (a few of each), and the true ones only in the count.
+    var shown = !opts.compact ? c.groups : c.groups.filter(function (g) { return g.verdict === 'false'; }).slice(0, 3).concat(c.groups.filter(function (g) { return g.verdict === 'unverified'; }).slice(0, 3));
+    var rows = shown.map(function (g) {
       var ex = g.examples[0] || {};
       var text = g.verdict === 'true' ? esc(g.label) : g.verdict === 'unverified' && TOPICS[g.topic] ? esc(TOPICS[g.topic]) : esc(ex.claim || g.label);
       var sub = g.verdict === 'false' ? '<br><small>Your fact sheet: <b>' + esc(g.label) + '</b></small>'
         : g.verdict === 'unverified' ? '<br><small>Not on your fact sheet — add it if it’s true, or check it.</small>' : '';
-      var quotes = g.verdict === 'true' ? '' : g.examples.slice(0, 2).map(function (x) {
+      var quotes = g.verdict === 'true' ? '' : g.examples.slice(0, opts.compact ? (g.verdict === 'false' ? 1 : 0) : 2).map(function (x) {
         return x.quote ? '<div class="quote" style="--bg:' + look[g.verdict][3] + ';margin:6px 0 0">“' + esc(x.quote.replace(/\*\*|__/g, '').trim()) + '”<br><small>' + esc(providerLabel(x.provider)) + (x.location ? ', ' + esc(x.location) : '') + '</small></div>' : '';
       }).join('');
       return '<tr><td>' + chip(g.verdict) + '</td><td>' + text + sub + quotes + '</td><td class="num">' + g.answers + '</td>' +
@@ -757,6 +800,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, visibilityHtml: visibilityHtml, citedHtml: citedHtml, sourceTypesHtml: sourceTypesHtml, sourceMixTrendHtml: sourceMixTrendHtml, googleVsAiHtml: googleVsAiHtml, perceptionHtml: perceptionHtml, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, claimsHtml: claimsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, visibilityHtml: visibilityHtml, citedHtml: citedHtml, sourceTypesHtml: sourceTypesHtml, sourceTypesFacts: sourceTypesFacts, googleFacts: googleFacts, sourceMixTrendHtml: sourceMixTrendHtml, googleVsAiHtml: googleVsAiHtml, perceptionHtml: perceptionHtml, perceptionModel: perceptionModel, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, claimsHtml: claimsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();

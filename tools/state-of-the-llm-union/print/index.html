@@ -96,6 +96,7 @@ function statCards(d, colours) {
   const ms = main && sm.by_brand ? sm.by_brand[main.name] : null;
   const cards = [
     main ? { cls: 'accent', lbl: 'Mention rate', val: S.pct(S.rate(answered, main.name)), sub: 'answers naming ' + esc(main.name) + (S.range(ms) ? ' · likely ' + S.range(ms) : '') } : null,
+    sm.share_of_voice && main && sm.share_of_voice.by_brand[main.name] != null ? { lbl: 'Share of voice', val: S.pct(sm.share_of_voice.by_brand[main.name]), sub: 'of all mentions of the brands you track' } : null,
     sm.visibility && main && sm.visibility.by_brand[main.name] ? { lbl: 'Visibility score', val: sm.visibility.by_brand[main.name].score + '/100', sub: 'named, prominence, recommendations and citations in one number' } : null,
     sm.recommend && main && sm.recommend.by_brand[main.name] ? { lbl: 'Top pick', val: S.pct(sm.recommend.by_brand[main.name].top_rate), sub: 'answers where ' + esc(main.name) + ' is the top recommendation' } : null,
     sm.consistency && main ? { lbl: 'Named every time', val: sm.consistency.always + '/' + sm.consistency.groups, sub: 'combinations asked ' + d.repeats + '×' } : null,
@@ -108,12 +109,12 @@ function statCards(d, colours) {
 
 function brandTable(d, colours, cells) {
   const answered = S.answered(cells), sm = d.summary || {};
-  return '<div class="tblwrap"><table class="tbl"><tr><th>Brand</th><th>Named in</th><th>Likely range</th><th>Answers</th><th>Avg position</th></tr>' +
+  return '<div class="tblwrap"><table class="tbl"><tr><th>Brand</th><th>Named in</th><th>Likely range</th><th>Answers</th><th>Share of voice</th><th>Avg position</th></tr>' +
     d.brands.map(b => {
       const pos = S.avgPosition(answered, b.name);
       return '<tr><td><span class="dot" style="--bg:' + colours[b.name].bg + '"></span><b>' + esc(b.name) + '</b>' + (b === d.brands[0] ? ' <small>(you)</small>' : '') + '</td><td class="num">' + S.pct(S.rate(answered, b.name)) +
         '</td><td class="num">' + (S.range((sm.by_brand || {})[b.name]) || '—') + '</td><td class="num">' + answered.filter(c => (c.mentions || []).some(m => m.name === b.name && m.mentioned)).length + ' / ' + answered.length +
-        '</td><td class="num">' + (pos == null ? '—' : '#' + pos.toFixed(1)) + '</td></tr>';
+        '</td><td class="num">' + (sm.share_of_voice ? S.pct(sm.share_of_voice.by_brand[b.name]) : '—') + '</td><td class="num">' + (pos == null ? '—' : '#' + pos.toFixed(1)) + '</td></tr>';
     }).join('') + '</table></div>';
 }
 
@@ -233,16 +234,18 @@ function byStake(d, dem, briefs) {
 async function summaryHtml(d) {
   const colours = S.colourMap(d.brands), main = d.brands[0], sm = d.summary || {};
   const dem = await demandFor(d);
-  let h = statCards(d, colours) + S.visibilityHtml(sm.visibility, d, colours, { compact: true }) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells) + S.recommendHtml(sm.recommend, d, colours, { compact: true }) + S.personasHtml(d, colours) + modelTable(d, colours);
+  let h = statCards(d, colours) + S.visibilityHtml(sm.visibility, d, colours, { compact: true }) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells) + S.googleVsAiHtml(sm.google, d, colours, { compact: true }) + S.recommendHtml(sm.recommend, d, colours, { compact: true }) + S.personasHtml(d, colours) + modelTable(d, colours);
   if (dem) h += '<h2 class="h2b">Weighted by demand</h2>' + S.demandHtml(d, dem, S.demandBasisFor(d, dem), colours, { compact: true });
   h += S.citedHtml(await citedFor(d), d, colours, { max: 6 });
   const fo = await fanoutFor(d); if (fo) h += S.fanoutHtml(fo, fo.rankings, d, colours, { compact: true });
-  if (main) h += describeCompact(sm.describe, main.name);
-  if (main && sm.facts && sm.facts.groups.length) {
+  if (main) h += S.perceptionHtml(sm.perception, d, colours, { compact: true }) + describeCompact(sm.describe, main.name);
+  if (main && sm.facts && sm.facts.claims) h += S.claimsHtml(sm.facts, main.name, { compact: true });
+  else if (main && sm.facts && sm.facts.groups.length) {
     h += '<h2 class="h2b">What AI gets wrong about ' + esc(main.name) + '</h2><div class="lst">' + sm.facts.groups.slice(0, 3).map(g =>
       '<p><b>' + esc(g.correct) + '</b> — contradicted in ' + g.answers + ' answer' + (g.answers === 1 ? '' : 's') + ' (' + g.providers.map(S.providerLabel).map(esc).join(', ') + '), e.g. “' + esc(g.examples[0].quote.replace(/\*\*|__/g, '').slice(0, 140)) + '”</p>').join('') + '</div>';
   }
   const cit = sm.citations;
+  if (cit) h += S.sourceTypesHtml(cit, d, colours, { compact: true });
   if (cit) h += '<h2 class="h2b">Who gets cited</h2><p class="hint" style="margin:0 0 4px">You ' + S.pct(cit.share.own) + ' · competitors ' + S.pct(cit.share.competitors) + ' · other sites ' + S.pct(cit.share.other) + ' of citations, across ' + cit.answers_with_sources + ' answers with sources. Most cited: ' +
     cit.top_domains.slice(0, 6).map(x => esc(x.domain) + ' (' + x.answers + ')').join(', ') + '.</p>';
   if ((sm.discovered || []).length) h += '<h2 class="h2b">Brands you’re not tracking</h2><p class="hint" style="margin:0">' + sm.discovered.slice(0, 8).map(b => esc(b.name) + ' (' + b.answers + ')').join(' · ') + '</p>';
@@ -258,11 +261,11 @@ async function reportHtml(d) {
   if (SUMMARY) return summaryHtml(d);
   const colours = S.colourMap(d.brands), main = d.brands[0], sm = d.summary || {};
   const dem = await demandFor(d);
-  let h = statCards(d, colours) + S.visibilityHtml(sm.visibility, d, colours) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells) + S.recommendHtml(sm.recommend, d, colours) + S.personasHtml(d, colours);
+  let h = statCards(d, colours) + S.visibilityHtml(sm.visibility, d, colours) + '<h2 class="h2b">Who gets named</h2>' + brandTable(d, colours, d.cells) + S.googleVsAiHtml(sm.google, d, colours) + S.recommendHtml(sm.recommend, d, colours) + S.personasHtml(d, colours);
   if (dem) h += '<h2 class="h2b">Weighted by demand</h2>' + S.demandHtml(d, dem, S.demandBasisFor(d, dem), colours);
-  if (main) h += S.describeHtml(sm.describe, main.name) + S.factsHtml(sm.facts, main.name);
+  if (main) h += S.perceptionHtml(sm.perception, d, colours) + S.describeHtml(sm.describe, main.name) + (S.claimsHtml(sm.facts, main.name) || S.factsHtml(sm.facts, main.name));
   const fo = await fanoutFor(d);
-  h += citationsBlock(d) + S.citedHtml(await citedFor(d), d, colours, { max: 15 }) + (fo ? S.fanoutHtml(fo, fo.rankings, d, colours) : '') + S.discoveredHtml(sm.discovered, false);
+  h += S.sourceTypesHtml(sm.citations, d, colours) + citationsBlock(d) + S.citedHtml(await citedFor(d), d, colours, { max: 15 }) + (fo ? S.fanoutHtml(fo, fo.rankings, d, colours) : '') + S.discoveredHtml(sm.discovered, false);
   if (main) {
     const briefs = (await Promise.all(d.prompts.map(p => S.api('/state-of-union/brief', { id: d.id, prompt: p, cached_only: true })))).filter(b => b && b.brief);
     if (briefs.length) h += '<h2 class="h2b">Prompt briefs</h2>' + byStake(d, dem, briefs).map(briefBlock).join('');
@@ -325,6 +328,7 @@ async function main() {
   document.title = $('title').textContent + (BR.white_label ? (BR.name ? ' — ' + BR.name : '') : ' — State Of The LLM Union') + (SUMMARY ? ' (summary)' : '');
   html += await reportHtml(d);
   $('out').innerHTML = html;
+  $('out').querySelectorAll('details').forEach(x => { x.open = true; });   // a closed <details> would print as just its summary line
   $('foot').innerHTML = 'Generated ' + fullDate(new Date().toISOString()) + (BR.white_label ? (BR.name ? ' by ' + esc(BR.name) + '. ' : '. ') : (BR.name ? ' by ' + esc(BR.name) + ' with State Of The LLM Union on brandchecker.eu. ' : ' by State Of The LLM Union on brandchecker.eu. ')) +
     (SUMMARY ? 'Summary: the full report adds every answer, model by model. ' : d.repeats > 1 ? 'Model sections show the first of the ' + d.repeats + ' answers to each prompt; rates use all of them. ' : '') +
     'AI summaries, description tags and fact checks are written by small AI models reading the answers; quotes are the models’ own words.';
