@@ -272,7 +272,8 @@ function factsEditorHtml(d, last) {
     '<p class="hint" style="margin:8px 0">One true statement per line: pricing, plan limits, founding year, where you’re based, key features. Every answer that names ' + esc(d.brands[0].name) + ' is checked against it: claims it supports are TRUE, ones it contradicts are FALSE, and anything it doesn’t cover is UNVERIFIED.</p>' +
     '<textarea id="factsText" maxlength="1500" rows="6" style="width:100%;font-size:15px" placeholder="Free plan: 1,000 operations a month&#10;Founded 2012 in Prague&#10;SOC 2 Type II certified">' + esc(d.facts || '') + '</textarea>' +
     '<div class="sotu-actions" style="margin:8px 0 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn2 small solid" id="factsSave" type="button">Save fact sheet</button>' +
-    (last ? '<button class="btn2 small" id="factsCheck" type="button">Check the latest run now</button>' : '') + '<span id="factsMsg" class="hint" style="margin:0"></span></div></details>';
+    '<button class="btn2 small" id="factsDraft" type="button">Draft from my website</button>' +
+    (last ? '<button class="btn2 small" id="factsCheck" type="button">Check the latest run now</button>' : '') + '<span id="factsMsg" class="hint" style="margin:0"></span></div><div id="factsSrc"></div></details>';
 }
 
 function wireDetail() {
@@ -290,6 +291,12 @@ function wireDetail() {
     save.disabled = false;
     $('alMsg').textContent = r.error ? r.error : 'Saved.';
     if (!r.error) loadList();
+  };
+  const fd = $('factsDraft');
+  if (fd) fd.onclick = () => {
+    const b = trendData.brands[0], known = (b.domains || [])[0] || '';
+    const domain = known || prompt('Your brand’s website, like example.com') || '';
+    if (domain) S.draftFacts({ textarea: $('factsText'), domain, brand: b.name, button: fd, msg: $('factsMsg'), list: $('factsSrc') });
   };
   const fs = $('factsSave'), fc = $('factsCheck');
   const saveFacts = async () => S.api('/state-of-union/watch/facts', { id: selected, facts: $('factsText').value });

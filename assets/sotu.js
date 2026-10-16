@@ -654,6 +654,34 @@
       }).join('');
   }
 
+  // The fact sheet starter (Worker: sotuFactsDraft.js): drafts lines from the brand's own website into the fact sheet box,
+  // keeping whatever is already typed, and lists where each new line came from so it can be checked before saving.
+  // o: { textarea, domain, brand, button, msg, list }
+  function draftFacts(o) {
+    var domain = String(o.domain || '').trim();
+    if (!domain) { o.msg.textContent = 'Enter your brand’s website first.'; return Promise.resolve(); }
+    o.button.disabled = true; o.msg.textContent = 'Reading your website… (about 15 seconds)'; if (o.list) o.list.innerHTML = '';
+    return api('/state-of-union/facts-draft', { domain: domain, brand_name: o.brand || '' }).then(function (r) {
+      o.button.disabled = false;
+      if (r.error) { o.msg.textContent = r.error; return; }
+      var have = o.textarea.value.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+      var low = have.map(function (l) { return l.toLowerCase(); });
+      var add = r.sources.filter(function (x) { return low.indexOf(x.line.toLowerCase()) === -1; });
+      var join = function () { return have.concat(add.map(function (x) { return x.line; })).join('\n'); };
+      while (add.length && join().length > 1500) add.pop();   // the sheet holds 1,500 characters
+      o.textarea.value = join();
+      o.textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      o.msg.textContent = add.length
+        ? 'Drafted ' + add.length + ' line' + (add.length === 1 ? '' : 's') + ' from ' + r.pages.length + ' page' + (r.pages.length === 1 ? '' : 's') + ' of ' + r.domain + ' — read each one, fix anything out of date, then save. Prices and plans change.'
+        : (r.lines.length ? 'Nothing new: every fact found on ' + r.domain + ' is already on your sheet.' : 'Those pages state too little to draft from — type the facts in yourself.');
+      if (o.list && add.length) o.list.innerHTML = '<details class="hint" open style="margin:8px 0 0"><summary style="cursor:pointer">Where each drafted line came from</summary><ul style="margin:6px 0 0;padding-left:18px">' +
+        add.map(function (x) {
+          var path = x.page.replace(/^https?:\/\/[^/]+/, '') || '/';
+          return '<li style="margin:0 0 4px">' + esc(x.line) + ' — <a href="' + esc(x.page) + '" target="_blank" rel="noopener">' + esc(path) + '</a><br><small>“' + esc(x.evidence) + '”</small></li>';
+        }).join('') + '</ul></details>';
+    });
+  }
+
   // "What AI says about <brand> — fact-checked" (Worker: factCheck.js readAbout `claims`, grouped in sotuStats.js claimStats):
   // every checkable claim the answers make about the brand, true / false / unverified against the fact sheet. False first,
   // with the answer's own words; unverified means the sheet doesn't cover it. '' when the run has no three-state claims
@@ -807,6 +835,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, visibilityHtml: visibilityHtml, citedHtml: citedHtml, sourceTypesHtml: sourceTypesHtml, sourceTypesFacts: sourceTypesFacts, googleFacts: googleFacts, sourceMixTrendHtml: sourceMixTrendHtml, googleVsAiHtml: googleVsAiHtml, perceptionHtml: perceptionHtml, perceptionModel: perceptionModel, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, claimsHtml: claimsHtml, claimRowText: claimRowText, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, visibilityHtml: visibilityHtml, citedHtml: citedHtml, sourceTypesHtml: sourceTypesHtml, sourceTypesFacts: sourceTypesFacts, googleFacts: googleFacts, sourceMixTrendHtml: sourceMixTrendHtml, googleVsAiHtml: googleVsAiHtml, perceptionHtml: perceptionHtml, perceptionModel: perceptionModel, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, claimsHtml: claimsHtml, draftFacts: draftFacts, claimRowText: claimRowText, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();
