@@ -186,6 +186,79 @@
     if ((ds.best_for || []).length) deck.note(s, 'Who they say ' + name + ' is best for: ' + ds.best_for.slice(0, 3).map(function (b) { return '“' + b.phrase + '”'; }).join(' · ') + '. From ' + ds.answers + ' answers that name ' + name + '; tagged by a small AI model.', 6.35, 0.6);
   }
 
+  /* ---- the newer slides: share of voice, Google next to the AI answers, source kinds, perception, fact check ---- */
+
+  function sovStat(sm, name) {
+    var sov = sm.share_of_voice;
+    if (!sov || sov.by_brand[name] == null) return null;
+    var v = sov.by_brand[name], rank = Object.keys(sov.by_brand).filter(function (k) { return sov.by_brand[k] > v; }).length + 1;
+    return { lbl: 'Share of voice', val: pct(v), sub: '#' + rank + ' of ' + Object.keys(sov.by_brand).length + ' tracked brands · share of all their mentions' };
+  }
+
+  // Where each brand's website ranks in Google's top 10 for each prompt × market, beside how often AI names the main brand.
+  function googleSlide(deck, g, d) {
+    var f = S.googleFacts(g, d);
+    if (!f) return;
+    var s = deck.slide('Google next to the AI answers', f.lead);
+    deck.table(s, ['Search', 'Market', 'Where each website ranks in Google', 'AI names ' + f.main.name, 'Read'], f.rows.slice(0, 10).map(function (r) {
+      var ranks = f.placed.map(function (b) { var h = r.ranks[b.name]; return h ? b.name + ' #' + h.rank : b.name + ' —'; }).join('  ·  ');
+      return [clip(r.prompt, 64) + (r.top ? '\nGoogle #1: ' + r.top : ''), S.market(r.location).short,
+        ranks, r.ai ? { text: r.ai.named + ' of ' + r.ai.answered + (r.rate != null ? ' · ' + pct(r.rate) : ''), options: { fill: { color: heat(r.rate || 0) }, align: 'center' } } : '—', r.read || ''];
+    }), { colW: [3.9, 0.8, 3.5, 1.7, 2.23], fs: 10, max: 10 });
+    deck.note(s, 'Google’s top 10 comes from the same search as the Google AI Overview answer, in the same market. “—” means that brand’s website is not in the top 10.' + (f.missing.length ? ' Add a website for ' + f.missing.map(function (b) { return b.name; }).join(', ') + ' to see where it ranks.' : ''), 6.45, 0.5);
+  }
+
+  // What kind of sites the answers cite — bars by kind, then the caveat that only some models show sources.
+  function sourcesSlide(deck, cit, d) {
+    var f = S.sourceTypesFacts(cit, d);
+    if (!f) return;
+    var kinds = cit.by_type.slice(0, 9);
+    var s = deck.slide('What kind of sites the answers cite', f.lead ? f.lead.pct + ' of citations go to ' + f.lead.kind + (f.lead.you ? '. ' + f.lead.you : '.') : 'Where the answers get their information');
+    deck.bars(s, kinds.map(function (t) { return t.label + (t.domains[0] ? '  (' + t.domains[0].domain + ')' : ''); }), [{ name: 'Share of citations', color: INK, values: kinds.map(function (t) { return t.share; }) }], { y: 1.8, h: 4.3 });
+    deck.note(s, (f.coverage ? f.coverage + ' ' : '') + 'Each site is counted once per answer. “Best-of & comparison articles” are pages whose address or title reads like “best…”, “top 10…”, “alternatives” or “A vs B”.', 6.4, 0.55);
+  }
+
+  // How AI describes you vs your competitors: a native (editable) radar chart, the grid of every brand, and the two sentences.
+  function perceptionSlide(deck, p, d, colours) {
+    var m = S.perceptionModel(p, d);
+    if (!m) return;
+    var name = m.main.name, labels = m.dims.map(function (x) { return x.label; });
+    var clamp = function (v) { return Math.round(Math.max(0, Math.min(1, v || 0)) * 100); };
+    var s = deck.slide('How AI describes ' + name + ' vs competitors', m.lines.length ? m.lines[0].lead + m.lines[0].bold + m.lines[0].tail : 'What the answers say, dimension by dimension');
+    if (labels.length >= 3) {
+      s.addChart(deck.p.charts.RADAR, [
+        { name: name, labels: labels, values: m.mineVals.map(clamp) },
+        { name: 'Competitors’ average', labels: labels, values: m.rivalVals.map(clamp) }
+      ], { x: 0.5, y: 1.7, w: 6.1, h: 4.7, radarStyle: 'standard', chartColors: [hex((colours[name] || {}).bg || ORANGE), 'C99A3E'], lineSize: 2.5, valAxisMinVal: 0, valAxisMaxVal: 100, valAxisMajorUnit: 25,
+        valAxisLabelFontSize: 8, valAxisLabelColor: MUTED, catAxisLabelFontSize: 10, catAxisLabelColor: INK, showLegend: true, legendPos: 'b', legendFontSize: 11, legendColor: INK });
+    }
+    var brands = d.brands.slice(0, 5), tone = function (v) { return v > 0.2 ? 'D3E8D8' : v < -0.2 ? 'F6D5D0' : LIGHT; };
+    deck.table(s, ['Dimension'].concat(brands.map(function (b) { var v = p.by_brand[b.name]; return b.name + (v ? '\n' + v.answers + ' answers' : ''); })), m.dims.map(function (x) {
+      return [{ text: x.label, options: { bold: true } }].concat(brands.map(function (b) {
+        var c = m.cell(b.name, x.dim), v = p.by_brand[b.name];
+        if (!c) return { text: '—', options: { align: 'center', color: MUTED } };
+        var thin = !v || v.answers < 5 || c.mentions < 3;
+        return { text: Math.round(c.net * 100) + '%  (' + c.mentions + ')', options: { align: 'center', fill: { color: tone(c.net) }, color: thin ? MUTED : INK } };
+      }));
+    }), { x: 6.8, w: 5.93, colW: [1.75].concat(brands.map(function () { return (5.93 - 1.75) / brands.length; })), fs: 9, hfs: 9, max: 9 });
+    deck.note(s, m.lines.map(function (l) { return l.lead + l.bold + l.tail; }).join(' ') + ' Each cell: favourable minus unfavourable mentions as a share of that brand’s answers (mentions in brackets). Faded figures rest on fewer than 3 mentions or 5 answers.', 6.45, 0.55);
+  }
+
+  // The three-state fact check: every checkable claim about the brand, true / false / unverified against the fact sheet.
+  function claimsSlide(deck, facts, name) {
+    var c = facts && facts.claims;
+    if (!c || !c.groups.length) return false;
+    var look = { 'true': ['TRUE', '1B7040'], 'false': ['FALSE', 'C0321F'], unverified: ['UNVERIFIED', '777777'] };
+    var s = deck.slide('What AI says about ' + name + ' — fact-checked', c.totals['true'] + ' true · ' + c.totals['false'] + ' false · ' + c.totals.unverified + ' unverified claims across ' + c.answers_read + ' answers');
+    deck.table(s, ['Verdict', 'What the answers say', 'Answers', 'Models'], c.groups.slice(0, 9).map(function (g) {
+      var ex = g.examples[0] || {};
+      var text = S.claimRowText(g) + (g.verdict === 'false' ? '\nYour fact sheet: ' + g.label : g.verdict === 'unverified' ? '\nNot on your fact sheet' : '') + (g.verdict !== 'true' && ex.quote ? '\n“' + clip(ex.quote, 110) + '”' : '');
+      return [{ text: look[g.verdict][0], options: { bold: true, color: look[g.verdict][1], align: 'center' } }, text, { text: String(g.answers), options: { align: 'center' } }, g.providers.map(S.providerLabel).join(', ')];
+    }), { colW: [1.3, 7.1, 0.9, 2.83], fs: 10, max: 9 });
+    deck.note(s, 'Each claim is judged by a small AI model against your fact sheet, using the answer’s own words — confirm before acting. “Unverified” means your sheet doesn’t cover it, not that it is wrong.', 6.55, 0.4);
+    return true;
+  }
+
   async function report(d, extra, btn) {
     extra = extra || {};
     var old = btn ? btn.textContent : '';
@@ -229,7 +302,7 @@
         deck.stats(s, [
           { lbl: 'Share of answers', val: pct(mb.rate), sub: (S.range(mb) ? 'likely ' + S.range(mb) + ' · ' : '') + (mb.mentioned || 0) + ' of ' + (mb.answered || 0) + ' answers' },
           sm.visibility && sm.visibility.by_brand[main.name] ? { lbl: 'Visibility score', val: sm.visibility.by_brand[main.name].score + '/100', sub: 'named, prominence' + (sm.recommend ? ', recommendations' : '') + ' and citations in one number' } : { lbl: 'Named first', val: pct(firstRate(list, main.name)), sub: 'answers where ' + name + ' is the first brand named' },
-          rivals[0] ? { lbl: 'Top competitor', val: pct(rivals[0].v), sub: rivals[0].b.name } : null,
+          sovStat(sm, main.name) || (rivals[0] ? { lbl: 'Top competitor', val: pct(rivals[0].v), sub: rivals[0].b.name } : null),
           wMain != null ? { lbl: 'Weighted by demand', val: pct(wMain), sub: 'each prompt counted by its ' + (basis === 'ai' ? 'AI' : 'Google') + ' searches' } : null,
           cb && cb.has_domain ? { lbl: 'Cited as a source', val: pct(cb.rate), sub: 'of ' + cit.answers_with_sources + ' answers that show sources' } : null
         ].filter(Boolean), 1.9);
@@ -251,7 +324,7 @@
         }
 
         // Share of answers by brand (a real chart; weighted by demand as a second series when known).
-        s = deck.slide('Share of voice', 'How often each brand is named');
+        s = deck.slide('Share of answers', 'How often each brand is named');
         var series = [{ name: 'Share of answers', color: INK, values: d.brands.map(function (b) { return rateIn(list, b.name); }) }];
         if (demand) {
           series.push({ name: 'Weighted by ' + (basis === 'ai' ? 'AI' : 'Google') + ' searches', color: ORANGE, values: d.brands.map(function (b) {
@@ -316,10 +389,13 @@
         }), { colW: demand ? [4.2, 1.3, 1.9, 1.8, 1.4, 1.53] : [7.3, 2, 2.83], fs: 10, max: 11 });
         if (d.prompts.length > 11) deck.note(s, 'Showing 11 of ' + d.prompts.length + ' prompts — the full list is in the report.', 6.5, 0.4);
 
+        googleSlide(deck, sm.google, d);
+        perceptionSlide(deck, sm.perception, d, colours);
         describeSlide(deck, sm.describe, name);
 
-        // What AI gets wrong.
+        // What AI says about you, fact-checked (true / false / unverified); older runs only have the list of wrong facts.
         var fg = sm.facts && sm.facts.groups || [];
+        if (claimsSlide(deck, sm.facts, name)) fg = [];
         if (fg.length) {
           s = deck.slide('What AI gets wrong', 'Facts about ' + name + ' the answers get wrong');
           deck.table(s, ['The fact', 'Answers', 'Models', 'What an answer said'], fg.slice(0, 6).map(function (g) {
@@ -327,7 +403,8 @@
           }), { colW: [3.2, 1, 2.2, 5.73], fs: 10 });
         }
 
-        // Who gets cited.
+        // What kind of sites the answers cite, then who gets cited.
+        sourcesSlide(deck, cit, d);
         if (cit) {
           s = deck.slide('Who gets cited', name + ' ' + pct(cit.share.own) + ' · competitors ' + pct(cit.share.competitors) + ' · other sites ' + pct(cit.share.other) + ' of citations');
           deck.table(s, ['Most-cited website', 'Answers', 'Belongs to'], cit.top_domains.slice(0, 10).map(function (x) { return [x.domain, { text: String(x.answers), options: { align: 'center' } }, x.owner || 'Third party']; }), { w: 5.6, colW: [2.9, 1, 1.7], fs: 10, max: 10 });
@@ -439,6 +516,7 @@
       var s = deck.slide('The headline', name + ' is named in ' + pct(now.rate) + ' of AI answers' + (delta != null ? ' (' + (delta > 0 ? '+' : '') + delta + ' pts since the last run)' : ''));
       deck.stats(s, [
         { lbl: 'Share of answers now', val: pct(now.rate), sub: S.range(now) ? 'likely ' + S.range(now) : 'latest run' },
+        sovStat(last, name),
         { lbl: 'Change', val: delta == null ? '—' : (delta > 0 ? '+' : '') + delta + ' pts', sub: prev ? 'since ' + when(prev.created_at) : 'needs a second run' },
         wNow != null ? { lbl: 'Weighted by demand', val: pct(wNow), sub: 'each prompt counted by its searches' } : null,
         last.consistency ? { lbl: 'Named every time', val: last.consistency.always + '/' + last.consistency.groups, sub: 'combinations asked ' + (d.repeats || 1) + '×' } : null,
@@ -468,8 +546,12 @@
         s = deck.slide('Latest run', name + ' by model');
         deck.table(s, ['Model', 'Share of answers', 'Answers'], Object.keys(bp).map(function (p) { var v = bp[p]; return [{ text: S.providerLabel(p), options: { bold: true } }, { text: pct(v.rate), options: { fill: { color: heat(v.rate) }, align: 'center' } }, { text: v.mentioned + ' / ' + v.answered, options: { align: 'center' } }]; }), { w: 8, colW: [3.5, 2.5, 2], fs: 12 });
       }
+      googleSlide(deck, last.google, d);
+      perceptionSlide(deck, last.perception, d, colours);
       describeSlide(deck, last.describe, name);
+      claimsSlide(deck, last.facts, name);
       var cit = last.citations;
+      sourcesSlide(deck, cit, d);
       if (cit) {
         s = deck.slide('Who gets cited', 'Latest run: ' + name + ' ' + pct(cit.share.own) + ' · competitors ' + pct(cit.share.competitors) + ' · other sites ' + pct(cit.share.other));
         deck.table(s, ['Most-cited website', 'Answers', 'Belongs to'], cit.top_domains.slice(0, 10).map(function (x) { return [x.domain, { text: String(x.answers), options: { align: 'center' } }, x.owner || 'Third party']; }), { w: 8, colW: [4.5, 1.3, 2.2], fs: 11, max: 10 });

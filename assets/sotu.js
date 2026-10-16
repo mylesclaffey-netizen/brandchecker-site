@@ -658,6 +658,14 @@
   // every checkable claim the answers make about the brand, true / false / unverified against the fact sheet. False first,
   // with the answer's own words; unverified means the sheet doesn't cover it. '' when the run has no three-state claims
   // (older runs) — the caller falls back to factsHtml.
+  var CLAIM_TOPICS = { pricing: 'Pricing', free_plan: 'Free plan', headquarters: 'Where it’s based', founded: 'Founding', ownership: 'Ownership', certifications: 'Certifications', integrations: 'Integrations', customers: 'Customers', features: 'Features', markets: 'Markets served' };
+  // The main line of a claim group, as plain text: the fact-sheet line for a true claim, the answer's claim for a false one,
+  // the subject for an unverified one.
+  function claimRowText(g) {
+    var ex = g.examples && g.examples[0] || {};
+    return g.verdict === 'true' ? g.label : g.verdict === 'unverified' && CLAIM_TOPICS[g.topic] ? CLAIM_TOPICS[g.topic] : (ex.claim || g.label);
+  }
+
   function claimsHtml(facts, brand, opts) {
     var c = facts && facts.claims;
     if (!c) return '';
@@ -666,12 +674,11 @@
     if (!c.groups.length) return head + '<div class="empty2">None of the ' + c.answers_read + ' answers that name ' + esc(brand) + ' made a claim your fact sheet can check.</div>';
     var look = { 'true': ['✓ TRUE', '#1b7040', '#fff', '#1b7040'], 'false': ['✗ FALSE', '#c0321f', '#fff', '#c0321f'], unverified: ['– UNVERIFIED', '#e4e4de', '#3d3d3d', '#8a8a8a'] };
     var chip = function (v) { var m = look[v]; return '<span class="chip2" style="--bg:' + m[1] + ';--fg:' + m[2] + ';font-size:11.5px;padding:2px 8px;white-space:nowrap">' + m[0] + '</span>'; };
-    var TOPICS = { pricing: 'Pricing', free_plan: 'Free plan', headquarters: 'Where it’s based', founded: 'Founding', ownership: 'Ownership', certifications: 'Certifications', integrations: 'Integrations', customers: 'Customers', features: 'Features', markets: 'Markets served' };
     // The summary PDF: the false and unverified claims (a few of each), and the true ones only in the count.
     var shown = !opts.compact ? c.groups : c.groups.filter(function (g) { return g.verdict === 'false'; }).slice(0, 3).concat(c.groups.filter(function (g) { return g.verdict === 'unverified'; }).slice(0, 3));
     var rows = shown.map(function (g) {
       var ex = g.examples[0] || {};
-      var text = g.verdict === 'true' ? esc(g.label) : g.verdict === 'unverified' && TOPICS[g.topic] ? esc(TOPICS[g.topic]) : esc(ex.claim || g.label);
+      var text = esc(claimRowText(g));
       var sub = g.verdict === 'false' ? '<br><small>Your fact sheet: <b>' + esc(g.label) + '</b></small>'
         : g.verdict === 'unverified' ? '<br><small>Not on your fact sheet — add it if it’s true, or check it.</small>' : '';
       var quotes = g.verdict === 'true' ? '' : g.examples.slice(0, opts.compact ? (g.verdict === 'false' ? 1 : 0) : 2).map(function (x) {
@@ -800,6 +807,6 @@
   window.SOTU = {
     API: API, CODE: CODE, PRESET: PRESET, MARKETS: MARKETS, market: market, PALETTE: PALETTE, colourMap: colourMap,
     esc: esc, highlight: highlight, api: api, answered: answered, rate: rate, avgPosition: avgPosition,
-    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, visibilityHtml: visibilityHtml, citedHtml: citedHtml, sourceTypesHtml: sourceTypesHtml, sourceTypesFacts: sourceTypesFacts, googleFacts: googleFacts, sourceMixTrendHtml: sourceMixTrendHtml, googleVsAiHtml: googleVsAiHtml, perceptionHtml: perceptionHtml, perceptionModel: perceptionModel, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, claimsHtml: claimsHtml, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
+    pct: pct, range: range, personaName: personaName, personasHtml: personasHtml, branding: branding, brandingPanel: brandingPanel, recommendHtml: recommendHtml, visibilityHtml: visibilityHtml, citedHtml: citedHtml, sourceTypesHtml: sourceTypesHtml, sourceTypesFacts: sourceTypesFacts, googleFacts: googleFacts, sourceMixTrendHtml: sourceMixTrendHtml, googleVsAiHtml: googleVsAiHtml, perceptionHtml: perceptionHtml, perceptionModel: perceptionModel, fanoutHtml: fanoutHtml, sharePanel: sharePanel, sharedHeader: sharedHeader, demandWeight: demandWeight, demandMissed: demandMissed, demandBasisFor: demandBasisFor, demandHtml: demandHtml, money: money, factsHtml: factsHtml, claimsHtml: claimsHtml, claimRowText: claimRowText, discoveredHtml: discoveredHtml, describeHtml: describeHtml, describeTrendHtml: describeTrendHtml, trendChart: trendChart, downloadPdf: downloadPdf, printUrl: printUrl, providerLabel: providerLabel, fmtDate: fmtDate, ago: ago, badgeFor: badgeFor, withPreset: withPreset
   };
 })();
