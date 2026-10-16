@@ -238,7 +238,7 @@ async function summaryHtml(d) {
   if (dem) h += '<h2 class="h2b">Weighted by demand</h2>' + S.demandHtml(d, dem, S.demandBasisFor(d, dem), colours, { compact: true });
   h += S.citedHtml(await citedFor(d), d, colours, { max: 6 });
   const fo = await fanoutFor(d); if (fo) h += S.fanoutHtml(fo, fo.rankings, d, colours, { compact: true });
-  if (main) h += S.perceptionHtml(sm.perception, d, colours, { compact: true }) + describeCompact(sm.describe, main.name);
+  if (main) { const pc = S.perceptionHtml(sm.perception, d, colours, { compact: true }); h += pc || describeCompact(sm.describe, main.name); }
   if (main && sm.facts && sm.facts.claims) h += S.claimsHtml(sm.facts, main.name, { compact: true });
   else if (main && sm.facts && sm.facts.groups.length) {
     h += '<h2 class="h2b">What AI gets wrong about ' + esc(main.name) + '</h2><div class="lst">' + sm.facts.groups.slice(0, 3).map(g =>
@@ -246,7 +246,7 @@ async function summaryHtml(d) {
   }
   const cit = sm.citations;
   if (cit) h += S.sourceTypesHtml(cit, d, colours, { compact: true });
-  if (cit) h += '<h2 class="h2b">Who gets cited</h2><p class="hint" style="margin:0 0 4px">You ' + S.pct(cit.share.own) + ' · competitors ' + S.pct(cit.share.competitors) + ' · other sites ' + S.pct(cit.share.other) + ' of citations, across ' + cit.answers_with_sources + ' answers with sources. Most cited: ' +
+  if (cit && !(cit.by_type && cit.by_type.length)) h += '<h2 class="h2b">Who gets cited</h2><p class="hint" style="margin:0 0 4px">You ' + S.pct(cit.share.own) + ' · competitors ' + S.pct(cit.share.competitors) + ' · other sites ' + S.pct(cit.share.other) + ' of citations, across ' + cit.answers_with_sources + ' answers with sources. Most cited: ' +
     cit.top_domains.slice(0, 6).map(x => esc(x.domain) + ' (' + x.answers + ')').join(', ') + '.</p>';
   if ((sm.discovered || []).length) h += '<h2 class="h2b">Brands you’re not tracking</h2><p class="hint" style="margin:0">' + sm.discovered.slice(0, 8).map(b => esc(b.name) + ' (' + b.answers + ')').join(' · ') + '</p>';
   if (main) {
