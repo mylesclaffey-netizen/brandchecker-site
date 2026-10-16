@@ -145,6 +145,16 @@ function timeline(d) {
     '<p class="hint">One answer per model per run (the first that names ' + esc(main.name) + '). The summary is written by a small AI model; the quoted sentence is the model’s own words.</p>';
 }
 
+// The Change card's second line: is the move since the previous run real or the ordinary wobble of asking models again?
+// (Worker: sotuChange.js — compares the two runs prompt by prompt.) Falls back to the plain wording when it can't tell.
+function changeSub(last, prev) {
+  if (!prev) return 'needs a second run';
+  const c = last.change;
+  if (!c) return 'since the previous run';
+  const pts = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(Math.round(v * 100));
+  return '<b>' + (c.verdict === 'noise' ? 'Within noise' : 'Likely real') + '</b> · likely ' + pts(c.low) + ' to ' + pts(c.high) + ' pts since the previous run';
+}
+
 // Share of voice for the latest run, and how it moved since the one before.
 function sovTrackerCard(last, prev, name) {
   const sov = last.share_of_voice;
@@ -174,7 +184,7 @@ function renderTrend(d) {
     last.consistency ? { lbl: 'Named every time', val: last.consistency.always + '/' + last.consistency.groups, sub: 'combos asked ' + (d.repeats || 1) + '× · ' + last.consistency.sometimes + ' only sometimes' } : null,
     last.facts ? { lbl: 'Wrong facts', val: last.facts.with_issues + '/' + last.facts.checked, sub: 'answers naming ' + esc(main.name) + ' · latest run' } : null,
     cit && cit.by_brand[main.name] && cit.by_brand[main.name].has_domain ? { lbl: 'Cited as a source', val: S.pct(cit.by_brand[main.name].rate), sub: 'of ' + cit.answers_with_sources + ' answers with sources' } : null,
-    { lbl: 'Change', val: delta == null ? '—' : (delta > 0 ? '+' : '') + delta + ' pts', sub: prev ? 'since the previous run' : 'needs a second run' },
+    { lbl: 'Change', val: delta == null ? '—' : (delta > 0 ? '+' : '') + delta + ' pts', sub: changeSub(last, prev) },
     { lbl: 'Runs kept', val: runs.length, sub: d.watch.frequency },
     { lbl: 'Total spend', val: S.money(spend), sub: 'all runs so far' }
   ].filter(c => c && !(window.SNAPSHOT && c.lbl === 'Total spend'));
