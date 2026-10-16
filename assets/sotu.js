@@ -219,7 +219,7 @@
     var fill = function (t) { return t === 'own' ? (main && colours[main.name] ? colours[main.name].bg : '#34517A') : t === 'competitors' ? '#C99A3E' : '#6FA0C4'; };
     var biggest = Math.max.apply(null, cit.by_type.map(function (t) { return t.share; })) || 1;
     // Bars are scaled to the biggest kind (the percentage beside each is the real share), so small kinds stay visible.
-    var rows = (opts.compact ? cit.by_type.slice(0, 5) : cit.by_type).map(function (t) {
+    var rows = (opts.compact ? cit.by_type.slice(0, 6) : cit.by_type).map(function (t) {
       return '<tr><td><b>' + esc(t.label) + '</b></td>' +
         '<td><div class="bar" style="--bg:' + fill(t.type) + ';height:' + (opts.compact ? 14 : 22) + 'px"><i style="width:' + Math.max(3, Math.round(t.share / biggest * 100)) + '%"></i></div></td>' +
         '<td class="num">' + share(t.share) + '</td>' +
@@ -291,7 +291,7 @@
     opts = opts || {};
     var main = f.main;
     var list = f.rows;
-    if (opts.compact) { var gaps = f.rows.filter(function (r) { return r.read; }); list = (gaps.length ? gaps : f.rows).slice(0, 3); }
+    if (opts.compact) { var gaps = f.rows.filter(function (r) { return r.read; }); list = (gaps.length ? gaps : f.rows).slice(0, 4); }
     var body = list.map(function (row) {
       var chips = f.placed.map(function (b) {
         var hit = row.ranks[b.name], col = colours[b.name] || PALETTE[0];
