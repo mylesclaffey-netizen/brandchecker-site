@@ -153,18 +153,18 @@
 </head>
 <body>
 <div class="wrap">
-  <p class="eyebrow">Beta · needs a Brand Checker account</p>
+  <p class="eyebrow">Beta · needs a Brand Checker account or access code</p>
   <h1>Search Console Archive</h1>
-  <p class="lede">Google keeps your Search Console data for 16 months, then it is gone. Connect a property and we save it every day — daily totals, the top queries and pages of every month, and every query-by-page row — so a year-on-year comparison is still possible in year three.</p>
+  <p class="lede">Google keeps your Search Console data for 16 months, then each day is deleted. Connect a property and we save the days that are about to disappear — the oldest five weeks Google still has, then another week every Monday — with daily totals, the top queries and pages of each month, and every query-by-page row. Your last 16 months stay in Search Console; this keeps what comes after.</p>
 
   <div id="msg"></div>
   <div id="gate" style="display:none"></div>
   <div id="main" style="display:none">
     <div id="props"></div>
-    <div class="card" id="addCard"><h2>Add a property</h2><p class="sub" style="margin:0 0 10px">Properties you have verified in Search Console. Adding one saves the last 16 months, newest days first, then keeps saving each day.</p>
+    <div class="card" id="addCard"><h2>Add a property</h2><p class="sub" style="margin:0 0 10px">Properties you have verified in Search Console. Adding one saves the five weeks of data Google is about to delete, then saves the next week every Monday.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><select id="siteSel" style="min-width:260px"></select><button class="btn2 solid" id="addBtn" type="button">Start archiving</button></div><div id="addMsg" style="margin-top:10px"></div></div>
     <div id="view" style="display:none"></div>
-    <div class="card"><h2>What gets stored</h2><p style="font-size:14.5px">For each day: exact clicks, impressions, click-through rate and average position, plus every query-by-page row Search Console returns (up to 250,000 a day). Google anonymises rare queries, so the rows add up to slightly less than the exact total; the daily totals include them. Google’s data is final about three days after the day, so the newest three days are filled in later. The archive is private to your account, and “Stop and delete” removes every stored file and row. Free while in beta.</p></div>
+    <div class="card"><h2>What gets stored</h2><p style="font-size:14.5px">For each day we save, exact clicks, impressions, click-through rate and average position, plus every query-by-page row Search Console returns (up to 250,000 a day). We save a day when it is among the oldest five weeks Google still has, and each Monday we check the next week, so every day gets five chances before Google drops it. That means the archive starts with data about 15 months old and grows from there — for anything newer, use Search Console itself. Google anonymises rare queries, so the rows add up to slightly less than the exact total; the daily totals include them. The archive is private to your account, and “Stop and delete” removes every stored file and row. Free while in beta.</p></div>
   </div>
 
   <div class="sidenav"><a href="/" class="sidenav-link">← Back to tools</a><a href="/tools/page-audit/" class="sidenav-link">Page audit (shows Search Console data per page) →</a></div>
@@ -217,13 +217,13 @@ function loadList() {
     PROPS = r.properties || [];
     renderProps(); renderAdd();
     clearTimeout(poll);
-    if (PROPS.some(function (p) { return p.status === 'active' && p.days < p.days_expected - 5; })) poll = setTimeout(loadList, 20000);
+    if (PROPS.some(function (p) { return p.status === 'active' && p.days < p.days_expected - 2; })) poll = setTimeout(loadList, 20000);
   });
 }
 function renderProps() {
   $('props').innerHTML = PROPS.length ? PROPS.map(function (p) {
     var pct = Math.min(100, Math.round(100 * p.days / p.days_expected)), running = p.status === 'active' && p.days < p.days_expected - 5;
-    return '<div class="prop ' + p.status + '"><h4>' + esc(p.site_url) + '</h4><div class="meta">' + (p.status === 'error' ? '<b style="color:var(--bad)">Stopped: ' + esc(p.error || 'the Search Console connection failed') + '</b> — reconnect, then add it again.' : p.status === 'paused' ? 'Paused.' : running ? 'Backfilling — ' + p.days + ' of about ' + p.days_expected + ' days saved. Newest days come first; the whole 16 months takes about half an hour.' : 'Up to date — ' + p.days + ' days saved.') + (p.first_day ? ' · ' + esc(p.first_day) + ' to ' + esc(p.last_day) : '') + ' · ' + fmt(p.rows) + ' rows · ' + (p.bytes / 1048576).toFixed(1) + ' MB</div>' +
+    return '<div class="prop ' + p.status + '"><h4>' + esc(p.site_url) + '</h4><div class="meta">' + (p.status === 'error' ? '<b style="color:var(--bad)">Stopped: ' + esc(p.error || 'the Search Console connection failed') + '</b> — reconnect, then add it again.' : p.status === 'paused' ? 'Paused.' : running ? 'Saving the five weeks Google is about to delete — ' + p.days + ' of ' + p.days_expected + ' days so far (a couple of minutes).' : 'Up to date — ' + p.days + ' days saved. The next week is saved on Monday.') + (p.first_day ? ' · ' + esc(p.first_day) + ' to ' + esc(p.last_day) : '') + ' · ' + fmt(p.rows) + ' rows · ' + (p.bytes / 1048576).toFixed(1) + ' MB</div>' +
       (running ? '<div class="bar"><i style="width:' + pct + '%"></i></div>' : '') +
       '<div class="acts">' + (p.days ? '<button class="btn2 small" type="button" data-view="' + p.id + '">View archive</button>' : '') + (p.status === 'error' ? '<button class="btn2 small" type="button" onclick="connect()">Reconnect</button>' : '') + '<button class="btn2 small" type="button" data-del="' + p.id + '">Stop and delete</button></div></div>';
   }).join('') : '';
@@ -247,19 +247,19 @@ $('addBtn').onclick = function () {
     $('addBtn').disabled = false;
     if (r.signin_required) return signIn();
     if (r.error) { $('addMsg').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; if (r.connected === false) $('addMsg').innerHTML += '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>'; return; }
-    $('addMsg').innerHTML = '<div class="toast">Archiving ' + esc(r.site_url) + '. The 16-month backfill runs in the background — you can close this page.</div>'; loadList();
+    $('addMsg').innerHTML = '<div class="toast">Archiving ' + esc(r.site_url) + '. The first five weeks are saved in the background — you can close this page. A new week is added every Monday.</div>'; loadList();
   });
 };
 
 /* ---- the archive view ---- */
-var RANGE = '12m', GRAN = 'month', METRIC = 'clicks', YOY = true, TOPKIND = 'q', TOPMONTH = '';
+var TOPMONTHS = [], RANGE = 'all', GRAN = 'month', METRIC = 'clicks', YOY = true, TOPKIND = 'q', TOPMONTH = '';
 var COLORS = ['#34517A', '#C99A3E'];
 var addDays = function (iso, n) { var d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 function openView(id) {
   CUR = id;
   api('/gsc-archive/daily', { id: id }).then(function (r) {
     if (r.error) return alert(r.error);
-    DAYS = r.days || []; TOPMONTH = '';
+    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = '';
     $('view').style.display = ''; drawView(r.site_url);
     $('view').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
@@ -317,10 +317,10 @@ function drawView(site) {
   var saveGran = GRAN; GRAN = 'month'; var mt = aggregate(DAYS); GRAN = saveGran;
   h += '<div class="card"><h2>Month by month</h2><div class="tblwrap"><table class="tbl"><tr><th>Month</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Avg position</th><th>Days</th></tr>' + mt.slice().reverse().map(function (m) { return '<tr><td>' + esc(m.k) + '</td><td class="num">' + fmt(m.clicks) + '</td><td class="num">' + fmt(m.impressions) + '</td><td class="num">' + m.ctr.toFixed(2) + '%</td><td class="num">' + (m.position == null ? '—' : m.position.toFixed(1)) + '</td><td class="num">' + m.n + '</td></tr>'; }).join('') + '</table></div><div class="acts"><button class="btn2 small" type="button" id="csvDays">Download daily totals (CSV)</button></div></div>';
   // Top queries / pages
-  var complete = mt.filter(function (m) { var y = +m.k.slice(0, 4), mo = +m.k.slice(5); return m.n === new Date(Date.UTC(y, mo, 0)).getUTCDate(); }).map(function (m) { return m.k; }).reverse();
+  var complete = TOPMONTHS;   // months with a stored rollup
   if (!TOPMONTH && complete.length) TOPMONTH = complete[0];
-  h += '<div class="card"><h2>Top queries and pages</h2><p class="sub" style="margin:0 0 10px">From the monthly rollups, which are built once every day of a month is stored.</p>' +
-    (complete.length ? '<div class="seg" data-g="kind"><button type="button" data-v="q" aria-pressed="' + (TOPKIND === 'q') + '">Queries</button><button type="button" data-v="p" aria-pressed="' + (TOPKIND === 'p') + '">Pages</button></div><select id="topMonth">' + ['ALL'].concat(complete).map(function (m) { return '<option value="' + m + '"' + (m === TOPMONTH ? ' selected' : '') + '>' + (m === 'ALL' ? 'All stored months' : m) + '</option>'; }).join('') + '</select><div id="topOut" style="margin-top:12px"><p class="hint">Loading…</p></div>' : '<p class="hint">No complete month stored yet — the backfill is still running.</p>') + '</div>';
+  h += '<div class="card"><h2>Top queries and pages</h2><p class="sub" style="margin:0 0 10px">From the monthly rollups, built once all of a month’s days we could save are stored (the first month is often partial, because Google had already dropped its early days).</p>' +
+    (complete.length ? '<div class="seg" data-g="kind"><button type="button" data-v="q" aria-pressed="' + (TOPKIND === 'q') + '">Queries</button><button type="button" data-v="p" aria-pressed="' + (TOPKIND === 'p') + '">Pages</button></div><select id="topMonth">' + ['ALL'].concat(complete).map(function (m) { return '<option value="' + m + '"' + (m === TOPMONTH ? ' selected' : '') + '>' + (m === 'ALL' ? 'All stored months' : m) + '</option>'; }).join('') + '</select><div id="topOut" style="margin-top:12px"><p class="hint">Loading…</p></div>' : '<p class="hint">No monthly rollup yet — a month’s top lists are built once all its saved days are in.</p>') + '</div>';
   h += '<div class="card"><h2>Raw rows for a day</h2><p class="sub" style="margin:0 0 10px">Every stored query-by-page row for one day, as a CSV.</p><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><input type="date" id="exDate" min="' + esc(DAYS[0].date) + '" max="' + esc(DAYS[DAYS.length - 1].date) + '" value="' + esc(DAYS[DAYS.length - 1].date) + '"><button class="btn2 small" type="button" id="csvDay">Download CSV</button></div><div id="exMsg"></div></div>';
   $('view').innerHTML = h;
   wire(site);
