@@ -194,7 +194,7 @@ function connect() {
 function gate(html) { $('gate').innerHTML = '<div class="card">' + html + '</div>'; $('gate').style.display = ''; $('main').style.display = 'none'; }
 function toast(t) { $('msg').innerHTML = '<div class="toast">' + esc(t) + '</div>'; }
 
-var STATUS = null, PROPS = [], CUR = null, DAYS = [], poll = null;
+var ALLOWED = null, STATUS = null, PROPS = [], CUR = null, DAYS = [], poll = null;
 function init() {
   var g = QS.get('gsc');
   if (g) { var u = new URL(location.href); u.searchParams.delete('gsc'); history.replaceState(null, '', u.pathname + u.search); }
@@ -214,7 +214,7 @@ function init() {
 function loadList() {
   api('/gsc-archive/list').then(function (r) {
     if (r.error) { $('props').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
-    PROPS = r.properties || [];
+    PROPS = r.properties || []; ALLOWED = r.allowed || null;
     renderProps(); renderAdd();
     clearTimeout(poll);
     if (PROPS.some(function (p) { return p.status === 'active' && p.days < p.days_expected - 2; })) poll = setTimeout(loadList, 20000);
@@ -236,8 +236,9 @@ function renderProps() {
 }
 function renderAdd() {
   var have = {}; PROPS.forEach(function (p) { have[p.site_url] = 1; });
-  var sites = (STATUS.sites || []).filter(function (s) { return !have[s]; });
-  $('siteSel').innerHTML = sites.length ? sites.map(function (s) { return '<option>' + esc(s) + '</option>'; }).join('') : '<option value="">No more properties to add</option>';
+  var dom = function (s) { return String(s).replace(/^sc-domain:/i, '').replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0].toLowerCase(); };
+  var sites = (STATUS.sites || []).filter(function (s) { return !have[s] && (!ALLOWED || ALLOWED.indexOf(dom(s)) !== -1); });
+  $('siteSel').innerHTML = sites.length ? sites.map(function (s) { return '<option>' + esc(s) + '</option>'; }).join('') : '<option value="">' + (ALLOWED ? 'Nothing to add — archiving is limited to ' + esc(ALLOWED.join(', ')) : 'No more properties to add') + '</option>';
   $('addBtn').disabled = !sites.length;
 }
 $('addBtn').onclick = function () {
