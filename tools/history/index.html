@@ -128,7 +128,8 @@ const TOOLS = [
   { id: 'integration-check', label: 'Does AI know your integrations?' },
   { id: 'b2b-diagnostic', label: 'B2B SaaS diagnostic' },
   { id: 'conquest-check', label: 'Conquesting check' },
-  { id: 'review-echo', label: 'Negative-review echo' }
+  { id: 'review-echo', label: 'Negative-review echo' },
+  { id: 'brand-share', label: 'Brand search share' }
 ];
 const TOOL_LABEL = Object.fromEntries(TOOLS.map(t => [t.id, t.label]));
 
@@ -155,7 +156,8 @@ const REPORT_LINK = {
   'integration-check': (code, id) => `/tools/integration-check/?r=${encodeURIComponent(id)}`,
   'b2b-diagnostic': (code, id) => `/tools/b2b-diagnostic/?r=${encodeURIComponent(id)}`,
   'conquest-check': (code, id) => `/tools/conquest-check/?r=${encodeURIComponent(id)}`,
-  'review-echo': (code, id) => `/tools/review-echo/?r=${encodeURIComponent(id)}`
+  'review-echo': (code, id) => `/tools/review-echo/?r=${encodeURIComponent(id)}`,
+  'brand-share': (code, id) => `/tools/brand-share/?r=${encodeURIComponent(id)}`
 };
 
 function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
