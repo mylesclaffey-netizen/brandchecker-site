@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<script src="/assets/visitor.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B2B SaaS schema pack</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%235B8C3E'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brand Checker">
+<meta property="og:url" content="https://brandchecker.eu/tools/schema-pack/">
+<meta property="og:title" content="B2B SaaS schema pack | Brand Checker">
+<meta property="og:description" content="Ready-to-paste structured data for a software company: Organization, SoftwareApplication with plans and prices, and FAQ.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--you:#34517a;--ok:#00844a;--warn:#b45f00;--bad:#d40000}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#fff;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;line-height:1.5;padding:22px 16px 60px;font-size:16px}
+  .wrap{max-width:820px;margin:0 auto}
+  h1{margin:10px 0 8px}
+  .field{margin:0 0 20px}
+  .field label,.fl{display:block;font-weight:800;font-size:14px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.05em}
+  .hint{font-size:13.5px;color:#3d3d3d;margin:6px 0 0}
+  input[type=text],textarea{width:100%;padding:13px 14px;font-size:16px;font-family:inherit;border:3px solid #0a0a0a;border-radius:0;background:#fff;color:#0a0a0a}
+  input[type=text]:focus,textarea:focus{outline:3px solid #34517a;outline-offset:2px}
+  textarea{min-height:140px;resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:14px;line-height:1.6}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:620px){.row2{grid-template-columns:1fr}}
+  .err{margin:0 0 16px;padding:12px 14px}
+  .note{border:3px solid #0a0a0a;background:#f3f3ef;padding:14px 16px;margin:0 0 20px;font-size:14.5px}
+  .step{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#3d3d3d;margin:0 0 6px}
+  .sidenav{margin-top:36px;padding-top:20px;border-top:3px solid #0a0a0a;display:flex;flex-direction:column;gap:13px}
+  .sidenav-link{font-size:14px;font-weight:600}
+  body.embed .sidenav{display:none}
+
+  .run{border:3px solid #0a0a0a;padding:26px 20px;box-shadow:5px 5px 0 #0a0a0a;margin:0 0 24px;display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+  .spin{width:76px;height:76px;flex:none}
+  .spin circle{fill:none;stroke-width:9}
+  .spin .t{stroke:#e2e2dc}
+  .spin .f{stroke:#34517a;stroke-linecap:round;stroke-dasharray:70 160;transform-origin:50% 50%;animation:rot 1.1s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  .run ul{list-style:none;font-size:14.5px}
+  .run li{opacity:.4;transition:opacity .3s}
+  .run li.on{opacity:1;font-weight:700}
+  .run li.done{opacity:.75}
+  .run li.done::before{content:"✓ ";color:var(--ok);font-weight:900}
+
+  .hero{display:flex;gap:26px;align-items:center;flex-wrap:wrap;margin:0 0 28px}
+  .hero > div:last-child{flex:1 1 280px;min-width:0}
+  .ring{position:relative;width:170px;height:170px;flex:none}
+  .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .ring .tr{fill:none;stroke:#e2e2dc;stroke-width:14}
+  .ring .fi{fill:none;stroke-width:14;stroke-linecap:butt;transition:stroke-dashoffset 1.3s cubic-bezier(.2,.8,.2,1)}
+  .ring .n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;font-size:44px;letter-spacing:-.04em;line-height:1}
+  .ring .n small{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:500;color:#3d3d3d;margin-top:6px}
+  .hero h2{font-weight:900;font-size:clamp(22px,3.4vw,30px);letter-spacing:-.02em;line-height:1.15;margin:0 0 8px}
+  .hero p{font-size:15px;color:#3d3d3d;max-width:48ch}
+  .stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:0 0 30px}
+  @media(max-width:560px){.stats3{grid-template-columns:1fr}}
+  .sc3{border:3px solid #0a0a0a;padding:14px 16px;box-shadow:5px 5px 0 #0a0a0a;background:#fff}
+  .sc3 .v{font-weight:900;font-size:40px;letter-spacing:-.04em;line-height:1.05}
+  .sc3 .l{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:#3d3d3d}
+  .sc3.g .v{color:var(--bad)} .sc3.p .v{color:var(--warn)} .sc3.c .v{color:var(--ok)}
+  h3.h{font-weight:900;font-size:22px;letter-spacing:-.02em;text-transform:uppercase;margin:34px 0 6px}
+  p.sub{font-size:14.5px;color:#3d3d3d;margin:0 0 14px;max-width:62ch}
+
+  .comp{border:3px solid #0a0a0a;border-left-width:10px;padding:14px 16px 12px;margin:0 0 14px;background:#fff}
+  .comp.gap{border-left-color:var(--bad)} .comp.partial{border-left-color:var(--warn)} .comp.covered{border-left-color:var(--ok)}
+  .comp h4{font-weight:900;font-size:20px;letter-spacing:-.01em;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .badge{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;border:2px solid #0a0a0a;padding:1px 7px;font-weight:500}
+  .comp.gap .badge{background:var(--bad);color:#fff;border-color:var(--bad)} .comp.partial .badge{background:var(--warn);color:#fff;border-color:var(--warn)} .comp.covered .badge{background:var(--ok);color:#fff;border-color:var(--ok)}
+  .kv{display:grid;grid-template-columns:150px 1fr;gap:6px 14px;margin:10px 0 0;font-size:14.5px;align-items:start}
+  @media(max-width:560px){.kv{grid-template-columns:1fr;gap:2px 0}.kv dt{margin-top:8px}}
+  .kv dt{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#3d3d3d;padding-top:3px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip2{border:2px solid #0a0a0a;padding:2px 9px;font-size:13.5px;font-weight:700;background:#fff}
+  .chip2.y{background:var(--ok);color:#fff;border-color:var(--ok)} .chip2.n{color:var(--bad);border-color:var(--bad)}
+  .kv a{word-break:break-all}
+  .todo{margin:12px 0 0;padding:10px 12px;background:#f3f3ef;border-left:5px solid #0a0a0a;font-size:14.5px}
+  .todo li{margin:0 0 4px 18px}
+  .bars{margin:0 0 8px}
+  .hbar{display:grid;grid-template-columns:minmax(110px,190px) 1fr 44px;gap:10px;align-items:center;margin:0 0 7px;font-size:14.5px}
+  .hbar .t{height:16px;border:2px solid #0a0a0a;background:#fff}
+  .hbar .t i{display:block;height:100%;background:#34517a}
+  .hbar .t i.o{background:#C99A3E}
+  .hbar b{font-family:'IBM Plex Mono',monospace;font-size:13px;text-align:right}
+  .lst{border:2px solid #0a0a0a;padding:9px 14px;margin:0 0 8px;font-size:14.5px;word-break:break-word}
+  .lst small{display:block;color:#3d3d3d;font-size:12.5px}
+  details.ans{border:2px solid #0a0a0a;margin:0 0 8px;background:#fff}
+  details.ans summary{cursor:pointer;padding:10px 14px;font-weight:700;font-size:14.5px}
+  details.ans .body{padding:6px 16px 14px;border-top:2px solid #0a0a0a;font-size:14.5px}
+  details.ans ol{margin:6px 0 0 22px}
+  details.ans li.you{font-weight:900;background:#C99A3E;padding:0 6px;margin-left:-6px;list-style-position:inside}
+  details.ans .pre{white-space:pre-wrap}
+  details.ans .src{font-size:12.5px;color:#3d3d3d;margin-top:8px;word-break:break-all}
+  .share{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:26px 0 0}
+  .fine{font-size:12.5px;color:#3d3d3d;margin:18px 0 0;max-width:70ch}
+
+  .verdict{border:3px solid #0a0a0a;border-left-width:12px;padding:18px 20px;margin:0 0 24px;background:#fff;box-shadow:5px 5px 0 #0a0a0a}
+  .verdict.good{border-left-color:var(--ok)} .verdict.bad{border-left-color:var(--bad)} .verdict.warn{border-left-color:var(--warn)}
+  .verdict h2{font-weight:900;font-size:clamp(22px,3.6vw,32px);letter-spacing:-.02em;line-height:1.15;margin:0 0 6px}
+  .verdict p{font-size:15px;color:#3d3d3d;word-break:break-word}
+  .tblwrap{overflow-x:auto;margin:0 0 8px}
+  table.tbl{width:100%;border-collapse:collapse;border:3px solid #0a0a0a;min-width:560px}
+  .tbl th,.tbl td{border:2px solid #0a0a0a;padding:8px 12px;text-align:left;font-size:14px;vertical-align:top}
+  .tbl th{background:#0a0a0a;color:#fff;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+  .tbl td small{display:block;color:#3d3d3d;font-size:12px}
+  .tbl .num{font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+  .pill{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;border:2px solid #0a0a0a;padding:1px 7px;white-space:nowrap}
+  .pill.ok{background:var(--ok);color:#fff;border-color:var(--ok)} .pill.no{color:var(--bad);border-color:var(--bad)} .pill.wn{color:var(--warn);border-color:var(--warn)}
+  .ex{border:2px solid #0a0a0a;padding:8px 12px;margin:0 0 8px;font-size:14px;word-break:break-word}
+  .ex b{font-family:'IBM Plex Mono',monospace}
+  .ex small{color:#3d3d3d;display:block;font-size:12.5px}
+  .todo li{margin:0 0 6px 18px}
+
+  .card{border:3px solid #0a0a0a;padding:16px 18px;margin:0 0 20px;background:#fff}
+  .card h2{font-weight:900;font-size:19px;text-transform:uppercase;letter-spacing:-.01em;margin:0 0 4px}
+  .card .sub{margin:0 0 12px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:620px){.row2{grid-template-columns:1fr}}
+  .f{margin:0 0 12px}
+  .f label{display:block;font-weight:800;font-size:12.5px;margin:0 0 4px;text-transform:uppercase;letter-spacing:.05em}
+  input[type=text],input[type=number],select,textarea{width:100%;padding:9px 11px;font-size:15px;font-family:inherit;border:2px solid #0a0a0a;border-radius:0;background:#fff;color:#0a0a0a}
+  textarea{min-height:76px;resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:13.5px}
+  .rowx{display:grid;grid-template-columns:1.3fr .8fr .7fr .9fr auto auto;gap:8px;align-items:end;margin:0 0 8px}
+  @media(max-width:760px){.rowx{grid-template-columns:1fr 1fr}}
+  .rowx label{font-size:11px;font-weight:700;display:block;margin:0 0 3px;text-transform:uppercase;letter-spacing:.05em}
+  .rowx .chk{display:flex;gap:6px;align-items:center;font-size:12.5px;padding-bottom:9px;white-space:nowrap}
+  .rowx .chk input{width:auto}
+  .rm{border:2px solid #0a0a0a;background:#fff;width:36px;height:38px;font-size:18px;cursor:pointer;border-radius:0}
+  .addb{font-family:inherit;font-size:13px;font-weight:700;border:2px dashed #0a0a0a;background:#fff;padding:6px 12px;cursor:pointer;border-radius:0}
+  .faqr{display:grid;grid-template-columns:1fr auto;gap:8px;margin:0 0 10px;align-items:start}
+  .faqr input,.faqr textarea{margin:0 0 6px}
+  .out{border:3px solid #0a0a0a;margin:0 0 18px;background:#fff}
+  .out .hd{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-bottom:3px solid #0a0a0a;background:#f3f3ef}
+  .out .hd b{font-weight:900;text-transform:uppercase;font-size:14px;letter-spacing:.03em}
+  .out .hd small{display:block;font-size:12.5px;color:#3d3d3d;font-weight:400;text-transform:none;letter-spacing:0}
+  .out pre{margin:0;padding:12px 14px;max-height:340px;overflow:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:#1a4d2a}
+  .out pre.empty{color:#3d3d3d;font-family:inherit;font-size:14px}
+  .iss{border:2px solid #0a0a0a;border-left-width:8px;padding:7px 12px;margin:0 0 6px;font-size:14px;background:#fff}
+  .iss.w{border-left-color:var(--warn)} .iss.e{border-left-color:var(--bad)} .iss.i{border-left-color:#8a8a82} .iss.k{border-left-color:var(--ok)}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+<link rel="stylesheet" href="/assets/sotu.css">
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Free tool · for B2B SaaS</p>
+  <h1>B2B SaaS schema pack</h1>
+  <p class="lede">Structured data tells search engines and AI assistants what your company is, what the product is and what it costs — in a form they don’t have to guess at. Fill in the form (or prefill it from your website) and get ready-to-paste snippets for your homepage, pricing page and FAQ.</p>
+
+  <div class="card"><h2>Start from your website</h2><p class="sub">We read your homepage and pricing page for your name, description, profile links and plans. Everything is a suggestion to correct.</p>
+    <div class="row2"><div class="f" style="margin:0"><input id="pfUrl" type="text" placeholder="yourproduct.com" maxlength="200" autocapitalize="off" spellcheck="false"></div><div><button class="btn2 solid" id="pfBtn" type="button">Prefill from my website</button></div></div>
+    <div id="pfMsg" style="margin-top:10px"></div></div>
+
+  <div class="card"><h2>Company</h2>
+    <div class="row2"><div class="f"><label for="orgName">Company name</label><input id="orgName" type="text" placeholder="Acme"></div><div class="f"><label for="orgUrl">Website</label><input id="orgUrl" type="text" placeholder="https://acme.com/"></div></div>
+    <div class="f"><label for="orgLogo">Logo address</label><input id="orgLogo" type="text" placeholder="https://acme.com/logo.png"></div>
+    <div class="f"><label for="orgDesc">Description</label><textarea id="orgDesc" placeholder="One or two plain sentences: what the company does and for whom."></textarea></div>
+    <div class="f"><label for="orgSame">Profile links — one per line</label><textarea id="orgSame" placeholder="https://www.linkedin.com/company/acme&#10;https://x.com/acme&#10;https://github.com/acme"></textarea></div></div>
+
+  <div class="card"><h2>Product</h2>
+    <div class="row2"><div class="f"><label for="pName">Product name</label><input id="pName" type="text" placeholder="Acme (leave blank to use the company name)"></div><div class="f"><label for="pCat">Category</label><select id="pCat"><option>BusinessApplication</option><option>DeveloperApplication</option><option>CommunicationApplication</option><option>DesignApplication</option><option>EducationalApplication</option><option>FinanceApplication</option><option>HealthApplication</option><option>MultimediaApplication</option><option>SecurityApplication</option><option>UtilitiesApplication</option></select></div></div>
+    <div class="row2"><div class="f"><label for="pOs">Platform</label><input id="pOs" type="text" value="Web" placeholder="Web, iOS, Android…"></div><div class="f"><label for="pPrice">Pricing page address</label><input id="pPrice" type="text" placeholder="https://acme.com/pricing"></div></div>
+    <div class="f"><label for="pDesc">Product description</label><textarea id="pDesc" placeholder="What the product does, in a sentence or two (blank = use the company description)."></textarea></div>
+    <div class="f"><label for="pFeat">Key features — one per line, up to 10</label><textarea id="pFeat" placeholder="Unlimited event types&#10;Calendar integrations&#10;Team scheduling"></textarea></div>
+    <div class="f"><label for="pTrial">Free trial (optional)</label><input id="pTrial" type="text" placeholder="e.g. 14-day free trial, no credit card"></div></div>
+
+  <div class="card"><h2>Plans</h2><p class="sub">One row per plan on your pricing page. For a plan with no public price, tick “contact sales”.</p><div id="plans"></div><button class="addb" id="addPlan" type="button">+ Add a plan</button></div>
+
+  <div class="card"><h2>FAQ</h2><p class="sub">Questions and answers that are written out on your page — the markup must match what visitors can read there.</p><div id="faqs"></div><button class="addb" id="addFaq" type="button">+ Add a question</button></div>
+
+  <h2 style="font-weight:900;font-size:24px;text-transform:uppercase;margin:26px 0 8px">Your pack</h2>
+  <div id="checks"></div>
+  <div class="out"><div class="hd"><div><b>1 · Homepage</b><small>Organization, WebSite and SoftwareApplication. Paste inside <code>&lt;head&gt;</code> of your homepage.</small></div><button class="btn2 small" data-copy="o1" type="button">Copy</button></div><pre id="o1" class="empty">Add your company name and website to see this.</pre></div>
+  <div class="out"><div class="hd"><div><b>2 · Pricing page</b><small>SoftwareApplication with one Offer per plan. Paste inside <code>&lt;head&gt;</code> of your pricing page.</small></div><button class="btn2 small" data-copy="o2" type="button">Copy</button></div><pre id="o2" class="empty">Add at least one plan to see this.</pre></div>
+  <div class="out"><div class="hd"><div><b>3 · FAQ</b><small>FAQPage. Paste into the page the questions appear on (often the pricing page).</small></div><button class="btn2 small" data-copy="o3" type="button">Copy</button></div><pre id="o3" class="empty">Add at least one question and answer to see this.</pre></div>
+
+  <div class="note" style="border:3px solid #0a0a0a;background:#f3f3ef;padding:14px 16px;margin:0 0 20px;font-size:14.5px"><b>Check it before you ship it.</b> Paste each snippet into <a href="https://validator.schema.org/" target="_blank" rel="noopener">validator.schema.org</a> and Google’s <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener">Rich Results Test</a>. <b>Two things are left out on purpose:</b> no AggregateRating (ratings must come from real reviews shown on the page, and marking up your own ratings of yourself breaks Google’s guidelines — add one only for genuine third-party reviews you display), and Google no longer shows FAQ rich results for most sites, so the FAQ markup is for machines and AI, not a snippet in search.</div>
+  <div class="share"><a class="btn2" href="/tools/key-pages/">Key-pages audit →</a><a class="btn2" href="/tools/schema-audit/">Schema analysis →</a><a class="btn2" href="/tools/pricing-check/">Does AI know your pricing? →</a></div>
+  <div class="sidenav"><a href="/" class="sidenav-link">← Back to tools</a></div>
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+var API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+var CUR = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'CHF', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK', 'JPY', 'INR'];
+var lines = function (id) { return $(id).value.split('\n').map(function (l) { return l.trim(); }).filter(Boolean); };
+var val = function (id) { return $(id).value.trim(); };
+var https = function (u) { return /^https:\/\/[^\s/]+\.[^\s/]+/i.test(u); };
+
+/* ---- plans ---- */
+function planRow(p) {
+  p = p || {};
+  var d = document.createElement('div'); d.className = 'rowx';
+  d.innerHTML = '<div><label>Plan</label><input type="text" class="pl-name" placeholder="Pro" value="' + esc(p.name || '') + '"></div>' +
+    '<div><label>Price</label><input type="number" class="pl-price" min="0" step="0.01" placeholder="49" value="' + (p.price == null ? '' : esc(p.price)) + '"></div>' +
+    '<div><label>Currency</label><select class="pl-cur">' + CUR.map(function (c) { return '<option' + (c === (p.currency || 'USD') ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select></div>' +
+    '<div><label>Billed</label><select class="pl-per"><option value="P1M"' + (p.period === 'monthly' || !p.period ? ' selected' : '') + '>monthly</option><option value="P1Y"' + (p.period === 'annual' ? ' selected' : '') + '>annually</option><option value="">one-time</option></select></div>' +
+    '<label class="chk"><input type="checkbox" class="pl-seat"' + (p.per_seat ? ' checked' : '') + '> per user</label>' +
+    '<label class="chk"><input type="checkbox" class="pl-sales"' + (p.price == null && p.name ? ' checked' : '') + '> contact sales</label>' +
+    '<button type="button" class="rm" aria-label="Remove">×</button>';
+  d.querySelector('.rm').onclick = function () { d.remove(); build(); };
+  d.querySelectorAll('input,select').forEach(function (el) { el.oninput = build; el.onchange = build; });
+  $('plans').appendChild(d);
+}
+$('addPlan').onclick = function () { if ($('plans').children.length < 8) { planRow(); build(); } };
+function faqRow(f) {
+  f = f || {};
+  var d = document.createElement('div'); d.className = 'faqr';
+  d.innerHTML = '<div><input type="text" class="fq-q" placeholder="How much does Acme cost?" value="' + esc(f.q || '') + '"><textarea class="fq-a" placeholder="The answer, as it is written on your page.">' + esc(f.a || '') + '</textarea></div><button type="button" class="rm" aria-label="Remove">×</button>';
+  d.querySelector('.rm').onclick = function () { d.remove(); build(); };
+  d.querySelectorAll('input,textarea').forEach(function (el) { el.oninput = build; });
+  $('faqs').appendChild(d);
+}
+$('addFaq').onclick = function () { if ($('faqs').children.length < 8) { faqRow(); build(); } };
+function readPlans() {
+  return [].map.call($('plans').children, function (r) {
+    var sales = r.querySelector('.pl-sales').checked, raw = r.querySelector('.pl-price').value;
+    return { name: r.querySelector('.pl-name').value.trim(), price: sales || raw === '' ? null : Number(raw), currency: r.querySelector('.pl-cur').value, period: r.querySelector('.pl-per').value, per_seat: r.querySelector('.pl-seat').checked, sales: sales };
+  }).filter(function (p) { return p.name; });
+}
+function readFaqs() { return [].map.call($('faqs').children, function (r) { return { q: r.querySelector('.fq-q').value.trim(), a: r.querySelector('.fq-a').value.trim() }; }).filter(function (f) { return f.q || f.a; }); }
+
+/* ---- the pack ---- */
+var tag = function (o) { return '<script type="application/ld+json">\n' + JSON.stringify(o, null, 2).replace(/</g, '\\u003c') + '\n<\/script>'; };
+function build() {
+  var issues = [], add = function (k, m) { issues.push({ k: k, m: m }); };
+  var name = val('orgName'), url = val('orgUrl'), plans = readPlans(), faqs = readFaqs();
+  var pname = val('pName') || name, pdesc = val('pDesc') || val('orgDesc'), pricingUrl = val('pPrice') || '';
+  var out1 = null, out2 = null, out3 = null;
+  if (!name) add('e', 'Add your company name.'); if (!url) add('e', 'Add your website address.'); else if (!https(url)) add('w', 'Use the full https:// address for the website.');
+  var logo = val('orgLogo'); if (logo && !https(logo)) add('w', 'The logo address should be a full https:// image address.');
+  var same = lines('orgSame'); same.filter(function (s) { return !https(s); }).forEach(function (s) { add('w', 'Profile link “' + s + '” should be a full https:// address.'); });
+  if (!val('orgDesc')) add('i', 'No company description — a short plain description helps AI summarise you accurately.');
+  var base = url.replace(/\/?$/, '/');
+  var orgId = base + '#organization';
+  var app = function (extra) { var o = { '@type': 'SoftwareApplication', name: pname, applicationCategory: val('pCat'), operatingSystem: val('pOs') || 'Web' }; if (pdesc) o.description = pdesc; var feats = lines('pFeat').slice(0, 10); if (feats.length) o.featureList = feats; return Object.assign(o, extra || {}); };
+  var priced = plans.filter(function (p) { return p.price != null; });
+  priced.forEach(function (p) { if (!(p.price >= 0)) add('e', 'Plan “' + p.name + '” needs a price of 0 or more.'); });
+  var names = plans.map(function (p) { return p.name.toLowerCase(); }); names.filter(function (n, i) { return names.indexOf(n) !== i; }).forEach(function (n) { add('w', 'Two plans are called “' + n + '”.'); });
+  var currencies = priced.map(function (p) { return p.currency; }).filter(function (c, i, a) { return a.indexOf(c) === i; });
+
+  if (name && url) {
+    var graph = [{ '@type': 'Organization', '@id': orgId, name: name, url: base }];
+    if (logo) graph[0].logo = logo; if (val('orgDesc')) graph[0].description = val('orgDesc'); if (same.length) graph[0].sameAs = same;
+    graph.push({ '@type': 'WebSite', '@id': base + '#website', name: name, url: base, publisher: { '@id': orgId } });
+    var a = app({ '@id': base + '#software', url: base, publisher: { '@id': orgId } });
+    if (priced.length && currencies.length === 1) {
+      var prices = priced.map(function (p) { return p.price; });
+      a.offers = { '@type': 'AggregateOffer', priceCurrency: currencies[0], lowPrice: Math.min.apply(null, prices), highPrice: Math.max.apply(null, prices), offerCount: plans.length };
+    } else if (currencies.length > 1) add('w', 'Your plans use more than one currency, so the homepage block leaves out the price range. Keep one currency per page.');
+    graph.push(a);
+    out1 = tag({ '@context': 'https://schema.org', '@graph': graph });
+  }
+  if (!plans.length) add('i', 'No plans yet — add them to get the pricing-page snippet.');
+  else if (name && url) {
+    if (!pricingUrl) add('w', 'Add your pricing page address so each Offer points at it.'); else if (!https(pricingUrl)) add('w', 'The pricing page address should be a full https:// address.');
+    var offers = plans.map(function (p) {
+      var o = { '@type': 'Offer', name: p.name };
+      if (pricingUrl) o.url = pricingUrl;
+      if (p.price != null) {
+        o.price = p.price; o.priceCurrency = p.currency; o.availability = 'https://schema.org/InStock';
+        var ps = { '@type': 'UnitPriceSpecification', price: p.price, priceCurrency: p.currency };
+        if (p.period && p.price > 0) ps.billingDuration = p.period;
+        if (p.per_seat) ps.referenceQuantity = { '@type': 'QuantitativeValue', value: 1, unitText: 'user' };
+        o.priceSpecification = ps;
+      } else o.description = 'Custom pricing — contact sales.';
+      return o;
+    });
+    if (val('pTrial')) offers.push({ '@type': 'Offer', name: 'Free trial', price: 0, priceCurrency: currencies[0] || 'USD', description: val('pTrial') });
+    out2 = tag({ '@context': 'https://schema.org', '@graph': [Object.assign(app({ '@id': base + '#software' }), { url: pricingUrl || base, offers: offers })] });
+  }
+  var okFaqs = faqs.filter(function (f) { return f.q && f.a; });
+  faqs.filter(function (f) { return !(f.q && f.a); }).forEach(function () { add('w', 'A FAQ has a question without an answer, or the reverse — it is left out.'); });
+  if (okFaqs.length) out3 = tag({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: okFaqs.map(function (f) { return { '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } }; }) });
+  else add('i', 'No FAQ yet — add a few real questions buyers ask (pricing, security, integrations).');
+
+  if (window.__existing && window.__existing.length) add('i', 'Your homepage already has structured data (' + window.__existing.join(', ') + '). Replace those blocks with this pack instead of adding a second Organization or WebSite — duplicates confuse the reader.');
+  if (out1 && out2) add('k', 'Both the homepage and pricing page snippets describe the same SoftwareApplication (same @id). That is intended: one product, described where it appears.');
+  $('checks').innerHTML = issues.map(function (i) { return '<div class="iss ' + i.k + '">' + esc(i.m) + '</div>'; }).join('');
+  [['o1', out1, 'Add your company name and website to see this.'], ['o2', out2, 'Add at least one plan to see this.'], ['o3', out3, 'Add at least one question and answer to see this.']].forEach(function (o) { var el = $(o[0]); el.textContent = o[1] || o[2]; el.className = o[1] ? '' : 'empty'; });
+}
+document.querySelectorAll('[data-copy]').forEach(function (b) { b.onclick = function () { var el = $(b.dataset.copy); if (el.className === 'empty') return; if (navigator.clipboard) navigator.clipboard.writeText(el.textContent); var t = b.textContent; b.textContent = 'Copied ✓'; setTimeout(function () { b.textContent = t; }, 1400); }; });
+['orgName', 'orgUrl', 'orgLogo', 'orgDesc', 'orgSame', 'pName', 'pCat', 'pOs', 'pPrice', 'pDesc', 'pFeat', 'pTrial'].forEach(function (id) { $(id).addEventListener('input', build); $(id).addEventListener('change', build); });
+
+/* ---- prefill ---- */
+$('pfBtn').onclick = function () {
+  var u = val('pfUrl');
+  if (!u) { $('pfMsg').innerHTML = '<div class="err">Enter your website first.</div>'; return; }
+  $('pfBtn').disabled = true; $('pfMsg').innerHTML = '<p class="hint">Reading your homepage and pricing page…</p>';
+  fetch(API + '/schema-pack/prefill', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: u }) }).then(function (r) { return r.json(); }).catch(function () { return { error: 'Could not reach the server — fill the form in by hand.' }; }).then(function (d) {
+    $('pfBtn').disabled = false;
+    if (d.error) { $('pfMsg').innerHTML = '<div class="err">' + esc(d.error) + '</div>'; return; }
+    $('orgName').value = d.name || ''; $('orgUrl').value = d.url || ''; $('orgLogo').value = d.logo || ''; $('orgDesc').value = d.description || ''; $('orgSame').value = (d.same_as || []).join('\n');
+    $('pPrice').value = d.pricing_url || '';
+    $('plans').innerHTML = ''; (d.plans || []).forEach(function (p) { planRow({ name: p.name, price: p.price, currency: p.currency || d.currency_guess || 'USD', period: p.period, per_seat: p.per_seat }); });
+    window.__existing = (d.existing_types || []).concat(d.pricing_types || []).filter(function (t, i, a) { return a.indexOf(t) === i; });
+    $('pfMsg').innerHTML = '<div class="iss k">Read ' + esc(d.domain) + '. Check every field below — these are suggestions from your page' + ((d.plans || []).length ? ', and a “$” is assumed to be US dollars' : '') + '.' + (d.notes && d.notes.length ? ' ' + esc(d.notes.join(' ')) : '') + '</div>';
+    build();
+  });
+};
+planRow(); faqRow(); build();
+</script>
+<script src="/assets/presets.js"></script>
+</body>
+</html>
