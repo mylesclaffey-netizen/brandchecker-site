@@ -160,6 +160,7 @@
     list.forEach(function (it, si) { var m = byK(it.weeks), pts = []; base.forEach(function (w, i) { var o = m[w.k]; if (o && o[metric] != null) pts.push(x(i).toFixed(1) + ',' + y(o[metric]).toFixed(1)); }); if (pts.length) g += '<polyline fill="none" stroke="' + SCOL[si % SCOL.length] + '" stroke-width="2.4" stroke-linejoin="round" points="' + pts.join(' ') + '"/>'; });
     return '<div class="chart"><div class="cl">' + esc(label) + '</div><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + '">' + g + '</svg>' + (list.length > 1 ? '<div class="leg">' + list.map(function (it, si) { return '<span><i style="background:' + SCOL[si % SCOL.length] + '"></i>' + esc(it.name) + '</span>'; }).join('') + '</div>' : '') + '</div>';
   }
+  var olderNote = function (seg) { return seg && seg.older && seg.older.days ? ' ' + seg.older.days + ' days older than Google’s window come from the archive, stored per day when each was captured' + (seg.older.rows ? ' (classified from the saved query-by-page rows, which hide small combinations, so they can read slightly low)' : '') + '.' : ''; };
   var dch = function (a, b) { return b ? (a - b) / b * 100 : null; };
   var chCell = function (v, goodUp) { if (v == null) return '—'; var good = goodUp ? v >= 0 : v <= 0; return '<span class="' + (good ? 'ok' : 'bad') + '">' + (v >= 0 ? '+' : '') + v.toFixed(0) + '%</span>'; };
   var posCell = function (a, b) { if (a == null) return '—'; var d = b != null ? a - b : null; return a.toFixed(1) + (d == null ? '' : ' <span class="' + (d <= 0 ? 'ok' : 'bad') + '">(' + (d >= 0 ? '+' : '') + d.toFixed(1) + ')</span>'); };
@@ -180,7 +181,7 @@
     var ms = core.map(function (c) { return sMonthly(c.days); }), allm = sMonthly(seg.total), keys = Object.keys(allm).sort();
     h += '<table><thead><tr><th>Month</th>' + core.map(function (c) { return '<th>' + esc(c.name) + ' clicks</th>'; }).join('') + '<th>Core terms together</th><th>Share of all clicks</th></tr></thead><tbody>' + keys.slice().reverse().map(function (k) { var sum2 = 0; var cells = core.map(function (c, i) { var v = ms[i][k] ? ms[i][k].clicks : 0; sum2 += v; return '<td class="n">' + fmt(v) + '</td>'; }).join(''); return '<tr><td>' + esc(monLabel(k)) + '</td>' + cells + '<td class="n">' + fmt(sum2) + '</td><td class="n">' + (allm[k].clicks ? (sum2 / allm[k].clicks * 100).toFixed(1) : '0.0') + '%</td></tr>'; }).join('') + '</tbody></table>';
     core.forEach(function (c) { h += detailTables((seg.details || {})[c.id], c.name); });
-    return h + '<p class="foot">Web search only, live from Search Console (about 16 months). A query counts in a term if it contains the phrase; queries Google hides cannot be assigned to any term.</p>';
+    return h + '<p class="foot">Web search only: Search Console’s own figures for the last ~16 months, plus the archive beyond that. A query counts in a term if it contains the phrase; queries Google hides cannot be assigned to any term.' + olderNote(seg) + '</p>';
   }
   function segFocus(seg, id) {
     var f = (seg.segments || []).filter(function (x) { return x.id === id; })[0]; if (!f || !seg.total || !seg.total.length) return '';
@@ -196,7 +197,7 @@
     var fm = sMonthly(f.days), tm = sMonthly(seg.total), keys = Object.keys(tm).sort();
     h += '<table><thead><tr><th>Month</th><th>' + esc(f.name) + ' clicks</th><th>' + esc(f.name) + ' impressions</th><th>Share of all clicks</th></tr></thead><tbody>' + keys.slice().reverse().map(function (k) { var m = fm[k] || { clicks: 0, impressions: 0 }; return '<tr><td>' + esc(monLabel(k)) + '</td><td class="n">' + fmt(m.clicks) + '</td><td class="n">' + fmt(m.impressions) + '</td><td class="n">' + (tm[k].clicks ? (m.clicks / tm[k].clicks * 100).toFixed(1) : '0.0') + '%</td></tr>'; }).join('') + '</tbody></table>';
     h += detailTables((seg.details || {})[id], f.name + ' queries and pages');
-    return h + '<p class="foot">Whole window: ' + fmt(all.clicks) + ' clicks and ' + fmt(all.impressions) + ' impressions, ' + (allTot.clicks ? (all.clicks / allTot.clicks * 100).toFixed(1) : '0.0') + '% of all web clicks. Web search only, live from Search Console (about 16 months). Queries that name a district or a neighbourhood but not the city are not included unless you add them as terms.</p>';
+    return h + '<p class="foot">Whole window: ' + fmt(all.clicks) + ' clicks and ' + fmt(all.impressions) + ' impressions, ' + (allTot.clicks ? (all.clicks / allTot.clicks * 100).toFixed(1) : '0.0') + '% of all web clicks. Web search only: Search Console’s own figures for the last ~16 months, plus the archive beyond that. Queries that name a district or a neighbourhood but not the city are not included unless you add them as terms.' + olderNote(seg) + '</p>';
   }
 
   function monthsSection(months) {

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <script src="/assets/visitor.js"></script>
-<script src="/assets/gsc-report.js?v=5"></script>
+<script src="/assets/gsc-report.js?v=6"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Search Console Archive</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
@@ -669,7 +669,7 @@ function wireShare(site) {
   var pdf = $('shPdf'), mk = $('shMake'); if (!pdf) return;
   pdf.onclick = function () {
     $('shOut').innerHTML = '<p class="hint">Preparing the report…</p>';
-    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
+    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
     if (TREND.id === CUR && TREND.data && TREND.types) return go(TREND.data);
     api('/gsc-archive/live-types', { id: CUR }).then(function (r) { if (r.error) { $('shOut').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } TREND.id = CUR; TREND.types = r.types || {}; TREND.errors = r.errors || {}; TREND.data = TREND.types.web || []; go(TREND.data); });
   };
