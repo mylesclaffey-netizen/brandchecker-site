@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <script src="/assets/visitor.js"></script>
-<script src="/assets/gsc-report.js?v=8"></script>
+<script src="/assets/gsc-report.js?v=9"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Search Console Archive</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
@@ -724,6 +724,24 @@ function renderMonitor() {
   };
 }
 
+/* ---- expected vs actual: weekly totals against a seasonal expected range ---- */
+var EX = { id: '', data: null, error: null, metric: 'clicks' };
+function expectedCard() { return '<div class="card" id="exCard"><h2>Expected vs actual</h2><div id="exOut"><p class="hint">Loading…</p></div></div>'; }
+function loadExpected() {
+  if (EX.id === CUR && (EX.data || EX.error)) { renderExpected(); return; }
+  EX.id = CUR; EX.data = null; EX.error = null;
+  api('/gsc-archive/expected', { id: CUR }).then(function (r) { if (r.error) EX.error = r; else EX.data = r.expected; renderExpected(); });
+}
+function renderExpected() {
+  var box = $('exOut'); if (!box) return; ensureGrStyle();
+  if (EX.error) { box.innerHTML = '<div class="err">' + esc(EX.error.error) + '</div>' + (EX.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : ''); return; }
+  var d = EX.data; if (!d) return;
+  var labels = { clicks: 'Clicks', impressions: 'Impressions', nonbrand: 'Non-brand clicks', brand: 'Brand clicks' }, keys = ['clicks', 'impressions', 'nonbrand', 'brand'].filter(function (k) { return d[k]; });
+  if (keys.indexOf(EX.metric) < 0) EX.metric = 'clicks';
+  box.innerHTML = '<p class="sub" style="margin:0 0 10px">Is a dip normal variation or a real change? Each week is compared with the range its recent history and last year’s seasonal shape predict.</p><div class="seg" data-g="exm">' + keys.map(function (k) { return '<button type="button" data-v="' + k + '" aria-pressed="' + (EX.metric === k) + '">' + labels[k] + '</button>'; }).join('') + '</div><div class="gr">' + GscReport.expected(d, { metric: EX.metric, noTitle: true }) + '</div>';
+  box.querySelectorAll('.seg[data-g="exm"] button').forEach(function (b) { b.onclick = function () { EX.metric = b.dataset.v; renderExpected(); }; });
+}
+
 /* ---- whole-report PDF and sign-in-free share links ---- */
 var SH = { site: '' };
 function shareCard() {
@@ -744,7 +762,7 @@ function wireShare(site) {
   var pdf = $('shPdf'), mk = $('shMake'); if (!pdf) return;
   pdf.onclick = function () {
     $('shOut').innerHTML = '<p class="hint">Preparing the report…</p>';
-    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, cwv: (CW.data && CW.data.current) ? { origin: CW.data.origin, current: CW.data.current, history: CW.data.history, pages: CW.data.pages || [] } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
+    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, expected: EX.data || null, cwv: (CW.data && CW.data.current) ? { origin: CW.data.origin, current: CW.data.current, history: CW.data.history, pages: CW.data.pages || [] } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
     if (TREND.id === CUR && TREND.data && TREND.types) return go(TREND.data);
     api('/gsc-archive/live-types', { id: CUR }).then(function (r) { if (r.error) { $('shOut').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } TREND.id = CUR; TREND.types = r.types || {}; TREND.errors = r.errors || {}; TREND.data = TREND.types.web || []; go(TREND.data); });
   };
@@ -783,7 +801,7 @@ function openView(id) {
   CUR = id;
   api('/gsc-archive/daily', { id: id }).then(function (r) {
     if (r.error) return alert(r.error);
-    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null; MO.id = ''; MO.data = null; MO.error = null; MO.msg = '';
+    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null; MO.id = ''; MO.data = null; MO.error = null; MO.msg = ''; EX.id = ''; EX.data = null; EX.error = null;
     api('/gsc-archive/compare-options', { id: id }).then(function (o) { CMP.opts = o && !o.error ? o : null; if (CMP.opts && CMP.opts.months.length && !CMP.start) { var okm = CMP.opts.months.filter(function (m) { return m.available && m.twin_available; }); CMP.start = (okm.filter(function (m) { return m.month === CMP.opts.latest_stored_month; })[0] || okm[okm.length - 1] || {}).month || ''; } $('view').style.display = ''; drawView(r.site_url); $('view').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   });
 }
@@ -827,7 +845,7 @@ function drawView(site) {
   // Align the previous year's buckets to the current ones by position in the range.
   var prevAligned = cur.map(function (b) { return prev.filter(function (p) { return p.k === b.k; })[0] || null; });
   var tc = totals(days), tp = shifted.length > 20 ? totals(shifted) : null;
-  var h = '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + brandCard() + segArea() + cwvCard() + monitorCard() + shareCard() + '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
+  var h = '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + expectedCard() + brandCard() + segArea() + cwvCard() + monitorCard() + shareCard() + '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
     '<div class="seg" data-g="range">' + [['28d', '28 days'], ['3m', '3 months'], ['12m', '12 months'], ['all', 'All stored']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (RANGE === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="gran">' + [['day', 'Daily'], ['week', 'Weekly'], ['month', 'Monthly']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (GRAN === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="metric">' + [['clicks', 'Clicks'], ['impressions', 'Impressions'], ['ctr', 'CTR'], ['position', 'Position']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (METRIC === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
@@ -850,6 +868,7 @@ function drawView(site) {
   $('view').innerHTML = h;
   wire(site);
   loadTrend();
+  loadExpected();
   loadBrand();
   loadSegments();
   loadCwv();

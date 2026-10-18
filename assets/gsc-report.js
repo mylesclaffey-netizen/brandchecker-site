@@ -239,6 +239,46 @@
     return h + '<p class="foot">Field data comes from real Chrome users who opted in to usage statistics, so a page appears only with enough traffic; “No field data” is not a fault. Search Console’s own Core Web Vitals report has no API; this is the same underlying dataset (Chrome UX Report). The weekly history covers up to 40 weeks.</p>';
   }
 
+  /* ---- expected vs actual (computed by the worker: weekly totals against a seasonal baseline +/- two sigma) ---- */
+  var EXL = { clicks: 'Clicks', impressions: 'Impressions', nonbrand: 'Non-brand clicks', brand: 'Brand clicks' };
+  function exChart(e, label) {
+    var rows = e && e.weeks ? e.weeks : []; if (rows.length < 10) return '';
+    var W = 760, H = 250, L = 52, R = 14, T = 14, B = 28, n = rows.length, max = 1;
+    rows.forEach(function (r) { max = Math.max(max, r.v, r.hi || 0); });
+    var x = function (i) { return L + (W - L - R) * i / (n - 1); }, y = function (v) { return T + (H - T - B) * (1 - v / max); };
+    var f = function (v) { return v >= 10000 ? Math.round(v / 1000) + 'k' : fmt(v); }, g = '';
+    for (var t = 0; t <= 4; t++) { var yy = T + (H - T - B) * (1 - t / 4); g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#e2e2dc"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="11" fill="#3d3d3d">' + f(max * t / 4) + '</text>'; }
+    rows.forEach(function (r, i) { if (i % 8 === 0) g += '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="#3d3d3d">' + MN[+r.k.slice(5, 7) - 1] + ' ' + r.k.slice(2, 4) + '</text>'; });
+    var idx = []; rows.forEach(function (r, i) { if (r.lo != null) idx.push(i); });
+    if (idx.length) g += '<polygon fill="#34517A" opacity=".13" points="' + idx.map(function (i) { return x(i).toFixed(1) + ',' + y(rows[i].hi).toFixed(1); }).concat(idx.slice().reverse().map(function (i) { return x(i).toFixed(1) + ',' + y(rows[i].lo).toFixed(1); })).join(' ') + '"/>' +
+      '<polyline fill="none" stroke="#34517A" stroke-width="1.4" stroke-dasharray="5 4" points="' + idx.map(function (i) { return x(i).toFixed(1) + ',' + y(rows[i].exp).toFixed(1); }).join(' ') + '"/>';
+    g += '<polyline fill="none" stroke="#0a0a0a" stroke-width="2.4" stroke-linejoin="round" points="' + rows.map(function (r, i) { return x(i).toFixed(1) + ',' + y(r.v).toFixed(1); }).join(' ') + '"/>';
+    rows.forEach(function (r, i) { if (r.flag) g += '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(r.v).toFixed(1) + '" r="4.2" fill="' + (r.flag === 'below' ? '#b3261e' : '#1b7a3d') + '"/>'; });
+    return '<div class="chart"><div class="cl">' + esc(label) + ' per week against the expected range</div><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + ' per week against the expected range">' + g + '</svg><div class="leg"><span><i style="background:#0a0a0a"></i>Actual</span><span><i style="background:#34517A;opacity:.35"></i>Expected range (dashed: expected)</span><span><i style="background:#b3261e;border-radius:50%"></i>Below the range</span><span><i style="background:#1b7a3d;border-radius:50%"></i>Above the range</span></div></div>';
+  }
+  function exSentence(label, e) {
+    var s = e && e.summary; if (!s || s.exp == null) return '';
+    var st = s.flag === 'below' ? '<b class="bad">below the expected range</b>' : s.flag === 'above' ? '<b class="ok">above the expected range</b>' : '<b>within the normal range</b>';
+    return label + ', week of ' + dLong(s.week) + ': <b>' + fmt(s.actual) + '</b> against <b>' + fmt(s.exp) + '</b> expected (range ' + fmt(s.lo) + ' to ' + fmt(s.hi) + '), ' + st + ' (' + (s.pct >= 0 ? '+' : '') + s.pct + '%).' + (s.streak >= 2 ? ' ' + s.streak + ' weeks in a row below.' : '');
+  }
+  function exShifts(label, e) {
+    var sh = e && e.summary ? e.summary.shifts : []; if (!sh || !sh.length) return '';
+    return '<ul>' + sh.map(function (x) { return '<li>' + esc(label) + ': below the expected range for <b>' + x.weeks + ' weeks</b> from the week of <b>' + dLong(x.start) + '</b>, at worst <b>' + Math.abs(x.worst) + '%</b> under what the weeks before predicted. Three or more weeks in a row is a real shift, not a dip.</li>'; }).join('') + '</ul>';
+  }
+  function expectedSection(exp, opts) {
+    if (!exp) return '';
+    var keys = opts && opts.metric ? [opts.metric] : ['clicks', 'impressions', 'nonbrand'].filter(function (k) { return exp[k]; });
+    var h = (opts && opts.noTitle ? '' : '<h2>Expected vs actual</h2>');
+    h += '<p class="sub">Each week’s expected value is the average of the eight weeks before it, adjusted by last year’s seasonal shape where a year of history exists. The shaded range is two standard deviations: how far weeks usually stray from that expectation plus the natural noise of small counts. A point outside it is more than normal variation.</p>';
+    keys.forEach(function (k) {
+      var e = exp[k]; if (!e) return;
+      if (!e.summary) { h += '<p class="sub">' + esc(EXL[k]) + ': ' + esc(e.note || 'not enough data yet') + '</p>'; return; }
+      h += '<p style="margin:8px 0 4px">' + exSentence(EXL[k], e) + '</p>' + exChart(e, EXL[k]) + exShifts(EXL[k], e);
+    });
+    var seasonal = keys.some(function (k) { return exp[k] && exp[k].weeks && exp[k].weeks.some(function (w) { return w.seasonal; }); });
+    return h + '<p class="foot">' + (seasonal ? 'Seasonal adjustment only applies to weeks that have a full year of history behind them (about the last ' + Math.max(...keys.map(function (k) { return exp[k] && exp[k].weeks ? exp[k].weeks.filter(function (w) { return w.seasonal; }).length : 0; })) + ' weeks); earlier weeks are compared with the recent level alone, so the range is wider and less precise. ' : 'There is not yet a full year of history, so no seasonal adjustment is applied; weeks are compared with the recent level alone. ') + 'The baseline follows the data, so a lasting drop stops being flagged after about eight weeks: the flags show when it started, not that it is still unexplained.</p>';
+  }
+
   function monthsSection(months) {
     if (!months || !months.length) return '';
     return '<h2>Saved days, by month</h2><p class="sub">Days Brand Checker saved before Google deleted them. A month marked partial has fewer saved days than the month has.</p><table><thead><tr><th>Month</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Avg position</th><th>Days saved</th></tr></thead><tbody>'
@@ -279,6 +319,7 @@
     else if (kind === 'focus') h += s.seg ? segFocus(s.seg, s.focus) : '<p>No data.</p>';
     else {
       if (trend.length >= 28) h += headline(trend) + trendSection(trend) + typesSection(trend, s.trend_types);
+      h += expectedSection(s.expected);
       h += cwvSection(s.cwv);
       h += brandSection(s.brand);
       if (s.seg) { h += segCore(s.seg); (s.seg.segments || []).filter(function (x) { return x.kind === 'focus'; }).forEach(function (x) { h += segFocus(s.seg, x.id); }); }
@@ -287,5 +328,5 @@
     h += '<p class="end">Figures are from Google Search Console for ' + esc(site) + '. Days older than Google’s 16-month window come from Brand Checker’s archive. Search Console’s own daily totals can differ slightly from the sum of query rows. Generated by Brand Checker (brandchecker.eu).</p></div>';
     return h;
   }
-  window.GscReport = { render: render, css: CSS, esc: esc, seg: { core: segCore, focus: segFocus }, cwv: cwvSection, brand: { all: bAll, weeks: bWeeks, months: bMonths, sum: sum, stats: bStats, chart: bChart } };
+  window.GscReport = { render: render, css: CSS, esc: esc, seg: { core: segCore, focus: segFocus }, cwv: cwvSection, expected: expectedSection, brand: { all: bAll, weeks: bWeeks, months: bMonths, sum: sum, stats: bStats, chart: bChart } };
 })();
