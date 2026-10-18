@@ -384,15 +384,78 @@ function renderTrend() {
   box.querySelectorAll('.seg button').forEach(function (b) { b.onclick = function () { TREND.metric = b.dataset.v; renderTrend(); }; });
 }
 
+/* ---- where the traffic went: what each page that earned clicks in an archived month does today ---- */
+var PS_KINDS = [['live', 'Still live', 'ok'], ['moved', 'Moved to another page', 'ok'], ['home', 'Redirected to the homepage', 'bad'], ['gone', 'Gone (404 / 410)', 'bad'], ['elsewhere', 'Sent to another site', 'bad'], ['noindex', 'Live, but noindex', 'bad'], ['error', 'Could not check', 'na']];
+function pageStatusCard() {
+  var h = '<div class="card" id="psCard"><h2>Where the traffic went</h2>';
+  if (!TOPMONTHS.length) return h + '<p class="hint">Available once a month’s page list has been rolled up.</p></div>';
+  if (!PS.month || TOPMONTHS.indexOf(PS.month) < 0) PS.month = TOPMONTHS[0];
+  h += '<p class="sub" style="margin:0 0 10px">Takes the pages that earned clicks in an archived month and checks what each address does <b>today</b>: still live, moved, redirected to the homepage, gone, or sent to another site. It shows how much of the old traffic sits on pages that no longer exist.</p>' +
+    '<select id="psMonth">' + TOPMONTHS.map(function (m) { return '<option value="' + m + '"' + (m === PS.month ? ' selected' : '') + '>' + monLabel(m) + '</option>'; }).join('') + '</select> ' +
+    '<select id="psMax">' + [60, 120, 200].map(function (n) { return '<option value="' + n + '"' + (n === PS.max ? ' selected' : '') + '>Top ' + n + ' pages</option>'; }).join('') + '</select> ' +
+    '<button class="btn2 small" type="button" id="psGo">Check these pages</button><div id="psOut" style="margin-top:14px">' + (PS.rows.length ? '' : '<p class="hint">Press the button. Each page is requested once from here (a cheap HEAD request), so it takes about half a minute for 120 pages.</p>') + '</div></div>';
+  return h;
+}
+function wirePageStatus() {
+  var go = $('psGo'); if (!go) return;
+  $('psMonth').onchange = function () { PS.month = this.value; PS.rows = []; PS.meta = null; PS.token++; $('psOut').innerHTML = '<p class="hint">Press the button.</p>'; };
+  $('psMax').onchange = function () { PS.max = +this.value; };
+  go.onclick = runPageStatus;
+  if (PS.rows.length) renderPageStatus();
+}
+function runPageStatus() {
+  var tok = ++PS.token, out = $('psOut'), go = $('psGo'); PS.rows = []; PS.meta = null; PS.filter = 'all'; go.disabled = true;
+  var step = function (offset) {
+    out.innerHTML = '<p class="hint">Checking pages… ' + offset + (PS.total ? ' of ' + Math.min(PS.total, PS.max) : '') + '</p><div class="bar"><i style="width:' + (PS.total ? Math.round(offset / Math.min(PS.total, PS.max) * 100) : 3) + '%"></i></div>';
+    api('/gsc-archive/page-status', { id: CUR, month: PS.month, offset: offset, limit: 40, max: PS.max }).then(function (r) {
+      if (tok !== PS.token) return;
+      if (r.error) { go.disabled = false; out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+      PS.total = r.total; PS.meta = r; PS.rows = PS.rows.concat(r.rows || []);
+      var next = offset + 40;
+      if (r.rows && r.rows.length && next < Math.min(r.total, PS.max)) step(next); else { go.disabled = false; renderPageStatus(); }
+    }).catch(function () { if (tok !== PS.token) return; go.disabled = false; out.innerHTML = '<div class="err">The check was interrupted. ' + (PS.rows.length ? PS.rows.length + ' pages were checked.' : '') + ' Try again.</div>'; if (PS.rows.length) renderPageStatus(); });
+  };
+  PS.total = 0; step(0);
+}
+function renderPageStatus() {
+  var out = $('psOut'), rows = PS.rows, m = PS.meta || {}, tc = 0, ti = 0, by = {};
+  rows.forEach(function (r) { tc += r.clicks; ti += r.impressions; var b = by[r.kind] || (by[r.kind] = { n: 0, c: 0, i: 0, later: 0 }); b.n++; b.c += r.clicks; b.i += r.impressions; b.later += r.kind === 'moved' ? ((r.target_later && r.target_later.clicks) || 0) : (r.clicks_later || 0); });
+  var pct = function (a, b) { return b ? Math.round(a / b * 100) : 0; };
+  var lost = (by.home ? by.home.c : 0) + (by.gone ? by.gone.c : 0) + (by.elsewhere ? by.elsewhere.c : 0) + (by.noindex ? by.noindex.c : 0);
+  var h = '<p class="sub" style="margin:0 0 10px"><b>' + rows.length + '</b> pages checked, together <b>' + fmt(tc) + '</b> clicks and <b>' + fmt(ti) + '</b> impressions in ' + esc(monLabel(PS.month)) + (m.total > rows.length ? ' (the biggest ' + rows.length + ' of ' + m.total + ' stored)' : '') + '.</p>';
+  h += '<div class="tiles">' + PS_KINDS.filter(function (k) { return by[k[0]]; }).map(function (k) { var b = by[k[0]]; return '<div class="tile"><div class="k">' + esc(k[1]) + '</div><div class="v ' + (k[2] === 'bad' ? 'dn' : k[2] === 'ok' ? 'up' : '') + '">' + pct(b.c, tc) + '%</div><div class="d" style="color:#3d3d3d;font-weight:400">' + b.n + ' page' + (b.n === 1 ? '' : 's') + ' · ' + fmt(b.c) + ' clicks · ' + pct(b.i, ti) + '% of impressions</div></div>'; }).join('') + '</div>';
+  var ins = [];
+  if (tc) ins.push('<b>' + pct(lost, tc) + '%</b> of that month’s clicks came from pages that no longer exist as pages (homepage redirect, 404/410, another site or noindex).');
+  if (by.moved && by.moved.c) ins.push('Pages that moved earned ' + fmt(by.moved.c) + ' clicks then and their new addresses earn ' + fmt(by.moved.later) + ' in the matching period a year later' + (m.later_range ? ' (' + esc(m.later_range) + ')' : '') + '.');
+  if (by.live && by.live.c) ins.push('Pages still live at the same address earned ' + fmt(by.live.c) + ' clicks then and ' + fmt(by.live.later) + ' in the later period.');
+  if (ins.length) h += '<ul style="margin:0 0 12px 20px;font-size:14px">' + ins.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>';
+  if (m.later_note) h += '<p class="hint">' + esc(m.later_note) + '</p>';
+  h += '<div class="seg" data-g="psf"><button type="button" data-v="all" aria-pressed="' + (PS.filter === 'all') + '">All</button>' + PS_KINDS.filter(function (k) { return by[k[0]]; }).map(function (k) { return '<button type="button" data-v="' + k[0] + '" aria-pressed="' + (PS.filter === k[0]) + '">' + esc(k[1]) + ' (' + by[k[0]].n + ')</button>'; }).join('') + '</div><div id="psTable"></div>' +
+    '<div class="acts"><button class="btn2 small" type="button" id="psCsv">Download (CSV)</button></div>';
+  out.innerHTML = h;
+  out.querySelectorAll('.seg[data-g="psf"] button').forEach(function (b) { b.onclick = function () { PS.filter = b.dataset.v; out.querySelectorAll('.seg[data-g="psf"] button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); }); drawPsTable(); }; });
+  $('psCsv').onclick = function () { download('gsc-page-status-' + PS.month + '.csv', toCsv([['page', 'clicks_then', 'impressions_then', 'status_today', 'redirects_to', 'clicks_later_period']].concat(PS.rows.map(function (r) { return [r.url, r.clicks, r.impressions, r.label, r.final && r.final !== r.url ? r.final : '', r.kind === 'moved' ? (r.target_later ? r.target_later.clicks : '') : r.clicks_later]; })))); };
+  drawPsTable();
+}
+function drawPsTable() {
+  var rows = PS.rows.filter(function (r) { return PS.filter === 'all' || r.kind === PS.filter; }), box = $('psTable'); if (!box) return;
+  var later = function (r) { var v = r.kind === 'moved' ? (r.target_later ? r.target_later.clicks : null) : r.clicks_later; return v == null ? '—' : fmt(v); };
+  var path = function (u) { try { var x = new URL(u); return x.pathname + x.search || '/'; } catch (e) { return u; } };
+  box.innerHTML = '<div class="tblwrap"><table class="tbl"><tr><th>Page</th><th>Clicks then</th><th>Impressions then</th><th>Today</th><th>Clicks later</th></tr>' + rows.map(function (r) {
+    var k = PS_KINDS.filter(function (x) { return x[0] === r.kind; })[0], cls = k && k[2] === 'bad' ? 'dn' : k && k[2] === 'ok' ? 'up' : '';
+    return '<tr><td><a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(path(r.url)) + '</a></td><td class="num">' + fmt(r.clicks) + '</td><td class="num">' + fmt(r.impressions) + '</td><td><b class="' + cls + '">' + esc(r.label) + '</b>' + (r.final && r.final !== r.url && r.kind !== 'home' ? '<br><small>→ ' + esc(r.kind === 'elsewhere' ? r.final : path(r.final)) + '</small>' : '') + '</td><td class="num">' + later(r) + '</td></tr>';
+  }).join('') + '</table></div>';
+}
+
 /* ---- the archive view ---- */
-var TREND = { id: '', data: null, error: null, metric: 'clicks' }, CMP = { opts: null, months: 1, start: '', metric: 'clicks', kind: 'queries', list: 'gainers', data: null }, TOPMONTHS = [], RANGE = 'all', GRAN = 'month', METRIC = 'clicks', YOY = true, TOPKIND = 'q', TOPMONTH = '';
+var TREND = { id: '', data: null, error: null, metric: 'clicks' }, CMP = { opts: null, months: 1, start: '', metric: 'clicks', kind: 'queries', list: 'gainers', data: null }, PS = { month: '', max: 120, rows: [], total: 0, busy: false, filter: 'all', meta: null, token: 0 }, TOPMONTHS = [], RANGE = 'all', GRAN = 'month', METRIC = 'clicks', YOY = true, TOPKIND = 'q', TOPMONTH = '';
 var COLORS = ['#34517A', '#C99A3E'];
 var addDays = function (iso, n) { var d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 function openView(id) {
   CUR = id;
   api('/gsc-archive/daily', { id: id }).then(function (r) {
     if (r.error) return alert(r.error);
-    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null;
+    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++;
     api('/gsc-archive/compare-options', { id: id }).then(function (o) { CMP.opts = o && !o.error ? o : null; if (CMP.opts && CMP.opts.months.length && !CMP.start) { var okm = CMP.opts.months.filter(function (m) { return m.available && m.twin_available; }); CMP.start = (okm.filter(function (m) { return m.month === CMP.opts.latest_stored_month; })[0] || okm[okm.length - 1] || {}).month || ''; } $('view').style.display = ''; drawView(r.site_url); $('view').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   });
 }
@@ -449,6 +512,7 @@ function drawView(site) {
   var saveGran = GRAN; GRAN = 'month'; var mt = aggregate(DAYS); GRAN = saveGran;
   h += '<div class="card"><h2>Month by month</h2><div class="tblwrap"><table class="tbl"><tr><th>Month</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Avg position</th><th>Days</th></tr>' + mt.slice().reverse().map(function (m) { return '<tr><td>' + esc(m.k) + '</td><td class="num">' + fmt(m.clicks) + '</td><td class="num">' + fmt(m.impressions) + '</td><td class="num">' + m.ctr.toFixed(2) + '%</td><td class="num">' + (m.position == null ? '—' : m.position.toFixed(1)) + '</td><td class="num">' + m.n + '</td></tr>'; }).join('') + '</table></div><div class="acts"><button class="btn2 small" type="button" id="csvDays">Download daily totals (CSV)</button></div></div>';
   h += compareCard();
+  h += pageStatusCard();
   // Top queries / pages
   var complete = TOPMONTHS;   // months with a stored rollup
   if (!TOPMONTH && complete.length) TOPMONTH = complete[0];
@@ -467,6 +531,7 @@ function wire(site) {
     if (g === 'kind') { seg.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x.dataset.v === v); }); loadTop(); } else drawView(site);
   }; }); });
   wireCompare(site);
+  wirePageStatus(site);
   var y = $('yoy'); if (y) y.onchange = function () { YOY = y.checked; drawView(site); };
   var tm = $('topMonth'); if (tm) tm.onchange = function () { TOPMONTH = tm.value; loadTop(); };
   $('csvDays').onclick = function () { download('gsc-daily-' + site.replace(/[^a-z0-9]+/gi, '-') + '.csv', toCsv([['date', 'clicks', 'impressions', 'ctr', 'position']].concat(DAYS.map(function (d) { return [d.date, d.clicks, d.impressions, d.ctr, d.position]; })))); };
