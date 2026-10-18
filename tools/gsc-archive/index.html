@@ -329,8 +329,63 @@ function drawCmpList() {
   };
 }
 
+/* ---- trend: Google's own daily totals for the whole window it still has (about 16 months), by week ---- */
+function loadTrend() {
+  if (TREND.id === CUR && (TREND.data || TREND.error)) { renderTrend(); return; }
+  TREND.id = CUR; TREND.data = null; TREND.error = null;
+  api('/gsc-archive/live-daily', { id: CUR }).then(function (r) {
+    if (r.error) TREND.error = r; else TREND.data = r.days || [];
+    renderTrend();
+  });
+}
+function weeklyOf(days) {
+  var m = {}, order = [];
+  days.forEach(function (d) { var dt = new Date(d.date + 'T00:00:00Z'), dow = (dt.getUTCDay() + 6) % 7; dt.setUTCDate(dt.getUTCDate() - dow); var k = dt.toISOString().slice(0, 10), b = m[k]; if (!b) { b = m[k] = { k: k, clicks: 0, impressions: 0, w: 0, n: 0 }; order.push(k); } b.clicks += d.clicks; b.impressions += d.impressions; b.w += (d.position || 0) * d.impressions; b.n++; });
+  var out = order.map(function (k) { var b = m[k]; return { k: k, clicks: b.clicks, impressions: b.impressions, ctr: b.impressions ? b.clicks / b.impressions * 100 : 0, position: b.impressions ? b.w / b.impressions : null, n: b.n }; });
+  return out.filter(function (b) { return b.n === 7; });   // whole weeks only
+}
+// Sustained drops: a week where the next four weeks average well under the four before it. The deepest ones, kept apart.
+function findDrops(weeks, metric) {
+  var v = weeks.map(function (w) { return w[metric]; }), found = [];
+  for (var i = 4; i + 4 <= v.length; i++) {
+    var before = (v[i - 4] + v[i - 3] + v[i - 2] + v[i - 1]) / 4, after = (v[i] + v[i + 1] + v[i + 2] + v[i + 3]) / 4;
+    if (before > 0 && after / before <= 0.65) found.push({ i: i, ratio: after / before, before: before, after: after });
+  }
+  found.sort(function (a, b) { return a.ratio - b.ratio; });
+  var kept = []; found.forEach(function (f) { if (!kept.some(function (k) { return Math.abs(k.i - f.i) < 8; })) kept.push(f); });
+  return kept.slice(0, 3).sort(function (a, b) { return a.i - b.i; });
+}
+var DLONG = function (iso) { var p = iso.split('-'); return +p[2] + ' ' + MN[+p[1] - 1] + ' ' + p[0]; };
+function renderTrend() {
+  var box = $('trendOut'); if (!box) return;
+  if (TREND.error) { box.innerHTML = '<div class="err">' + esc(TREND.error.error) + '</div>' + (TREND.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : ''); return; }
+  var weeks = weeklyOf(TREND.data || []);
+  if (weeks.length < 6) { box.innerHTML = '<p class="hint">Not enough weeks yet.</p>'; return; }
+  var metric = TREND.metric, drops = metric === 'position' ? [] : findDrops(weeks, metric);
+  var W = 760, H = 300, L = 56, R = 16, T = 26, B = 34, n = weeks.length;
+  var vals = weeks.map(function (w) { return w[metric]; }), max = Math.max.apply(null, vals), min = metric === 'position' ? 1 : 0; if (metric === 'position') max = Math.ceil(max);
+  var x = function (i) { return L + (W - L - R) * i / (n - 1); }, y = function (v) { var t = (v - min) / (max - min || 1); return T + (H - T - B) * (metric === 'position' ? t : 1 - t); };
+  var g = '', f = function (v) { return metric === 'ctr' ? v.toFixed(1) + '%' : metric === 'position' ? v.toFixed(0) : (v >= 10000 ? Math.round(v / 1000) + 'k' : fmt(v)); };
+  for (var t = 0; t <= 4; t++) { var v = min + (max - min) * t / 4, yy = T + (H - T - B) * (metric === 'position' ? t / 4 : 1 - t / 4); g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#e2e2dc"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="11" fill="#3d3d3d">' + f(v) + '</text>'; }
+  weeks.forEach(function (w, i) { if (i % 8 === 0) g += '<text x="' + x(i) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="11" fill="#3d3d3d">' + MN[+w.k.slice(5, 7) - 1] + ' ' + w.k.slice(2, 4) + '</text>'; });
+  // The days the archive has saved sit under the line as a band.
+  if (DAYS.length) {
+    var a0 = DAYS[0].date, a1 = DAYS[DAYS.length - 1].date, i0 = weeks.findIndex(function (w) { return w.k >= a0; }), i1 = -1; weeks.forEach(function (w, i) { if (w.k <= a1) i1 = i; });
+    if (i0 !== -1 && i1 >= i0) g += '<rect x="' + x(i0) + '" y="' + T + '" width="' + Math.max(4, x(i1) - x(i0)) + '" height="' + (H - T - B) + '" fill="#34517a" opacity=".10"/><text x="' + (x(i0) + 3) + '" y="' + (T + 11) + '" font-size="10.5" fill="#34517a">saved in the archive</text>';
+  }
+  g += '<polyline fill="none" stroke="#34517A" stroke-width="3" stroke-linejoin="round" points="' + weeks.map(function (w, i) { return x(i).toFixed(1) + ',' + y(w[metric]).toFixed(1); }).join(' ') + '"/>';
+  drops.forEach(function (d) { var xx = x(d.i); g += '<line x1="' + xx + '" x2="' + xx + '" y1="' + T + '" y2="' + (H - B) + '" stroke="#d40000" stroke-width="2" stroke-dasharray="5 4"/><text x="' + (xx + 5) + '" y="' + (T + 24) + '" font-size="11" font-weight="700" fill="#d40000">' + Math.round((1 - d.ratio) * 100) + '% drop</text><text x="' + (xx + 5) + '" y="' + (T + 37) + '" font-size="10.5" fill="#d40000">week of ' + esc(MN[+weeks[d.i].k.slice(5, 7) - 1] + ' ' + (+weeks[d.i].k.slice(8))) + '</text>'; });
+  var last = weeks[n - 1], peak = weeks.reduce(function (p, w) { return w[metric] > p[metric] ? w : p; }, weeks[0]);
+  var tiles = metric === 'position' ? '' : '<div class="tiles"><div class="tile"><div class="k">Peak week</div><div class="v">' + f(peak[metric]) + '</div><div class="d" style="color:#3d3d3d;font-weight:400">week of ' + esc(DLONG(peak.k)) + '</div></div><div class="tile"><div class="k">Latest full week</div><div class="v">' + f(last[metric]) + '</div><div class="d" style="color:#3d3d3d;font-weight:400">week of ' + esc(DLONG(last.k)) + '</div></div><div class="tile"><div class="k">Since the peak</div><div class="v ' + (last[metric] < peak[metric] ? 'dn' : 'up') + '">' + (peak[metric] ? (last[metric] / peak[metric] * 100 - 100).toFixed(0) : 0) + '%</div><div class="d" style="color:#3d3d3d;font-weight:400">latest vs peak week</div></div><div class="tile"><div class="k">Window</div><div class="v">' + n + '</div><div class="d" style="color:#3d3d3d;font-weight:400">weeks, ' + esc(DLONG(weeks[0].k)) + ' on</div></div></div>';
+  var list = drops.length ? '<h3 class="h" style="font-size:16px;margin:14px 0 6px">Sustained drops</h3><ul style="margin:0 0 6px 20px;font-size:14.5px">' + drops.map(function (d) { return '<li><b>Week of ' + esc(DLONG(weeks[d.i].k)) + '</b> — the next four weeks averaged <b>' + f(d.after) + '</b> a week, against <b>' + f(d.before) + '</b> in the four before (' + Math.round((1 - d.ratio) * 100) + '% lower).</li>'; }).join('') + '</ul><p class="hint">A drop is flagged when the four weeks after a week average under 65% of the four weeks before it. It shows when something changed, not why — check what was published, moved or removed around those dates.</p>' : (metric === 'position' ? '' : '<p class="hint">No sustained drop of more than a third in this window.</p>');
+  box.innerHTML = '<p class="sub" style="margin:0 0 10px">Google’s own weekly totals for the last ' + n + ' full weeks — the part of the history Search Console still serves. The shaded band is what the archive has saved, so you can see how much of the past is kept beyond this.</p>' +
+    '<div class="seg" data-g="tmetric">' + [['clicks', 'Clicks'], ['impressions', 'Impressions'], ['ctr', 'CTR'], ['position', 'Position']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (metric === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' + tiles +
+    '<div class="chart"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Weekly ' + metric + ' over the last 16 months">' + g + '</svg></div>' + list;
+  box.querySelectorAll('.seg button').forEach(function (b) { b.onclick = function () { TREND.metric = b.dataset.v; renderTrend(); }; });
+}
+
 /* ---- the archive view ---- */
-var CMP = { opts: null, months: 1, start: '', metric: 'clicks', kind: 'queries', list: 'gainers', data: null }, TOPMONTHS = [], RANGE = 'all', GRAN = 'month', METRIC = 'clicks', YOY = true, TOPKIND = 'q', TOPMONTH = '';
+var TREND = { id: '', data: null, error: null, metric: 'clicks' }, CMP = { opts: null, months: 1, start: '', metric: 'clicks', kind: 'queries', list: 'gainers', data: null }, TOPMONTHS = [], RANGE = 'all', GRAN = 'month', METRIC = 'clicks', YOY = true, TOPKIND = 'q', TOPMONTH = '';
 var COLORS = ['#34517A', '#C99A3E'];
 var addDays = function (iso, n) { var d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 function openView(id) {
@@ -381,7 +436,7 @@ function drawView(site) {
   // Align the previous year's buckets to the current ones by position in the range.
   var prevAligned = cur.map(function (b) { return prev.filter(function (p) { return p.k === b.k; })[0] || null; });
   var tc = totals(days), tp = shifted.length > 20 ? totals(shifted) : null;
-  var h = '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
+  var h = '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div><div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
     '<div class="seg" data-g="range">' + [['28d', '28 days'], ['3m', '3 months'], ['12m', '12 months'], ['all', 'All stored']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (RANGE === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="gran">' + [['day', 'Daily'], ['week', 'Weekly'], ['month', 'Monthly']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (GRAN === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="metric">' + [['clicks', 'Clicks'], ['impressions', 'Impressions'], ['ctr', 'CTR'], ['position', 'Position']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (METRIC === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
@@ -402,6 +457,7 @@ function drawView(site) {
   h += '<div class="card"><h2>Raw rows for a day</h2><p class="sub" style="margin:0 0 10px">Every stored query-by-page row for one day, as a CSV.</p><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><input type="date" id="exDate" min="' + esc(DAYS[0].date) + '" max="' + esc(DAYS[DAYS.length - 1].date) + '" value="' + esc(DAYS[DAYS.length - 1].date) + '"><button class="btn2 small" type="button" id="csvDay">Download CSV</button></div><div id="exMsg"></div></div>';
   $('view').innerHTML = h;
   wire(site);
+  loadTrend();
   if (complete.length) loadTop();
 }
 function wire(site) {
