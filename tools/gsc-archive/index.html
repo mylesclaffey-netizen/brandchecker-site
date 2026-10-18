@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <script src="/assets/visitor.js"></script>
-<script src="/assets/gsc-report.js?v=3"></script>
+<script src="/assets/gsc-report.js?v=4"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Search Console Archive</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
@@ -505,6 +505,84 @@ function pagesPdf() {
   printReport('Where the traffic went - ' + siteName + ' - ' + PS.month, body);
 }
 
+/* ---- brand vs non-brand: Search Console's branded filter has no API, so the split is rebuilt from the owner's brand terms ---- */
+var BR = { id: '', data: null, error: null, metric: 'clicks', edit: false, sugg: null, msg: '' };
+function brandCard() { return '<div class="card" id="brandCard"><h2>Brand vs non-brand</h2><div id="brandOut"><p class="hint">Loading…</p></div></div>'; }
+function loadBrand() {
+  if (BR.id === CUR && (BR.data || BR.error)) { renderBrand(); return; }
+  BR.id = CUR; BR.data = null; BR.error = null;
+  api('/gsc-archive/brand-live', { id: CUR }).then(function (r) { if (r.error) BR.error = r; else BR.data = r; renderBrand(); });
+}
+function brandTermsForm(d) {
+  var has = d.terms && d.terms.length, val = has ? d.terms.join('\n') : (d.domain_term || '');
+  return '<p class="sub" style="margin:0 0 10px">Search Console’s own branded-queries filter only exists in its web interface, not in the API this tool reads. So the split is rebuilt from your brand terms: a query is <b>brand</b> if it contains one of them, anywhere in it, in any case. Everything else is non-brand. The same terms are applied to every day the archive saves, so the split carries on past Google’s 16-month limit.</p>' +
+    '<label class="fl" for="brTerms">Brand terms, one per line</label><textarea id="brTerms" style="min-height:96px" spellcheck="false">' + esc(val) + '</textarea>' +
+    '<p class="hint">Use the shortest stem that is safe: <b>sadag</b> catches sadaghian, sadaghiani and sadaghian hamburg. A space inside a term also matches no space (“mac retter” finds “macretter”). Avoid common words.</p>' +
+    '<div class="acts"><button class="btn2 small" type="button" id="brSave">Save terms</button><button class="btn2 small" type="button" id="brSugg">Suggest spellings I’m missing</button>' + (has ? '<button class="btn2 small" type="button" id="brCancel">Cancel</button>' : '') + '</div><div id="brMsg"></div><div id="brSuggOut"></div>';
+}
+function wireBrandForm() {
+  var save = $('brSave'); if (!save) return;
+  save.onclick = function () {
+    var terms = $('brTerms').value.split(/\n|,/).map(function (x) { return x.trim(); }).filter(Boolean);
+    save.disabled = true; $('brMsg').innerHTML = '<p class="hint">Saving…</p>';
+    api('/gsc-archive/brand-terms', { id: CUR, terms: terms }).then(function (r) {
+      save.disabled = false;
+      if (r.error) { $('brMsg').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+      BR.msg = 'Saved. ' + (r.requeued ? r.requeued + ' saved days are being re-classified in the background.' : 'The saved days are already classified with these terms.');
+      BR.edit = false; BR.data = null; BR.id = ''; loadBrand();
+    }).catch(function () { save.disabled = false; $('brMsg').innerHTML = '<div class="err">Could not reach the server.</div>'; });
+  };
+  if ($('brCancel')) $('brCancel').onclick = function () { BR.edit = false; renderBrand(); };
+  $('brSugg').onclick = function () {
+    var out = $('brSuggOut'); out.innerHTML = '<p class="hint">Looking through the last 90 days of queries…</p>';
+    api('/gsc-archive/brand-suggest', { id: CUR }).then(function (r) {
+      if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+      if (!r.suggestions || !r.suggestions.length) { out.innerHTML = '<p class="hint">No near-miss spellings found: the queries that look like your terms are already matched.</p>'; return; }
+      out.innerHTML = '<p class="fl" style="margin-top:12px">Queries that look like a brand spelling but are not matched yet</p><div class="tblwrap"><table class="tbl"><tr><th>Word</th><th>Looks like</th><th>Impressions</th><th>Example</th><th></th></tr>' + r.suggestions.map(function (x) { return '<tr><td>' + esc(x.word) + '</td><td>' + esc(x.term) + '</td><td class="num">' + fmt(x.impressions) + '</td><td>' + esc(x.examples.join(' · ')) + '</td><td><button class="btn2 small" type="button" data-add="' + esc(x.word) + '">Add</button></td></tr>'; }).join('') + '</table></div><p class="hint">Some will be ordinary words that merely resemble the brand: add only the real spellings.</p>';
+      out.querySelectorAll('[data-add]').forEach(function (b) { b.onclick = function () { var ta = $('brTerms'); if (ta.value.split('\n').indexOf(b.dataset.add) < 0) ta.value = ta.value.replace(/\s+$/, '') + '\n' + b.dataset.add; b.disabled = true; b.textContent = 'Added'; }; });
+    });
+  };
+}
+function renderBrand() {
+  var box = $('brandOut'); if (!box) return;
+  if (BR.error) { box.innerHTML = '<div class="err">' + esc(BR.error.error) + '</div>' + (BR.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : ''); return; }
+  var d = BR.data;
+  if (d.needs_terms || BR.edit) { box.innerHTML = brandTermsForm(d) + (BR.msg ? '' : ''); wireBrandForm(); return; }
+  var B = GscReport.brand, days = B.all(d), st = B.stats(days), weeks = B.weeks(days), months = B.months(days);
+  var pctd = function (a, b) { return b ? (a - b) / b * 100 : null; };
+  var delta = function (v) { return v == null ? '' : '<div class="d ' + (v >= 0 ? 'up' : 'dn') + '">' + (v >= 0 ? '+' : '') + v.toFixed(0) + '% vs a year earlier</div>'; };
+  var h = (BR.msg ? '<div class="toast">' + esc(BR.msg) + '</div>' : '') + '<p class="sub" style="margin:0 0 8px">Brand terms: ' + d.terms.map(function (t) { return '<b>' + esc(t) + '</b>'; }).join(', ') + ' · <a href="#" id="brEdit">Edit</a></p>';
+  if (st && st.cur) {
+    var c = st.cur, p = st.prev;
+    h += '<div class="tiles"><div class="tile"><div class="k">Brand clicks, 28 days</div><div class="v">' + fmt(c.bc) + '</div>' + (p ? delta(pctd(c.bc, p.bc)) : '') + '</div><div class="tile"><div class="k">Non-brand clicks, 28 days</div><div class="v">' + fmt(c.nc) + '</div>' + (p ? delta(pctd(c.nc, p.nc)) : '') + '</div><div class="tile"><div class="k">Brand share of clicks</div><div class="v">' + c.share.toFixed(1) + '%</div>' + (p ? '<div class="d" style="color:#3d3d3d;font-weight:400">' + p.share.toFixed(1) + '% a year earlier</div>' : '') + '</div><div class="tile"><div class="k">Window</div><div class="v">' + fmt(days.length) + '</div><div class="d" style="color:#3d3d3d;font-weight:400">days, ' + esc(days[0].date) + ' on</div></div></div>';
+    if (p) { var dn = pctd(c.nc, p.nc), db = pctd(c.bc, p.bc); h += '<p style="margin:0 0 10px;font-size:14.5px">Against the same 28 days a year earlier, non-brand clicks are <b>' + (dn >= 0 ? '+' : '') + dn.toFixed(0) + '%</b> and brand clicks <b>' + (db >= 0 ? '+' : '') + db.toFixed(0) + '%</b>' + (Math.abs(dn - db) > 25 ? (dn < db ? ' — the loss is in non-brand search; people still look for the brand by name.' : ' — brand search fell more than non-brand.') : '.') + '</p>'; }
+  }
+  h += '<div class="seg" data-g="bmetric">' + [['clicks', 'Clicks'], ['impressions', 'Impressions']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (BR.metric === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' + B.chart(weeks, BR.metric);
+  h += '<div class="tblwrap"><table class="tbl"><tr><th>Month</th><th>Clicks</th><th>Brand</th><th>Non-brand</th><th>Brand share</th><th>Days</th></tr>' + months.slice().reverse().map(function (m) { return '<tr><td>' + esc(m.k) + '</td><td class="num">' + fmt(m.clicks) + '</td><td class="num">' + fmt(m.bc) + '</td><td class="num">' + fmt(m.nc) + '</td><td class="num">' + m.share.toFixed(1) + '%</td><td class="num">' + m.n + '</td></tr>'; }).join('') + '</table></div>';
+  var rowsSrc = (d.older || []).some(function (x) { return x.src === 'rows'; });
+  h += '<p class="hint">Web search only. Queries Google anonymises can’t match a term, so they count as non-brand. This is a rebuild, not Google’s own label (which also catches misspellings and related products), so expect it to differ somewhat from the filter in the Search Console interface — the check below measures by how much.' + (d.older && d.older.length ? ' ' + d.older.length + ' days older than Google’s window come from the archive' + (rowsSrc ? ', classified from the saved query-by-page rows (these read slightly low)' : '') + '.' : '') + '</p>';
+  var last = days[days.length - 1].date, cal = {}; try { cal = JSON.parse(localStorage.getItem('gscbrandcal:' + CUR) || '{}'); } catch (e) {}
+  h += '<details class="note" style="margin:12px 0" id="brCal"><summary><b>Check it against Search Console’s own branded filter</b></summary><p class="sub" style="margin:8px 0">In Search Console open Performance → Search results, set a date range, add the filter <b>Branded queries</b>, and read the clicks (and the total clicks without the filter). Enter them here for the same dates.</p>' +
+    '<div class="row2"><div><label class="fl">From</label><input type="date" id="calFrom" value="' + esc(cal.from || addDays(last, -27)) + '"></div><div><label class="fl">To</label><input type="date" id="calTo" value="' + esc(cal.to || last) + '"></div></div>' +
+    '<div class="row2" style="margin-top:10px"><div><label class="fl">Google: branded clicks</label><input type="text" id="calG" inputmode="numeric" value="' + esc(cal.g || '') + '" placeholder="e.g. 80"></div><div><label class="fl">Google: all clicks (optional)</label><input type="text" id="calT" inputmode="numeric" value="' + esc(cal.t || '') + '" placeholder="e.g. 613"></div></div>' +
+    '<div class="acts"><button class="btn2 small" type="button" id="calGo">Compare</button></div><div id="calOut" style="margin-top:10px"></div></details>';
+  h += '<div class="acts"><button class="btn2 small" type="button" id="brCsv">Download daily split (CSV)</button></div>';
+  box.innerHTML = h;
+  $('brEdit').onclick = function (e) { e.preventDefault(); BR.edit = true; BR.msg = ''; renderBrand(); };
+  box.querySelectorAll('.seg[data-g="bmetric"] button').forEach(function (b) { b.onclick = function () { BR.metric = b.dataset.v; renderBrand(); }; });
+  $('brCsv').onclick = function () { download('gsc-brand-split-' + CUR.slice(0, 8) + '.csv', toCsv([['date', 'clicks', 'impressions', 'brand_clicks', 'brand_impressions', 'non_brand_clicks', 'non_brand_impressions']].concat(days.map(function (x) { return [x.date, x.clicks, x.impressions, x.bc, x.bi, x.clicks - x.bc, x.impressions - x.bi]; })))); };
+  $('calGo').onclick = function () {
+    var from = $('calFrom').value, to = $('calTo').value, g = Number(String($('calG').value).replace(/[^\d.]/g, '')), t = Number(String($('calT').value).replace(/[^\d.]/g, ''));
+    try { localStorage.setItem('gscbrandcal:' + CUR, JSON.stringify({ from: from, to: to, g: $('calG').value, t: $('calT').value })); } catch (e) {}
+    var o = $('calOut'); if (!from || !to || from > to || !$('calG').value) { o.innerHTML = '<div class="err">Enter the dates and Google’s branded clicks.</div>'; return; }
+    var s = B.sum(days, function (x) { return x.date >= from && x.date <= to; });
+    if (!s.n) { o.innerHTML = '<div class="err">No data in that range.</div>'; return; }
+    var diff = g ? (s.bc - g) / g * 100 : null, share = s.clicks ? s.bc / s.clicks * 100 : 0, gs = t ? g / t * 100 : null;
+    var verdict = diff == null ? '' : Math.abs(diff) <= 10 ? 'Close: the terms capture about what Google’s filter does for this period.' : diff < 0 ? 'Google counts more as brand than the terms do. Try “Suggest spellings” and add the missing variants or related names.' : 'The terms count more as brand than Google does. Check whether a term is too broad (a common word).';
+    o.innerHTML = '<div class="tblwrap"><table class="tbl"><tr><th></th><th>Brand clicks</th><th>Brand share of clicks</th></tr><tr><td>These terms (' + esc(from) + ' to ' + esc(to) + ', ' + s.n + ' days)</td><td class="num">' + fmt(s.bc) + '</td><td class="num">' + share.toFixed(1) + '%</td></tr><tr><td>Search Console’s filter</td><td class="num">' + fmt(g) + '</td><td class="num">' + (gs == null ? '—' : gs.toFixed(1) + '%') + '</td></tr></table></div>' + (diff == null ? '' : '<p style="margin:8px 0 0"><b>' + (diff >= 0 ? '+' : '') + diff.toFixed(0) + '%</b> against Google. ' + esc(verdict) + '</p>');
+  };
+}
+
 /* ---- whole-report PDF and sign-in-free share links ---- */
 var SH = { site: '' };
 function shareCard() {
@@ -525,7 +603,7 @@ function wireShare(site) {
   var pdf = $('shPdf'), mk = $('shMake'); if (!pdf) return;
   pdf.onclick = function () {
     $('shOut').innerHTML = '<p class="hint">Preparing the report…</p>';
-    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
+    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
     if (TREND.id === CUR && TREND.data && TREND.types) return go(TREND.data);
     api('/gsc-archive/live-types', { id: CUR }).then(function (r) { if (r.error) { $('shOut').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } TREND.id = CUR; TREND.types = r.types || {}; TREND.errors = r.errors || {}; TREND.data = TREND.types.web || []; go(TREND.data); });
   };
@@ -564,7 +642,7 @@ function openView(id) {
   CUR = id;
   api('/gsc-archive/daily', { id: id }).then(function (r) {
     if (r.error) return alert(r.error);
-    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++;
+    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = '';
     api('/gsc-archive/compare-options', { id: id }).then(function (o) { CMP.opts = o && !o.error ? o : null; if (CMP.opts && CMP.opts.months.length && !CMP.start) { var okm = CMP.opts.months.filter(function (m) { return m.available && m.twin_available; }); CMP.start = (okm.filter(function (m) { return m.month === CMP.opts.latest_stored_month; })[0] || okm[okm.length - 1] || {}).month || ''; } $('view').style.display = ''; drawView(r.site_url); $('view').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   });
 }
@@ -608,7 +686,7 @@ function drawView(site) {
   // Align the previous year's buckets to the current ones by position in the range.
   var prevAligned = cur.map(function (b) { return prev.filter(function (p) { return p.k === b.k; })[0] || null; });
   var tc = totals(days), tp = shifted.length > 20 ? totals(shifted) : null;
-  var h = '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + shareCard() + '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
+  var h = '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + brandCard() + shareCard() + '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
     '<div class="seg" data-g="range">' + [['28d', '28 days'], ['3m', '3 months'], ['12m', '12 months'], ['all', 'All stored']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (RANGE === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="gran">' + [['day', 'Daily'], ['week', 'Weekly'], ['month', 'Monthly']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (GRAN === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="metric">' + [['clicks', 'Clicks'], ['impressions', 'Impressions'], ['ctr', 'CTR'], ['position', 'Position']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (METRIC === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
@@ -631,6 +709,7 @@ function drawView(site) {
   $('view').innerHTML = h;
   wire(site);
   loadTrend();
+  loadBrand();
   if (complete.length) loadTop();
 }
 function wire(site) {

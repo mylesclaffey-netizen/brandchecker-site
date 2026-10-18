@@ -86,6 +86,57 @@
       + (missing.length ? '<p class="foot">No data in this window for: ' + missing.join(', ') + '.</p>' : '');
   }
 
+  /* ---- brand vs non-brand ---- */
+  function bAll(b) { var older = (b.older || []).filter(function (d) { return d.bc != null; }).map(function (d) { return { date: d.date, clicks: d.clicks, impressions: d.impressions, bc: d.bc, bi: d.bi || 0, src: d.src }; }); return older.concat(b.days || []).sort(function (a, c) { return a.date < c.date ? -1 : 1; }); }
+  function bWeeks(days) {
+    var m = {}, order = [];
+    days.forEach(function (d) { var dt = new Date(d.date + 'T00:00:00Z'), dow = (dt.getUTCDay() + 6) % 7; dt.setUTCDate(dt.getUTCDate() - dow); var k = dt.toISOString().slice(0, 10), w = m[k]; if (!w) { w = m[k] = { k: k, clicks: 0, impressions: 0, bc: 0, bi: 0, n: 0 }; order.push(k); } w.clicks += d.clicks; w.impressions += d.impressions; w.bc += d.bc; w.bi += d.bi; w.n++; });
+    return order.map(function (k) { var w = m[k]; w.nc = w.clicks - w.bc; w.ni = w.impressions - w.bi; return w; }).filter(function (w) { return w.n === 7; });
+  }
+  function bMonths(days) {
+    var m = {}; days.forEach(function (d) { var k = d.date.slice(0, 7), x = m[k] || (m[k] = { k: k, clicks: 0, bc: 0, n: 0 }); x.clicks += d.clicks; x.bc += d.bc; x.n++; });
+    return Object.keys(m).sort().map(function (k) { var x = m[k]; x.nc = x.clicks - x.bc; x.share = x.clicks ? x.bc / x.clicks * 100 : 0; return x; });
+  }
+  function sum(days, f) { var t = { clicks: 0, impressions: 0, bc: 0, bi: 0, n: 0 }; days.forEach(function (d) { if (!f || f(d)) { t.clicks += d.clicks; t.impressions += d.impressions; t.bc += d.bc; t.bi += d.bi; t.n++; } }); t.nc = t.clicks - t.bc; t.ni = t.impressions - t.bi; t.share = t.clicks ? t.bc / t.clicks * 100 : 0; return t; }
+  function bStats(days) {
+    if (!days.length) return null;
+    var last = days[days.length - 1].date, a0 = addDays(last, -27), b1 = shiftYear(last, -1), b0 = addDays(b1, -27);
+    var cur = sum(days, function (d) { return d.date >= a0 && d.date <= last; }), prev = sum(days, function (d) { return d.date >= b0 && d.date <= b1; });
+    return { last: last, a0: a0, b0: b0, b1: b1, cur: cur.n >= 28 ? cur : null, prev: prev.n >= 28 ? prev : null };
+  }
+  function bChart(weeks, metric) {
+    if (weeks.length < 4) return '';
+    var nb = metric === 'impressions' ? 'ni' : 'nc', br = metric === 'impressions' ? 'bi' : 'bc';
+    var W = 760, H = 230, L = 52, R = 14, T = 16, B = 28, n = weeks.length, max = 1;
+    weeks.forEach(function (w) { max = Math.max(max, w[nb], w[br]); });
+    var x = function (i) { return L + (W - L - R) * i / (n - 1); }, y = function (v) { return T + (H - T - B) * (1 - v / max); };
+    var f = function (v) { return v >= 10000 ? Math.round(v / 1000) + 'k' : fmt(v); }, g = '';
+    for (var t = 0; t <= 4; t++) { var yy = T + (H - T - B) * (1 - t / 4); g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#e2e2dc"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="11" fill="#3d3d3d">' + f(max * t / 4) + '</text>'; }
+    weeks.forEach(function (w, i) { if (i % 8 === 0) g += '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="#3d3d3d">' + MN[+w.k.slice(5, 7) - 1] + ' ' + w.k.slice(2, 4) + '</text>'; });
+    var line = function (key, color) { return '<polyline fill="none" stroke="' + color + '" stroke-width="2.6" stroke-linejoin="round" points="' + weeks.map(function (w, i) { return x(i).toFixed(1) + ',' + y(w[key]).toFixed(1); }).join(' ') + '"/>'; };
+    g += line(nb, '#34517A') + line(br, '#C99A3E');
+    return '<div class="chart"><div class="cl">' + (metric === 'impressions' ? 'Impressions' : 'Clicks') + ' per week</div><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Brand and non-brand ' + metric + ' per week">' + g + '</svg><div class="leg"><span><i style="background:#34517A"></i>Non-brand</span><span><i style="background:#C99A3E"></i>Brand</span></div></div>';
+  }
+  function dpct(a, b) { return b ? (a - b) / b * 100 : null; }
+  function dtxt(v, goodUp) { if (v == null) return ''; var good = goodUp ? v >= 0 : v <= 0; return '<em class="' + (good ? 'ok' : 'bad') + '">' + (v >= 0 ? '+' : '') + v.toFixed(0) + '% vs the same 28 days a year earlier</em>'; }
+  function brandSection(b) {
+    if (!b || !b.days || !b.days.length) return '';
+    var days = bAll(b), st = bStats(days), weeks = bWeeks(days), months = bMonths(days);
+    var h = '<h2>Brand vs non-brand</h2><p class="sub">Brand = queries containing: <b>' + (b.terms || []).map(esc).join('</b>, <b>') + '</b>. Non-brand = the rest of web search, including the queries Google hides.</p>';
+    if (st && st.cur) {
+      var c = st.cur, p = st.prev;
+      h += '<div class="tiles"><div class="tile"><span>Brand clicks, last 28 days</span><b>' + fmt(c.bc) + '</b>' + (p ? dtxt(dpct(c.bc, p.bc), true) : '') + '</div>'
+        + '<div class="tile"><span>Non-brand clicks, last 28 days</span><b>' + fmt(c.nc) + '</b>' + (p ? dtxt(dpct(c.nc, p.nc), true) : '') + '</div>'
+        + '<div class="tile"><span>Brand share of clicks</span><b>' + c.share.toFixed(1) + '%</b>' + (p ? '<em>' + p.share.toFixed(1) + '% a year earlier</em>' : '') + '</div></div>';
+      if (p) { var dn = dpct(c.nc, p.nc), db = dpct(c.bc, p.bc), ins = []; if (dn != null && db != null) ins.push('Compared with the same 28 days a year earlier, non-brand clicks are <b>' + (dn >= 0 ? '+' : '') + dn.toFixed(0) + '%</b> and brand clicks <b>' + (db >= 0 ? '+' : '') + db.toFixed(0) + '%</b>' + (Math.abs(dn - db) > 25 ? (dn < db ? ' — the loss is in non-brand search; people still look for the brand by name.' : ' — brand search fell more than non-brand.') : '.')); h += '<ul>' + ins.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>'; }
+    }
+    h += bChart(weeks, 'clicks');
+    h += '<table><thead><tr><th>Month</th><th>Clicks</th><th>Brand</th><th>Non-brand</th><th>Brand share</th></tr></thead><tbody>' + months.slice().reverse().map(function (m) { var full = new Date(Date.UTC(+m.k.slice(0, 4), +m.k.slice(5), 0)).getUTCDate(); return '<tr><td>' + esc(monLabel(m.k)) + (m.n < full ? ' (' + m.n + ' days)' : '') + '</td><td class="n">' + fmt(m.clicks) + '</td><td class="n">' + fmt(m.bc) + '</td><td class="n">' + fmt(m.nc) + '</td><td class="n">' + m.share.toFixed(1) + '%</td></tr>'; }).join('') + '</tbody></table>';
+    var rows = (b.older || []).some(function (d) { return d.src === 'rows'; });
+    h += '<p class="foot">Search Console’s own branded-queries filter is not available through its API, so this split is rebuilt from the brand terms above and will differ somewhat from the filter in the Search Console interface (it also catches misspellings and related products). Queries Google anonymises cannot be matched to a term and count as non-brand.' + (rows ? ' Days Google no longer serves are classified from the saved query-by-page rows, which hide small combinations, so brand can read slightly low for those days.' : '') + '</p>';
+    return h;
+  }
+
   function monthsSection(months) {
     if (!months || !months.length) return '';
     return '<h2>Saved days, by month</h2><p class="sub">Days Brand Checker saved before Google deleted them. A month marked partial has fewer saved days than the month has.</p><table><thead><tr><th>Month</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Avg position</th><th>Days saved</th></tr></thead><tbody>'
@@ -112,7 +163,7 @@
 
   var CSS = '*{box-sizing:border-box}.gr{font-family:Helvetica,Arial,sans-serif;color:#0a0a0a;font-size:12px;line-height:1.45}.gr h1{font-size:24px;margin:0 0 2px;letter-spacing:-.01em}.gr h2{font-size:14px;margin:22px 0 6px;text-transform:uppercase;letter-spacing:.05em;border-top:3px solid #0a0a0a;padding-top:10px}'
     + '.gr p{margin:0 0 6px}.gr .meta{color:#3d3d3d;margin:0 0 6px}.gr .sub{color:#3d3d3d;margin:0 0 8px}.gr .tiles{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}.gr .tile{border:2px solid #0a0a0a;padding:7px 10px;min-width:130px;flex:1}.gr .tile b{display:block;font-size:22px;letter-spacing:-.02em}.gr .tile span{display:block;color:#3d3d3d;font-size:10.5px}.gr .tile em{display:block;font-style:normal;font-size:10.5px;font-weight:700}'
-    + '.gr .bad{color:#b3261e}.gr .ok{color:#1b7a3d}.gr ul{margin:0 0 8px 18px;padding:0}.gr li{margin:0 0 3px}.gr .chart{border:2px solid #0a0a0a;padding:6px 8px;margin:0 0 8px;break-inside:avoid}.gr .chart svg{width:100%;height:auto;display:block}.gr .cl{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em}'
+    + '.gr .bad{color:#b3261e}.gr .ok{color:#1b7a3d}.gr ul{margin:0 0 8px 18px;padding:0}.gr li{margin:0 0 3px}.gr .chart{border:2px solid #0a0a0a;padding:6px 8px;margin:0 0 8px;break-inside:avoid}.gr .chart svg{width:100%;height:auto;display:block}.gr .leg{display:flex;gap:14px;font-size:10.5px;margin-top:4px}.gr .leg i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px}.gr .cl{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em}'
     + '.gr table{width:100%;border-collapse:collapse;margin-top:6px}.gr th,.gr td{border:1px solid #0a0a0a;padding:4px 6px;text-align:left;vertical-align:top;word-break:break-word;font-size:10.5px}.gr th{background:#0a0a0a;color:#fff;font-size:9.5px;text-transform:uppercase}.gr td.n{text-align:right;white-space:nowrap}.gr tr{break-inside:avoid}.gr thead{display:table-header-group}.gr .foot{margin-top:8px;color:#3d3d3d;font-size:10px}.gr .end{margin-top:22px;border-top:3px solid #0a0a0a;padding-top:8px;color:#3d3d3d;font-size:10px}';
 
   function render(s) {
@@ -120,9 +171,9 @@
     var trend = (s.trend || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
     var h = '<div class="gr"><h1>' + esc(site) + ': Search Console report</h1><p class="meta">Snapshot taken ' + esc(String(s.created || '').slice(0, 10)) + (trend.length ? ' · data up to ' + dLong(trend[trend.length - 1].date) : '') + '</p>';
     if (trend.length >= 28) h += headline(trend) + trendSection(trend) + typesSection(trend, s.trend_types);
-    h += monthsSection(s.months) + pagesSection(s.pages);
+    h += brandSection(s.brand) + monthsSection(s.months) + pagesSection(s.pages);
     h += '<p class="end">Figures are from Google Search Console for ' + esc(site) + '. Days older than Google’s 16-month window come from Brand Checker’s archive. Search Console’s own daily totals can differ slightly from the sum of query rows. Generated by Brand Checker (brandchecker.eu).</p></div>';
     return h;
   }
-  window.GscReport = { render: render, css: CSS, esc: esc };
+  window.GscReport = { render: render, css: CSS, esc: esc, brand: { all: bAll, weeks: bWeeks, months: bMonths, sum: sum, stats: bStats, chart: bChart } };
 })();
