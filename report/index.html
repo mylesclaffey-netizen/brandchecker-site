@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Search Console report | Brand Checker</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2334517A'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#fff;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;padding:22px 16px 60px}
+  .wrap{max-width:880px;margin:0 auto}
+  .bar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 18px;padding:0 0 12px;border-bottom:3px solid #0a0a0a}
+  .brand{font-weight:900;text-transform:uppercase;letter-spacing:.04em;font-size:13px}
+  .btn{font-family:inherit;font-weight:800;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;padding:9px 14px;background:#0a0a0a;color:#fff;border:3px solid #0a0a0a;cursor:pointer}
+  .btn:hover{background:#fff;color:#0a0a0a}
+  .msg{border:3px solid #0a0a0a;padding:16px 18px;font-size:15px}
+  .gr{font-size:14px!important}
+  .gr h1{font-size:clamp(24px,4vw,32px)!important}
+  .gr td,.gr th{font-size:12.5px!important}
+  .gr .tile b{font-size:26px!important}
+  .gr .tile span,.gr .tile em{font-size:12px!important}
+  @media print{
+    @page{size:A4;margin:14mm}
+    .bar{display:none}
+    body{padding:0}
+    .gr{font-size:11px!important}.gr td,.gr th{font-size:10px!important}.gr h1{font-size:22px!important}.gr .tile b{font-size:20px!important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><span class="brand">Brand Checker</span><button class="btn" type="button" id="pdf" style="display:none">Save as PDF</button></div>
+  <div id="out"><p class="msg">Loading the report…</p></div>
+</div>
+<script src="/assets/gsc-report.js"></script>
+<script>
+(function () {
+  var API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+  var out = document.getElementById('out'), t = new URLSearchParams(location.search).get('t') || '';
+  var st = document.createElement('style'); st.textContent = GscReport.css; document.head.appendChild(st);
+  document.getElementById('pdf').onclick = function () { window.print(); };
+  if (!t) { out.innerHTML = '<p class="msg">This link is incomplete.</p>'; return; }
+  fetch(API + '/gsc-archive/shared', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: t }) })
+    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+    .then(function (r) {
+      if (!r.ok || r.j.error) { out.innerHTML = '<p class="msg">' + GscReport.esc((r.j && r.j.error) || 'This report could not be loaded.') + '</p>'; return; }
+      out.innerHTML = GscReport.render(r.j);
+      document.title = String(r.j.site || '').replace(/^sc-domain:/, '') + ' — Search Console report | Brand Checker';
+      document.getElementById('pdf').style.display = '';
+    })
+    .catch(function () { out.innerHTML = '<p class="msg">The report could not be loaded. Try again in a moment.</p>'; });
+})();
+</script>
+</body>
+</html>
