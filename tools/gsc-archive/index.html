@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <script src="/assets/visitor.js"></script>
-<script src="/assets/gsc-report.js?v=6"></script>
+<script src="/assets/gsc-report.js?v=7"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Search Console Archive</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
@@ -602,7 +602,7 @@ function segCardHtml(id, title, intro, inner, extraBtns) {
 }
 function renderSegments() {
   var box = $('segArea'); if (!box) return;
-  if (!SG.styled) { var st = document.createElement('style'); st.textContent = GscReport.css + '.gr{font-size:13px}'; document.head.appendChild(st); SG.styled = true; }
+  ensureGrStyle();
   if (SG.error) { box.innerHTML = '<div class="card"><h2>Core terms and focus reports</h2><div class="err">' + esc(SG.error.error) + '</div>' + (SG.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : '') + '</div>'; return; }
   if (!SG.data) return;
   var seg = Object.assign({}, SG.data, { details: SG.details }), h = '';
@@ -649,6 +649,29 @@ function wireSegEditor() {
   };
 }
 
+/* ---- Core Web Vitals: Chrome UX Report field data (Search Console's own CWV report has no API) ---- */
+var CW = { id: '', data: null, error: null, loading: false };
+function ensureGrStyle() { if (SG.styled) return; var st = document.createElement('style'); st.textContent = GscReport.css + '.gr{font-size:13px}'; document.head.appendChild(st); SG.styled = true; }
+function cwvCard() { return '<div class="card" id="cwvCard"><h2>Core Web Vitals</h2><div id="cwvOut"><p class="hint">Loading real-user field data…</p></div></div>'; }
+function loadCwv(refresh) {
+  if (!refresh && CW.id === CUR && (CW.data || CW.error)) { renderCwv(); return; }
+  CW.id = CUR; CW.data = null; CW.error = null; renderCwv(true);
+  api('/gsc-archive/cwv', { id: CUR, refresh: !!refresh }).then(function (r) { if (CW.id !== CUR) return; if (r.error) CW.error = r; else CW.data = r; renderCwv(); });
+}
+function renderCwv(loading) {
+  var box = $('cwvOut'); if (!box) return; ensureGrStyle();
+  if (loading) { box.innerHTML = '<p class="hint">Loading real-user field data… (the first load also checks the top pages one by one, about 20 seconds)</p>'; return; }
+  if (CW.error) {
+    var e = CW.error;
+    box.innerHTML = '<div class="err">' + esc(e.error) + '</div>' + (e.setup === 'crux_not_enabled' ? '<p class="hint">Search Console’s own Core Web Vitals report has no API, so this card reads the same data from Google’s free Chrome UX Report API. It needs switching on once: in Google Cloud Console, in the project that owns the server’s Google API key, open <b>APIs &amp; Services → Library</b>, find <b>Chrome UX Report API</b> and press <b>Enable</b> (and, if the key is restricted to specific APIs, add it to the key’s allowed list). It costs nothing.</p>' : '') + (e.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : '') + '<div class="acts"><button class="btn2 small" type="button" id="cwvRetry">Check again</button></div>';
+    $('cwvRetry').onclick = function () { loadCwv(true); }; return;
+  }
+  var c = CW.data; if (!c) return;
+  if (c.nodata) { box.innerHTML = '<p class="hint">The Chrome UX Report has no data for <b>' + esc(c.origin) + '</b>: not enough real Chrome visits yet. Field data appears once a site has steady traffic.</p><div class="acts"><button class="btn2 small" type="button" id="cwvRetry">Check again</button></div>'; $('cwvRetry').onclick = function () { loadCwv(true); }; return; }
+  box.innerHTML = '<div class="gr">' + GscReport.cwv(c, { noTitle: true }) + '</div><div class="acts"><button class="btn2 small" type="button" id="cwvRetry">Refresh (re-checks every page)</button></div>' + (c.pages_error ? '<p class="hint">Page-level data was not available: ' + esc(c.pages_error) + '</p>' : '') + '<p class="hint">Checked ' + esc(String(c.checked || '').slice(0, 16).replace('T', ' ')) + ' UTC' + (c.cached ? ' (cached for 6 hours)' : '') + '. Included in the full report, PDF and shared link.</p>';
+  $('cwvRetry').onclick = function () { loadCwv(true); };
+}
+
 /* ---- whole-report PDF and sign-in-free share links ---- */
 var SH = { site: '' };
 function shareCard() {
@@ -669,7 +692,7 @@ function wireShare(site) {
   var pdf = $('shPdf'), mk = $('shMake'); if (!pdf) return;
   pdf.onclick = function () {
     $('shOut').innerHTML = '<p class="hint">Preparing the report…</p>';
-    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
+    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, cwv: (CW.data && CW.data.current) ? { origin: CW.data.origin, current: CW.data.current, history: CW.data.history, pages: CW.data.pages || [] } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
     if (TREND.id === CUR && TREND.data && TREND.types) return go(TREND.data);
     api('/gsc-archive/live-types', { id: CUR }).then(function (r) { if (r.error) { $('shOut').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } TREND.id = CUR; TREND.types = r.types || {}; TREND.errors = r.errors || {}; TREND.data = TREND.types.web || []; go(TREND.data); });
   };
@@ -708,7 +731,7 @@ function openView(id) {
   CUR = id;
   api('/gsc-archive/daily', { id: id }).then(function (r) {
     if (r.error) return alert(r.error);
-    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {};
+    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null;
     api('/gsc-archive/compare-options', { id: id }).then(function (o) { CMP.opts = o && !o.error ? o : null; if (CMP.opts && CMP.opts.months.length && !CMP.start) { var okm = CMP.opts.months.filter(function (m) { return m.available && m.twin_available; }); CMP.start = (okm.filter(function (m) { return m.month === CMP.opts.latest_stored_month; })[0] || okm[okm.length - 1] || {}).month || ''; } $('view').style.display = ''; drawView(r.site_url); $('view').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   });
 }
@@ -752,7 +775,7 @@ function drawView(site) {
   // Align the previous year's buckets to the current ones by position in the range.
   var prevAligned = cur.map(function (b) { return prev.filter(function (p) { return p.k === b.k; })[0] || null; });
   var tc = totals(days), tp = shifted.length > 20 ? totals(shifted) : null;
-  var h = '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + brandCard() + segArea() + shareCard() + '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
+  var h = '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + brandCard() + segArea() + cwvCard() + shareCard() + '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
     '<div class="seg" data-g="range">' + [['28d', '28 days'], ['3m', '3 months'], ['12m', '12 months'], ['all', 'All stored']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (RANGE === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="gran">' + [['day', 'Daily'], ['week', 'Weekly'], ['month', 'Monthly']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (GRAN === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="metric">' + [['clicks', 'Clicks'], ['impressions', 'Impressions'], ['ctr', 'CTR'], ['position', 'Position']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (METRIC === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
@@ -777,6 +800,7 @@ function drawView(site) {
   loadTrend();
   loadBrand();
   loadSegments();
+  loadCwv();
   if (complete.length) loadTop();
 }
 function wire(site) {

@@ -200,6 +200,42 @@
     return h + '<p class="foot">Whole window: ' + fmt(all.clicks) + ' clicks and ' + fmt(all.impressions) + ' impressions, ' + (allTot.clicks ? (all.clicks / allTot.clicks * 100).toFixed(1) : '0.0') + '% of all web clicks. Web search only: Search Console’s own figures for the last ~16 months, plus the archive beyond that. Queries that name a district or a neighbourhood but not the city are not included unless you add them as terms.' + olderNote(seg) + '</p>';
   }
 
+  /* ---- Core Web Vitals (Chrome UX Report field data) ---- */
+  var CWV = { lcp: { name: 'Largest Contentful Paint (LCP)', good: 2500, poor: 4000 }, inp: { name: 'Interaction to Next Paint (INP)', good: 200, poor: 500 }, cls: { name: 'Cumulative Layout Shift (CLS)', good: 0.1, poor: 0.25 } };
+  var CCOL = { good: '#1b7a3d', ni: '#b45f00', poor: '#b3261e' }, CLAB = { good: 'Good', ni: 'Needs improvement', poor: 'Poor' };
+  function cVal(m, v) { if (v == null) return '—'; return m === 'lcp' ? (v / 1000).toFixed(1) + ' s' : m === 'inp' ? Math.round(v) + ' ms' : (+v).toFixed(2); }
+  function cCat(m, v) { return v == null ? null : v <= CWV[m].good ? 'good' : v > CWV[m].poor ? 'poor' : 'ni'; }
+  function cCell(m, x) { if (!x || x.p75 == null) return '<span style="color:#777">—</span>'; return '<b style="color:' + CCOL[x.cat || cCat(m, x.p75)] + '">' + cVal(m, x.p75) + '</b>'; }
+  function cBar(x) { if (!x || x.good == null) return ''; var g = Math.round(x.good * 100), n = Math.round((x.ni || 0) * 100), p = Math.max(0, 100 - g - n); return '<div class="b3" title="' + g + '% good, ' + n + '% needs improvement, ' + p + '% poor"><i style="width:' + g + '%;background:' + CCOL.good + '"></i><i style="width:' + n + '%;background:' + CCOL.ni + '"></i><i style="width:' + p + '%;background:' + CCOL.poor + '"></i></div><span class="b3t">' + g + '% good</span>'; }
+  function cChart(h, m) {
+    var ph = h && h.phone && h.phone[m] ? h.phone : null, de = h && h.desktop && h.desktop[m] ? h.desktop : null, base = ph || de; if (!base || (base[m] || []).length < 3) return '';
+    var W = 760, H = 190, L = 52, R = 14, T = 12, B = 26, n = base[m].length, lim = CWV[m], max = lim.poor * 1.15;
+    [ph, de].forEach(function (x) { if (x) x[m].forEach(function (v) { if (v != null) max = Math.max(max, v * 1.05); }); });
+    var x = function (i) { return L + (W - L - R) * i / Math.max(1, n - 1); }, y = function (v) { return T + (H - T - B) * (1 - v / max); }, g = '';
+    g += '<rect x="' + L + '" y="' + y(lim.good) + '" width="' + (W - L - R) + '" height="' + (y(0) - y(lim.good)) + '" fill="#1b7a3d" opacity=".07"/><line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(lim.good) + '" y2="' + y(lim.good) + '" stroke="#1b7a3d" stroke-dasharray="4 4"/><line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(lim.poor) + '" y2="' + y(lim.poor) + '" stroke="#b3261e" stroke-dasharray="4 4"/>';
+    g += '<text x="' + (L - 6) + '" y="' + (y(lim.good) + 4) + '" text-anchor="end" font-size="10.5" fill="#1b7a3d">' + cVal(m, lim.good) + '</text><text x="' + (L - 6) + '" y="' + (y(lim.poor) + 4) + '" text-anchor="end" font-size="10.5" fill="#b3261e">' + cVal(m, lim.poor) + '</text>';
+    var dates = base.dates || []; [0, Math.floor((n - 1) / 2), n - 1].forEach(function (i) { if (dates[i]) g += '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="' + (i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle') + '" font-size="10.5" fill="#3d3d3d">' + dLong(dates[i]) + '</text>'; });
+    var line = function (obj, color) { if (!obj) return ''; var pts = []; obj[m].forEach(function (v, i) { if (v != null) pts.push(x(i).toFixed(1) + ',' + y(v).toFixed(1)); }); return pts.length ? '<polyline fill="none" stroke="' + color + '" stroke-width="2.4" stroke-linejoin="round" points="' + pts.join(' ') + '"/>' : ''; };
+    g += line(de, '#C99A3E') + line(ph, '#34517A');
+    return '<div class="chart"><div class="cl">' + esc(CWV[m].name) + ' — 75th percentile by week</div><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(CWV[m].name) + ' by week">' + g + '</svg><div class="leg"><span><i style="background:#34517A"></i>Phone</span>' + (de ? '<span><i style="background:#C99A3E"></i>Desktop</span>' : '') + '<span style="color:#1b7a3d">dashed: good limit</span><span style="color:#b3261e">dashed: poor limit</span></div></div>';
+  }
+  function cwvSection(c, opts) {
+    if (!c || !c.current) return '';
+    var cur = c.current, ph = cur.phone, de = cur.desktop, h = (opts && opts.noTitle ? '' : '<h2>Core Web Vitals</h2>');
+    h += '<p class="sub">Real-user (field) data from the Chrome UX Report for <b>' + esc(c.origin) + '</b>' + (cur.all && cur.all.period ? ', rolling 28 days to ' + dLong(cur.all.period.last) : '') + '. Google rates the 75th percentile of visits. Good: LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1. Poor: LCP > 4 s, INP > 500 ms, CLS > 0.25.</p>';
+    h += '<table><thead><tr><th>Metric</th><th>Phone</th><th>Phone visits</th><th>Desktop</th><th>Desktop visits</th></tr></thead><tbody>' + ['lcp', 'inp', 'cls'].map(function (m) { return '<tr><td>' + esc(CWV[m].name) + '</td><td class="n">' + cCell(m, ph && ph[m]) + '</td><td>' + cBar(ph && ph[m]) + '</td><td class="n">' + cCell(m, de && de[m]) + '</td><td>' + cBar(de && de[m]) + '</td></tr>'; }).join('') + '</tbody></table>';
+    h += ['lcp', 'inp', 'cls'].map(function (m) { return cChart(c.history, m); }).join('');
+    var pgs = (c.pages || []), withData = pgs.filter(function (x) { return x.lcp || x.inp || x.cls; });
+    if (pgs.length) {
+      var rank = { poor: 3, ni: 2, good: 1 }, worst = function (x) { var w = null; ['lcp', 'inp', 'cls'].forEach(function (m) { var k = x[m] && x[m].p75 != null ? (x[m].cat || cCat(m, x[m].p75)) : null; if (k && (!w || rank[k] > rank[w])) w = k; }); return w; };
+      var rows = pgs.map(function (x) { x._w = worst(x); return x; }), clicks = rows.reduce(function (a, x) { return a + x.clicks; }, 0), poor = rows.filter(function (x) { return x._w === 'poor'; }), ni = rows.filter(function (x) { return x._w === 'ni'; });
+      var pc = poor.reduce(function (a, x) { return a + x.clicks; }, 0), nc = ni.reduce(function (a, x) { return a + x.clicks; }, 0), nod = rows.filter(function (x) { return !x._w; }).reduce(function (a, x) { return a + x.clicks; }, 0);
+      h += '<p class="sub" style="margin-top:10px"><b>The pages that earn the most clicks</b> (last 28 days, phone field data). ' + withData.length + ' of ' + pgs.length + ' have enough Chrome traffic for their own data: ' + poor.length + ' rated poor (<b>' + fmt(pc) + '</b> clicks, ' + pct(pc, clicks) + '% of these pages’ clicks), ' + ni.length + ' needs improvement (' + fmt(nc) + ' clicks). ' + fmt(nod) + ' clicks are on pages with no field data of their own.</p>';
+      h += '<table><thead><tr><th>Page</th><th>Clicks</th><th>LCP</th><th>INP</th><th>CLS</th><th>Overall</th></tr></thead><tbody>' + rows.map(function (x) { return '<tr><td>' + esc(sitePath(x.url)) + '</td><td class="n">' + fmt(x.clicks) + '</td><td class="n">' + cCell('lcp', x.lcp) + '</td><td class="n">' + cCell('inp', x.inp) + '</td><td class="n">' + cCell('cls', x.cls) + '</td><td>' + (x._w ? '<b style="color:' + CCOL[x._w] + '">' + CLAB[x._w] + '</b>' : '<span style="color:#777">No field data</span>') + '</td></tr>'; }).join('') + '</tbody></table>';
+    }
+    return h + '<p class="foot">Field data comes from real Chrome users who opted in to usage statistics, so a page appears only with enough traffic; “No field data” is not a fault. Search Console’s own Core Web Vitals report has no API; this is the same underlying dataset (Chrome UX Report). The weekly history covers up to 40 weeks.</p>';
+  }
+
   function monthsSection(months) {
     if (!months || !months.length) return '';
     return '<h2>Saved days, by month</h2><p class="sub">Days Brand Checker saved before Google deleted them. A month marked partial has fewer saved days than the month has.</p><table><thead><tr><th>Month</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Avg position</th><th>Days saved</th></tr></thead><tbody>'
@@ -226,7 +262,7 @@
 
   var CSS = '*{box-sizing:border-box}.gr{font-family:Helvetica,Arial,sans-serif;color:#0a0a0a;font-size:12px;line-height:1.45}.gr h1{font-size:24px;margin:0 0 2px;letter-spacing:-.01em}.gr h2{font-size:14px;margin:22px 0 6px;text-transform:uppercase;letter-spacing:.05em;border-top:3px solid #0a0a0a;padding-top:10px}'
     + '.gr p{margin:0 0 6px}.gr .meta{color:#3d3d3d;margin:0 0 6px}.gr .sub{color:#3d3d3d;margin:0 0 8px}.gr .tiles{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}.gr .tile{border:2px solid #0a0a0a;padding:7px 10px;min-width:130px;flex:1}.gr .tile b{display:block;font-size:22px;letter-spacing:-.02em}.gr .tile span{display:block;color:#3d3d3d;font-size:10.5px}.gr .tile em{display:block;font-style:normal;font-size:10.5px;font-weight:700}'
-    + '.gr .bad{color:#b3261e}.gr .ok{color:#1b7a3d}.gr ul{margin:0 0 8px 18px;padding:0}.gr li{margin:0 0 3px}.gr .chart{border:2px solid #0a0a0a;padding:6px 8px;margin:0 0 8px;break-inside:avoid}.gr .chart svg{width:100%;height:auto;display:block}.gr .leg{display:flex;gap:14px;font-size:10.5px;margin-top:4px}.gr .leg i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px}.gr .cl{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em}'
+    + '.gr .bad{color:#b3261e}.gr .ok{color:#1b7a3d}.gr ul{margin:0 0 8px 18px;padding:0}.gr li{margin:0 0 3px}.gr .chart{border:2px solid #0a0a0a;padding:6px 8px;margin:0 0 8px;break-inside:avoid}.gr .chart svg{width:100%;height:auto;display:block}.gr .leg{display:flex;gap:14px;font-size:10.5px;margin-top:4px}.gr .leg i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px}.gr .b3{display:flex;height:9px;width:100%;min-width:70px;border:1px solid #0a0a0a}.gr .b3 i{display:block;height:100%}.gr .b3t{font-size:9.5px;color:#3d3d3d}.gr .cl{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em}'
     + '.gr table{width:100%;border-collapse:collapse;margin-top:6px}.gr th,.gr td{border:1px solid #0a0a0a;padding:4px 6px;text-align:left;vertical-align:top;word-break:break-word;font-size:10.5px}.gr th{background:#0a0a0a;color:#fff;font-size:9.5px;text-transform:uppercase}.gr td.n{text-align:right;white-space:nowrap}.gr tr{break-inside:avoid}.gr thead{display:table-header-group}.gr .foot{margin-top:8px;color:#3d3d3d;font-size:10px}.gr .end{margin-top:22px;border-top:3px solid #0a0a0a;padding-top:8px;color:#3d3d3d;font-size:10px}';
 
   function render(s) {
@@ -240,6 +276,7 @@
     else if (kind === 'focus') h += s.seg ? segFocus(s.seg, s.focus) : '<p>No data.</p>';
     else {
       if (trend.length >= 28) h += headline(trend) + trendSection(trend) + typesSection(trend, s.trend_types);
+      h += cwvSection(s.cwv);
       h += brandSection(s.brand);
       if (s.seg) { h += segCore(s.seg); (s.seg.segments || []).filter(function (x) { return x.kind === 'focus'; }).forEach(function (x) { h += segFocus(s.seg, x.id); }); }
       h += monthsSection(s.months) + pagesSection(s.pages);
@@ -247,5 +284,5 @@
     h += '<p class="end">Figures are from Google Search Console for ' + esc(site) + '. Days older than Google’s 16-month window come from Brand Checker’s archive. Search Console’s own daily totals can differ slightly from the sum of query rows. Generated by Brand Checker (brandchecker.eu).</p></div>';
     return h;
   }
-  window.GscReport = { render: render, css: CSS, esc: esc, seg: { core: segCore, focus: segFocus }, brand: { all: bAll, weeks: bWeeks, months: bMonths, sum: sum, stats: bStats, chart: bChart } };
+  window.GscReport = { render: render, css: CSS, esc: esc, seg: { core: segCore, focus: segFocus }, cwv: cwvSection, brand: { all: bAll, weeks: bWeeks, months: bMonths, sum: sum, stats: bStats, chart: bChart } };
 })();
