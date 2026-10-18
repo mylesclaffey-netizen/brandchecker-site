@@ -691,9 +691,10 @@ function renderMonitor() {
     '<p class="sub" style="margin:0 0 10px">Every day the pages that earn the most Search Console clicks (the top ' + d.config.top_n + ' of the last 28 days) are requested and compared with the last check. If one that earns clicks starts redirecting to the homepage or another site, returns 404/410 or is set to noindex, you get an email. Every Monday a digest summarises the week: clicks against last week and last year, brand vs non-brand, core terms, the biggest page and query movers, page-health changes and the archive’s status.</p>' +
     '<label style="font-size:14px;display:block;margin:0 0 6px"><input type="checkbox" id="moDigest"' + (d.config.digest ? ' checked' : '') + '> Weekly digest email (Mondays)</label>' +
     '<label style="font-size:14px;display:block;margin:0 0 6px"><input type="checkbox" id="moAlerts"' + (d.config.alerts ? ' checked' : '') + '> Email me when a page that earns clicks breaks</label>' +
+    '<label style="font-size:14px;display:block;margin:0 0 6px"><input type="checkbox" id="moAnom"' + (d.config.anomaly ? ' checked' : '') + '> Email me when weekly clicks fall below their expected range (once when it first happens, once more if it lasts three weeks)</label>' +
     '<label style="font-size:14px;display:block;margin:0 0 10px">…only for pages with at least <input type="text" id="moMin" inputmode="numeric" value="' + esc(d.config.min_clicks) + '" style="width:64px;padding:6px 8px;display:inline-block"> clicks in 28 days</label>' +
     '<p class="hint" style="margin:0 0 10px">Emails go to: ' + (d.recipients.length ? d.recipients.map(esc).join(', ') : 'nobody: no address is on file for this account') + '.' + (d.last_digest ? ' Last digest sent ' + esc(d.last_digest.slice(0, 10)) + '.' : '') + '</p>' +
-    '<div class="acts"><button class="btn2 small" type="button" id="moSave">Save settings</button><button class="btn2 small" type="button" id="moCheck">Check pages now</button><button class="btn2 small" type="button" id="moPrev">Preview the digest</button><button class="btn2 small" type="button" id="moSend">Email me the digest now</button></div><div id="moOut2" style="margin-top:12px"></div>';
+    '<div class="acts"><button class="btn2 small" type="button" id="moSave">Save settings</button><button class="btn2 small" type="button" id="moCheck">Check pages now</button><button class="btn2 small" type="button" id="moPrev">Preview the digest</button><button class="btn2 small" type="button" id="moAnomPrev">Preview the anomaly check</button><button class="btn2 small" type="button" id="moSend">Email me the digest now</button></div><div id="moOut2" style="margin-top:12px"></div>';
   if (d.pages.length) {
     h += '<h3 class="h" style="font-size:16px;margin:16px 0 6px">Current state of the ' + d.pages.length + ' tracked pages</h3><p style="margin:0 0 8px;font-size:14.5px">' + Object.keys(cnt).map(function (k) { return '<b>' + cnt[k] + '</b> ' + esc((MO_KIND[k] || [k])[0].toLowerCase()); }).join(' · ') + '. Last check ' + esc(String(d.last_check || '').slice(0, 16).replace('T', ' ')) + ' UTC.</p>';
     if (probs.length) h += '<div class="tblwrap"><table class="tbl"><tr><th>Page earning clicks that does not resolve as itself</th><th>Clicks, 28 days</th><th>Now</th></tr>' + probs.map(function (x) { return '<tr><td>' + esc(pathOf(x.url)) + '</td><td class="num">' + fmt(x.clicks) + '</td><td><b class="dn">' + esc((MO_KIND[x.kind] || [x.kind])[0]) + '</b>' + (x.final && x.kind !== 'home' ? '<br><small>→ ' + esc(x.final) + '</small>' : '') + '</td></tr>'; }).join('') + '</table></div>';
@@ -704,7 +705,7 @@ function renderMonitor() {
   var out = $('moOut2'), busy = function (b, t) { b.disabled = true; out.innerHTML = '<p class="hint">' + t + '</p>'; };
   $('moSave').onclick = function () {
     var b = this; busy(b, 'Saving…');
-    api('/gsc-archive/monitor-config', { id: CUR, digest: $('moDigest').checked, alerts: $('moAlerts').checked, min_clicks: $('moMin').value }).then(function (r) { MO.msg = r.error ? '' : 'Settings saved.'; if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; b.disabled = false; return; } MO.data = r; renderMonitor(); });
+    api('/gsc-archive/monitor-config', { id: CUR, digest: $('moDigest').checked, alerts: $('moAlerts').checked, anomaly: $('moAnom').checked, min_clicks: $('moMin').value }).then(function (r) { MO.msg = r.error ? '' : 'Settings saved.'; if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; b.disabled = false; return; } MO.data = r; renderMonitor(); });
   };
   $('moCheck').onclick = function () {
     var b = this; busy(b, 'Requesting each page… (about 15 seconds)');
@@ -717,6 +718,14 @@ function renderMonitor() {
   $('moPrev').onclick = function () {
     var b = this; busy(b, 'Building the digest…');
     api('/gsc-archive/monitor-run', { id: CUR, action: 'digest-preview' }).then(function (r) { b.disabled = false; if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } out.innerHTML = '<p class="fl">Subject</p><p style="margin:0 0 8px"><b>' + esc(r.subject) + '</b></p><pre style="white-space:pre-wrap;border:3px solid #0a0a0a;padding:12px;font-size:13px;font-family:\'IBM Plex Mono\',monospace;background:#f3f3ef">' + esc(r.text) + '</pre><p class="hint">This is a preview. Nothing was sent.</p>'; });
+  };
+  $('moAnomPrev').onclick = function () {
+    var b = this; busy(b, 'Checking the latest week against its expected range…');
+    api('/gsc-archive/monitor-run', { id: CUR, action: 'anomaly-preview' }).then(function (r) {
+      b.disabled = false; if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+      var st = (r.status || []).map(function (x) { return '<li><b>' + (x.metric === 'clicks' ? 'Clicks' : 'Non-brand clicks') + '</b>, week of ' + esc(x.week) + ': ' + fmt(x.actual) + ' against ' + fmt(x.exp) + ' expected (range ' + fmt(x.lo) + ' to ' + fmt(x.hi) + ')' + (x.flag === 'below' ? ', <b class="dn">below the range</b>, ' + x.streak + ' week' + (x.streak === 1 ? '' : 's') + ' in a row' : ', within the normal range') + '</li>'; }).join('');
+      out.innerHTML = '<ul style="margin:0 0 8px 20px;font-size:14.5px">' + st + '</ul>' + (r.alert ? '<p class="fl">An email would be sent now</p><p style="margin:0 0 6px"><b>' + esc(r.subject) + '</b></p><pre style="white-space:pre-wrap;border:3px solid #0a0a0a;padding:12px;font-size:13px;font-family:\'IBM Plex Mono\',monospace;background:#f3f3ef">' + esc(r.text) + '</pre>' : '<p class="hint">No alert would be sent: it only fires when a week first falls below the range, and once more at three weeks in a row.</p>') + '<p class="hint">This is a preview. Nothing was sent.</p>';
+    });
   };
   $('moSend').onclick = function () {
     var b = this; if (!confirm('Email this week’s digest to ' + (d.recipients.join(', ') || 'the account address') + ' now?')) return; busy(b, 'Sending…');
