@@ -23,7 +23,7 @@
     var v = weeks.map(function (w) { return w[metric]; }), found = [];
     for (var i = 4; i + 4 <= v.length; i++) {
       var before = (v[i - 4] + v[i - 3] + v[i - 2] + v[i - 1]) / 4, after = (v[i] + v[i + 1] + v[i + 2] + v[i + 3]) / 4;
-      if (before > 0 && after / before <= 0.65) found.push({ i: i, ratio: after / before, before: before, after: after });
+      if (before >= (metric === 'clicks' ? 20 : 200) && after / before <= 0.65) found.push({ i: i, ratio: after / before, before: before, after: after });
     }
     found.sort(function (a, b) { return a.ratio - b.ratio; });
     var kept = []; found.forEach(function (f) { if (!kept.some(function (k) { return Math.abs(k.i - f.i) < 8; })) kept.push(f); });
