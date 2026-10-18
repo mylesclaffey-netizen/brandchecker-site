@@ -426,7 +426,7 @@ function renderPageStatus() {
   h += '<div class="tiles">' + PS_KINDS.filter(function (k) { return by[k[0]]; }).map(function (k) { var b = by[k[0]]; return '<div class="tile"><div class="k">' + esc(k[1]) + '</div><div class="v ' + (k[2] === 'bad' ? 'dn' : k[2] === 'ok' ? 'up' : '') + '">' + pct(b.c, tc) + '%</div><div class="d" style="color:#3d3d3d;font-weight:400">' + b.n + ' page' + (b.n === 1 ? '' : 's') + ' · ' + fmt(b.c) + ' clicks · ' + pct(b.i, ti) + '% of impressions</div></div>'; }).join('') + '</div>';
   var ins = [];
   if (tc) ins.push('<b>' + pct(lost, tc) + '%</b> of that month’s clicks came from pages that no longer exist as pages (homepage redirect, 404/410, another site or noindex).');
-  if (by.moved && by.moved.c) ins.push('Pages that moved earned ' + fmt(by.moved.c) + ' clicks then and their new addresses earn ' + fmt(by.moved.later) + ' in the matching period a year later' + (m.later_range ? ' (' + esc(m.later_range) + ')' : '') + '.');
+  if (by.moved && by.moved.c) ins.push('Pages that moved earned ' + fmt(by.moved.c) + ' clicks then and their new addresses earn ' + fmt(by.moved.later) + ' in the matching period a year later' + (m.later_range ? ' (' + esc(String(m.later_range).split(',').join(' to ')) + ')' : '') + '.');
   if (by.live && by.live.c) ins.push('Pages still live at the same address earned ' + fmt(by.live.c) + ' clicks then and ' + fmt(by.live.later) + ' in the later period.');
   if (ins.length) h += '<ul style="margin:0 0 12px 20px;font-size:14px">' + ins.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>';
   if (m.later_note) h += '<p class="hint">' + esc(m.later_note) + '</p>';
