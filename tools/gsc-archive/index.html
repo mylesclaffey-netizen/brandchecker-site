@@ -672,6 +672,58 @@ function renderCwv(loading) {
   $('cwvRetry').onclick = function () { loadCwv(true); };
 }
 
+/* ---- monitoring: page-health checks (daily) and the Monday digest ---- */
+var MO = { id: '', data: null, error: null, msg: '' };
+var MO_KIND = { live: ['Live', 'up'], moved: ['Redirects to another page', ''], home: ['Redirects to the homepage', 'dn'], gone: ['Gone (404 / 410)', 'dn'], elsewhere: ['Redirects to another site', 'dn'], noindex: ['Live, but noindex', 'dn'], error: ['Could not check', ''] };
+function monitorCard() { return '<div class="card" id="monCard"><h2>Monitoring: page health and weekly digest</h2><div id="monOut"><p class="hint">Loading…</p></div></div>'; }
+function loadMonitor(force) {
+  if (!force && MO.id === CUR && (MO.data || MO.error)) { renderMonitor(); return; }
+  MO.id = CUR; MO.data = null; MO.error = null;
+  api('/gsc-archive/monitor-config', { id: CUR }).then(function (r) { if (r.error) MO.error = r; else MO.data = r; renderMonitor(); });
+}
+function renderMonitor() {
+  var box = $('monOut'); if (!box) return;
+  if (MO.error) { box.innerHTML = '<div class="err">' + esc(MO.error.error) + '</div>'; return; }
+  var d = MO.data; if (!d) return;
+  var pathOf = function (u) { try { var x = new URL(u); return x.pathname + x.search || '/'; } catch (e) { return u; } };
+  var probs = d.pages.filter(function (x) { return ['home', 'gone', 'elsewhere', 'noindex'].indexOf(x.kind) >= 0; }), cnt = {}; d.pages.forEach(function (x) { cnt[x.kind] = (cnt[x.kind] || 0) + 1; });
+  var h = (MO.msg ? '<div class="toast">' + MO.msg + '</div>' : '') +
+    '<p class="sub" style="margin:0 0 10px">Every day the pages that earn the most Search Console clicks (the top ' + d.config.top_n + ' of the last 28 days) are requested and compared with the last check. If one that earns clicks starts redirecting to the homepage or another site, returns 404/410 or is set to noindex, you get an email. Every Monday a digest summarises the week: clicks against last week and last year, brand vs non-brand, core terms, the biggest page and query movers, page-health changes and the archive’s status.</p>' +
+    '<label style="font-size:14px;display:block;margin:0 0 6px"><input type="checkbox" id="moDigest"' + (d.config.digest ? ' checked' : '') + '> Weekly digest email (Mondays)</label>' +
+    '<label style="font-size:14px;display:block;margin:0 0 6px"><input type="checkbox" id="moAlerts"' + (d.config.alerts ? ' checked' : '') + '> Email me when a page that earns clicks breaks</label>' +
+    '<label style="font-size:14px;display:block;margin:0 0 10px">…only for pages with at least <input type="text" id="moMin" inputmode="numeric" value="' + esc(d.config.min_clicks) + '" style="width:64px;padding:6px 8px;display:inline-block"> clicks in 28 days</label>' +
+    '<p class="hint" style="margin:0 0 10px">Emails go to: ' + (d.recipients.length ? d.recipients.map(esc).join(', ') : 'nobody: no address is on file for this account') + '.' + (d.last_digest ? ' Last digest sent ' + esc(d.last_digest.slice(0, 10)) + '.' : '') + '</p>' +
+    '<div class="acts"><button class="btn2 small" type="button" id="moSave">Save settings</button><button class="btn2 small" type="button" id="moCheck">Check pages now</button><button class="btn2 small" type="button" id="moPrev">Preview the digest</button><button class="btn2 small" type="button" id="moSend">Email me the digest now</button></div><div id="moOut2" style="margin-top:12px"></div>';
+  if (d.pages.length) {
+    h += '<h3 class="h" style="font-size:16px;margin:16px 0 6px">Current state of the ' + d.pages.length + ' tracked pages</h3><p style="margin:0 0 8px;font-size:14.5px">' + Object.keys(cnt).map(function (k) { return '<b>' + cnt[k] + '</b> ' + esc((MO_KIND[k] || [k])[0].toLowerCase()); }).join(' · ') + '. Last check ' + esc(String(d.last_check || '').slice(0, 16).replace('T', ' ')) + ' UTC.</p>';
+    if (probs.length) h += '<div class="tblwrap"><table class="tbl"><tr><th>Page earning clicks that does not resolve as itself</th><th>Clicks, 28 days</th><th>Now</th></tr>' + probs.map(function (x) { return '<tr><td>' + esc(pathOf(x.url)) + '</td><td class="num">' + fmt(x.clicks) + '</td><td><b class="dn">' + esc((MO_KIND[x.kind] || [x.kind])[0]) + '</b>' + (x.final && x.kind !== 'home' ? '<br><small>→ ' + esc(x.final) + '</small>' : '') + '</td></tr>'; }).join('') + '</table></div>';
+    else h += '<p class="hint">Every tracked page still resolves as itself.</p>';
+  } else h += '<p class="hint">No pages checked yet. The first check sets the baseline (it never emails); press “Check pages now” to run it.</p>';
+  if (d.log.length) h += '<h3 class="h" style="font-size:16px;margin:16px 0 6px">Recent changes</h3><div class="tblwrap"><table class="tbl"><tr><th>When</th><th>Page</th><th>Change</th><th>Clicks</th></tr>' + d.log.map(function (x) { return '<tr><td>' + esc(x.at.slice(0, 10)) + '</td><td>' + esc(pathOf(x.url)) + '</td><td>' + esc(x.from_kind ? (MO_KIND[x.from_kind] || [x.from_kind])[0] : 'new') + ' → <b>' + esc((MO_KIND[x.to_kind] || [x.to_kind])[0]) + '</b></td><td class="num">' + fmt(x.clicks) + '</td></tr>'; }).join('') + '</table></div>';
+  box.innerHTML = h;
+  var out = $('moOut2'), busy = function (b, t) { b.disabled = true; out.innerHTML = '<p class="hint">' + t + '</p>'; };
+  $('moSave').onclick = function () {
+    var b = this; busy(b, 'Saving…');
+    api('/gsc-archive/monitor-config', { id: CUR, digest: $('moDigest').checked, alerts: $('moAlerts').checked, min_clicks: $('moMin').value }).then(function (r) { MO.msg = r.error ? '' : 'Settings saved.'; if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; b.disabled = false; return; } MO.data = r; renderMonitor(); });
+  };
+  $('moCheck').onclick = function () {
+    var b = this; busy(b, 'Requesting each page… (about 15 seconds)');
+    api('/gsc-archive/monitor-run', { id: CUR, action: 'health' }).then(function (r) {
+      if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; b.disabled = false; return; }
+      MO.msg = r.baseline ? 'Baseline set: ' + r.checked + ' pages recorded. From now on a change on any of them is reported.' : 'Checked ' + r.checked + ' pages: ' + r.changes + ' changed, ' + r.broke + ' newly broken' + (r.alerted ? ', ' + r.alerted + ' emailed.' : '.');
+      loadMonitor(true);
+    });
+  };
+  $('moPrev').onclick = function () {
+    var b = this; busy(b, 'Building the digest…');
+    api('/gsc-archive/monitor-run', { id: CUR, action: 'digest-preview' }).then(function (r) { b.disabled = false; if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } out.innerHTML = '<p class="fl">Subject</p><p style="margin:0 0 8px"><b>' + esc(r.subject) + '</b></p><pre style="white-space:pre-wrap;border:3px solid #0a0a0a;padding:12px;font-size:13px;font-family:\'IBM Plex Mono\',monospace;background:#f3f3ef">' + esc(r.text) + '</pre><p class="hint">This is a preview. Nothing was sent.</p>'; });
+  };
+  $('moSend').onclick = function () {
+    var b = this; if (!confirm('Email this week’s digest to ' + (d.recipients.join(', ') || 'the account address') + ' now?')) return; busy(b, 'Sending…');
+    api('/gsc-archive/monitor-run', { id: CUR, action: 'digest-send' }).then(function (r) { b.disabled = false; if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } out.innerHTML = '<div class="toast">Digest sent to ' + r.sent + ' address' + (r.sent === 1 ? '' : 'es') + '.</div>'; loadMonitor(true); });
+  };
+}
+
 /* ---- whole-report PDF and sign-in-free share links ---- */
 var SH = { site: '' };
 function shareCard() {
@@ -731,7 +783,7 @@ function openView(id) {
   CUR = id;
   api('/gsc-archive/daily', { id: id }).then(function (r) {
     if (r.error) return alert(r.error);
-    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null;
+    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null; MO.id = ''; MO.data = null; MO.error = null; MO.msg = '';
     api('/gsc-archive/compare-options', { id: id }).then(function (o) { CMP.opts = o && !o.error ? o : null; if (CMP.opts && CMP.opts.months.length && !CMP.start) { var okm = CMP.opts.months.filter(function (m) { return m.available && m.twin_available; }); CMP.start = (okm.filter(function (m) { return m.month === CMP.opts.latest_stored_month; })[0] || okm[okm.length - 1] || {}).month || ''; } $('view').style.display = ''; drawView(r.site_url); $('view').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   });
 }
@@ -775,7 +827,7 @@ function drawView(site) {
   // Align the previous year's buckets to the current ones by position in the range.
   var prevAligned = cur.map(function (b) { return prev.filter(function (p) { return p.k === b.k; })[0] || null; });
   var tc = totals(days), tp = shifted.length > 20 ? totals(shifted) : null;
-  var h = '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + brandCard() + segArea() + cwvCard() + shareCard() + '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
+  var h = '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + brandCard() + segArea() + cwvCard() + monitorCard() + shareCard() + '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
     '<div class="seg" data-g="range">' + [['28d', '28 days'], ['3m', '3 months'], ['12m', '12 months'], ['all', 'All stored']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (RANGE === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="gran">' + [['day', 'Daily'], ['week', 'Weekly'], ['month', 'Monthly']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (GRAN === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="metric">' + [['clicks', 'Clicks'], ['impressions', 'Impressions'], ['ctr', 'CTR'], ['position', 'Position']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (METRIC === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
@@ -801,6 +853,7 @@ function drawView(site) {
   loadBrand();
   loadSegments();
   loadCwv();
+  loadMonitor();
   if (complete.length) loadTop();
 }
 function wire(site) {
