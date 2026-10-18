@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <script src="/assets/visitor.js"></script>
-<script src="/assets/gsc-report.js?v=4"></script>
+<script src="/assets/gsc-report.js?v=5"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Search Console Archive</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
@@ -583,6 +583,72 @@ function renderBrand() {
   };
 }
 
+/* ---- query segments: core terms compared side by side, and a report per focus (e.g. Hamburg) ---- */
+var SG = { id: '', data: null, details: {}, error: null, edit: false, cfg: null, styled: false };
+function segArea() { return '<div id="segArea"><div class="card"><h2>Core terms and focus reports</h2><p class="hint">Loading from Search Console…</p></div></div>'; }
+function loadSegments() {
+  if (SG.id === CUR && (SG.data || SG.error)) { renderSegments(); return; }
+  SG.id = CUR; SG.data = null; SG.error = null; SG.details = {};
+  api('/gsc-archive/segments-live', { id: CUR }).then(function (r) {
+    if (r.error) { SG.error = r; renderSegments(); return; }
+    SG.data = r; renderSegments();
+    var want = r.segments.map(function (x) { return x.id; }), left = want.length;
+    want.forEach(function (sid) { api('/gsc-archive/segment-detail', { id: CUR, segment: sid }).then(function (d) { if (SG.id !== CUR) return; if (!d.error) SG.details[sid] = d; if (--left === 0) renderSegments(); }); });
+  });
+}
+function segSnapshot(kind, focus) { return { kind: kind, focus: focus, site: SH.site, created: new Date().toISOString(), seg: Object.assign({}, SG.data, { details: SG.details }) }; }
+function segCardHtml(id, title, intro, inner, extraBtns) {
+  return '<div class="card" id="' + id + '"><h2>' + esc(title) + '</h2><p class="sub" style="margin:0 0 10px">' + intro + '</p><div class="acts" style="margin:0 0 12px">' + extraBtns + '</div><div id="' + id + 'Out"></div><div class="gr">' + inner + '</div></div>';
+}
+function renderSegments() {
+  var box = $('segArea'); if (!box) return;
+  if (!SG.styled) { var st = document.createElement('style'); st.textContent = GscReport.css + '.gr{font-size:13px}'; document.head.appendChild(st); SG.styled = true; }
+  if (SG.error) { box.innerHTML = '<div class="card"><h2>Core terms and focus reports</h2><div class="err">' + esc(SG.error.error) + '</div>' + (SG.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : '') + '</div>'; return; }
+  if (!SG.data) return;
+  var seg = Object.assign({}, SG.data, { details: SG.details }), h = '';
+  var core = seg.segments.filter(function (x) { return x.kind === 'core'; }), focus = seg.segments.filter(function (x) { return x.kind === 'focus'; });
+  if (SG.edit) h += segEditor(seg.segments);
+  if (core.length) h += segCardHtml('segCoreCard', 'Core terms: ' + core.map(function (c) { return c.name; }).join(', '), 'Each term’s clicks, impressions, CTR and position over time, with the top queries and pages inside it. Live from Search Console (about 16 months).', GscReport.seg.core(seg), '<button class="btn2 small" type="button" id="segEditBtn">Edit segments</button><button class="btn2 small" type="button" data-seg-pdf="core">Download PDF</button><button class="btn2 small" type="button" data-seg-link="core">Create shareable link</button>');
+  focus.forEach(function (f) { h += segCardHtml('segFocus-' + f.id, f.name + ' report', 'Everything searched with “' + esc(f.include.join('”, “')) + '”, how much of each core term it makes up, and its top queries and pages.', GscReport.seg.focus(seg, f.id), (core.length ? '' : '<button class="btn2 small" type="button" id="segEditBtn">Edit segments</button>') + '<button class="btn2 small" type="button" data-seg-pdf="focus" data-focus="' + esc(f.id) + '">Download PDF</button><button class="btn2 small" type="button" data-seg-link="focus" data-focus="' + esc(f.id) + '">Create shareable link</button>'); });
+  if (!core.length && !focus.length) h += '<div class="card"><h2>Core terms and focus reports</h2><p class="hint">No segments defined.</p><div class="acts"><button class="btn2 small" type="button" id="segEditBtn">Edit segments</button></div></div>';
+  if (!seg.saved && !SG.edit) h += '<p class="hint" style="margin:-6px 0 14px">These are starting segments (MacBook, iMac and Mac Reparatur, and Hamburg). Edit them to match your own terms; they are saved per property.</p>';
+  box.innerHTML = h;
+  var eb = $('segEditBtn'); if (eb) eb.onclick = function () { SG.edit = !SG.edit; renderSegments(); if (SG.edit) $('segEditor').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  if (SG.edit) wireSegEditor();
+  box.querySelectorAll('[data-seg-pdf]').forEach(function (b) { b.onclick = function () { var kind = b.dataset['segPdf'], f = b.dataset.focus || undefined; printReport('Search Console ' + (kind === 'core' ? 'core terms' : f) + ' - ' + SH.site, GscReport.render(segSnapshot(kind, f)), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); }; });
+  box.querySelectorAll('[data-seg-link]').forEach(function (b) { b.onclick = function () {
+    var card = b.closest('.card'), out = card.querySelector('[id$="Out"]'); b.disabled = true; out.innerHTML = '<p class="hint">Creating the link…</p>';
+    api('/gsc-archive/share-create', { id: CUR, kind: b.dataset['segLink'], focus: b.dataset.focus || undefined }).then(function (r) {
+      b.disabled = false;
+      if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+      out.innerHTML = '<div class="toast"><b>Link created.</b> Anyone who has it can read this snapshot without signing in. It does not update, expires on ' + esc(r.expires) + ', and you can withdraw it from the list under “Share or download this report”.<br><input type="text" readonly value="' + esc(r.url) + '" style="margin:8px 0" onclick="this.select()"><div class="acts"><button class="btn2 small" type="button" data-cp>Copy link</button><a class="btn2 small" href="' + esc(r.url) + '" target="_blank" rel="noopener" style="text-decoration:none">Open</a></div></div>';
+      out.querySelector('[data-cp]').onclick = function () { copyText(r.url, this); };
+      loadShares();
+    }).catch(function () { b.disabled = false; out.innerHTML = '<div class="err">Could not reach the server.</div>'; });
+  }; });
+}
+function segEditor(segs) {
+  var row = function (x) { return '<div class="segrow" style="border:2px solid #0a0a0a;padding:10px;margin:0 0 10px"><div class="row2"><div><label class="fl">Name</label><input type="text" data-f="name" value="' + esc(x.name) + '"></div><div><label class="fl">Type</label><select data-f="kind"><option value="core"' + (x.kind === 'core' ? ' selected' : '') + '>Core term (compared side by side)</option><option value="focus"' + (x.kind === 'focus' ? ' selected' : '') + '>Focus (own report, e.g. a city)</option></select></div></div>' +
+    '<div class="row2" style="margin-top:8px"><div><label class="fl">Include queries containing</label><input type="text" data-f="include" value="' + esc(x.include.join(', ')) + '"></div><div><label class="fl">…but not (optional)</label><input type="text" data-f="exclude" value="' + esc(x.exclude.join(', ')) + '"></div></div><div class="acts"><button class="btn2 small" type="button" data-rm>Remove</button></div><input type="hidden" data-f="id" value="' + esc(x.id) + '"></div>'; };
+  return '<div class="card" id="segEditor"><h2>Edit segments</h2><p class="sub" style="margin:0 0 10px">A segment is a set of phrases, comma-separated. Each phrase is matched from the start of a word anywhere in the query, in any case: “mac reparatur” finds “mac reparatur hamburg” but not “imac reparatur” or “macbook reparatur”. Up to 8 segments; core terms are compared with each other, a focus gets its own report and an overlap table against each core term.</p><div id="segRows">' + segs.map(row).join('') + '</div><div class="acts"><button class="btn2 small" type="button" id="segAdd">Add a segment</button><button class="btn2 small" type="button" id="segSave">Save segments</button><button class="btn2 small" type="button" id="segCancel">Cancel</button></div><div id="segMsg"></div></div>';
+}
+function wireSegEditor() {
+  var rows = $('segRows'), blank = { id: '', name: '', include: [], exclude: [], kind: 'core' };
+  var rm = function () { rows.querySelectorAll('[data-rm]').forEach(function (b) { b.onclick = function () { b.closest('.segrow').remove(); }; }); }; rm();
+  $('segAdd').onclick = function () { if (rows.querySelectorAll('.segrow').length >= 8) return; var d = document.createElement('div'); d.innerHTML = segEditor([blank]).match(/<div class="segrow"[\s\S]*?<input type="hidden"[^>]*><\/div>/)[0]; rows.appendChild(d.firstChild); rm(); };
+  $('segCancel').onclick = function () { SG.edit = false; renderSegments(); };
+  $('segSave').onclick = function () {
+    var list = [].slice.call(rows.querySelectorAll('.segrow')).map(function (r) { var g = function (f) { return r.querySelector('[data-f="' + f + '"]').value; }, split = function (v) { return v.split(',').map(function (x) { return x.trim(); }).filter(Boolean); }; var name = g('name').trim(); return { id: g('id') || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24), name: name, kind: g('kind'), include: split(g('include')), exclude: split(g('exclude')) }; });
+    var seen = {}; list.forEach(function (x) { var base = x.id || 'segment', n = 1, id = base; while (seen[id]) id = base + '-' + (++n); x.id = id; seen[id] = 1; });
+    $('segSave').disabled = true; $('segMsg').innerHTML = '<p class="hint">Saving…</p>';
+    api('/gsc-archive/segments-config', { id: CUR, segments: list }).then(function (r) {
+      $('segSave').disabled = false;
+      if (r.error) { $('segMsg').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+      SG.edit = false; SG.id = ''; SG.data = null; SG.details = {}; $('segArea').innerHTML = '<div class="card"><h2>Core terms and focus reports</h2><p class="hint">Reloading with the new segments…</p></div>'; loadSegments();
+    }).catch(function () { $('segSave').disabled = false; $('segMsg').innerHTML = '<div class="err">Could not reach the server.</div>'; });
+  };
+}
+
 /* ---- whole-report PDF and sign-in-free share links ---- */
 var SH = { site: '' };
 function shareCard() {
@@ -628,7 +694,7 @@ function loadShares() {
   api('/gsc-archive/share-list', { id: CUR }).then(function (r) {
     var box = $('shList'); if (!box) return;
     if (!r.shares || !r.shares.length) { box.innerHTML = ''; return; }
-    box.innerHTML = '<p class="fl" style="margin-top:14px">Active links</p><div class="tblwrap"><table class="tbl"><tr><th>Created</th><th>Includes</th><th>Expires</th><th></th></tr>' + r.shares.map(function (x) { return '<tr><td>' + esc(x.created.slice(0, 10)) + '</td><td>' + (x.pages_month ? 'Where the traffic went (' + esc(monLabel(x.pages_month)) + ')' : 'Trend and saved days') + '</td><td>' + esc(x.expires) + '</td><td><button class="btn2 small" type="button" data-copy="' + esc(x.url) + '">Copy</button> <button class="btn2 small" type="button" data-revoke="' + esc(x.t) + '">Withdraw</button></td></tr>'; }).join('') + '</table></div>';
+    box.innerHTML = '<p class="fl" style="margin-top:14px">Active links</p><div class="tblwrap"><table class="tbl"><tr><th>Created</th><th>Includes</th><th>Expires</th><th></th></tr>' + r.shares.map(function (x) { return '<tr><td>' + esc(x.created.slice(0, 10)) + '</td><td>' + (x.kind === 'core' ? 'Core terms report' : x.kind === 'focus' ? 'Focus report: ' + esc(x.focus) : x.pages_month ? 'Full report incl. Where the traffic went (' + esc(monLabel(x.pages_month)) + ')' : 'Full report') + '</td><td>' + esc(x.expires) + '</td><td><button class="btn2 small" type="button" data-copy="' + esc(x.url) + '">Copy</button> <button class="btn2 small" type="button" data-revoke="' + esc(x.t) + '">Withdraw</button></td></tr>'; }).join('') + '</table></div>';
     box.querySelectorAll('[data-copy]').forEach(function (b) { b.onclick = function () { copyText(b.dataset.copy, b); }; });
     box.querySelectorAll('[data-revoke]').forEach(function (b) { b.onclick = function () { if (!confirm('Withdraw this link? Anyone who has it will see an expired message.')) return; b.disabled = true; api('/gsc-archive/share-revoke', { id: CUR, t: b.dataset.revoke }).then(function () { loadShares(); }); }; });
   });
@@ -642,7 +708,7 @@ function openView(id) {
   CUR = id;
   api('/gsc-archive/daily', { id: id }).then(function (r) {
     if (r.error) return alert(r.error);
-    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = '';
+    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {};
     api('/gsc-archive/compare-options', { id: id }).then(function (o) { CMP.opts = o && !o.error ? o : null; if (CMP.opts && CMP.opts.months.length && !CMP.start) { var okm = CMP.opts.months.filter(function (m) { return m.available && m.twin_available; }); CMP.start = (okm.filter(function (m) { return m.month === CMP.opts.latest_stored_month; })[0] || okm[okm.length - 1] || {}).month || ''; } $('view').style.display = ''; drawView(r.site_url); $('view').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   });
 }
@@ -686,7 +752,7 @@ function drawView(site) {
   // Align the previous year's buckets to the current ones by position in the range.
   var prevAligned = cur.map(function (b) { return prev.filter(function (p) { return p.k === b.k; })[0] || null; });
   var tc = totals(days), tp = shifted.length > 20 ? totals(shifted) : null;
-  var h = '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + brandCard() + shareCard() + '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
+  var h = '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + brandCard() + segArea() + shareCard() + '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
     '<div class="seg" data-g="range">' + [['28d', '28 days'], ['3m', '3 months'], ['12m', '12 months'], ['all', 'All stored']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (RANGE === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="gran">' + [['day', 'Daily'], ['week', 'Weekly'], ['month', 'Monthly']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (GRAN === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="metric">' + [['clicks', 'Clicks'], ['impressions', 'Impressions'], ['ctr', 'CTR'], ['position', 'Position']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (METRIC === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
@@ -710,6 +776,7 @@ function drawView(site) {
   wire(site);
   loadTrend();
   loadBrand();
+  loadSegments();
   if (complete.length) loadTop();
 }
 function wire(site) {

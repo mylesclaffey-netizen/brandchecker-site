@@ -137,6 +137,68 @@
     return h;
   }
 
+  /* ---- query segments: core terms side by side, and a focus (e.g. a city) with its own report ---- */
+  var SCOL = ['#34517A', '#C99A3E', '#00844A', '#d40000', '#7a3d7a', '#555555'];
+  function sWin(days, a, b) { var t = { clicks: 0, impressions: 0, w: 0 }; days.forEach(function (d) { if (d.date >= a && d.date <= b) { t.clicks += d.clicks; t.impressions += d.impressions; t.w += (d.position || 0) * d.impressions; } }); return { clicks: t.clicks, impressions: t.impressions, ctr: t.impressions ? t.clicks / t.impressions * 100 : 0, position: t.impressions ? t.w / t.impressions : null }; }
+  function sStat(days, last) { var a = addDays(last, -27), b1 = shiftYear(last, -1), b0 = addDays(b1, -27); return { cur: sWin(days, a, last), prev: sWin(days, b0, b1), a: a, b0: b0, b1: b1 }; }
+  function sWeeks(days) {
+    var m = {}, order = [];
+    days.forEach(function (d) { var dt = new Date(d.date + 'T00:00:00Z'), dow = (dt.getUTCDay() + 6) % 7; dt.setUTCDate(dt.getUTCDate() - dow); var k = dt.toISOString().slice(0, 10), w = m[k]; if (!w) { w = m[k] = { k: k, clicks: 0, impressions: 0, pw: 0, n: 0 }; order.push(k); } w.clicks += d.clicks; w.impressions += d.impressions; w.pw += (d.position || 0) * d.impressions; w.n++; });
+    return order.map(function (k) { var w = m[k]; w.position = w.impressions ? w.pw / w.impressions : null; return w; }).filter(function (w) { return w.n === 7; });
+  }
+  function sMonthly(days) { var m = {}; days.forEach(function (d) { var k = d.date.slice(0, 7), x = m[k] || (m[k] = { clicks: 0, impressions: 0 }); x.clicks += d.clicks; x.impressions += d.impressions; }); return m; }
+  // Lines for several series over the same weeks. Position runs best (1) at the top.
+  function sChart(list, metric, label) {
+    var base = list[0].weeks; if (!base || base.length < 4) return '';
+    var W = 760, H = 230, L = 52, R = 14, T = 16, B = 28, n = base.length, rev = metric === 'position', max = 1, min = rev ? 1 : 0;
+    list.forEach(function (x) { x.weeks.forEach(function (w) { var v = w[metric]; if (v != null) max = Math.max(max, v); }); }); if (rev) max = Math.ceil(max);
+    var x = function (i) { return L + (W - L - R) * i / (n - 1); }, y = function (v) { var t = (v - min) / (max - min || 1); return T + (H - T - B) * (rev ? t : 1 - t); };
+    var f = function (v) { return rev ? v.toFixed(0) : (v >= 10000 ? Math.round(v / 1000) + 'k' : fmt(v)); }, g = '';
+    for (var t = 0; t <= 4; t++) { var v = min + (max - min) * t / 4, yy = T + (H - T - B) * (rev ? t / 4 : 1 - t / 4); g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#e2e2dc"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="11" fill="#3d3d3d">' + f(v) + '</text>'; }
+    base.forEach(function (w, i) { if (i % 8 === 0) g += '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="#3d3d3d">' + MN[+w.k.slice(5, 7) - 1] + ' ' + w.k.slice(2, 4) + '</text>'; });
+    var byK = function (arr) { var o = {}; arr.forEach(function (w) { o[w.k] = w; }); return o; };
+    list.forEach(function (it, si) { var m = byK(it.weeks), pts = []; base.forEach(function (w, i) { var o = m[w.k]; if (o && o[metric] != null) pts.push(x(i).toFixed(1) + ',' + y(o[metric]).toFixed(1)); }); if (pts.length) g += '<polyline fill="none" stroke="' + SCOL[si % SCOL.length] + '" stroke-width="2.4" stroke-linejoin="round" points="' + pts.join(' ') + '"/>'; });
+    return '<div class="chart"><div class="cl">' + esc(label) + '</div><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + '">' + g + '</svg>' + (list.length > 1 ? '<div class="leg">' + list.map(function (it, si) { return '<span><i style="background:' + SCOL[si % SCOL.length] + '"></i>' + esc(it.name) + '</span>'; }).join('') + '</div>' : '') + '</div>';
+  }
+  var dch = function (a, b) { return b ? (a - b) / b * 100 : null; };
+  var chCell = function (v, goodUp) { if (v == null) return '—'; var good = goodUp ? v >= 0 : v <= 0; return '<span class="' + (good ? 'ok' : 'bad') + '">' + (v >= 0 ? '+' : '') + v.toFixed(0) + '%</span>'; };
+  var posCell = function (a, b) { if (a == null) return '—'; var d = b != null ? a - b : null; return a.toFixed(1) + (d == null ? '' : ' <span class="' + (d <= 0 ? 'ok' : 'bad') + '">(' + (d >= 0 ? '+' : '') + d.toFixed(1) + ')</span>'); };
+  function detailTables(det, title) {
+    if (!det || (!det.queries.length && !det.pages.length)) return '';
+    var w = det.window || {};
+    var tbl = function (rows, label, n) { return '<table><thead><tr><th>' + label + '</th><th>Clicks</th><th>vs a year earlier</th><th>Impressions</th><th>Avg position</th></tr></thead><tbody>' + rows.slice(0, n).map(function (r) { var k = label === 'Page' ? sitePath(r.key) : r.key; return '<tr><td>' + esc(k) + '</td><td class="n">' + fmt(r.clicks) + '</td><td class="n">' + (r.prev_clicks || r.clicks ? fmt(r.prev_clicks) + ' → ' + fmt(r.clicks) : '—') + '</td><td class="n">' + fmt(r.impressions) + '</td><td class="n">' + r.position.toFixed(1) + '</td></tr>'; }).join('') + '</tbody></table>'; };
+    return '<p class="sub" style="margin-top:8px"><b>' + esc(title) + '</b>: last 90 days (' + dLong(w.start) + ' to ' + dLong(w.end) + '), the “vs a year earlier” column shows the same 90 days a year before.</p>' + (det.queries.length ? tbl(det.queries, 'Query', 15) : '') + (det.pages.length ? tbl(det.pages, 'Page', 8) : '');
+  }
+  function segCore(seg) {
+    var core = (seg.segments || []).filter(function (x) { return x.kind === 'core'; }); if (!core.length || !seg.total || !seg.total.length) return '';
+    var last = seg.total[seg.total.length - 1].date, tot = sStat(seg.total, last);
+    var rows = core.map(function (c) { var st = sStat(c.days, last); return { c: c, st: st, all: sWin(c.days, '0000', '9999') }; });
+    var h = '<h2>Core terms</h2><p class="sub">Queries containing ' + core.map(function (c) { return '<b>' + esc(c.include.join(' / ')) + '</b>'; }).join(', ') + ' — each phrase matched from the start of a word, so “mac reparatur” does not include “imac reparatur” or “macbook reparatur”. Last 28 days (' + dLong(tot.a) + ' to ' + dLong(last) + ') against the same 28 days a year earlier.</p>';
+    h += '<table><thead><tr><th>Term</th><th>Clicks</th><th>vs year earlier</th><th>Impressions</th><th>vs year earlier</th><th>CTR</th><th>Avg position (change)</th><th>Share of all clicks</th></tr></thead><tbody>' + rows.map(function (r) { var a = r.st.cur, b = r.st.prev; return '<tr><td>' + esc(r.c.name) + '</td><td class="n">' + fmt(a.clicks) + '</td><td class="n">' + chCell(dch(a.clicks, b.clicks), true) + '</td><td class="n">' + fmt(a.impressions) + '</td><td class="n">' + chCell(dch(a.impressions, b.impressions), true) + '</td><td class="n">' + a.ctr.toFixed(2) + '%</td><td class="n">' + posCell(a.position, b.position) + '</td><td class="n">' + (tot.cur.clicks ? (a.clicks / tot.cur.clicks * 100).toFixed(1) : '0.0') + '%</td></tr>'; }).join('') + '</tbody></table>';
+    var lines = function () { return core.map(function (c) { return { name: c.name, weeks: sWeeks(c.days) }; }); };
+    h += sChart(lines(), 'clicks', 'Clicks per week') + sChart(lines(), 'impressions', 'Impressions per week') + sChart(lines(), 'position', 'Average position per week (1 = top)');
+    var ms = core.map(function (c) { return sMonthly(c.days); }), allm = sMonthly(seg.total), keys = Object.keys(allm).sort();
+    h += '<table><thead><tr><th>Month</th>' + core.map(function (c) { return '<th>' + esc(c.name) + ' clicks</th>'; }).join('') + '<th>Core terms together</th><th>Share of all clicks</th></tr></thead><tbody>' + keys.slice().reverse().map(function (k) { var sum2 = 0; var cells = core.map(function (c, i) { var v = ms[i][k] ? ms[i][k].clicks : 0; sum2 += v; return '<td class="n">' + fmt(v) + '</td>'; }).join(''); return '<tr><td>' + esc(monLabel(k)) + '</td>' + cells + '<td class="n">' + fmt(sum2) + '</td><td class="n">' + (allm[k].clicks ? (sum2 / allm[k].clicks * 100).toFixed(1) : '0.0') + '%</td></tr>'; }).join('') + '</tbody></table>';
+    core.forEach(function (c) { h += detailTables((seg.details || {})[c.id], c.name); });
+    return h + '<p class="foot">Web search only, live from Search Console (about 16 months). A query counts in a term if it contains the phrase; queries Google hides cannot be assigned to any term.</p>';
+  }
+  function segFocus(seg, id) {
+    var f = (seg.segments || []).filter(function (x) { return x.id === id; })[0]; if (!f || !seg.total || !seg.total.length) return '';
+    var last = seg.total[seg.total.length - 1].date, tot = sStat(seg.total, last), st = sStat(f.days, last), a = st.cur, b = st.prev, all = sWin(f.days, '0000', '9999'), allTot = sWin(seg.total, '0000', '9999');
+    var h = '<h2>' + esc(f.name) + ' traffic</h2><p class="sub">Every query containing <b>' + f.include.map(esc).join('</b>, <b>') + '</b>' + (f.exclude.length ? ' but not <b>' + f.exclude.map(esc).join('</b>, <b>') + '</b>' : '') + '. Last 28 days (' + dLong(st.a) + ' to ' + dLong(last) + ') against the same 28 days a year earlier.</p>';
+    h += '<div class="tiles"><div class="tile"><span>Clicks</span><b>' + fmt(a.clicks) + '</b><em class="' + (a.clicks >= b.clicks ? 'ok' : 'bad') + '">' + (b.clicks ? (dch(a.clicks, b.clicks) >= 0 ? '+' : '') + dch(a.clicks, b.clicks).toFixed(0) + '% (was ' + fmt(b.clicks) + ')' : 'no data a year earlier') + '</em></div>'
+      + '<div class="tile"><span>Impressions</span><b>' + fmt(a.impressions) + '</b><em class="' + (a.impressions >= b.impressions ? 'ok' : 'bad') + '">' + (b.impressions ? (dch(a.impressions, b.impressions) >= 0 ? '+' : '') + dch(a.impressions, b.impressions).toFixed(0) + '% (was ' + fmt(b.impressions) + ')' : '') + '</em></div>'
+      + '<div class="tile"><span>Share of all web clicks</span><b>' + (tot.cur.clicks ? (a.clicks / tot.cur.clicks * 100).toFixed(1) : '0.0') + '%</b><em>' + (tot.prev.clicks ? (b.clicks / tot.prev.clicks * 100).toFixed(1) + '% a year earlier' : '') + '</em></div>'
+      + '<div class="tile"><span>Avg position</span><b>' + (a.position == null ? '—' : a.position.toFixed(1)) + '</b><em>' + (b.position == null ? '' : b.position.toFixed(1) + ' a year earlier') + '</em></div></div>';
+    h += sChart([{ name: f.name, weeks: sWeeks(f.days) }], 'clicks', f.name + ': clicks per week') + sChart([{ name: f.name, weeks: sWeeks(f.days) }], 'impressions', f.name + ': impressions per week');
+    var cross = (seg.cross || {})[id] || {}, core = (seg.segments || []).filter(function (x) { return x.kind === 'core'; });
+    if (core.length) h += '<p class="sub" style="margin-top:10px"><b>How much of each core term is ' + esc(f.name) + '</b> (queries containing both)</p><table><thead><tr><th>Core term</th><th>' + esc(f.name) + ' clicks, last 28 days</th><th>vs year earlier</th><th>Share of the term’s clicks</th><th>Whole window</th></tr></thead><tbody>' + core.map(function (c) { var d = cross[c.id] || [], x = sStat(d, last), t = sStat(c.days, last), w = sWin(d, '0000', '9999'); return '<tr><td>' + esc(c.name) + '</td><td class="n">' + fmt(x.cur.clicks) + '</td><td class="n">' + chCell(dch(x.cur.clicks, x.prev.clicks), true) + '</td><td class="n">' + (t.cur.clicks ? (x.cur.clicks / t.cur.clicks * 100).toFixed(0) + '%' : '—') + '</td><td class="n">' + fmt(w.clicks) + ' clicks</td></tr>'; }).join('') + '</tbody></table>';
+    var fm = sMonthly(f.days), tm = sMonthly(seg.total), keys = Object.keys(tm).sort();
+    h += '<table><thead><tr><th>Month</th><th>' + esc(f.name) + ' clicks</th><th>' + esc(f.name) + ' impressions</th><th>Share of all clicks</th></tr></thead><tbody>' + keys.slice().reverse().map(function (k) { var m = fm[k] || { clicks: 0, impressions: 0 }; return '<tr><td>' + esc(monLabel(k)) + '</td><td class="n">' + fmt(m.clicks) + '</td><td class="n">' + fmt(m.impressions) + '</td><td class="n">' + (tm[k].clicks ? (m.clicks / tm[k].clicks * 100).toFixed(1) : '0.0') + '%</td></tr>'; }).join('') + '</tbody></table>';
+    h += detailTables((seg.details || {})[id], f.name + ' queries and pages');
+    return h + '<p class="foot">Whole window: ' + fmt(all.clicks) + ' clicks and ' + fmt(all.impressions) + ' impressions, ' + (allTot.clicks ? (all.clicks / allTot.clicks * 100).toFixed(1) : '0.0') + '% of all web clicks. Web search only, live from Search Console (about 16 months). Queries that name a district or a neighbourhood but not the city are not included unless you add them as terms.</p>';
+  }
+
   function monthsSection(months) {
     if (!months || !months.length) return '';
     return '<h2>Saved days, by month</h2><p class="sub">Days Brand Checker saved before Google deleted them. A month marked partial has fewer saved days than the month has.</p><table><thead><tr><th>Month</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Avg position</th><th>Days saved</th></tr></thead><tbody>'
@@ -169,11 +231,20 @@
   function render(s) {
     var site = String(s.site || '').replace(/^sc-domain:/, '').replace(/^https?:\/\//, '').replace(/\/$/, '');
     var trend = (s.trend || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
-    var h = '<div class="gr"><h1>' + esc(site) + ': Search Console report</h1><p class="meta">Snapshot taken ' + esc(String(s.created || '').slice(0, 10)) + (trend.length ? ' · data up to ' + dLong(trend[trend.length - 1].date) : '') + '</p>';
-    if (trend.length >= 28) h += headline(trend) + trendSection(trend) + typesSection(trend, s.trend_types);
-    h += brandSection(s.brand) + monthsSection(s.months) + pagesSection(s.pages);
+    var kind = s.kind || 'full', focus = s.seg && (s.seg.segments || []).filter(function (x) { return x.id === s.focus; })[0];
+    var title = kind === 'core' ? 'Core terms' : kind === 'focus' && focus ? focus.name + ' traffic' : 'Search Console report';
+    var dataTo = s.seg && s.seg.total && s.seg.total.length ? s.seg.total[s.seg.total.length - 1].date : (trend.length ? trend[trend.length - 1].date : '');
+    var h = '<div class="gr"><h1>' + esc(site) + ': ' + esc(title.toLowerCase() === 'search console report' ? 'Search Console report' : title) + '</h1><p class="meta">Snapshot taken ' + esc(String(s.created || '').slice(0, 10)) + (dataTo ? ' · data up to ' + dLong(dataTo) : '') + '</p>';
+    if (kind === 'core') h += s.seg ? segCore(s.seg) : '<p>No data.</p>';
+    else if (kind === 'focus') h += s.seg ? segFocus(s.seg, s.focus) : '<p>No data.</p>';
+    else {
+      if (trend.length >= 28) h += headline(trend) + trendSection(trend) + typesSection(trend, s.trend_types);
+      h += brandSection(s.brand);
+      if (s.seg) { h += segCore(s.seg); (s.seg.segments || []).filter(function (x) { return x.kind === 'focus'; }).forEach(function (x) { h += segFocus(s.seg, x.id); }); }
+      h += monthsSection(s.months) + pagesSection(s.pages);
+    }
     h += '<p class="end">Figures are from Google Search Console for ' + esc(site) + '. Days older than Google’s 16-month window come from Brand Checker’s archive. Search Console’s own daily totals can differ slightly from the sum of query rows. Generated by Brand Checker (brandchecker.eu).</p></div>';
     return h;
   }
-  window.GscReport = { render: render, css: CSS, esc: esc, brand: { all: bAll, weeks: bWeeks, months: bMonths, sum: sum, stats: bStats, chart: bChart } };
+  window.GscReport = { render: render, css: CSS, esc: esc, seg: { core: segCore, focus: segFocus }, brand: { all: bAll, weeks: bWeeks, months: bMonths, sum: sum, stats: bStats, chart: bChart } };
 })();
