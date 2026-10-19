@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<script src="/assets/visitor.js"></script>
+<script src="/assets/gsc-report.js?v=13"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GSC Suite</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brand Checker">
+<meta property="og:url" content="https://brandchecker.eu/tools/gsc-suite/">
+<meta property="og:title" content="GSC Suite | Brand Checker">
+<meta property="og:description" content="Everything Search Console does not keep or show: a history past 16 months, expected-vs-actual ranges, brand split, segments, opportunities, lost winners, indexing and Core Web Vitals, with alerts, a weekly digest and shareable reports.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--you:#34517a;--ok:#00844a;--warn:#b45f00;--bad:#d40000}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#fff;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;line-height:1.5;padding:22px 16px 60px;font-size:16px}
+  .wrap{max-width:820px;margin:0 auto}
+  h1{margin:10px 0 8px}
+  .field{margin:0 0 20px}
+  .field label,.fl{display:block;font-weight:800;font-size:14px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.05em}
+  .hint{font-size:13.5px;color:#3d3d3d;margin:6px 0 0}
+  input[type=text],textarea{width:100%;padding:13px 14px;font-size:16px;font-family:inherit;border:3px solid #0a0a0a;border-radius:0;background:#fff;color:#0a0a0a}
+  input[type=text]:focus,textarea:focus{outline:3px solid #34517a;outline-offset:2px}
+  textarea{min-height:140px;resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:14px;line-height:1.6}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:620px){.row2{grid-template-columns:1fr}}
+  .err{margin:0 0 16px;padding:12px 14px}
+  .note{border:3px solid #0a0a0a;background:#f3f3ef;padding:14px 16px;margin:0 0 20px;font-size:14.5px}
+  .step{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#3d3d3d;margin:0 0 6px}
+  .sidenav{margin-top:36px;padding-top:20px;border-top:3px solid #0a0a0a;display:flex;flex-direction:column;gap:13px}
+  .sidenav-link{font-size:14px;font-weight:600}
+  body.embed .sidenav{display:none}
+
+  .run{border:3px solid #0a0a0a;padding:26px 20px;box-shadow:5px 5px 0 #0a0a0a;margin:0 0 24px;display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+  .spin{width:76px;height:76px;flex:none}
+  .spin circle{fill:none;stroke-width:9}
+  .spin .t{stroke:#e2e2dc}
+  .spin .f{stroke:#34517a;stroke-linecap:round;stroke-dasharray:70 160;transform-origin:50% 50%;animation:rot 1.1s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  .run ul{list-style:none;font-size:14.5px}
+  .run li{opacity:.4;transition:opacity .3s}
+  .run li.on{opacity:1;font-weight:700}
+  .run li.done{opacity:.75}
+  .run li.done::before{content:"✓ ";color:var(--ok);font-weight:900}
+
+  .hero{display:flex;gap:26px;align-items:center;flex-wrap:wrap;margin:0 0 28px}
+  .hero > div:last-child{flex:1 1 280px;min-width:0}
+  .ring{position:relative;width:170px;height:170px;flex:none}
+  .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .ring .tr{fill:none;stroke:#e2e2dc;stroke-width:14}
+  .ring .fi{fill:none;stroke-width:14;stroke-linecap:butt;transition:stroke-dashoffset 1.3s cubic-bezier(.2,.8,.2,1)}
+  .ring .n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;font-size:44px;letter-spacing:-.04em;line-height:1}
+  .ring .n small{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:500;color:#3d3d3d;margin-top:6px}
+  .hero h2{font-weight:900;font-size:clamp(22px,3.4vw,30px);letter-spacing:-.02em;line-height:1.15;margin:0 0 8px}
+  .hero p{font-size:15px;color:#3d3d3d;max-width:48ch}
+  .stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:0 0 30px}
+  @media(max-width:560px){.stats3{grid-template-columns:1fr}}
+  .sc3{border:3px solid #0a0a0a;padding:14px 16px;box-shadow:5px 5px 0 #0a0a0a;background:#fff}
+  .sc3 .v{font-weight:900;font-size:40px;letter-spacing:-.04em;line-height:1.05}
+  .sc3 .l{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:#3d3d3d}
+  .sc3.g .v{color:var(--bad)} .sc3.p .v{color:var(--warn)} .sc3.c .v{color:var(--ok)}
+  h3.h{font-weight:900;font-size:22px;letter-spacing:-.02em;text-transform:uppercase;margin:34px 0 6px}
+  p.sub{font-size:14.5px;color:#3d3d3d;margin:0 0 14px;max-width:62ch}
+
+  .comp{border:3px solid #0a0a0a;border-left-width:10px;padding:14px 16px 12px;margin:0 0 14px;background:#fff}
+  .comp.gap{border-left-color:var(--bad)} .comp.partial{border-left-color:var(--warn)} .comp.covered{border-left-color:var(--ok)}
+  .comp h4{font-weight:900;font-size:20px;letter-spacing:-.01em;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .badge{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;border:2px solid #0a0a0a;padding:1px 7px;font-weight:500}
+  .comp.gap .badge{background:var(--bad);color:#fff;border-color:var(--bad)} .comp.partial .badge{background:var(--warn);color:#fff;border-color:var(--warn)} .comp.covered .badge{background:var(--ok);color:#fff;border-color:var(--ok)}
+  .kv{display:grid;grid-template-columns:150px 1fr;gap:6px 14px;margin:10px 0 0;font-size:14.5px;align-items:start}
+  @media(max-width:560px){.kv{grid-template-columns:1fr;gap:2px 0}.kv dt{margin-top:8px}}
+  .kv dt{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#3d3d3d;padding-top:3px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip2{border:2px solid #0a0a0a;padding:2px 9px;font-size:13.5px;font-weight:700;background:#fff}
+  .chip2.y{background:var(--ok);color:#fff;border-color:var(--ok)} .chip2.n{color:var(--bad);border-color:var(--bad)}
+  .kv a{word-break:break-all}
+  .todo{margin:12px 0 0;padding:10px 12px;background:#f3f3ef;border-left:5px solid #0a0a0a;font-size:14.5px}
+  .todo li{margin:0 0 4px 18px}
+  .bars{margin:0 0 8px}
+  .hbar{display:grid;grid-template-columns:minmax(110px,190px) 1fr 44px;gap:10px;align-items:center;margin:0 0 7px;font-size:14.5px}
+  .hbar .t{height:16px;border:2px solid #0a0a0a;background:#fff}
+  .hbar .t i{display:block;height:100%;background:#34517a}
+  .hbar .t i.o{background:#C99A3E}
+  .hbar b{font-family:'IBM Plex Mono',monospace;font-size:13px;text-align:right}
+  .lst{border:2px solid #0a0a0a;padding:9px 14px;margin:0 0 8px;font-size:14.5px;word-break:break-word}
+  .lst small{display:block;color:#3d3d3d;font-size:12.5px}
+  details.ans{border:2px solid #0a0a0a;margin:0 0 8px;background:#fff}
+  details.ans summary{cursor:pointer;padding:10px 14px;font-weight:700;font-size:14.5px}
+  details.ans .body{padding:6px 16px 14px;border-top:2px solid #0a0a0a;font-size:14.5px}
+  details.ans ol{margin:6px 0 0 22px}
+  details.ans li.you{font-weight:900;background:#C99A3E;padding:0 6px;margin-left:-6px;list-style-position:inside}
+  details.ans .pre{white-space:pre-wrap}
+  details.ans .src{font-size:12.5px;color:#3d3d3d;margin-top:8px;word-break:break-all}
+  .share{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:26px 0 0}
+  .fine{font-size:12.5px;color:#3d3d3d;margin:18px 0 0;max-width:70ch}
+
+  .verdict{border:3px solid #0a0a0a;border-left-width:12px;padding:18px 20px;margin:0 0 24px;background:#fff;box-shadow:5px 5px 0 #0a0a0a}
+  .verdict.good{border-left-color:var(--ok)} .verdict.bad{border-left-color:var(--bad)} .verdict.warn{border-left-color:var(--warn)}
+  .verdict h2{font-weight:900;font-size:clamp(22px,3.6vw,32px);letter-spacing:-.02em;line-height:1.15;margin:0 0 6px}
+  .verdict p{font-size:15px;color:#3d3d3d;word-break:break-word}
+  .tblwrap{overflow-x:auto;margin:0 0 8px}
+  table.tbl{width:100%;border-collapse:collapse;border:3px solid #0a0a0a;min-width:560px}
+  .tbl th,.tbl td{border:2px solid #0a0a0a;padding:8px 12px;text-align:left;font-size:14px;vertical-align:top}
+  .tbl th{background:#0a0a0a;color:#fff;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+  .tbl td small{display:block;color:#3d3d3d;font-size:12px}
+  .tbl .num{font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+  .pill{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;border:2px solid #0a0a0a;padding:1px 7px;white-space:nowrap}
+  .pill.ok{background:var(--ok);color:#fff;border-color:var(--ok)} .pill.no{color:var(--bad);border-color:var(--bad)} .pill.wn{color:var(--warn);border-color:var(--warn)}
+  .ex{border:2px solid #0a0a0a;padding:8px 12px;margin:0 0 8px;font-size:14px;word-break:break-word}
+  .ex b{font-family:'IBM Plex Mono',monospace}
+  .ex small{color:#3d3d3d;display:block;font-size:12.5px}
+  .todo li{margin:0 0 6px 18px}
+
+  .card{border:3px solid #0a0a0a;padding:16px 18px;margin:0 0 18px;background:#fff}
+  .card h2{font-weight:900;font-size:18px;text-transform:uppercase;letter-spacing:-.01em;margin:0 0 6px}
+  .prop{border:3px solid #0a0a0a;border-left-width:10px;padding:12px 16px;margin:0 0 12px;background:#fff}
+  .prop.active{border-left-color:var(--ok)} .prop.error{border-left-color:var(--bad)} .prop.paused{border-left-color:#b8b8b0}
+  .prop h4{font-weight:900;font-size:17px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;word-break:break-all}
+  .prop .meta{font-size:13.5px;color:#3d3d3d;margin-top:3px}
+  .bar{height:14px;border:2px solid #0a0a0a;background:#fff;margin:8px 0 4px}
+  .bar i{display:block;height:100%;background:#34517a}
+  .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 18px}
+  @media(max-width:700px){.tiles{grid-template-columns:repeat(2,1fr)}}
+  .tile{border:3px solid #0a0a0a;padding:10px 12px;box-shadow:4px 4px 0 #0a0a0a;background:#fff}
+  .tile .k{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#3d3d3d}
+  .tile .v{font-weight:900;font-size:28px;letter-spacing:-.03em;line-height:1.1}
+  .tile .d{font-size:13px;font-weight:700}
+  .up{color:var(--ok)} .dn{color:var(--bad)}
+  .seg{display:inline-flex;border:3px solid #0a0a0a;margin:0 10px 12px 0;flex-wrap:wrap}
+  .seg button{font-family:inherit;font-weight:800;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;padding:8px 12px;background:#fff;color:#0a0a0a;border:0;border-right:3px solid #0a0a0a;cursor:pointer}
+  .seg button:last-child{border-right:0}
+  .seg button[aria-pressed=true]{background:#0a0a0a;color:#fff}
+  .chart{border:3px solid #0a0a0a;padding:10px;background:#fff;margin:0 0 12px}
+  .chart svg{width:100%;height:auto;display:block}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13.5px;margin:6px 0 0}
+  .legend i{display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:-1px}
+  .tblwrap{overflow-x:auto;margin:0 0 8px}
+  table.tbl{width:100%;border-collapse:collapse;border:3px solid #0a0a0a}
+  .tbl th,.tbl td{border:2px solid #0a0a0a;padding:7px 10px;text-align:left;font-size:13.5px;vertical-align:top;word-break:break-word}
+  .tbl th{background:#0a0a0a;color:#fff;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em}
+  .tbl .num{font-family:'IBM Plex Mono',monospace;white-space:nowrap;text-align:right}
+  select,input[type=date]{padding:8px 10px;font-size:14px;font-family:inherit;border:2px solid #0a0a0a;border-radius:0;background:#fff;color:#0a0a0a}
+  .toast{border:3px solid #0a0a0a;border-left:10px solid var(--ok);padding:10px 14px;margin:0 0 16px;background:#fff;font-size:14.5px}
+
+  .suitenav{position:sticky;top:0;z-index:20;background:#fff;border-bottom:3px solid #0a0a0a;margin:0 0 18px;padding:8px 0 0;display:flex;gap:0;overflow-x:auto}
+  .suitenav button{font-family:inherit;font-weight:800;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;padding:10px 14px;background:#fff;color:#0a0a0a;border:3px solid #0a0a0a;border-bottom:0;margin-right:-3px;cursor:pointer;white-space:nowrap}
+  .suitenav button[aria-selected=true]{background:#0a0a0a;color:#fff}
+  .view{display:none}.view.on{display:block}
+  .suitegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:0 0 20px}
+  @media(max-width:700px){.suitegrid{grid-template-columns:1fr}}
+  .suitegrid div{border:3px solid #0a0a0a;padding:12px 14px;background:#fff}
+  .suitegrid b{display:block;font-weight:900;text-transform:uppercase;letter-spacing:-.01em;font-size:14px;margin:0 0 3px}
+  .suitegrid span{font-size:14px;color:#3d3d3d}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+<link rel="stylesheet" href="/assets/sotu.css">
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Beta · needs a Brand Checker account or access code</p>
+  <h1>GSC Suite</h1>
+  <p class="lede">Everything Search Console does not keep or show you. Connect a property and the suite saves the days Google is about to delete, tells a normal dip from a real drop, splits brand from non-brand traffic, finds the queries worth working on, shows what happened to the pages that lost traffic, checks indexing and Core Web Vitals, and watches it all for you with alerts, a Monday digest and reports you can share.</p>
+
+  <div id="suiteIntro">
+    <div class="suitegrid">
+      <div><b>Overview</b><span>Google’s own 16-month trend with sustained drops flagged, search types, an expected-vs-actual range for every week, and the brand vs non-brand split.</span></div>
+      <div><b>Segments</b><span>Compare your core terms side by side and give any focus (a city, a product) its own report.</span></div>
+      <div><b>Opportunities</b><span>Queries just off page one, top rankings that barely get clicked, and queries split between two of your pages.</span></div>
+      <div><b>Recovery</b><span>The pages and queries that lost the most, what each address does now, suggested redirects, and a tracker that measures what your changes did.</span></div>
+      <div><b>Technical</b><span>Core Web Vitals from real Chrome users, and what Google’s own index says about your pages.</span></div>
+      <div><b>Archive</b><span>The days Google is about to delete, saved: daily totals, month comparisons, top queries and pages, every row as CSV.</span></div>
+      <div><b>Alerts &amp; reports</b><span>A daily page-health check, alerts when clicks fall below their expected range, a Monday digest, and PDF or shareable-link reports.</span></div>
+      <div><b>Free while in beta</b><span>Needs a Brand Checker account and read-only access to your Search Console.</span></div>
+    </div>
+  </div>
+  <div id="msg"></div>
+  <div id="gate" style="display:none"></div>
+  <div id="main" style="display:none">
+    <div id="props"></div>
+    <div class="card" id="addCard"><h2>Add a property</h2><p class="sub" style="margin:0 0 10px">Properties you have verified in Search Console. Adding one saves the five weeks of data Google is about to delete, then saves the next week every Monday.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><select id="siteSel" style="min-width:260px"></select><button class="btn2 solid" id="addBtn" type="button">Start archiving</button></div><div id="addMsg" style="margin-top:10px"></div></div>
+    <div id="view" style="display:none"></div>
+    <div class="card"><h2>What gets stored</h2><p style="font-size:14.5px">For each day we save, exact clicks, impressions, click-through rate and average position, plus every query-by-page row Search Console returns (up to 250,000 a day). We save a day when it is among the oldest five weeks Google still has, and each Monday we check the next week, so every day gets five chances before Google drops it. That means the archive starts with data about 15 months old and grows from there — for anything newer, use Search Console itself. Google anonymises rare queries, so the rows add up to slightly less than the exact total; the daily totals include them. The archive is private to your account, and “Stop and delete” removes every stored file and row. Free while in beta.</p></div>
+  </div>
+
+  <div class="sidenav"><a href="/" class="sidenav-link">← Back to tools</a><a href="/tools/page-audit/" class="sidenav-link">Page audit (shows Search Console data per page) →</a></div>
+</div>
+
+<script>
+var API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+var QS = new URLSearchParams(location.search);
+var CODE = window.BC_ACCOUNT || QS.get('k') || '';
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+var fmt = function (n) { return Math.round(Number(n || 0)).toLocaleString('en-US'); };
+function api(path, body) {
+  return fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ code: CODE }, body || {})) })
+    .then(function (r) { return r.json().catch(function () { return { error: 'The server sent an unreadable reply.' }; }); })
+    .catch(function () { return { error: 'Could not reach the server — check your connection.' }; });
+}
+var here = function () { return '/tools/gsc-suite/' + (QS.get('k') ? '?k=' + encodeURIComponent(QS.get('k')) : ''); };
+function signIn() { window.top.location.href = '/account/?return=' + encodeURIComponent(here()); }
+function connect() {
+  api('/gsc/start', { return_url: location.origin + here() }).then(function (r) {
+    if (r.signin_required) return signIn();
+    if (r.error || !r.url) return alert(r.error || 'Could not start the Search Console connection.');
+    window.top.location.href = r.url;
+  });
+}
+function gate(html) { $('gate').innerHTML = '<div class="card">' + html + '</div>'; $('gate').style.display = ''; $('main').style.display = 'none'; }
+function toast(t) { $('msg').innerHTML = '<div class="toast">' + esc(t) + '</div>'; }
+
+var ALLOWED = null, STATUS = null, PROPS = [], CUR = null, DAYS = [], poll = null;
+function init() {
+  var g = QS.get('gsc');
+  if (g) { var u = new URL(location.href); u.searchParams.delete('gsc'); history.replaceState(null, '', u.pathname + u.search); }
+  if (g === 'connected') toast('Search Console connected. Pick a property below to start archiving.');
+  else if (g === 'cancelled') toast('The Search Console connection was cancelled.');
+  else if (g) toast('The Search Console connection didn’t complete — please try again.');
+  if (!CODE || /^v-[a-f0-9]{24}$/.test(CODE)) return gate('<h2>Sign in first</h2><p style="margin:0 0 12px">The archive belongs to your Brand Checker account, so it keeps working even if you clear your browser.</p><button class="btn2 solid" type="button" onclick="signIn()">Sign in or create an account</button>');
+  api('/gsc/status').then(function (st) {
+    STATUS = st;
+    if (st.signin_required) return gate('<h2>Sign in first</h2><button class="btn2 solid" type="button" onclick="signIn()">Sign in or create an account</button>');
+    if (!st.configured) return gate('<h2>Not switched on yet</h2><p>Search Console isn’t set up on this server yet.</p>');
+    if (!st.connected) return gate('<h2>Connect Search Console</h2><p style="margin:0 0 12px">Read-only access to your Search Console data. You can disconnect any time, and stopping an archive deletes what was stored.' + (st.error ? ' <b>' + esc(st.error) + '</b>' : '') + '</p><button class="btn2 solid" type="button" onclick="connect()">Connect Search Console</button>');
+    $('gate').style.display = 'none'; $('main').style.display = ''; loadList();
+  });
+}
+
+function loadList() {
+  api('/gsc-archive/list').then(function (r) {
+    if (r.error) { $('props').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+    PROPS = r.properties || []; ALLOWED = r.allowed || null;
+    renderProps(); renderAdd();
+    clearTimeout(poll);
+    if (PROPS.some(function (p) { return p.status === 'active' && p.days < p.days_expected - 2; })) poll = setTimeout(loadList, 20000);
+  });
+}
+function renderProps() {
+  $('props').innerHTML = PROPS.length ? PROPS.map(function (p) {
+    var pct = Math.min(100, Math.round(100 * p.days / p.days_expected)), running = p.status === 'active' && p.days < p.days_expected - 5;
+    return '<div class="prop ' + p.status + '"><h4>' + esc(p.site_url) + '</h4><div class="meta">' + (p.status === 'error' ? '<b style="color:var(--bad)">Stopped: ' + esc(p.error || 'the Search Console connection failed') + '</b> — reconnect, then add it again.' : p.status === 'paused' ? 'Paused.' : running ? 'Saving the five weeks Google is about to delete — ' + p.days + ' of ' + p.days_expected + ' days so far (a couple of minutes).' : 'Up to date — ' + p.days + ' days saved. The next week is saved on Monday.') + (p.first_day ? ' · ' + esc(p.first_day) + ' to ' + esc(p.last_day) : '') + ' · ' + fmt(p.rows) + ' rows · ' + (p.bytes / 1048576).toFixed(1) + ' MB</div>' +
+      (running ? '<div class="bar"><i style="width:' + pct + '%"></i></div>' : '') +
+      '<div class="acts">' + (p.days ? '<button class="btn2 small" type="button" data-view="' + p.id + '">View archive</button>' : '') + (p.status === 'error' ? '<button class="btn2 small" type="button" onclick="connect()">Reconnect</button>' : '') + '<button class="btn2 small" type="button" data-del="' + p.id + '">Stop and delete</button></div></div>';
+  }).join('') : '';
+  $('props').querySelectorAll('[data-view]').forEach(function (b) { b.onclick = function () { openView(b.dataset.view); }; });
+  $('props').querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () {
+    var p = PROPS.filter(function (x) { return x.id === b.dataset.del; })[0];
+    if (!confirm('Stop archiving ' + p.site_url + ' and delete the ' + p.days + ' days stored? This cannot be undone.')) return;
+    api('/gsc-archive/remove', { id: p.id }).then(function (r) { if (r.error) return alert(r.error); if (CUR === p.id) { CUR = null; $('view').style.display = 'none'; } loadList(); });
+  }; });
+}
+function renderAdd() {
+  var have = {}; PROPS.forEach(function (p) { have[p.site_url] = 1; });
+  var dom = function (s) { return String(s).replace(/^sc-domain:/i, '').replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0].toLowerCase(); };
+  var sites = (STATUS.sites || []).filter(function (s) { return !have[s] && (!ALLOWED || ALLOWED.indexOf(dom(s)) !== -1); });
+  $('siteSel').innerHTML = sites.length ? sites.map(function (s) { return '<option>' + esc(s) + '</option>'; }).join('') : '<option value="">' + (ALLOWED ? 'Nothing to add — archiving is limited to ' + esc(ALLOWED.join(', ')) : 'No more properties to add') + '</option>';
+  $('addBtn').disabled = !sites.length;
+}
+$('addBtn').onclick = function () {
+  var site = $('siteSel').value; if (!site) return;
+  $('addBtn').disabled = true; $('addMsg').innerHTML = '<p class="hint">Starting…</p>';
+  api('/gsc-archive/add', { site_url: site }).then(function (r) {
+    $('addBtn').disabled = false;
+    if (r.signin_required) return signIn();
+    if (r.error) { $('addMsg').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; if (r.connected === false) $('addMsg').innerHTML += '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>'; return; }
+    $('addMsg').innerHTML = '<div class="toast">Archiving ' + esc(r.site_url) + '. The first five weeks are saved in the background — you can close this page. A new week is added every Monday.</div>'; loadList();
+  });
+};
+
+/* ---- year-on-year comparison: a month (or three) against the same dates a year later ---- */
+var MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function monLabel(m) { return MN[+m.slice(5) - 1] + ' ' + m.slice(0, 4); }
+function addMon(m, n) { var t = +m.slice(0, 4) * 12 + (+m.slice(5) - 1) + n; return Math.floor(t / 12) + '-' + ('0' + ((t % 12) + 1)).slice(-2); }
+function compareCard() {
+  var o = CMP.opts, h = '<div class="card" id="cmpCard"><h2>Compare with the following year</h2>';
+  if (!o || !o.months.length) return h + '<p class="hint">Nothing to compare yet — a month can be compared once a year later has started and Search Console (or the archive) has its data.</p></div>';
+  var ok = o.months.filter(function (m) { return m.available && m.twin_available; });
+  if (!ok.length) return h + '<p class="hint">No saved month has its next-year twin available yet.</p></div>';
+  if (!ok.some(function (m) { return m.month === CMP.start; })) CMP.start = ok[ok.length - 1].month;
+  h += '<p class="sub" style="margin:0 0 10px">Pick a month — by default the one you most recently archived — and see it against the same dates a year later. The earlier side comes from the archive, the later side from Search Console while Google still has it (about 16 months).</p>' +
+    '<div class="seg" data-g="cmpmonths"><button type="button" data-v="1" aria-pressed="' + (CMP.months === 1) + '">One month</button><button type="button" data-v="3" aria-pressed="' + (CMP.months === 3) + '">Three months</button></div>' +
+    '<select id="cmpStart">' + ok.map(function (m) { var label = CMP.months === 3 ? monLabel(m.month) + ' – ' + monLabel(addMon(m.month, 2)) : monLabel(m.month); return '<option value="' + m.month + '"' + (m.month === CMP.start ? ' selected' : '') + '>' + label + (m.stored ? ' (' + m.stored + ' days archived)' : '') + '</option>'; }).join('') + '</select> ' +
+    '<button class="btn2 small" type="button" id="cmpGo">Compare</button><div id="cmpOut" style="margin-top:14px">' + (CMP.data ? '' : '<p class="hint">Press Compare.</p>') + '</div></div>';
+  return h;
+}
+function wireCompare(site) {
+  var card = $('cmpCard'); if (!card) return;
+  card.querySelectorAll('.seg[data-g="cmpmonths"] button').forEach(function (b) { b.onclick = function () { CMP.months = +b.dataset.v; CMP.data = null; drawView(site); }; });
+  var st = $('cmpStart'); if (st) st.onchange = function () { CMP.start = st.value; };
+  var go = $('cmpGo'); if (go) go.onclick = function () { runCompare(); };
+  if (CMP.data) renderCompare();
+}
+function runCompare() {
+  var out = $('cmpOut'); out.innerHTML = '<p class="hint">Comparing — reading both periods from the archive and Search Console…</p>';
+  api('/gsc-archive/compare', { id: CUR, start: CMP.start, months: CMP.months }).then(function (r) {
+    if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>' + (r.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : ''); return; }
+    CMP.data = r; renderCompare();
+  });
+}
+function chg(v, lowerBetter, unit) { if (v == null) return ''; var good = lowerBetter ? v < 0 : v > 0; return '<span class="d ' + (good ? 'up' : 'dn') + '">' + (v >= 0 ? '+' : '') + v + (unit || '%') + ' vs the earlier period</span>'; }
+function renderCompare() {
+  var d = CMP.data, out = $('cmpOut'), t = d.totals;
+  var h = '<p class="sub" style="margin:0 0 10px"><b>' + esc(d.a.start) + ' → ' + esc(d.a.end) + '</b> (' + esc(d.a.source) + ', ' + d.a.days + ' days) against <b>' + esc(d.b.start) + ' → ' + esc(d.b.end) + '</b> (' + esc(d.b.source) + ', ' + d.b.days + ' days)</p>';
+  h += '<div class="tiles"><div class="tile"><div class="k">Clicks</div><div class="v">' + fmt(t.b.clicks) + '</div><div class="d" style="color:#3d3d3d;font-weight:400">was ' + fmt(t.a.clicks) + '</div>' + chg(t.change.clicks) + '</div>' +
+    '<div class="tile"><div class="k">Impressions</div><div class="v">' + fmt(t.b.impressions) + '</div><div class="d" style="color:#3d3d3d;font-weight:400">was ' + fmt(t.a.impressions) + '</div>' + chg(t.change.impressions) + '</div>' +
+    '<div class="tile"><div class="k">CTR</div><div class="v">' + (t.b.ctr * 100).toFixed(2) + '%</div><div class="d" style="color:#3d3d3d;font-weight:400">was ' + (t.a.ctr * 100).toFixed(2) + '%</div>' + chg(t.change.ctr) + '</div>' +
+    '<div class="tile"><div class="k">Avg position</div><div class="v">' + (t.b.position == null ? '—' : t.b.position.toFixed(1)) + '</div><div class="d" style="color:#3d3d3d;font-weight:400">was ' + (t.a.position == null ? '—' : t.a.position.toFixed(1)) + '</div>' + (t.change.position == null ? '' : '<span class="d ' + (t.change.position < 0 ? 'up' : 'dn') + '">' + (t.change.position >= 0 ? '+' : '') + t.change.position + ' places</span>') + '</div></div>';
+  h += '<div class="seg" data-g="cmetric">' + [['clicks', 'Clicks'], ['impressions', 'Impressions'], ['ctr', 'CTR'], ['position', 'Position']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (CMP.metric === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div><div id="cmpChart"></div>';
+  [['queries', 'Queries'], ['pages', 'Pages']].forEach(function () {});
+  if (d.queries || d.pages) {
+    h += '<div class="seg" data-g="ckind"><button type="button" data-v="queries" aria-pressed="' + (CMP.kind === 'queries') + '">Queries</button><button type="button" data-v="pages" aria-pressed="' + (CMP.kind === 'pages') + '">Pages</button></div>' +
+      '<div class="seg" data-g="clist">' + [['gainers', 'Gained clicks'], ['losers', 'Lost clicks'], ['new_in_b', 'New this year'], ['lost_from_a', 'Gone this year']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (CMP.list === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div><div id="cmpList"></div>';
+  }
+  if (d.notes && d.notes.length) h += '<ul style="margin:10px 0 0 20px;font-size:13.5px;color:#3d3d3d">' + d.notes.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
+  out.innerHTML = h;
+  out.querySelectorAll('.seg').forEach(function (seg) { seg.querySelectorAll('button').forEach(function (b) { b.onclick = function () {
+    var g = seg.dataset.g; if (g === 'cmetric') CMP.metric = b.dataset.v; else if (g === 'ckind') CMP.kind = b.dataset.v; else if (g === 'clist') CMP.list = b.dataset.v;
+    seg.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+    if (g === 'cmetric') drawCmpChart(); else drawCmpList();
+  }; }); });
+  drawCmpChart(); drawCmpList();
+}
+function drawCmpChart() {
+  var d = CMP.data, box = $('cmpChart'); if (!box) return;
+  var n = d.daily.a.length, weekly = n > 45;
+  var save = { g: GRAN, m: METRIC }; GRAN = weekly ? 'week' : 'day'; METRIC = CMP.metric;
+  var cur = aggregate(d.daily.a), prevDays = d.daily.b.map(function (x, i) { return Object.assign({}, x, { date: d.daily.a[i] ? d.daily.a[i].date : x.date }); });
+  var prev = aggregate(prevDays);
+  var html = chart(cur, prev.map(function (b) { return b; }));
+  GRAN = save.g; METRIC = save.m;
+  box.innerHTML = html.replace('This period', 'Earlier period (' + esc(d.a.start.slice(0, 4)) + ')').replace('Same period a year earlier', 'A year later (' + esc(d.b.start.slice(0, 4)) + ')') + (weekly ? '<p class="hint">Shown by week because the period is long.</p>' : '');
+}
+function drawCmpList() {
+  var d = CMP.data, box = $('cmpList'); if (!box) return;
+  var src = d[CMP.kind]; if (!src) { box.innerHTML = '<p class="hint">No ' + CMP.kind + ' comparison for this period (see the notes below).</p>'; return; }
+  var rows = src[CMP.list] || [], two = CMP.list === 'gainers' || CMP.list === 'losers', label = CMP.kind === 'queries' ? 'Query' : 'Page';
+  if (!rows.length) { box.innerHTML = '<p class="hint">Nothing in this list.</p>'; return; }
+  var head = two ? '<tr><th>' + label + '</th><th>Clicks (earlier)</th><th>Clicks (later)</th><th>Change</th><th>Position</th></tr>' : '<tr><th>' + label + '</th><th>Clicks</th><th>Impressions</th><th>Position</th></tr>';
+  var body = rows.map(function (r) { return two ? '<tr><td>' + esc(r.key) + '</td><td class="num">' + fmt(r.a.clicks) + '</td><td class="num">' + fmt(r.b.clicks) + '</td><td class="num"><span class="' + (r.delta >= 0 ? 'up' : 'dn') + '">' + (r.delta >= 0 ? '+' : '') + fmt(r.delta) + '</span></td><td class="num">' + r.a.position + ' → ' + r.b.position + '</td></tr>' : '<tr><td>' + esc(r.key) + '</td><td class="num">' + fmt(r.clicks) + '</td><td class="num">' + fmt(r.impressions) + '</td><td class="num">' + r.position + '</td></tr>'; }).join('');
+  box.innerHTML = '<div class="tblwrap"><table class="tbl">' + head + body + '</table></div><p class="hint">' + src.shared + ' ' + CMP.kind + ' appear on both sides. Sources: ' + esc(src.a_source) + ' → ' + esc(src.b_source) + '.</p><div class="acts"><button class="btn2 small" type="button" id="cmpCsv">Download (CSV)</button></div>';
+  $('cmpCsv').onclick = function () {
+    var csv = two ? [[label, 'clicks earlier', 'clicks later', 'change', 'position earlier', 'position later']].concat(rows.map(function (r) { return [r.key, r.a.clicks, r.b.clicks, r.delta, r.a.position, r.b.position]; })) : [[label, 'clicks', 'impressions', 'position']].concat(rows.map(function (r) { return [r.key, r.clicks, r.impressions, r.position]; }));
+    download('gsc-compare-' + CMP.kind + '-' + CMP.list + '-' + d.a.start + '.csv', toCsv(csv));
+  };
+}
+
+/* ---- trend: Google's own daily totals for the whole window it still has (about 16 months), by week ---- */
+function loadTrend() {
+  if (TREND.id === CUR && (TREND.data || TREND.error)) { renderTrend(); return; }
+  TREND.id = CUR; TREND.data = null; TREND.types = null; TREND.type = 'web'; TREND.error = null;
+  api('/gsc-archive/live-types', { id: CUR }).then(function (r) {
+    if (r.error) TREND.error = r; else { TREND.types = r.types || {}; TREND.errors = r.errors || {}; TREND.data = TREND.types.web || []; }
+    renderTrend();
+  });
+}
+var TYPE_LABELS = { web: 'Web', image: 'Image', video: 'Video', news: 'News', discover: 'Discover', googleNews: 'Google News' };
+var TYPE_ORDER = ['web', 'image', 'video', 'news', 'discover', 'googleNews'];
+function typeHasData(days) { return (days || []).some(function (d) { return d.clicks > 0 || d.impressions > 0; }); }
+// What each search type did in the latest 28 days, against the same 28 days a year earlier, and over the whole window.
+function typeStats() {
+  var web = (TREND.types && TREND.types.web) || []; if (!web.length) return [];
+  var last = web[web.length - 1].date, a0 = addDays(last, -27), pl = new Date(last + 'T00:00:00Z'); pl.setUTCFullYear(pl.getUTCFullYear() - 1); var b1 = pl.toISOString().slice(0, 10), b0 = addDays(b1, -27);
+  var all = 0; TYPE_ORDER.forEach(function (k) { (TREND.types[k] || []).forEach(function (d) { all += d.clicks; }); });
+  return TYPE_ORDER.filter(function (k) { return typeHasData(TREND.types[k]); }).map(function (k) {
+    var days = TREND.types[k], c = 0, im = 0, pc = 0, tc = 0, ti = 0;
+    days.forEach(function (d) { tc += d.clicks; ti += d.impressions; if (d.date >= a0 && d.date <= last) { c += d.clicks; im += d.impressions; } if (d.date >= b0 && d.date <= b1) pc += d.clicks; });
+    return { type: k, c: c, im: im, pc: pc, tc: tc, ti: ti, share: all ? tc / all * 100 : 0 };
+  });
+}
+function typeBlock() {
+  var st = typeStats(); if (!st.length) return '';
+  var none = TYPE_ORDER.filter(function (k) { return !typeHasData(TREND.types[k]) && !TREND.errors[k]; }).map(function (k) { return TYPE_LABELS[k]; }), bad = Object.keys(TREND.errors || {}).map(function (k) { return TYPE_LABELS[k] || k; });
+  var h = '<h3 class="h" style="font-size:16px;margin:2px 0 6px">By search type</h3><div class="tblwrap"><table class="tbl"><tr><th>Type</th><th>Clicks, last 28 days</th><th>vs a year earlier</th><th>Impressions, last 28 days</th><th>Clicks, whole window</th><th>Share of clicks</th></tr>' + st.map(function (r) {
+    var ch = r.pc ? ((r.c - r.pc) / r.pc * 100) : null;
+    return '<tr><td>' + esc(TYPE_LABELS[r.type]) + '</td><td class="num">' + fmt(r.c) + '</td><td class="num">' + (ch == null ? '—' : '<span class="' + (ch >= 0 ? 'up' : 'dn') + '">' + (ch >= 0 ? '+' : '') + ch.toFixed(0) + '%</span>') + '</td><td class="num">' + fmt(r.im) + '</td><td class="num">' + fmt(r.tc) + '</td><td class="num">' + r.share.toFixed(1) + '%</td></tr>';
+  }).join('') + '</table></div>' + (none.length ? '<p class="hint">No data in this window for: ' + esc(none.join(', ')) + '.</p>' : '') + (bad.length ? '<p class="hint">Search Console did not return: ' + esc(bad.join(', ')) + '.</p>' : '');
+  var have = TYPE_ORDER.filter(function (k) { return typeHasData(TREND.types[k]); });
+  if (have.length > 1) h += '<div class="seg" data-g="ttype">' + have.map(function (k) { return '<button type="button" data-v="' + k + '" aria-pressed="' + (TREND.type === k) + '">' + esc(TYPE_LABELS[k]) + '</button>'; }).join('') + '</div>';
+  return h;
+}
+function weeklyOf(days) {
+  var m = {}, order = [];
+  days.forEach(function (d) { var dt = new Date(d.date + 'T00:00:00Z'), dow = (dt.getUTCDay() + 6) % 7; dt.setUTCDate(dt.getUTCDate() - dow); var k = dt.toISOString().slice(0, 10), b = m[k]; if (!b) { b = m[k] = { k: k, clicks: 0, impressions: 0, w: 0, n: 0 }; order.push(k); } b.clicks += d.clicks; b.impressions += d.impressions; b.w += (d.position || 0) * d.impressions; b.n++; });
+  var out = order.map(function (k) { var b = m[k]; return { k: k, clicks: b.clicks, impressions: b.impressions, ctr: b.impressions ? b.clicks / b.impressions * 100 : 0, position: b.impressions ? b.w / b.impressions : null, n: b.n }; });
+  return out.filter(function (b) { return b.n === 7; });   // whole weeks only
+}
+// Sustained drops: a week where the next four weeks average well under the four before it. The deepest ones, kept apart.
+function findDrops(weeks, metric) {
+  var v = weeks.map(function (w) { return w[metric]; }), found = [];
+  for (var i = 4; i + 4 <= v.length; i++) {
+    var before = (v[i - 4] + v[i - 3] + v[i - 2] + v[i - 1]) / 4, after = (v[i] + v[i + 1] + v[i + 2] + v[i + 3]) / 4;
+    if (before >= (metric === 'clicks' ? 20 : 200) && after / before <= 0.65) found.push({ i: i, ratio: after / before, before: before, after: after });   // tiny weekly numbers are noise
+  }
+  found.sort(function (a, b) { return a.ratio - b.ratio; });
+  var kept = []; found.forEach(function (f) { if (!kept.some(function (k) { return Math.abs(k.i - f.i) < 8; })) kept.push(f); });
+  return kept.slice(0, 3).sort(function (a, b) { return a.i - b.i; });
+}
+var DLONG = function (iso) { var p = iso.split('-'); return +p[2] + ' ' + MN[+p[1] - 1] + ' ' + p[0]; };
+function renderTrend() {
+  var box = $('trendOut'); if (!box) return;
+  if (TREND.error) { box.innerHTML = '<div class="err">' + esc(TREND.error.error) + '</div>' + (TREND.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : ''); return; }
+  var tdata = (TREND.types && TREND.types[TREND.type]) || TREND.data || [], tb = typeBlock(), weeks = weeklyOf(tdata);
+  var wireSegs = function () { box.querySelectorAll('.seg button').forEach(function (b) { b.onclick = function () { var g = b.parentNode.dataset.g; if (g === 'ttype') TREND.type = b.dataset.v; else TREND.metric = b.dataset.v; renderTrend(); }; }); };
+  if (weeks.length < 6 || !typeHasData(tdata)) { box.innerHTML = tb + '<p class="hint">' + (typeHasData(tdata) ? 'Not enough weeks yet.' : 'No ' + esc(TYPE_LABELS[TREND.type] || TREND.type) + ' data in this window.') + '</p>'; wireSegs(); return; }
+  var metric = TREND.metric, drops = metric === 'position' ? [] : findDrops(weeks, metric);
+  var W = 760, H = 300, L = 56, R = 16, T = 26, B = 34, n = weeks.length;
+  var vals = weeks.map(function (w) { return w[metric]; }), max = Math.max.apply(null, vals), min = metric === 'position' ? 1 : 0; if (metric === 'position') max = Math.ceil(max);
+  var x = function (i) { return L + (W - L - R) * i / (n - 1); }, y = function (v) { var t = (v - min) / (max - min || 1); return T + (H - T - B) * (metric === 'position' ? t : 1 - t); };
+  var g = '', f = function (v) { return metric === 'ctr' ? v.toFixed(1) + '%' : metric === 'position' ? v.toFixed(0) : (v >= 10000 ? Math.round(v / 1000) + 'k' : fmt(v)); };
+  for (var t = 0; t <= 4; t++) { var v = min + (max - min) * t / 4, yy = T + (H - T - B) * (metric === 'position' ? t / 4 : 1 - t / 4); g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#e2e2dc"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="11" fill="#3d3d3d">' + f(v) + '</text>'; }
+  weeks.forEach(function (w, i) { if (i % 8 === 0) g += '<text x="' + x(i) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="11" fill="#3d3d3d">' + MN[+w.k.slice(5, 7) - 1] + ' ' + w.k.slice(2, 4) + '</text>'; });
+  // The days the archive has saved sit under the line as a band.
+  if (DAYS.length && TREND.type === 'web') {
+    var a0 = DAYS[0].date, a1 = DAYS[DAYS.length - 1].date, i0 = weeks.findIndex(function (w) { return w.k >= a0; }), i1 = -1; weeks.forEach(function (w, i) { if (w.k <= a1) i1 = i; });
+    if (i0 !== -1 && i1 >= i0) g += '<rect x="' + x(i0) + '" y="' + T + '" width="' + Math.max(4, x(i1) - x(i0)) + '" height="' + (H - T - B) + '" fill="#34517a" opacity=".10"/><text x="' + (x(i0) + 3) + '" y="' + (T + 11) + '" font-size="10.5" fill="#34517a">saved in the archive</text>';
+  }
+  g += '<polyline fill="none" stroke="#34517A" stroke-width="3" stroke-linejoin="round" points="' + weeks.map(function (w, i) { return x(i).toFixed(1) + ',' + y(w[metric]).toFixed(1); }).join(' ') + '"/>';
+  drops.forEach(function (d) { var xx = x(d.i); g += '<line x1="' + xx + '" x2="' + xx + '" y1="' + T + '" y2="' + (H - B) + '" stroke="#d40000" stroke-width="2" stroke-dasharray="5 4"/><text x="' + (xx + 5) + '" y="' + (T + 24) + '" font-size="11" font-weight="700" fill="#d40000">' + Math.round((1 - d.ratio) * 100) + '% drop</text><text x="' + (xx + 5) + '" y="' + (T + 37) + '" font-size="10.5" fill="#d40000">week of ' + esc(MN[+weeks[d.i].k.slice(5, 7) - 1] + ' ' + (+weeks[d.i].k.slice(8))) + '</text>'; });
+  var last = weeks[n - 1], peak = weeks.reduce(function (p, w) { return w[metric] > p[metric] ? w : p; }, weeks[0]);
+  var tiles = metric === 'position' ? '' : '<div class="tiles"><div class="tile"><div class="k">Peak week</div><div class="v">' + f(peak[metric]) + '</div><div class="d" style="color:#3d3d3d;font-weight:400">week of ' + esc(DLONG(peak.k)) + '</div></div><div class="tile"><div class="k">Latest full week</div><div class="v">' + f(last[metric]) + '</div><div class="d" style="color:#3d3d3d;font-weight:400">week of ' + esc(DLONG(last.k)) + '</div></div><div class="tile"><div class="k">Since the peak</div><div class="v ' + (last[metric] < peak[metric] ? 'dn' : 'up') + '">' + (peak[metric] ? (last[metric] / peak[metric] * 100 - 100).toFixed(0) : 0) + '%</div><div class="d" style="color:#3d3d3d;font-weight:400">latest vs peak week</div></div><div class="tile"><div class="k">Window</div><div class="v">' + n + '</div><div class="d" style="color:#3d3d3d;font-weight:400">weeks, ' + esc(DLONG(weeks[0].k)) + ' on</div></div></div>';
+  var list = drops.length ? '<h3 class="h" style="font-size:16px;margin:14px 0 6px">Sustained drops</h3><ul style="margin:0 0 6px 20px;font-size:14.5px">' + drops.map(function (d) { return '<li><b>Week of ' + esc(DLONG(weeks[d.i].k)) + '</b> — the next four weeks averaged <b>' + f(d.after) + '</b> a week, against <b>' + f(d.before) + '</b> in the four before (' + Math.round((1 - d.ratio) * 100) + '% lower).</li>'; }).join('') + '</ul><p class="hint">A drop is flagged when the four weeks after a week average under 65% of the four weeks before it. It shows when something changed, not why — check what was published, moved or removed around those dates.</p>' : (metric === 'position' ? '' : '<p class="hint">No sustained drop of more than a third in this window.</p>');
+  box.innerHTML = tb + '<p class="sub" style="margin:10px 0 10px">' + esc(TYPE_LABELS[TREND.type] || 'Web') + ' search · Google’s own weekly totals for the last ' + n + ' full weeks — the part of the history Search Console still serves.' + (TREND.type === 'web' ? ' The shaded band is what the archive has saved, so you can see how much of the past is kept beyond this.' : '') + '</p>' +
+    '<div class="seg" data-g="tmetric">' + [['clicks', 'Clicks'], ['impressions', 'Impressions'], ['ctr', 'CTR'], ['position', 'Position']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (metric === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' + tiles +
+    '<div class="chart"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Weekly ' + metric + ' over the last 16 months">' + g + '</svg></div>' + list;
+  wireSegs();
+}
+
+/* ---- where the traffic went: what each page that earned clicks in an archived month does today ---- */
+var PS_KINDS = [['live', 'Still live', 'ok'], ['moved', 'Moved to another page', 'ok'], ['home', 'Redirected to the homepage', 'bad'], ['gone', 'Gone (404 / 410)', 'bad'], ['elsewhere', 'Sent to another site', 'bad'], ['noindex', 'Live, but noindex', 'bad'], ['error', 'Could not check', 'na']];
+function pageStatusCard() {
+  var h = '<div class="card" id="psCard"><h2>Where the traffic went</h2>';
+  if (!TOPMONTHS.length) return h + '<p class="hint">Available once a month’s page list has been rolled up.</p></div>';
+  if (!PS.month || TOPMONTHS.indexOf(PS.month) < 0) PS.month = TOPMONTHS[0];
+  h += '<p class="sub" style="margin:0 0 10px">Takes the pages that earned clicks in an archived month and checks what each address does <b>today</b>: still live, moved, redirected to the homepage, gone, or sent to another site. It shows how much of the old traffic sits on pages that no longer exist.</p>' +
+    '<select id="psMonth">' + TOPMONTHS.map(function (m) { return '<option value="' + m + '"' + (m === PS.month ? ' selected' : '') + '>' + monLabel(m) + '</option>'; }).join('') + '</select> ' +
+    '<select id="psMax">' + [60, 120, 200].map(function (n) { return '<option value="' + n + '"' + (n === PS.max ? ' selected' : '') + '>Top ' + n + ' pages</option>'; }).join('') + '</select> ' +
+    '<button class="btn2 small" type="button" id="psGo">Check these pages</button><div id="psOut" style="margin-top:14px">' + (PS.rows.length ? '' : '<p class="hint">Press the button. Each page is requested once from here (a cheap HEAD request), so it takes about half a minute for 120 pages.</p>') + '</div></div>';
+  return h;
+}
+function wirePageStatus(site) {
+  PS.site = site || PS.site || '';
+  var go = $('psGo'); if (!go) return;
+  $('psMonth').onchange = function () { PS.month = this.value; PS.rows = []; PS.meta = null; PS.token++; $('psOut').innerHTML = '<p class="hint">Press the button.</p>'; };
+  $('psMax').onchange = function () { PS.max = +this.value; };
+  go.onclick = runPageStatus;
+  if (PS.rows.length) renderPageStatus();
+}
+function runPageStatus() {
+  var tok = ++PS.token, out = $('psOut'), go = $('psGo'); PS.rows = []; PS.meta = null; PS.filter = 'all'; go.disabled = true;
+  var step = function (offset) {
+    out.innerHTML = '<p class="hint">Checking pages… ' + offset + (PS.total ? ' of ' + Math.min(PS.total, PS.max) : '') + '</p><div class="bar"><i style="width:' + (PS.total ? Math.round(offset / Math.min(PS.total, PS.max) * 100) : 3) + '%"></i></div>';
+    api('/gsc-archive/page-status', { id: CUR, month: PS.month, offset: offset, limit: 40, max: PS.max }).then(function (r) {
+      if (tok !== PS.token) return;
+      if (r.error) { go.disabled = false; out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+      PS.total = r.total; PS.meta = r; PS.rows = PS.rows.concat(r.rows || []);
+      var next = offset + 40;
+      if (r.rows && r.rows.length && next < Math.min(r.total, PS.max)) step(next); else { go.disabled = false; renderPageStatus(); }
+    }).catch(function () { if (tok !== PS.token) return; go.disabled = false; out.innerHTML = '<div class="err">The check was interrupted. ' + (PS.rows.length ? PS.rows.length + ' pages were checked.' : '') + ' Try again.</div>'; if (PS.rows.length) renderPageStatus(); });
+  };
+  PS.total = 0; step(0);
+}
+function renderPageStatus() {
+  var out = $('psOut'), rows = PS.rows, m = PS.meta || {}, tc = 0, ti = 0, by = {};
+  rows.forEach(function (r) { tc += r.clicks; ti += r.impressions; var b = by[r.kind] || (by[r.kind] = { n: 0, c: 0, i: 0, later: 0 }); b.n++; b.c += r.clicks; b.i += r.impressions; b.later += r.kind === 'moved' ? ((r.target_later && r.target_later.clicks) || 0) : (r.clicks_later || 0); });
+  var pct = function (a, b) { return b ? Math.round(a / b * 100) : 0; };
+  var lost = (by.home ? by.home.c : 0) + (by.gone ? by.gone.c : 0) + (by.elsewhere ? by.elsewhere.c : 0) + (by.noindex ? by.noindex.c : 0);
+  var h = '<p class="sub" style="margin:0 0 10px"><b>' + rows.length + '</b> pages checked, together <b>' + fmt(tc) + '</b> clicks and <b>' + fmt(ti) + '</b> impressions in ' + esc(monLabel(PS.month)) + (m.total > rows.length ? ' (the biggest ' + rows.length + ' of ' + m.total + ' stored)' : '') + '.</p>';
+  h += '<div class="tiles">' + PS_KINDS.filter(function (k) { return by[k[0]]; }).map(function (k) { var b = by[k[0]]; return '<div class="tile"><div class="k">' + esc(k[1]) + '</div><div class="v ' + (k[2] === 'bad' ? 'dn' : k[2] === 'ok' ? 'up' : '') + '">' + pct(b.c, tc) + '%</div><div class="d" style="color:#3d3d3d;font-weight:400">' + b.n + ' page' + (b.n === 1 ? '' : 's') + ' · ' + fmt(b.c) + ' clicks · ' + pct(b.i, ti) + '% of impressions</div></div>'; }).join('') + '</div>';
+  var ins = [];
+  if (tc) ins.push('<b>' + pct(lost, tc) + '%</b> of that month’s clicks came from pages that no longer exist as pages (homepage redirect, 404/410, another site or noindex).');
+  if (by.moved && by.moved.c) ins.push('Pages that moved earned ' + fmt(by.moved.c) + ' clicks then and their new addresses earn ' + fmt(by.moved.later) + ' in the matching period a year later' + (m.later_range ? ' (' + esc(String(m.later_range).split(',').join(' to ')) + ')' : '') + '.');
+  if (by.live && by.live.c) ins.push('Pages still live at the same address earned ' + fmt(by.live.c) + ' clicks then and ' + fmt(by.live.later) + ' in the later period.');
+  PS.report = { by: by, tc: tc, ti: ti, ins: ins, total: m.total || rows.length, later_range: m.later_range || '', later_note: m.later_note || '' };
+  if (ins.length) h += '<ul style="margin:0 0 12px 20px;font-size:14px">' + ins.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>';
+  if (m.later_note) h += '<p class="hint">' + esc(m.later_note) + '</p>';
+  h += '<div class="seg" data-g="psf"><button type="button" data-v="all" aria-pressed="' + (PS.filter === 'all') + '">All</button>' + PS_KINDS.filter(function (k) { return by[k[0]]; }).map(function (k) { return '<button type="button" data-v="' + k[0] + '" aria-pressed="' + (PS.filter === k[0]) + '">' + esc(k[1]) + ' (' + by[k[0]].n + ')</button>'; }).join('') + '</div><div id="psTable"></div>' +
+    '<div class="acts"><button class="btn2 small" type="button" id="psCsv">Download (CSV)</button><button class="btn2 small" type="button" id="psPdf">Download report (PDF)</button></div>';
+  out.innerHTML = h;
+  out.querySelectorAll('.seg[data-g="psf"] button').forEach(function (b) { b.onclick = function () { PS.filter = b.dataset.v; out.querySelectorAll('.seg[data-g="psf"] button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); }); drawPsTable(); }; });
+  $('psCsv').onclick = function () { download('gsc-page-status-' + PS.month + '.csv', toCsv([['page', 'clicks_then', 'impressions_then', 'status_today', 'redirects_to', 'clicks_later_period']].concat(PS.rows.map(function (r) { return [r.url, r.clicks, r.impressions, r.label, r.final && r.final !== r.url ? r.final : '', r.kind === 'moved' ? (r.target_later ? r.target_later.clicks : '') : r.clicks_later]; })))); };
+  $('psPdf').onclick = pagesPdf;
+  drawPsTable();
+}
+function drawPsTable() {
+  var rows = PS.rows.filter(function (r) { return PS.filter === 'all' || r.kind === PS.filter; }), box = $('psTable'); if (!box) return;
+  var later = function (r) { var v = r.kind === 'moved' ? (r.target_later ? r.target_later.clicks : null) : r.clicks_later; return v == null ? '—' : fmt(v); };
+  var path = function (u) { try { var x = new URL(u); return x.pathname + x.search || '/'; } catch (e) { return u; } };
+  box.innerHTML = '<div class="tblwrap"><table class="tbl"><tr><th>Page</th><th>Clicks then</th><th>Impressions then</th><th>Today</th><th>Clicks later</th></tr>' + rows.map(function (r) {
+    var k = PS_KINDS.filter(function (x) { return x[0] === r.kind; })[0], cls = k && k[2] === 'bad' ? 'dn' : k && k[2] === 'ok' ? 'up' : '';
+    return '<tr><td><a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(path(r.url)) + '</a></td><td class="num">' + fmt(r.clicks) + '</td><td class="num">' + fmt(r.impressions) + '</td><td><b class="' + cls + '">' + esc(r.label) + '</b>' + (r.final && r.final !== r.url && r.kind !== 'home' ? '<br><small>→ ' + esc(r.kind === 'elsewhere' ? r.final : path(r.final)) + '</small>' : '') + '</td><td class="num">' + later(r) + '</td></tr>';
+  }).join('') + '</table></div>';
+}
+
+/* ---- PDF report: a print-ready page rendered in a hidden frame, saved as PDF from the print dialog ---- */
+function printReport(title, body, cssOverride) {
+  var old = document.getElementById('printFrame'); if (old) old.remove();
+  var f = document.createElement('iframe'); f.id = 'printFrame'; f.title = title; f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  document.body.appendChild(f);
+  var css = '@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:Helvetica,Arial,sans-serif;color:#0a0a0a;font-size:11px;line-height:1.4;margin:0}h1{font-size:20px;margin:0 0 2px}h2{font-size:13px;margin:16px 0 6px;text-transform:uppercase;letter-spacing:.04em}p{margin:0 0 6px}.meta{color:#3d3d3d;margin:0 0 12px}'
+    + '.tiles{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}.tile{border:1.5px solid #0a0a0a;padding:6px 9px;min-width:120px;flex:1}.tile b{display:block;font-size:19px}.tile span{display:block;color:#3d3d3d;font-size:9.5px}.bad{color:#b3261e}.ok{color:#1b7a3d}'
+    + 'ul{margin:0 0 8px 16px;padding:0}li{margin:0 0 3px}table{width:100%;border-collapse:collapse;margin-top:6px}th,td{border:1px solid #0a0a0a;padding:4px 6px;text-align:left;vertical-align:top;word-break:break-word;font-size:9.5px}th{background:#0a0a0a;color:#fff;font-size:8.5px;text-transform:uppercase}td.n{text-align:right;white-space:nowrap}tr{page-break-inside:avoid}thead{display:table-header-group}.foot{margin-top:14px;color:#3d3d3d;font-size:9px}';
+  if (cssOverride) css = cssOverride;
+  var d = f.contentWindow.document; d.open(); d.write('<!doctype html><html lang="en"><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + css + '</style></head><body>' + body + '</body></html>'); d.close();
+  setTimeout(function () { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { alert('Your browser blocked the print dialog. Use the CSV instead.'); } }, 250);
+}
+function pagesPdf() {
+  var r = PS.report; if (!r || !PS.rows.length) return; var siteName = String(PS.site || '').replace(/^sc-domain:/, '').replace(/^https?:\/\//, '').replace(/\/$/, '');
+  var pct = function (a, b) { return b ? Math.round(a / b * 100) : 0; };
+  var path = function (u) { try { var x = new URL(u); return x.pathname + x.search || '/'; } catch (e) { return u; } };
+  var later = function (x) { var v = x.kind === 'moved' ? (x.target_later ? x.target_later.clicks : null) : x.clicks_later; return v == null ? '—' : fmt(v); };
+  var tiles = PS_KINDS.filter(function (k) { return r.by[k[0]]; }).map(function (k) { var b = r.by[k[0]]; return '<div class="tile"><span>' + esc(k[1]) + '</span><b class="' + (k[2] === 'bad' ? 'bad' : k[2] === 'ok' ? 'ok' : '') + '">' + pct(b.c, r.tc) + '%</b><span>' + b.n + ' page' + (b.n === 1 ? '' : 's') + ' · ' + fmt(b.c) + ' clicks · ' + pct(b.i, r.ti) + '% of impressions</span></div>'; }).join('');
+  var rows = PS.rows.map(function (x) { return '<tr><td>' + esc(path(x.url)) + '</td><td class="n">' + fmt(x.clicks) + '</td><td class="n">' + fmt(x.impressions) + '</td><td>' + esc(x.label) + (x.final && x.final !== x.url && x.kind !== 'home' ? '<br>→ ' + esc(x.kind === 'elsewhere' ? x.final : path(x.final)) : '') + '</td><td class="n">' + later(x) + '</td></tr>'; }).join('');
+  var body = '<h1>Where the traffic went</h1><p class="meta">' + esc(siteName) + ' · pages that earned clicks in ' + esc(monLabel(PS.month)) + ', checked on ' + new Date().toISOString().slice(0, 10) + '</p>'
+    + '<p><b>' + PS.rows.length + '</b> pages checked' + (r.total > PS.rows.length ? ' (the biggest ' + PS.rows.length + ' of ' + r.total + ' stored)' : '') + ', together <b>' + fmt(r.tc) + '</b> clicks and <b>' + fmt(r.ti) + '</b> impressions.</p>'
+    + '<div class="tiles">' + tiles + '</div>'
+    + (r.ins.length ? '<h2>What it means</h2><ul>' + r.ins.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>' : '')
+    + '<h2>Every page</h2><table><thead><tr><th>Page</th><th>Clicks then</th><th>Impressions then</th><th>Today</th><th>Clicks later</th></tr></thead><tbody>' + rows + '</tbody></table>'
+    + '<p class="foot">"Clicks then" and "Impressions then" come from the archived Search Console data for ' + esc(monLabel(PS.month)) + '. "Today" is what each address answers when requested now. "Clicks later" are the clicks in the matching period a year later' + (r.later_range ? ' (' + esc(String(r.later_range).split(',').join(' to ')) + ')' : '') + ' at the same address, or at the redirect target for pages that moved.' + (r.later_note ? ' ' + esc(r.later_note) : '') + ' Generated by Brand Checker.</p>';
+  printReport('Where the traffic went - ' + siteName + ' - ' + PS.month, body);
+}
+
+/* ---- brand vs non-brand: Search Console's branded filter has no API, so the split is rebuilt from the owner's brand terms ---- */
+var BR = { id: '', data: null, error: null, metric: 'clicks', edit: false, sugg: null, msg: '' };
+function brandCard() { return '<div class="card" id="brandCard"><h2>Brand vs non-brand</h2><div id="brandOut"><p class="hint">Loading…</p></div></div>'; }
+function loadBrand() {
+  if (BR.id === CUR && (BR.data || BR.error)) { renderBrand(); return; }
+  BR.id = CUR; BR.data = null; BR.error = null;
+  api('/gsc-archive/brand-live', { id: CUR }).then(function (r) { if (r.error) BR.error = r; else BR.data = r; renderBrand(); });
+}
+function brandTermsForm(d) {
+  var has = d.terms && d.terms.length, val = has ? d.terms.join('\n') : (d.domain_term || '');
+  return '<p class="sub" style="margin:0 0 10px">Search Console’s own branded-queries filter only exists in its web interface, not in the API this tool reads. So the split is rebuilt from your brand terms: a query is <b>brand</b> if it contains one of them, anywhere in it, in any case. Everything else is non-brand. The same terms are applied to every day the archive saves, so the split carries on past Google’s 16-month limit.</p>' +
+    '<label class="fl" for="brTerms">Brand terms, one per line</label><textarea id="brTerms" style="min-height:96px" spellcheck="false">' + esc(val) + '</textarea>' +
+    '<p class="hint">Use the shortest stem that is safe: <b>sadag</b> catches sadaghian, sadaghiani and sadaghian hamburg. A space inside a term also matches no space (“mac retter” finds “macretter”). Avoid common words.</p>' +
+    '<div class="acts"><button class="btn2 small" type="button" id="brSave">Save terms</button><button class="btn2 small" type="button" id="brSugg">Suggest spellings I’m missing</button>' + (has ? '<button class="btn2 small" type="button" id="brCancel">Cancel</button>' : '') + '</div><div id="brMsg"></div><div id="brSuggOut"></div>';
+}
+function wireBrandForm() {
+  var save = $('brSave'); if (!save) return;
+  save.onclick = function () {
+    var terms = $('brTerms').value.split(/\n|,/).map(function (x) { return x.trim(); }).filter(Boolean);
+    save.disabled = true; $('brMsg').innerHTML = '<p class="hint">Saving…</p>';
+    api('/gsc-archive/brand-terms', { id: CUR, terms: terms }).then(function (r) {
+      save.disabled = false;
+      if (r.error) { $('brMsg').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+      BR.msg = 'Saved. ' + (r.requeued ? r.requeued + ' saved days are being re-classified in the background.' : 'The saved days are already classified with these terms.');
+      BR.edit = false; BR.data = null; BR.id = ''; loadBrand();
+    }).catch(function () { save.disabled = false; $('brMsg').innerHTML = '<div class="err">Could not reach the server.</div>'; });
+  };
+  if ($('brCancel')) $('brCancel').onclick = function () { BR.edit = false; renderBrand(); };
+  $('brSugg').onclick = function () {
+    var out = $('brSuggOut'); out.innerHTML = '<p class="hint">Looking through the last 90 days of queries…</p>';
+    api('/gsc-archive/brand-suggest', { id: CUR }).then(function (r) {
+      if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+      if (!r.suggestions || !r.suggestions.length) { out.innerHTML = '<p class="hint">No near-miss spellings found: the queries that look like your terms are already matched.</p>'; return; }
+      out.innerHTML = '<p class="fl" style="margin-top:12px">Queries that look like a brand spelling but are not matched yet</p><div class="tblwrap"><table class="tbl"><tr><th>Word</th><th>Looks like</th><th>Impressions</th><th>Example</th><th></th></tr>' + r.suggestions.map(function (x) { return '<tr><td>' + esc(x.word) + '</td><td>' + esc(x.term) + '</td><td class="num">' + fmt(x.impressions) + '</td><td>' + esc(x.examples.join(' · ')) + '</td><td><button class="btn2 small" type="button" data-add="' + esc(x.word) + '">Add</button></td></tr>'; }).join('') + '</table></div><p class="hint">Some will be ordinary words that merely resemble the brand: add only the real spellings.</p>';
+      out.querySelectorAll('[data-add]').forEach(function (b) { b.onclick = function () { var ta = $('brTerms'); if (ta.value.split('\n').indexOf(b.dataset.add) < 0) ta.value = ta.value.replace(/\s+$/, '') + '\n' + b.dataset.add; b.disabled = true; b.textContent = 'Added'; }; });
+    });
+  };
+}
+function renderBrand() {
+  var box = $('brandOut'); if (!box) return;
+  if (BR.error) { box.innerHTML = '<div class="err">' + esc(BR.error.error) + '</div>' + (BR.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : ''); return; }
+  var d = BR.data;
+  if (d.needs_terms || BR.edit) { box.innerHTML = brandTermsForm(d) + (BR.msg ? '' : ''); wireBrandForm(); return; }
+  var B = GscReport.brand, days = B.all(d), st = B.stats(days), weeks = B.weeks(days), months = B.months(days);
+  var pctd = function (a, b) { return b ? (a - b) / b * 100 : null; };
+  var delta = function (v) { return v == null ? '' : '<div class="d ' + (v >= 0 ? 'up' : 'dn') + '">' + (v >= 0 ? '+' : '') + v.toFixed(0) + '% vs a year earlier</div>'; };
+  var h = (BR.msg ? '<div class="toast">' + esc(BR.msg) + '</div>' : '') + '<p class="sub" style="margin:0 0 8px">Brand terms: ' + d.terms.map(function (t) { return '<b>' + esc(t) + '</b>'; }).join(', ') + ' · <a href="#" id="brEdit">Edit</a></p>';
+  if (st && st.cur) {
+    var c = st.cur, p = st.prev;
+    h += '<div class="tiles"><div class="tile"><div class="k">Brand clicks, 28 days</div><div class="v">' + fmt(c.bc) + '</div>' + (p ? delta(pctd(c.bc, p.bc)) : '') + '</div><div class="tile"><div class="k">Non-brand clicks, 28 days</div><div class="v">' + fmt(c.nc) + '</div>' + (p ? delta(pctd(c.nc, p.nc)) : '') + '</div><div class="tile"><div class="k">Brand share of clicks</div><div class="v">' + c.share.toFixed(1) + '%</div>' + (p ? '<div class="d" style="color:#3d3d3d;font-weight:400">' + p.share.toFixed(1) + '% a year earlier</div>' : '') + '</div><div class="tile"><div class="k">Window</div><div class="v">' + fmt(days.length) + '</div><div class="d" style="color:#3d3d3d;font-weight:400">days, ' + esc(days[0].date) + ' on</div></div></div>';
+    if (p) { var dn = pctd(c.nc, p.nc), db = pctd(c.bc, p.bc); h += '<p style="margin:0 0 10px;font-size:14.5px">Against the same 28 days a year earlier, non-brand clicks are <b>' + (dn >= 0 ? '+' : '') + dn.toFixed(0) + '%</b> and brand clicks <b>' + (db >= 0 ? '+' : '') + db.toFixed(0) + '%</b>' + (Math.abs(dn - db) > 25 ? (dn < db ? ' — the loss is in non-brand search; people still look for the brand by name.' : ' — brand search fell more than non-brand.') : '.') + '</p>'; }
+  }
+  h += '<div class="seg" data-g="bmetric">' + [['clicks', 'Clicks'], ['impressions', 'Impressions']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (BR.metric === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' + B.chart(weeks, BR.metric);
+  h += '<div class="tblwrap"><table class="tbl"><tr><th>Month</th><th>Clicks</th><th>Brand</th><th>Non-brand</th><th>Brand share</th><th>Days</th></tr>' + months.slice().reverse().map(function (m) { return '<tr><td>' + esc(m.k) + '</td><td class="num">' + fmt(m.clicks) + '</td><td class="num">' + fmt(m.bc) + '</td><td class="num">' + fmt(m.nc) + '</td><td class="num">' + m.share.toFixed(1) + '%</td><td class="num">' + m.n + '</td></tr>'; }).join('') + '</table></div>';
+  var rowsSrc = (d.older || []).some(function (x) { return x.src === 'rows'; });
+  h += '<p class="hint">Web search only. Queries Google anonymises can’t match a term, so they count as non-brand. This is a rebuild, not Google’s own label (which also catches misspellings and related products), so expect it to differ somewhat from the filter in the Search Console interface — the check below measures by how much.' + (d.older && d.older.length ? ' ' + d.older.length + ' days older than Google’s window come from the archive' + (rowsSrc ? ', classified from the saved query-by-page rows (these read slightly low)' : '') + '.' : '') + '</p>';
+  var last = days[days.length - 1].date, cal = {}; try { cal = JSON.parse(localStorage.getItem('gscbrandcal:' + CUR) || '{}'); } catch (e) {}
+  h += '<details class="note" style="margin:12px 0" id="brCal"><summary><b>Check it against Search Console’s own branded filter</b></summary><p class="sub" style="margin:8px 0">In Search Console open Performance → Search results, set a date range, add the filter <b>Branded queries</b>, and read the clicks (and the total clicks without the filter). Enter them here for the same dates.</p>' +
+    '<div class="row2"><div><label class="fl">From</label><input type="date" id="calFrom" value="' + esc(cal.from || addDays(last, -27)) + '"></div><div><label class="fl">To</label><input type="date" id="calTo" value="' + esc(cal.to || last) + '"></div></div>' +
+    '<div class="row2" style="margin-top:10px"><div><label class="fl">Google: branded clicks</label><input type="text" id="calG" inputmode="numeric" value="' + esc(cal.g || '') + '" placeholder="e.g. 80"></div><div><label class="fl">Google: all clicks (optional)</label><input type="text" id="calT" inputmode="numeric" value="' + esc(cal.t || '') + '" placeholder="e.g. 613"></div></div>' +
+    '<div class="acts"><button class="btn2 small" type="button" id="calGo">Compare</button></div><div id="calOut" style="margin-top:10px"></div></details>';
+  h += '<div class="acts"><button class="btn2 small" type="button" id="brCsv">Download daily split (CSV)</button></div>';
+  box.innerHTML = h;
+  $('brEdit').onclick = function (e) { e.preventDefault(); BR.edit = true; BR.msg = ''; renderBrand(); };
+  box.querySelectorAll('.seg[data-g="bmetric"] button').forEach(function (b) { b.onclick = function () { BR.metric = b.dataset.v; renderBrand(); }; });
+  $('brCsv').onclick = function () { download('gsc-brand-split-' + CUR.slice(0, 8) + '.csv', toCsv([['date', 'clicks', 'impressions', 'brand_clicks', 'brand_impressions', 'non_brand_clicks', 'non_brand_impressions']].concat(days.map(function (x) { return [x.date, x.clicks, x.impressions, x.bc, x.bi, x.clicks - x.bc, x.impressions - x.bi]; })))); };
+  $('calGo').onclick = function () {
+    var from = $('calFrom').value, to = $('calTo').value, g = Number(String($('calG').value).replace(/[^\d.]/g, '')), t = Number(String($('calT').value).replace(/[^\d.]/g, ''));
+    try { localStorage.setItem('gscbrandcal:' + CUR, JSON.stringify({ from: from, to: to, g: $('calG').value, t: $('calT').value })); } catch (e) {}
+    var o = $('calOut'); if (!from || !to || from > to || !$('calG').value) { o.innerHTML = '<div class="err">Enter the dates and Google’s branded clicks.</div>'; return; }
+    var s = B.sum(days, function (x) { return x.date >= from && x.date <= to; });
+    if (!s.n) { o.innerHTML = '<div class="err">No data in that range.</div>'; return; }
+    var diff = g ? (s.bc - g) / g * 100 : null, share = s.clicks ? s.bc / s.clicks * 100 : 0, gs = t ? g / t * 100 : null;
+    var verdict = diff == null ? '' : Math.abs(diff) <= 10 ? 'Close: the terms capture about what Google’s filter does for this period.' : diff < 0 ? 'Google counts more as brand than the terms do. Try “Suggest spellings” and add the missing variants or related names.' : 'The terms count more as brand than Google does. Check whether a term is too broad (a common word).';
+    o.innerHTML = '<div class="tblwrap"><table class="tbl"><tr><th></th><th>Brand clicks</th><th>Brand share of clicks</th></tr><tr><td>These terms (' + esc(from) + ' to ' + esc(to) + ', ' + s.n + ' days)</td><td class="num">' + fmt(s.bc) + '</td><td class="num">' + share.toFixed(1) + '%</td></tr><tr><td>Search Console’s filter</td><td class="num">' + fmt(g) + '</td><td class="num">' + (gs == null ? '—' : gs.toFixed(1) + '%') + '</td></tr></table></div>' + (diff == null ? '' : '<p style="margin:8px 0 0"><b>' + (diff >= 0 ? '+' : '') + diff.toFixed(0) + '%</b> against Google. ' + esc(verdict) + '</p>');
+  };
+}
+
+/* ---- query segments: core terms compared side by side, and a report per focus (e.g. Hamburg) ---- */
+var SG = { id: '', data: null, details: {}, error: null, edit: false, cfg: null, styled: false };
+function segArea() { return '<div id="segArea"><div class="card"><h2>Core terms and focus reports</h2><p class="hint">Loading from Search Console…</p></div></div>'; }
+function loadSegments() {
+  if (SG.id === CUR && (SG.data || SG.error)) { renderSegments(); return; }
+  SG.id = CUR; SG.data = null; SG.error = null; SG.details = {};
+  api('/gsc-archive/segments-live', { id: CUR }).then(function (r) {
+    if (r.error) { SG.error = r; renderSegments(); return; }
+    SG.data = r; renderSegments();
+    var want = r.segments.map(function (x) { return x.id; }), left = want.length;
+    want.forEach(function (sid) { api('/gsc-archive/segment-detail', { id: CUR, segment: sid }).then(function (d) { if (SG.id !== CUR) return; if (!d.error) SG.details[sid] = d; if (--left === 0) renderSegments(); }); });
+  });
+}
+function segSnapshot(kind, focus) { return { kind: kind, focus: focus, site: SH.site, created: new Date().toISOString(), seg: Object.assign({}, SG.data, { details: SG.details }) }; }
+function segCardHtml(id, title, intro, inner, extraBtns) {
+  return '<div class="card" id="' + id + '"><h2>' + esc(title) + '</h2><p class="sub" style="margin:0 0 10px">' + intro + '</p><div class="acts" style="margin:0 0 12px">' + extraBtns + '</div><div id="' + id + 'Out"></div><div class="gr">' + inner + '</div></div>';
+}
+function renderSegments() {
+  var box = $('segArea'); if (!box) return;
+  ensureGrStyle();
+  if (SG.error) { box.innerHTML = '<div class="card"><h2>Core terms and focus reports</h2><div class="err">' + esc(SG.error.error) + '</div>' + (SG.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : '') + '</div>'; return; }
+  if (!SG.data) return;
+  var seg = Object.assign({}, SG.data, { details: SG.details }), h = '';
+  var core = seg.segments.filter(function (x) { return x.kind === 'core'; }), focus = seg.segments.filter(function (x) { return x.kind === 'focus'; });
+  if (SG.edit) h += segEditor(seg.segments);
+  if (core.length) h += segCardHtml('segCoreCard', 'Core terms: ' + core.map(function (c) { return c.name; }).join(', '), 'Each term’s clicks, impressions, CTR and position over time, with the top queries and pages inside it. Live from Search Console (about 16 months).', GscReport.seg.core(seg), '<button class="btn2 small" type="button" id="segEditBtn">Edit segments</button><button class="btn2 small" type="button" data-seg-pdf="core">Download PDF</button><button class="btn2 small" type="button" data-seg-link="core">Create shareable link</button>');
+  focus.forEach(function (f) { h += segCardHtml('segFocus-' + f.id, f.name + ' report', 'Everything searched with “' + esc(f.include.join('”, “')) + '”, how much of each core term it makes up, and its top queries and pages.', GscReport.seg.focus(seg, f.id), (core.length ? '' : '<button class="btn2 small" type="button" id="segEditBtn">Edit segments</button>') + '<button class="btn2 small" type="button" data-seg-pdf="focus" data-focus="' + esc(f.id) + '">Download PDF</button><button class="btn2 small" type="button" data-seg-link="focus" data-focus="' + esc(f.id) + '">Create shareable link</button>'); });
+  if (!core.length && !focus.length) h += '<div class="card"><h2>Core terms and focus reports</h2><p class="hint">No segments defined.</p><div class="acts"><button class="btn2 small" type="button" id="segEditBtn">Edit segments</button></div></div>';
+  if (!seg.saved && !SG.edit) h += '<p class="hint" style="margin:-6px 0 14px">These are starting segments (MacBook, iMac and Mac Reparatur, and Hamburg). Edit them to match your own terms; they are saved per property.</p>';
+  box.innerHTML = h;
+  var eb = $('segEditBtn'); if (eb) eb.onclick = function () { SG.edit = !SG.edit; renderSegments(); if (SG.edit) $('segEditor').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  if (SG.edit) wireSegEditor();
+  box.querySelectorAll('[data-seg-pdf]').forEach(function (b) { b.onclick = function () { var kind = b.dataset['segPdf'], f = b.dataset.focus || undefined; printReport('Search Console ' + (kind === 'core' ? 'core terms' : f) + ' - ' + SH.site, GscReport.render(segSnapshot(kind, f)), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); }; });
+  box.querySelectorAll('[data-seg-link]').forEach(function (b) { b.onclick = function () {
+    var card = b.closest('.card'), out = card.querySelector('[id$="Out"]'); b.disabled = true; out.innerHTML = '<p class="hint">Creating the link…</p>';
+    api('/gsc-archive/share-create', { id: CUR, kind: b.dataset['segLink'], focus: b.dataset.focus || undefined }).then(function (r) {
+      b.disabled = false;
+      if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+      out.innerHTML = '<div class="toast"><b>Link created.</b> Anyone who has it can read this snapshot without signing in. It does not update, expires on ' + esc(r.expires) + ', and you can withdraw it from the list under “Share or download this report”.<br><input type="text" readonly value="' + esc(r.url) + '" style="margin:8px 0" onclick="this.select()"><div class="acts"><button class="btn2 small" type="button" data-cp>Copy link</button><a class="btn2 small" href="' + esc(r.url) + '" target="_blank" rel="noopener" style="text-decoration:none">Open</a></div></div>';
+      out.querySelector('[data-cp]').onclick = function () { copyText(r.url, this); };
+      loadShares();
+    }).catch(function () { b.disabled = false; out.innerHTML = '<div class="err">Could not reach the server.</div>'; });
+  }; });
+}
+function segEditor(segs) {
+  var row = function (x) { return '<div class="segrow" style="border:2px solid #0a0a0a;padding:10px;margin:0 0 10px"><div class="row2"><div><label class="fl">Name</label><input type="text" data-f="name" value="' + esc(x.name) + '"></div><div><label class="fl">Type</label><select data-f="kind"><option value="core"' + (x.kind === 'core' ? ' selected' : '') + '>Core term (compared side by side)</option><option value="focus"' + (x.kind === 'focus' ? ' selected' : '') + '>Focus (own report, e.g. a city)</option></select></div></div>' +
+    '<div class="row2" style="margin-top:8px"><div><label class="fl">Include queries containing</label><input type="text" data-f="include" value="' + esc(x.include.join(', ')) + '"></div><div><label class="fl">…but not (optional)</label><input type="text" data-f="exclude" value="' + esc(x.exclude.join(', ')) + '"></div></div><div class="acts"><button class="btn2 small" type="button" data-rm>Remove</button></div><input type="hidden" data-f="id" value="' + esc(x.id) + '"></div>'; };
+  return '<div class="card" id="segEditor"><h2>Edit segments</h2><p class="sub" style="margin:0 0 10px">A segment is a set of phrases, comma-separated. Each phrase is matched from the start of a word anywhere in the query, in any case: “mac reparatur” finds “mac reparatur hamburg” but not “imac reparatur” or “macbook reparatur”. Up to 8 segments; core terms are compared with each other, a focus gets its own report and an overlap table against each core term.</p><div id="segRows">' + segs.map(row).join('') + '</div><div class="acts"><button class="btn2 small" type="button" id="segAdd">Add a segment</button><button class="btn2 small" type="button" id="segSave">Save segments</button><button class="btn2 small" type="button" id="segCancel">Cancel</button></div><div id="segMsg"></div></div>';
+}
+function wireSegEditor() {
+  var rows = $('segRows'), blank = { id: '', name: '', include: [], exclude: [], kind: 'core' };
+  var rm = function () { rows.querySelectorAll('[data-rm]').forEach(function (b) { b.onclick = function () { b.closest('.segrow').remove(); }; }); }; rm();
+  $('segAdd').onclick = function () { if (rows.querySelectorAll('.segrow').length >= 8) return; var d = document.createElement('div'); d.innerHTML = segEditor([blank]).match(/<div class="segrow"[\s\S]*?<input type="hidden"[^>]*><\/div>/)[0]; rows.appendChild(d.firstChild); rm(); };
+  $('segCancel').onclick = function () { SG.edit = false; renderSegments(); };
+  $('segSave').onclick = function () {
+    var list = [].slice.call(rows.querySelectorAll('.segrow')).map(function (r) { var g = function (f) { return r.querySelector('[data-f="' + f + '"]').value; }, split = function (v) { return v.split(',').map(function (x) { return x.trim(); }).filter(Boolean); }; var name = g('name').trim(); return { id: g('id') || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24), name: name, kind: g('kind'), include: split(g('include')), exclude: split(g('exclude')) }; });
+    var seen = {}; list.forEach(function (x) { var base = x.id || 'segment', n = 1, id = base; while (seen[id]) id = base + '-' + (++n); x.id = id; seen[id] = 1; });
+    $('segSave').disabled = true; $('segMsg').innerHTML = '<p class="hint">Saving…</p>';
+    api('/gsc-archive/segments-config', { id: CUR, segments: list }).then(function (r) {
+      $('segSave').disabled = false;
+      if (r.error) { $('segMsg').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+      SG.edit = false; SG.id = ''; SG.data = null; SG.details = {}; $('segArea').innerHTML = '<div class="card"><h2>Core terms and focus reports</h2><p class="hint">Reloading with the new segments…</p></div>'; loadSegments();
+    }).catch(function () { $('segSave').disabled = false; $('segMsg').innerHTML = '<div class="err">Could not reach the server.</div>'; });
+  };
+}
+
+/* ---- Core Web Vitals: Chrome UX Report field data (Search Console's own CWV report has no API) ---- */
+var CW = { id: '', data: null, error: null, loading: false };
+function ensureGrStyle() { if (SG.styled) return; var st = document.createElement('style'); st.textContent = GscReport.css + '.gr{font-size:13px}'; document.head.appendChild(st); SG.styled = true; }
+function cwvCard() { return '<div class="card" id="cwvCard"><h2>Core Web Vitals</h2><div id="cwvOut"><p class="hint">Loading real-user field data…</p></div></div>'; }
+function loadCwv(refresh) {
+  if (!refresh && CW.id === CUR && (CW.data || CW.error)) { renderCwv(); return; }
+  CW.id = CUR; CW.data = null; CW.error = null; renderCwv(true);
+  api('/gsc-archive/cwv', { id: CUR, refresh: !!refresh }).then(function (r) { if (CW.id !== CUR) return; if (r.error) CW.error = r; else CW.data = r; renderCwv(); });
+}
+function renderCwv(loading) {
+  var box = $('cwvOut'); if (!box) return; ensureGrStyle();
+  if (loading) { box.innerHTML = '<p class="hint">Loading real-user field data… (the first load also checks the top pages one by one, about 20 seconds)</p>'; return; }
+  if (CW.error) {
+    var e = CW.error;
+    box.innerHTML = '<div class="err">' + esc(e.error) + '</div>' + (e.setup === 'crux_not_enabled' ? '<p class="hint">Search Console’s own Core Web Vitals report has no API, so this card reads the same data from Google’s free Chrome UX Report API. It needs switching on once: in Google Cloud Console, in the project that owns the server’s Google API key, open <b>APIs &amp; Services → Library</b>, find <b>Chrome UX Report API</b> and press <b>Enable</b> (and, if the key is restricted to specific APIs, add it to the key’s allowed list). It costs nothing.</p>' : '') + (e.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : '') + '<div class="acts"><button class="btn2 small" type="button" id="cwvRetry">Check again</button></div>';
+    $('cwvRetry').onclick = function () { loadCwv(true); }; return;
+  }
+  var c = CW.data; if (!c) return;
+  if (c.nodata) { box.innerHTML = '<p class="hint">The Chrome UX Report has no data for <b>' + esc(c.origin) + '</b>: not enough real Chrome visits yet. Field data appears once a site has steady traffic.</p><div class="acts"><button class="btn2 small" type="button" id="cwvRetry">Check again</button></div>'; $('cwvRetry').onclick = function () { loadCwv(true); }; return; }
+  box.innerHTML = '<div class="gr">' + GscReport.cwv(c, { noTitle: true }) + '</div><div class="acts"><button class="btn2 small" type="button" id="cwvRetry">Refresh (re-checks every page)</button></div>' + (c.pages_error ? '<p class="hint">Page-level data was not available: ' + esc(c.pages_error) + '</p>' : '') + '<p class="hint">Checked ' + esc(String(c.checked || '').slice(0, 16).replace('T', ' ')) + ' UTC' + (c.cached ? ' (cached for 6 hours)' : '') + '. Included in the full report, PDF and shared link.</p>';
+  $('cwvRetry').onclick = function () { loadCwv(true); };
+}
+
+/* ---- monitoring: page-health checks (daily) and the Monday digest ---- */
+var MO = { id: '', data: null, error: null, msg: '' };
+var MO_KIND = { live: ['Live', 'up'], moved: ['Redirects to another page', ''], home: ['Redirects to the homepage', 'dn'], gone: ['Gone (404 / 410)', 'dn'], elsewhere: ['Redirects to another site', 'dn'], noindex: ['Live, but noindex', 'dn'], error: ['Could not check', ''] };
+function monitorCard() { return '<div class="card" id="monCard"><h2>Monitoring: page health and weekly digest</h2><div id="monOut"><p class="hint">Loading…</p></div></div>'; }
+function loadMonitor(force) {
+  if (!force && MO.id === CUR && (MO.data || MO.error)) { renderMonitor(); return; }
+  MO.id = CUR; MO.data = null; MO.error = null;
+  api('/gsc-archive/monitor-config', { id: CUR }).then(function (r) { if (r.error) MO.error = r; else MO.data = r; renderMonitor(); });
+}
+function renderMonitor() {
+  var box = $('monOut'); if (!box) return;
+  if (MO.error) { box.innerHTML = '<div class="err">' + esc(MO.error.error) + '</div>'; return; }
+  var d = MO.data; if (!d) return;
+  var pathOf = function (u) { try { var x = new URL(u); return x.pathname + x.search || '/'; } catch (e) { return u; } };
+  var probs = d.pages.filter(function (x) { return ['home', 'gone', 'elsewhere', 'noindex'].indexOf(x.kind) >= 0; }), cnt = {}; d.pages.forEach(function (x) { cnt[x.kind] = (cnt[x.kind] || 0) + 1; });
+  var h = (MO.msg ? '<div class="toast">' + MO.msg + '</div>' : '') +
+    '<p class="sub" style="margin:0 0 10px">Every day the pages that earn the most Search Console clicks (the top ' + d.config.top_n + ' of the last 28 days) are requested and compared with the last check. If one that earns clicks starts redirecting to the homepage or another site, returns 404/410 or is set to noindex, you get an email. Every Monday a digest summarises the week: clicks against last week and last year, brand vs non-brand, core terms, the biggest page and query movers, page-health changes and the archive’s status.</p>' +
+    '<label style="font-size:14px;display:block;margin:0 0 6px"><input type="checkbox" id="moDigest"' + (d.config.digest ? ' checked' : '') + '> Weekly digest email (Mondays)</label>' +
+    '<label style="font-size:14px;display:block;margin:0 0 6px"><input type="checkbox" id="moAlerts"' + (d.config.alerts ? ' checked' : '') + '> Email me when a page that earns clicks breaks</label>' +
+    '<label style="font-size:14px;display:block;margin:0 0 6px"><input type="checkbox" id="moAnom"' + (d.config.anomaly ? ' checked' : '') + '> Email me when weekly clicks fall below their expected range (once when it first happens, once more if it lasts three weeks)</label>' +
+    '<label style="font-size:14px;display:block;margin:0 0 10px">…only for pages with at least <input type="text" id="moMin" inputmode="numeric" value="' + esc(d.config.min_clicks) + '" style="width:64px;padding:6px 8px;display:inline-block"> clicks in 28 days</label>' +
+    '<p class="hint" style="margin:0 0 10px">Emails go to: ' + (d.recipients.length ? d.recipients.map(esc).join(', ') : 'nobody: no address is on file for this account') + '.' + (d.last_digest ? ' Last digest sent ' + esc(d.last_digest.slice(0, 10)) + '.' : '') + '</p>' +
+    '<div class="acts"><button class="btn2 small" type="button" id="moSave">Save settings</button><button class="btn2 small" type="button" id="moCheck">Check pages now</button><button class="btn2 small" type="button" id="moPrev">Preview the digest</button><button class="btn2 small" type="button" id="moAnomPrev">Preview the anomaly check</button><button class="btn2 small" type="button" id="moSend">Email me the digest now</button></div><div id="moOut2" style="margin-top:12px"></div>';
+  if (d.pages.length) {
+    h += '<h3 class="h" style="font-size:16px;margin:16px 0 6px">Current state of the ' + d.pages.length + ' tracked pages</h3><p style="margin:0 0 8px;font-size:14.5px">' + Object.keys(cnt).map(function (k) { return '<b>' + cnt[k] + '</b> ' + esc((MO_KIND[k] || [k])[0].toLowerCase()); }).join(' · ') + '. Last check ' + esc(String(d.last_check || '').slice(0, 16).replace('T', ' ')) + ' UTC.</p>';
+    if (probs.length) h += '<div class="tblwrap"><table class="tbl"><tr><th>Page earning clicks that does not resolve as itself</th><th>Clicks, 28 days</th><th>Now</th></tr>' + probs.map(function (x) { return '<tr><td>' + esc(pathOf(x.url)) + '</td><td class="num">' + fmt(x.clicks) + '</td><td><b class="dn">' + esc((MO_KIND[x.kind] || [x.kind])[0]) + '</b>' + (x.final && x.kind !== 'home' ? '<br><small>→ ' + esc(x.final) + '</small>' : '') + '</td></tr>'; }).join('') + '</table></div>';
+    else h += '<p class="hint">Every tracked page still resolves as itself.</p>';
+  } else h += '<p class="hint">No pages checked yet. The first check sets the baseline (it never emails); press “Check pages now” to run it.</p>';
+  if (d.log.length) h += '<h3 class="h" style="font-size:16px;margin:16px 0 6px">Recent changes</h3><div class="tblwrap"><table class="tbl"><tr><th>When</th><th>Page</th><th>Change</th><th>Clicks</th></tr>' + d.log.map(function (x) { return '<tr><td>' + esc(x.at.slice(0, 10)) + '</td><td>' + esc(pathOf(x.url)) + '</td><td>' + esc(x.from_kind ? (MO_KIND[x.from_kind] || [x.from_kind])[0] : 'new') + ' → <b>' + esc((MO_KIND[x.to_kind] || [x.to_kind])[0]) + '</b></td><td class="num">' + fmt(x.clicks) + '</td></tr>'; }).join('') + '</table></div>';
+  box.innerHTML = h;
+  var out = $('moOut2'), busy = function (b, t) { b.disabled = true; out.innerHTML = '<p class="hint">' + t + '</p>'; };
+  $('moSave').onclick = function () {
+    var b = this; busy(b, 'Saving…');
+    api('/gsc-archive/monitor-config', { id: CUR, digest: $('moDigest').checked, alerts: $('moAlerts').checked, anomaly: $('moAnom').checked, min_clicks: $('moMin').value }).then(function (r) { MO.msg = r.error ? '' : 'Settings saved.'; if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; b.disabled = false; return; } MO.data = r; renderMonitor(); });
+  };
+  $('moCheck').onclick = function () {
+    var b = this; busy(b, 'Requesting each page… (about 15 seconds)');
+    api('/gsc-archive/monitor-run', { id: CUR, action: 'health' }).then(function (r) {
+      if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; b.disabled = false; return; }
+      MO.msg = r.baseline ? 'Baseline set: ' + r.checked + ' pages recorded. From now on a change on any of them is reported.' : 'Checked ' + r.checked + ' pages: ' + r.changes + ' changed, ' + r.broke + ' newly broken' + (r.alerted ? ', ' + r.alerted + ' emailed.' : '.');
+      loadMonitor(true);
+    });
+  };
+  $('moPrev').onclick = function () {
+    var b = this; busy(b, 'Building the digest…');
+    api('/gsc-archive/monitor-run', { id: CUR, action: 'digest-preview' }).then(function (r) { b.disabled = false; if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } out.innerHTML = '<p class="fl">Subject</p><p style="margin:0 0 8px"><b>' + esc(r.subject) + '</b></p><pre style="white-space:pre-wrap;border:3px solid #0a0a0a;padding:12px;font-size:13px;font-family:\'IBM Plex Mono\',monospace;background:#f3f3ef">' + esc(r.text) + '</pre><p class="hint">This is a preview. Nothing was sent.</p>'; });
+  };
+  $('moAnomPrev').onclick = function () {
+    var b = this; busy(b, 'Checking the latest week against its expected range…');
+    api('/gsc-archive/monitor-run', { id: CUR, action: 'anomaly-preview' }).then(function (r) {
+      b.disabled = false; if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+      var st = (r.status || []).map(function (x) { return '<li><b>' + (x.metric === 'clicks' ? 'Clicks' : 'Non-brand clicks') + '</b>, week of ' + esc(x.week) + ': ' + fmt(x.actual) + ' against ' + fmt(x.exp) + ' expected (range ' + fmt(x.lo) + ' to ' + fmt(x.hi) + ')' + (x.flag === 'below' ? ', <b class="dn">below the range</b>, ' + x.streak + ' week' + (x.streak === 1 ? '' : 's') + ' in a row' : ', within the normal range') + '</li>'; }).join('');
+      out.innerHTML = '<ul style="margin:0 0 8px 20px;font-size:14.5px">' + st + '</ul>' + (r.alert ? '<p class="fl">An email would be sent now</p><p style="margin:0 0 6px"><b>' + esc(r.subject) + '</b></p><pre style="white-space:pre-wrap;border:3px solid #0a0a0a;padding:12px;font-size:13px;font-family:\'IBM Plex Mono\',monospace;background:#f3f3ef">' + esc(r.text) + '</pre>' : '<p class="hint">No alert would be sent: it only fires when a week first falls below the range, and once more at three weeks in a row.</p>') + '<p class="hint">This is a preview. Nothing was sent.</p>';
+    });
+  };
+  $('moSend').onclick = function () {
+    var b = this; if (!confirm('Email this week’s digest to ' + (d.recipients.join(', ') || 'the account address') + ' now?')) return; busy(b, 'Sending…');
+    api('/gsc-archive/monitor-run', { id: CUR, action: 'digest-send' }).then(function (r) { b.disabled = false; if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } out.innerHTML = '<div class="toast">Digest sent to ' + r.sent + ' address' + (r.sent === 1 ? '' : 'es') + '.</div>'; loadMonitor(true); });
+  };
+}
+
+/* ---- expected vs actual: weekly totals against a seasonal expected range ---- */
+var EX = { id: '', data: null, error: null, metric: 'clicks' };
+function expectedCard() { return '<div class="card" id="exCard"><h2>Expected vs actual</h2><div id="exOut"><p class="hint">Loading…</p></div></div>'; }
+function loadExpected() {
+  if (EX.id === CUR && (EX.data || EX.error)) { renderExpected(); return; }
+  EX.id = CUR; EX.data = null; EX.error = null;
+  api('/gsc-archive/expected', { id: CUR }).then(function (r) { if (r.error) EX.error = r; else EX.data = r.expected; renderExpected(); });
+}
+function renderExpected() {
+  var box = $('exOut'); if (!box) return; ensureGrStyle();
+  if (EX.error) { box.innerHTML = '<div class="err">' + esc(EX.error.error) + '</div>' + (EX.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : ''); return; }
+  var d = EX.data; if (!d) return;
+  var labels = { clicks: 'Clicks', impressions: 'Impressions', nonbrand: 'Non-brand clicks', brand: 'Brand clicks' }, keys = ['clicks', 'impressions', 'nonbrand', 'brand'].filter(function (k) { return d[k]; });
+  if (keys.indexOf(EX.metric) < 0) EX.metric = 'clicks';
+  box.innerHTML = '<p class="sub" style="margin:0 0 10px">Is a dip normal variation or a real change? Each week is compared with the range its recent history and last year’s seasonal shape predict.</p><div class="seg" data-g="exm">' + keys.map(function (k) { return '<button type="button" data-v="' + k + '" aria-pressed="' + (EX.metric === k) + '">' + labels[k] + '</button>'; }).join('') + '</div><div class="gr">' + GscReport.expected(d, { metric: EX.metric, noTitle: true }) + '</div>';
+  box.querySelectorAll('.seg[data-g="exm"] button').forEach(function (b) { b.onclick = function () { EX.metric = b.dataset.v; renderExpected(); }; });
+}
+
+/* ---- opportunities: striking distance, CTR gaps, cannibalisation ---- */
+var OP = { id: '', data: null, error: null, tab: 'striking' };
+function opportunitiesCard() { return '<div class="card" id="opCard"><h2>Opportunities</h2><div id="opOut"><p class="hint">Reading the last 90 days of query-by-page rows…</p></div></div>'; }
+function loadOpps(refresh) {
+  if (!refresh && OP.id === CUR && (OP.data || OP.error)) { renderOpps(); return; }
+  OP.id = CUR; OP.data = null; OP.error = null; renderOpps(true);
+  api('/gsc-archive/opportunities', { id: CUR, refresh: !!refresh }).then(function (r) { if (OP.id !== CUR) return; if (r.error) OP.error = r; else OP.data = r; renderOpps(); });
+}
+function renderOpps(loading) {
+  var box = $('opOut'); if (!box) return; ensureGrStyle();
+  if (loading) { box.innerHTML = '<p class="hint">Reading the last 90 days of query-by-page rows… (a few seconds)</p>'; return; }
+  if (OP.error) { box.innerHTML = '<div class="err">' + esc(OP.error.error) + '</div>' + (OP.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : ''); return; }
+  var d = OP.data; if (!d) return;
+  var tabs = [['striking', 'Striking distance (' + d.striking.total + ')'], ['gap', 'CTR gaps (' + d.gap.total + ')'], ['cannibal', 'Cannibalisation (' + d.cannibal.total + ')']];
+  box.innerHTML = '<p class="sub" style="margin:0 0 10px">Where a little effort could win clicks: queries just off page one, queries ranking at the top but barely clicked, and queries split between two of your own pages.</p>' +
+    '<div class="tiles"><div class="tile"><div class="k">Striking distance</div><div class="v">+' + fmt(d.striking.upside_month) + '</div><div class="d" style="color:#3d3d3d;font-weight:400">est. clicks / month · ' + d.striking.total + ' queries</div></div><div class="tile"><div class="k">CTR gaps at the top</div><div class="v">+' + fmt(d.gap.upside_month) + '</div><div class="d" style="color:#3d3d3d;font-weight:400">est. clicks / month · ' + d.gap.total + ' queries</div></div><div class="tile"><div class="k">Cannibalisation</div><div class="v">' + d.cannibal.total + '</div><div class="d" style="color:#3d3d3d;font-weight:400">queries split across pages</div></div><div class="tile"><div class="k">Rows analysed</div><div class="v">' + fmt(d.rows_scanned) + '</div><div class="d" style="color:#3d3d3d;font-weight:400">' + fmt(d.queries) + ' queries, 90 days' + (d.truncated ? ' (capped at 50,000)' : '') + '</div></div></div>' +
+    '<div class="seg" data-g="optab">' + tabs.map(function (t) { return '<button type="button" data-v="' + t[0] + '" aria-pressed="' + (OP.tab === t[0]) + '">' + esc(t[1]) + '</button>'; }).join('') + '</div><div class="gr">' + GscReport.opportunities(d, { tab: OP.tab, noTitle: true }) + '</div>' +
+    '<div class="acts"><button class="btn2 small" type="button" id="opCsv">Download this list (CSV)</button><button class="btn2 small" type="button" id="opRefresh">Refresh</button></div><p class="hint">Computed ' + esc(String(d.computed || '').slice(0, 16).replace('T', ' ')) + ' UTC' + (d.cached ? ' (cached for 6 hours)' : '') + '. Included in the full report, PDF and shared link.</p>';
+  box.querySelectorAll('.seg[data-g="optab"] button').forEach(function (b) { b.onclick = function () { OP.tab = b.dataset.v; renderOpps(); }; });
+  $('opRefresh').onclick = function () { loadOpps(true); };
+  $('opCsv').onclick = function () {
+    var rows;
+    if (OP.tab === 'striking') rows = [['query', 'position', 'impressions_90d', 'clicks_90d', 'ctr', 'ranking_page', 'est_extra_clicks_per_month']].concat(d.striking.rows.map(function (r) { return [r.query, r.position, r.impressions, r.clicks, r.ctr, r.page, r.upside_month]; }));
+    else if (OP.tab === 'gap') rows = [['query', 'position', 'impressions_90d', 'ctr', 'typical_ctr', 'page', 'est_extra_clicks_per_month']].concat(d.gap.rows.map(function (r) { return [r.query, r.position, r.impressions, r.ctr, r.bench, r.page, r.upside_month]; }));
+    else rows = [['query', 'impressions_90d', 'page', 'position', 'page_impressions', 'page_clicks', 'language_versions']].concat([].concat.apply([], d.cannibal.rows.map(function (r) { return r.pages.map(function (p) { return [r.query, r.impressions, p.url, p.position, p.impressions, p.clicks, r.languages ? 'yes' : 'no']; }); })));
+    download('gsc-opportunities-' + OP.tab + '.csv', toCsv(rows));
+  };
+}
+
+/* ---- lost winners ---- */
+var LW = { id: '', data: null, error: null, days: 90 };
+function lostCard() { return '<div class="card" id="lwCard"><h2>Lost winners</h2><div id="lwOut"><p class="hint">Comparing pages and queries with a year earlier and checking what each address does now…</p></div></div>'; }
+function loadLost(refresh) {
+  if (!refresh && LW.id === CUR && (LW.data || LW.error) && LW.loadedDays === LW.days) { renderLost(); return; }
+  LW.id = CUR; LW.data = null; LW.error = null; LW.loadedDays = LW.days; renderLost(true);
+  api('/gsc-archive/lost-winners', { id: CUR, days: LW.days, refresh: !!refresh }).then(function (r) { if (LW.id !== CUR) return; if (r.error) LW.error = r; else LW.data = r; renderLost(); });
+}
+function renderLost(loading) {
+  var box = $('lwOut'); if (!box) return; ensureGrStyle();
+  if (loading) { box.innerHTML = '<p class="hint">Comparing pages and queries with a year earlier and requesting each of the biggest losers… (about 20 seconds)</p>'; return; }
+  if (LW.error) { box.innerHTML = '<div class="err">' + esc(LW.error.error) + '</div>' + (LW.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : ''); return; }
+  var d = LW.data; if (!d) return;
+  box.innerHTML = '<p class="sub" style="margin:0 0 10px">Which pages and queries lost the most clicks against a year earlier, what each address does today (live, moved, homepage redirect, gone), and what to do about it.</p><div class="seg" data-g="lwd">' + [[28, 'Last 28 days'], [90, 'Last 90 days']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (LW.days === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div><div class="gr">' + GscReport.lost(d, { noTitle: true }) + '</div>' +
+    '<div class="acts"><button class="btn2 small" type="button" id="lwCsv">Download pages (CSV)</button><button class="btn2 small" type="button" id="lwRedirects">Download redirect suggestions (CSV)</button><button class="btn2 small" type="button" id="lwRefresh">Refresh</button></div><p class="hint">Computed ' + esc(String(d.computed || '').slice(0, 16).replace('T', ' ')) + ' UTC' + (d.cached ? ' (cached for 6 hours)' : '') + '. Included in the full report, PDF and shared link.</p>';
+  box.querySelectorAll('.seg[data-g="lwd"] button').forEach(function (b) { b.onclick = function () { LW.days = +b.dataset.v; loadLost(); }; });
+  $('lwRefresh').onclick = function () { loadLost(true); };
+  $('lwCsv').onclick = function () { download('gsc-lost-winners-' + d.window.days + 'd.csv', toCsv([['page', 'clicks_then', 'clicks_now', 'impressions_then', 'impressions_now', 'position_then', 'position_now', 'status_today', 'redirects_to', 'suggested_target', 'action']].concat(d.pages.map(function (r) { return [r.url, r.prev.c, r.cur.c, r.prev.i, r.cur.i, r.prev.pos, r.cur.pos, r.label, r.final || '', r.suggest ? r.suggest.url : '', r.action]; })))); };
+  $('lwRedirects').onclick = function () {
+    var rows = d.pages.filter(function (r) { return r.suggest; }).map(function (r) { return [r.url, r.suggest.url, r.suggest.score, r.prev.c]; });
+    if (!rows.length) { alert('No page has a close enough replacement in the sitemap. Restore the pages instead, or choose targets by hand.'); return; }
+    download('gsc-redirect-suggestions.csv', toCsv([['old_url', 'suggested_new_url', 'match_score', 'clicks_then']].concat(rows)));
+  };
+}
+
+/* ---- change tracker ---- */
+var CH = { id: '', data: null, error: null, msg: '' };
+function changesCard() { return '<div class="card" id="chCard"><h2>Change tracker</h2><div id="chOut"><p class="hint">Loading…</p></div></div>'; }
+function loadChanges(force) {
+  if (!force && CH.id === CUR && (CH.data || CH.error)) { renderChanges(); return; }
+  CH.id = CUR; CH.data = null; CH.error = null;
+  api('/gsc-archive/changes', { id: CUR }).then(function (r) { if (r.error) CH.error = r; else CH.data = r; renderChanges(); });
+}
+function renderChanges() {
+  var box = $('chOut'); if (!box) return; ensureGrStyle();
+  if (CH.error) { box.innerHTML = '<div class="err">' + esc(CH.error.error) + '</div>'; return; }
+  var d = CH.data; if (!d) return;
+  var today = new Date().toISOString().slice(0, 10);
+  var h = (CH.msg ? '<div class="toast">' + esc(CH.msg) + '</div>' : '') + '<p class="sub" style="margin:0 0 10px">Log what you do to the site (publish a post, apply redirects, rewrite a page) and the tracker measures what followed: the 28 days before against the 28 days after for the pages involved, set against the rest of the site so a site-wide swing is not credited to the change. A redirect should list the old and the new address, so the traffic is counted wherever it lands.</p>' +
+    '<div class="row2"><div><label class="fl" for="chDate">Date it went live</label><input type="date" id="chDate" value="' + today + '" max="' + today + '"></div><div><label class="fl" for="chKind">Type</label><select id="chKind">' + [['published', 'Published a page'], ['updated', 'Updated a page'], ['redirect', 'Redirect applied'], ['removed', 'Removed a page'], ['other', 'Other']].map(function (k) { return '<option value="' + k[0] + '">' + k[1] + '</option>'; }).join('') + '</select></div></div>' +
+    '<div style="margin-top:10px"><label class="fl" for="chTitle">What you did</label><input type="text" id="chTitle" maxlength="120" placeholder="e.g. Republished the square-brackets post"></div>' +
+    '<div style="margin-top:10px"><label class="fl" for="chUrls">Pages involved (one URL per line; for a redirect, the old and the new; leave empty for a site-wide change)</label><textarea id="chUrls" style="min-height:70px" spellcheck="false" placeholder="https://' + esc((SH.site || 'example.com').replace(/^sc-domain:/, '')) + '/blog/…"></textarea></div>' +
+    '<div style="margin-top:10px"><label class="fl" for="chNote">Note (optional)</label><input type="text" id="chNote" maxlength="400"></div>' +
+    '<div class="acts"><button class="btn2 small" type="button" id="chAdd">Log this change</button></div><div id="chMsg"></div>';
+  if (d.changes.length) {
+    h += '<h3 class="h" style="font-size:16px;margin:16px 0 6px">Logged changes</h3><div class="gr">' + GscReport.changes(d.changes, { noTitle: true, effects: d.effects }) + '</div><div class="acts">' + d.changes.slice(0, 15).map(function (c) { return '<button class="btn2 small" type="button" data-del="' + esc(c.id) + '">Delete: ' + esc(c.date + ' ' + c.title.slice(0, 28)) + '</button>'; }).join('') + '</div>';
+  } else h += '<p class="hint" style="margin-top:12px">Nothing logged yet.</p>';
+  box.innerHTML = h;
+  $('chAdd').onclick = function () {
+    var b = this; b.disabled = true; $('chMsg').innerHTML = '<p class="hint">Saving…</p>';
+    api('/gsc-archive/changes', { id: CUR, action: 'add', date: $('chDate').value, kind: $('chKind').value, title: $('chTitle').value, urls: $('chUrls').value.split(/\n/).map(function (x) { return x.trim(); }).filter(Boolean), note: $('chNote').value }).then(function (r) {
+      b.disabled = false; if (r.error) { $('chMsg').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+      CH.msg = 'Logged. Its effect appears here once a week of data exists after the date.'; CH.data = r; renderChanges();
+    });
+  };
+  box.querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { if (!confirm('Delete this logged change?')) return; b.disabled = true; api('/gsc-archive/changes', { id: CUR, action: 'delete', cid: b.dataset.del }).then(function (r) { CH.msg = 'Deleted.'; CH.data = r; renderChanges(); }); }; });
+}
+
+/* ---- indexing check: what Google's index says (URL Inspection API) ---- */
+var IX = { id: '', data: null, error: null, source: 'lost', busy: false };
+function indexCard() { return '<div class="card" id="ixCard"><h2>Indexing check</h2><div id="ixOut"></div></div>'; }
+function renderIndex() {
+  var box = $('ixOut'); if (!box) return; ensureGrStyle();
+  var h = '<p class="sub" style="margin:0 0 10px">Asks Google’s own index about each page (Search Console’s URL Inspection): indexed or not, and if not, why: crawled but not indexed, discovered but not crawled, a redirect, a 404, noindex, a duplicate. Beside the page-health check, it shows whether Google has caught up with a change and whether a page that works is really indexed.</p>' +
+    '<label class="fl" for="ixSrc">Which pages</label><select id="ixSrc">' + [['lost', 'The 25 pages that lost the most clicks'], ['top', 'The 30 pages earning the most clicks'], ['custom', 'Pages I enter']].map(function (o) { return '<option value="' + o[0] + '"' + (IX.source === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select> ' +
+    '<div id="ixCustomWrap" style="margin-top:10px;display:' + (IX.source === 'custom' ? 'block' : 'none') + '"><label class="fl" for="ixUrls">Page addresses, one per line (up to 40)</label><textarea id="ixUrls" style="min-height:80px" spellcheck="false">' + esc(IX.urls || '') + '</textarea></div>' +
+    '<div class="acts"><button class="btn2 small" type="button" id="ixGo">Check with Google</button>' + (IX.data ? '<button class="btn2 small" type="button" id="ixCsv">Download (CSV)</button>' : '') + '</div><div id="ixMsg" style="margin-top:12px">' +
+    (IX.busy ? '<p class="hint">Asking Google about each page… (about 10–20 seconds)</p>' : '') + (IX.error ? '<div class="err">' + esc(IX.error.error) + '</div>' + (IX.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : '') : '') + '</div>';
+  if (IX.data) h += '<div class="gr">' + GscReport.indexing(IX.data, { noTitle: true }) + '</div>' + (IX.data.quota_hit ? '<p class="hint">Google’s daily inspection quota was reached, so some pages were skipped.</p>' : '') + '<p class="hint">Included in the full report, PDF and shared link (the last check).</p>';
+  box.innerHTML = h;
+  $('ixSrc').onchange = function () { IX.source = this.value; $('ixCustomWrap').style.display = IX.source === 'custom' ? 'block' : 'none'; };
+  $('ixGo').onclick = function () {
+    IX.source = $('ixSrc').value; IX.urls = $('ixUrls') ? $('ixUrls').value : ''; IX.busy = true; IX.error = null; renderIndex();
+    api('/gsc-archive/index-check', { id: CUR, source: IX.source, limit: IX.source === 'top' ? 30 : IX.source === 'lost' ? 25 : 40, urls: IX.urls.split(/\n/).map(function (x) { return x.trim(); }).filter(Boolean), refresh: true }).then(function (r) { IX.busy = false; if (r.error) { IX.error = r; } else IX.data = r; renderIndex(); }).catch(function () { IX.busy = false; IX.error = { error: 'Could not reach the server.' }; renderIndex(); });
+  };
+  if ($('ixCsv')) $('ixCsv').onclick = function () { download('gsc-indexing-check.csv', toCsv([['page', 'clicks', 'clicks_lost', 'on_the_site_now', 'google_state', 'google_coverage', 'page_fetch', 'last_crawl', 'google_canonical', 'note']].concat(IX.data.rows.map(function (r) { return [r.url, r.clicks, r.lost, r.site_kind, r.label || r.state, r.coverage, r.fetch, r.last_crawl, r.google_canonical, r.note || r.error || '']; })))); };
+}
+
+/* ---- GSC Suite: sections, each loaded the first time it is opened ---- */
+var VIEWS = [['overview', 'Overview'], ['segments', 'Segments'], ['opportunities', 'Opportunities'], ['recovery', 'Recovery'], ['technical', 'Technical'], ['archive', 'Archive'], ['alerts', 'Alerts & reports']];
+var CURVIEW = (location.hash || '').slice(1), VISITED = {};
+if (!VIEWS.some(function (v) { return v[0] === CURVIEW; })) CURVIEW = 'overview';
+var VIEW_LOADERS = {
+  overview: function () { loadTrend(); loadExpected(); loadBrand(); },
+  segments: function () { loadSegments(); },
+  opportunities: function () { loadOpps(); },
+  recovery: function () { loadLost(); loadChanges(); },
+  technical: function () { loadCwv(); renderIndex(); },
+  archive: function () { if (TOPMONTHS.length) loadTop(); },
+  alerts: function () { loadMonitor(); }
+};
+function showView(v, scroll) {
+  CURVIEW = v; VISITED[v] = true;
+  var root = $('view'); if (!root) return;
+  root.querySelectorAll('.view').forEach(function (el) { el.classList.toggle('on', el.dataset.view === v); });
+  root.querySelectorAll('#suiteNav button').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.view === v); });
+  try { history.replaceState(null, '', '#' + v); } catch (e) {}
+  VIEW_LOADERS[v]();
+  if (scroll) { var nav = $('suiteNav'); if (nav) window.scrollTo({ top: Math.max(0, nav.getBoundingClientRect().top + window.pageYOffset - 4), behavior: 'smooth' }); }
+}
+// The full report and PDF include every section, so they open all of them and wait for the data.
+function ensureAll(cb) {
+  Object.keys(VIEW_LOADERS).forEach(function (k) { if (k !== 'archive') VIEW_LOADERS[k](); });
+  var t0 = Date.now();
+  (function wait() {
+    var done = (TREND.data || TREND.error) && (EX.data || EX.error) && (BR.data || BR.error) && (OP.data || OP.error) && (LW.data || LW.error) && (CH.data || CH.error) && (CW.data || CW.error) && (MO.data || MO.error) &&
+      (SG.error || (SG.data && Object.keys(SG.details).length >= SG.data.segments.length));
+    if (done || Date.now() - t0 > 90000) cb(); else setTimeout(wait, 500);
+  })();
+}
+
+/* ---- whole-report PDF and sign-in-free share links ---- */
+var SH = { site: '' };
+function shareCard() {
+  return '<div class="card" id="shareCard"><h2>Share or download this report</h2><p class="sub" style="margin:0 0 10px">One report with the last 28 days against a year earlier, the 16-month trend with sustained drops flagged, the saved days by month and, if you have run it, “Where the traffic went”.</p>' +
+    '<label style="font-size:14px;display:block;margin:0 0 10px"><input type="checkbox" id="shPages" checked> Include “Where the traffic went” (the results shown further down; run it first)</label>' +
+    '<div class="acts" style="margin:0 0 6px"><button class="btn2 small" type="button" id="shPdf">Download full report (PDF)</button><button class="btn2 small" type="button" id="shMake">Create shareable link</button></div>' +
+    '<div id="shOut"></div><div id="shList"></div></div>';
+}
+function psPayload() {
+  if (!$('shPages') || !$('shPages').checked || !PS.rows.length || !PS.report) return null;
+  var m = PS.meta || {};
+  return { month: PS.month, total: PS.report.total, later_range: m.later_range || '', later_note: m.later_note || '', rows: PS.rows.map(function (r) { return { url: r.url, clicks: r.clicks, impressions: r.impressions, kind: r.kind, label: r.label, final: r.final, clicks_later: r.clicks_later, target_later: r.target_later }; }) };
+}
+function typesForReport() { var o = {}; if (TREND.types) TYPE_ORDER.forEach(function (k) { if (k !== 'web' && typeHasData(TREND.types[k])) o[k] = TREND.types[k]; }); return o; }
+function monthsOfDays() { var g = GRAN; GRAN = 'month'; var mt = aggregate(DAYS); GRAN = g; return mt; }
+function wireShare(site) {
+  SH.site = site;
+  var pdf = $('shPdf'), mk = $('shMake'); if (!pdf) return;
+  pdf.onclick = function () {
+    $('shOut').innerHTML = '<p class="hint">Collecting every section for the report… (up to a minute the first time)</p>';
+    ensureAll(function () { buildFullPdf(); });
+  };
+  function buildFullPdf() {
+    $('shOut').innerHTML = '<p class="hint">Preparing the report…</p>';
+    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, expected: EX.data || null, opportunities: OP.data || null, indexing: IX.data ? { checked_at: IX.data.checked_at, source: IX.data.source, counts: IX.data.counts, rows: IX.data.rows.slice(0, 25).map(function (r) { var o = Object.assign({}, r); delete o.link; return o; }) } : null, lost: LW.data ? { window: LW.data.window, lost_total: LW.data.lost_total, listed_lost: LW.data.listed_lost, by_kind: LW.data.by_kind, pages_total: LW.data.pages_total, pages: LW.data.pages.slice(0, 15), queries: LW.data.queries.slice(0, 10), queries_total: LW.data.queries_total } : null, changes: (CH.data && CH.data.changes.length) ? CH.data.changes.slice(0, 15).map(function (c) { return Object.assign({}, c, { effect: CH.data.effects[c.id] || null }); }) : null, cwv: (CW.data && CW.data.current) ? { origin: CW.data.origin, current: CW.data.current, history: CW.data.history, pages: CW.data.pages || [] } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
+    if (TREND.id === CUR && TREND.data && TREND.types) return go(TREND.data);
+    api('/gsc-archive/live-types', { id: CUR }).then(function (r) { if (r.error) { $('shOut').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } TREND.id = CUR; TREND.types = r.types || {}; TREND.errors = r.errors || {}; TREND.data = TREND.types.web || []; go(TREND.data); });
+  };
+  mk.onclick = function () {
+    var out = $('shOut'); mk.disabled = true; out.innerHTML = '<p class="hint">Creating the link…</p>';
+    api('/gsc-archive/share-create', { id: CUR, pages: psPayload() }).then(function (r) {
+      mk.disabled = false;
+      if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>' + (r.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : ''); return; }
+      out.innerHTML = '<div class="toast"><b>Link created.</b> Anyone who has it can read this snapshot without signing in. It does not update, expires on ' + esc(r.expires) + ', and you can withdraw it below at any time.<br><input type="text" readonly id="shUrl" value="' + esc(r.url) + '" style="margin:8px 0" onclick="this.select()"><div class="acts"><button class="btn2 small" type="button" id="shCopy">Copy link</button><a class="btn2 small" href="' + esc(r.url) + '" target="_blank" rel="noopener" style="text-decoration:none">Open</a></div></div>';
+      $('shCopy').onclick = function () { copyText($('shUrl').value, $('shCopy')); };
+      loadShares();
+    }).catch(function () { mk.disabled = false; out.innerHTML = '<div class="err">Could not reach the server.</div>'; });
+  };
+  loadShares();
+}
+function copyText(text, btn) {
+  var done = function () { var o = btn.textContent; btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = o; }, 1500); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () { prompt('Copy this link:', text); });
+  else prompt('Copy this link:', text);
+}
+function loadShares() {
+  api('/gsc-archive/share-list', { id: CUR }).then(function (r) {
+    var box = $('shList'); if (!box) return;
+    if (!r.shares || !r.shares.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<p class="fl" style="margin-top:14px">Active links</p><div class="tblwrap"><table class="tbl"><tr><th>Created</th><th>Includes</th><th>Expires</th><th></th></tr>' + r.shares.map(function (x) { return '<tr><td>' + esc(x.created.slice(0, 10)) + '</td><td>' + (x.kind === 'core' ? 'Core terms report' : x.kind === 'focus' ? 'Focus report: ' + esc(x.focus) : x.pages_month ? 'Full report incl. Where the traffic went (' + esc(monLabel(x.pages_month)) + ')' : 'Full report') + '</td><td>' + esc(x.expires) + '</td><td><button class="btn2 small" type="button" data-copy="' + esc(x.url) + '">Copy</button> <button class="btn2 small" type="button" data-revoke="' + esc(x.t) + '">Withdraw</button></td></tr>'; }).join('') + '</table></div>';
+    box.querySelectorAll('[data-copy]').forEach(function (b) { b.onclick = function () { copyText(b.dataset.copy, b); }; });
+    box.querySelectorAll('[data-revoke]').forEach(function (b) { b.onclick = function () { if (!confirm('Withdraw this link? Anyone who has it will see an expired message.')) return; b.disabled = true; api('/gsc-archive/share-revoke', { id: CUR, t: b.dataset.revoke }).then(function () { loadShares(); }); }; });
+  });
+}
+
+/* ---- the archive view ---- */
+var TREND = { id: '', data: null, types: null, type: 'web', errors: {}, error: null, metric: 'clicks' }, CMP = { opts: null, months: 1, start: '', metric: 'clicks', kind: 'queries', list: 'gainers', data: null }, PS = { month: '', max: 120, rows: [], total: 0, busy: false, filter: 'all', meta: null, token: 0 }, TOPMONTHS = [], RANGE = 'all', GRAN = 'month', METRIC = 'clicks', YOY = true, TOPKIND = 'q', TOPMONTH = '';
+var COLORS = ['#34517A', '#C99A3E'];
+var addDays = function (iso, n) { var d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+function openView(id) {
+  CUR = id; VISITED = {}; if ($('suiteIntro')) $('suiteIntro').style.display = 'none';
+  api('/gsc-archive/daily', { id: id }).then(function (r) {
+    if (r.error) return alert(r.error);
+    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null; MO.id = ''; MO.data = null; MO.error = null; MO.msg = ''; EX.id = ''; EX.data = null; EX.error = null; OP.id = ''; OP.data = null; OP.error = null; LW.id = ''; LW.data = null; LW.error = null; IX.data = null; IX.error = null; IX.busy = false; CH.id = ''; CH.data = null; CH.error = null; CH.msg = '';
+    api('/gsc-archive/compare-options', { id: id }).then(function (o) { CMP.opts = o && !o.error ? o : null; if (CMP.opts && CMP.opts.months.length && !CMP.start) { var okm = CMP.opts.months.filter(function (m) { return m.available && m.twin_available; }); CMP.start = (okm.filter(function (m) { return m.month === CMP.opts.latest_stored_month; })[0] || okm[okm.length - 1] || {}).month || ''; } $('view').style.display = ''; drawView(r.site_url); $('view').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  });
+}
+function bucket(date) { if (GRAN === 'day') return date; if (GRAN === 'month') return date.slice(0, 7); var d = new Date(date + 'T00:00:00Z'); var dow = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - dow); return d.toISOString().slice(0, 10); }
+function aggregate(days) {
+  var m = {}; days.forEach(function (d) { var k = bucket(d.date), b = m[k] || (m[k] = { k: k, clicks: 0, impressions: 0, w: 0, n: 0 }); b.clicks += d.clicks; b.impressions += d.impressions; b.w += (d.position || 0) * d.impressions; b.n++; });
+  return Object.keys(m).sort().map(function (k) { var b = m[k]; return { k: k, clicks: b.clicks, impressions: b.impressions, ctr: b.impressions ? b.clicks / b.impressions * 100 : 0, position: b.impressions ? b.w / b.impressions : null, n: b.n }; });
+}
+function rangeDays() {
+  if (!DAYS.length) return [];
+  var last = DAYS[DAYS.length - 1].date, from = RANGE === '28d' ? addDays(last, -27) : RANGE === '3m' ? addDays(last, -90) : RANGE === '12m' ? addDays(last, -364) : '0000';
+  return DAYS.filter(function (d) { return d.date >= from; });
+}
+function metricVal(b) { return b ? (METRIC === 'ctr' ? b.ctr : METRIC === 'position' ? b.position : b[METRIC]) : null; }
+function chart(cur, prev) {
+  var W = 760, H = 280, L = 52, R = 14, T = 12, B = 30;
+  var vals = cur.concat(prev).map(metricVal).filter(function (v) { return v != null; });
+  if (!vals.length) return '<p class="hint">No data in this range.</p>';
+  var max = Math.max.apply(null, vals), min = METRIC === 'position' ? 1 : 0; if (METRIC === 'position') max = Math.ceil(max);
+  var n = Math.max(cur.length, 1), x = function (i) { return L + (W - L - R) * (n === 1 ? 0.5 : i / (n - 1)); };
+  var y = function (v) { var t = (v - min) / (max - min || 1); return T + (H - T - B) * (METRIC === 'position' ? t : 1 - t); };
+  var g = '';
+  for (var t = 0; t <= 4; t++) { var v = min + (max - min) * t / 4, yy = T + (H - T - B) * (METRIC === 'position' ? t / 4 : 1 - t / 4); g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#e2e2dc"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="11" fill="#3d3d3d">' + (METRIC === 'ctr' ? v.toFixed(1) + '%' : METRIC === 'position' ? v.toFixed(0) : fmt(v)) + '</text>'; }
+  var step = Math.max(1, Math.ceil(n / 8)); cur.forEach(function (b, i) { if (i % step === 0) g += '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="#3d3d3d">' + esc(GRAN === 'month' ? b.k : b.k.slice(5)) + '</text>'; });
+  var line = function (arr, color, dash) { var pts = []; arr.forEach(function (b, i) { var v = metricVal(b); if (v != null) pts.push(x(i).toFixed(1) + ',' + y(v).toFixed(1)); }); return pts.length ? '<polyline fill="none" stroke="' + color + '" stroke-width="3" ' + (dash ? 'stroke-dasharray="6 5" ' : '') + 'stroke-linejoin="round" points="' + pts.join(' ') + '"/>' : ''; };
+  if (prev.length) g += line(prev, COLORS[1], true);
+  g += line(cur, COLORS[0]);
+  return '<div class="chart"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + METRIC + ' over time">' + g + '</svg><div class="legend"><span><i style="background:' + COLORS[0] + '"></i>This period</span>' + (prev.length ? '<span><i style="background:' + COLORS[1] + '"></i>Same period a year earlier</span>' : '') + '</div></div>';
+}
+function totals(days) { var t = { clicks: 0, impressions: 0, w: 0 }; days.forEach(function (d) { t.clicks += d.clicks; t.impressions += d.impressions; t.w += (d.position || 0) * d.impressions; }); return { clicks: t.clicks, impressions: t.impressions, ctr: t.impressions ? t.clicks / t.impressions * 100 : 0, position: t.impressions ? t.w / t.impressions : null }; }
+function delta(a, b, lowerBetter) { if (b == null || !b || a == null) return ''; var p = (a - b) / b * 100, good = lowerBetter ? p < 0 : p > 0; return '<span class="d ' + (good ? 'up' : 'dn') + '">' + (p >= 0 ? '+' : '') + p.toFixed(1) + '% vs a year earlier</span>'; }
+function drawView(site) {
+  var days = rangeDays(); if (!days.length) { $('view').innerHTML = '<p class="hint">Nothing stored yet for this property.</p>'; return; }
+  var first = days[0].date, last = days[days.length - 1].date;
+  var shifted = DAYS.filter(function (d) { return d.date >= addDays(first, -365) && d.date <= addDays(last, -365); }).map(function (d) { return Object.assign({}, d, { date: addDays(d.date, 365) }); });
+  var cur = aggregate(days), partialDropped = false;
+  // A first or last month (or week) that isn't complete would read as a collapse: leave it out of the chart.
+  var full = function (b) { if (GRAN === 'month') { var y = +b.k.slice(0, 4), mo = +b.k.slice(5); return b.n >= new Date(Date.UTC(y, mo, 0)).getUTCDate(); } return GRAN === 'week' ? b.n >= 7 : true; };
+  if (cur.length > 2) { if (!full(cur[cur.length - 1])) { cur.pop(); partialDropped = true; } if (cur.length > 2 && !full(cur[0])) { cur.shift(); partialDropped = true; } }
+  var prev = YOY && shifted.length > 20 ? aggregate(shifted) : [];
+  // Align the previous year's buckets to the current ones by position in the range.
+  var prevAligned = cur.map(function (b) { return prev.filter(function (p) { return p.k === b.k; })[0] || null; });
+  var tc = totals(days), tp = shifted.length > 20 ? totals(shifted) : null;
+  var SEC = {
+    overview: '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + expectedCard() + brandCard(),
+    segments: segArea(),
+    opportunities: opportunitiesCard(),
+    recovery: lostCard() + changesCard(),
+    technical: cwvCard() + indexCard(),
+    alerts: monitorCard() + shareCard()
+  };
+  var h = '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
+    '<div class="seg" data-g="range">' + [['28d', '28 days'], ['3m', '3 months'], ['12m', '12 months'], ['all', 'All stored']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (RANGE === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
+    '<div class="seg" data-g="gran">' + [['day', 'Daily'], ['week', 'Weekly'], ['month', 'Monthly']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (GRAN === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
+    '<div class="seg" data-g="metric">' + [['clicks', 'Clicks'], ['impressions', 'Impressions'], ['ctr', 'CTR'], ['position', 'Position']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (METRIC === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
+    '<label style="font-size:14px;margin-left:4px"><input type="checkbox" id="yoy"' + (YOY ? ' checked' : '') + '> Compare with a year earlier</label>' +
+    '<div class="tiles"><div class="tile"><div class="k">Clicks</div><div class="v">' + fmt(tc.clicks) + '</div>' + (tp ? delta(tc.clicks, tp.clicks) : '') + '</div><div class="tile"><div class="k">Impressions</div><div class="v">' + fmt(tc.impressions) + '</div>' + (tp ? delta(tc.impressions, tp.impressions) : '') + '</div><div class="tile"><div class="k">CTR</div><div class="v">' + tc.ctr.toFixed(2) + '%</div>' + (tp ? delta(tc.ctr, tp.ctr) : '') + '</div><div class="tile"><div class="k">Avg position</div><div class="v">' + (tc.position == null ? '—' : tc.position.toFixed(1)) + '</div>' + (tp ? delta(tc.position, tp.position, true) : '') + '</div></div>' +
+    chart(cur, prevAligned) +
+    (!tp && YOY ? '<p class="hint">A year-on-year comparison appears once more than a year of data is stored.</p>' : '') + (partialDropped ? '<p class="hint">The first or last period is left out of the chart when it is only partly stored. The tiles above count every day in the range.</p>' : '') + '</div>';
+  // Monthly table
+  var months = aggregate(DAYS.map(function (d) { return d; }).filter(function () { return true; }));
+  var saveGran = GRAN; GRAN = 'month'; var mt = aggregate(DAYS); GRAN = saveGran;
+  h += '<div class="card"><h2>Month by month</h2><div class="tblwrap"><table class="tbl"><tr><th>Month</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Avg position</th><th>Days</th></tr>' + mt.slice().reverse().map(function (m) { return '<tr><td>' + esc(m.k) + '</td><td class="num">' + fmt(m.clicks) + '</td><td class="num">' + fmt(m.impressions) + '</td><td class="num">' + m.ctr.toFixed(2) + '%</td><td class="num">' + (m.position == null ? '—' : m.position.toFixed(1)) + '</td><td class="num">' + m.n + '</td></tr>'; }).join('') + '</table></div><div class="acts"><button class="btn2 small" type="button" id="csvDays">Download daily totals (CSV)</button></div></div>';
+  h += compareCard();
+  h += pageStatusCard();
+  // Top queries / pages
+  var complete = TOPMONTHS;   // months with a stored rollup
+  if (!TOPMONTH && complete.length) TOPMONTH = complete[0];
+  h += '<div class="card"><h2>Top queries and pages</h2><p class="sub" style="margin:0 0 10px">From the monthly rollups, built once all of a month’s days we could save are stored (the first month is often partial, because Google had already dropped its early days).</p>' +
+    (complete.length ? '<div class="seg" data-g="kind"><button type="button" data-v="q" aria-pressed="' + (TOPKIND === 'q') + '">Queries</button><button type="button" data-v="p" aria-pressed="' + (TOPKIND === 'p') + '">Pages</button></div><select id="topMonth">' + ['ALL'].concat(complete).map(function (m) { return '<option value="' + m + '"' + (m === TOPMONTH ? ' selected' : '') + '>' + (m === 'ALL' ? 'All stored months' : m) + '</option>'; }).join('') + '</select><div id="topOut" style="margin-top:12px"><p class="hint">Loading…</p></div>' : '<p class="hint">No monthly rollup yet — a month’s top lists are built once all its saved days are in.</p>') + '</div>';
+  h += '<div class="card"><h2>Raw rows for a day</h2><p class="sub" style="margin:0 0 10px">Every stored query-by-page row for one day, as a CSV.</p><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><input type="date" id="exDate" min="' + esc(DAYS[0].date) + '" max="' + esc(DAYS[DAYS.length - 1].date) + '" value="' + esc(DAYS[DAYS.length - 1].date) + '"><button class="btn2 small" type="button" id="csvDay">Download CSV</button></div><div id="exMsg"></div></div>';
+  SEC.archive = h;
+  $('view').innerHTML = '<nav class="suitenav" id="suiteNav" role="tablist">' + VIEWS.map(function (v) { return '<button type="button" role="tab" data-view="' + v[0] + '" aria-selected="' + (CURVIEW === v[0]) + '">' + v[1] + '</button>'; }).join('') + '</nav>' + VIEWS.map(function (v) { return '<div class="view' + (CURVIEW === v[0] ? ' on' : '') + '" data-view="' + v[0] + '">' + (SEC[v[0]] || '') + '</div>'; }).join('');
+  $('view').querySelectorAll('#suiteNav button').forEach(function (b) { b.onclick = function () { showView(b.dataset.view, true); }; });
+  wire(site);
+  Object.keys(VISITED).forEach(function (k) { VIEW_LOADERS[k](); });   // sections already opened were rebuilt: redraw them from their cached data
+  showView(CURVIEW);
+}
+function wire(site) {
+  $('view').querySelectorAll('.seg').forEach(function (seg) { seg.querySelectorAll('button').forEach(function (b) { b.onclick = function () {
+    var g = seg.dataset.g, v = b.dataset.v;
+    if (g === 'range') RANGE = v; else if (g === 'gran') GRAN = v; else if (g === 'metric') METRIC = v; else if (g === 'kind') { TOPKIND = v; }
+    if (g === 'kind') { seg.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x.dataset.v === v); }); loadTop(); } else drawView(site);
+  }; }); });
+  wireCompare(site);
+  wirePageStatus(site);
+  wireShare(site);
+  var y = $('yoy'); if (y) y.onchange = function () { YOY = y.checked; drawView(site); };
+  var tm = $('topMonth'); if (tm) tm.onchange = function () { TOPMONTH = tm.value; loadTop(); };
+  $('csvDays').onclick = function () { download('gsc-daily-' + site.replace(/[^a-z0-9]+/gi, '-') + '.csv', toCsv([['date', 'clicks', 'impressions', 'ctr', 'position']].concat(DAYS.map(function (d) { return [d.date, d.clicks, d.impressions, d.ctr, d.position]; })))); };
+  $('csvDay').onclick = function () {
+    var date = $('exDate').value; if (!date) return; $('exMsg').innerHTML = '<p class="hint">Preparing…</p>';
+    fetch(API + '/gsc-archive/export', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, id: CUR, date: date }) }).then(function (r) {
+      if (!/csv/.test(r.headers.get('content-type') || '')) return r.json().then(function (j) { $('exMsg').innerHTML = '<div class="err">' + esc(j.error || 'Could not export that day.') + '</div>'; });
+      return r.text().then(function (t) { $('exMsg').innerHTML = ''; download('gsc-' + date + '.csv', t); });
+    }).catch(function () { $('exMsg').innerHTML = '<div class="err">Could not reach the server.</div>'; });
+  };
+}
+function loadTop() {
+  var m = TOPMONTH, body = { id: CUR, kind: TOPKIND, limit: 100 }; if (m && m !== 'ALL') { body.start = m; body.end = m; }
+  $('topOut').innerHTML = '<p class="hint">Loading…</p>';
+  api('/gsc-archive/top', body).then(function (r) {
+    if (r.error) { $('topOut').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+    if (!r.rows.length) { $('topOut').innerHTML = '<p class="hint">No rollup stored for that month yet.</p>'; return; }
+    $('topOut').innerHTML = '<div class="tblwrap"><table class="tbl"><tr><th>' + (TOPKIND === 'q' ? 'Query' : 'Page') + '</th><th>Clicks</th><th>Impressions</th><th>Avg position</th></tr>' + r.rows.map(function (x) { return '<tr><td>' + esc(x.key) + '</td><td class="num">' + fmt(x.clicks) + '</td><td class="num">' + fmt(x.impressions) + '</td><td class="num">' + (x.position == null ? '—' : x.position) + '</td></tr>'; }).join('') + '</table></div><p class="hint">' + r.rows.length + ' shown · ' + r.months.length + ' month' + (r.months.length === 1 ? '' : 's') + '. ' + esc(r.note) + '</p><div class="acts"><button class="btn2 small" type="button" id="csvTop">Download (CSV)</button></div>';
+    $('csvTop').onclick = function () { download('gsc-top-' + (TOPKIND === 'q' ? 'queries' : 'pages') + '-' + (m || 'all') + '.csv', toCsv([[TOPKIND === 'q' ? 'query' : 'page', 'clicks', 'impressions', 'position']].concat(r.rows.map(function (x) { return [x.key, x.clicks, x.impressions, x.position]; })))); };
+  });
+}
+function toCsv(rows) { return rows.map(function (r) { return r.map(function (v) { var s = v == null ? '' : String(v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(','); }).join('\n') + '\n'; }
+function download(name, text) { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+init();
+</script>
+</body>
+</html>

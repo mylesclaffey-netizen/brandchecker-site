@@ -5,7 +5,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Search Console report | Brand Checker</title>
+<title>Search Console report | GSC Suite</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2334517A'/%3E%3C/svg%3E" />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -32,10 +32,10 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="bar"><span class="brand">Brand Checker</span><button class="btn" type="button" id="pdf" style="display:none">Save as PDF</button></div>
+  <div class="bar"><span class="brand">Brand Checker · GSC Suite</span><button class="btn" type="button" id="pdf" style="display:none">Save as PDF</button></div>
   <div id="out"><p class="msg">Loading the report…</p></div>
 </div>
-<script src="/assets/gsc-report.js?v=12"></script>
+<script src="/assets/gsc-report.js?v=13"></script>
 <script>
 (function () {
   var API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
@@ -48,7 +48,7 @@
     .then(function (r) {
       if (!r.ok || r.j.error) { out.innerHTML = '<p class="msg">' + GscReport.esc((r.j && r.j.error) || 'This report could not be loaded.') + '</p>'; return; }
       out.innerHTML = GscReport.render(r.j);
-      document.title = String(r.j.site || '').replace(/^sc-domain:/, '') + ' — Search Console report | Brand Checker';
+      document.title = String(r.j.site || '').replace(/^sc-domain:/, '') + ' — Search Console report | GSC Suite';
       document.getElementById('pdf').style.display = '';
     })
     .catch(function () { out.innerHTML = '<p class="msg">The report could not be loaded. Try again in a moment.</p>'; });
