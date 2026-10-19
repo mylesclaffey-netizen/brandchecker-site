@@ -279,6 +279,36 @@
     return h + '<p class="foot">' + (seasonal ? 'Seasonal adjustment only applies to weeks that have a full year of history behind them (about the last ' + Math.max(...keys.map(function (k) { return exp[k] && exp[k].weeks ? exp[k].weeks.filter(function (w) { return w.seasonal; }).length : 0; })) + ' weeks); earlier weeks are compared with the recent level alone, so the range is wider and less precise. ' : 'There is not yet a full year of history, so no seasonal adjustment is applied; weeks are compared with the recent level alone. ') + 'The baseline follows the data, so a lasting drop stops being flagged after about eight weeks: the flags show when it started, not that it is still unexplained.</p>';
   }
 
+  /* ---- opportunities: striking distance, CTR gaps, cannibalisation (computed by the worker) ---- */
+  function oppTable(rows, cols) { return '<table><thead><tr>' + cols.map(function (c) { return '<th>' + esc(c[0]) + '</th>'; }).join('') + '</tr></thead><tbody>' + rows.map(function (r) { return '<tr>' + cols.map(function (c) { return c[2] ? '<td class="n">' + c[1](r) + '</td>' : '<td>' + c[1](r) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>'; }
+  function oppStriking(o, n) {
+    var st = o.striking; if (!st || !st.rows.length) return '<p class="sub">No queries are sitting in positions 8–20 with enough impressions.</p>';
+    return '<p class="sub"><b>' + st.total + '</b> queries average position 8 to 20 with at least 60 impressions in the window. Moving them to about position 5 is worth roughly <b>' + fmt(st.upside_month) + ' extra clicks a month</b> (an estimate from typical click rates by position). Best targets first:</p>' +
+      oppTable(st.rows.slice(0, n || 40), [['Query', function (r) { return esc(r.query); }], ['Position', function (r) { return r.position.toFixed(1); }, 1], ['Impressions', function (r) { return fmt(r.impressions); }, 1], ['Clicks', function (r) { return fmt(r.clicks); }, 1], ['CTR', function (r) { return (r.ctr * 100).toFixed(1) + '%'; }, 1], ['Ranking page', function (r) { return esc(sitePath(r.page)); }], ['Est. extra clicks / month', function (r) { return '+' + r.upside_month.toFixed(1); }, 1]]) +
+      '<p class="foot">Typical fixes: add the query’s wording to the page title and headings, answer it directly in the first paragraph, link to the page from stronger pages, and expand thin sections.</p>';
+  }
+  function oppGap(o, n) {
+    var g = o.gap; if (!g || !g.rows.length) return '<p class="sub">No query ranks in the top three while earning less than half the usual click rate.</p>';
+    return '<p class="sub"><b>' + g.total + '</b> queries rank in the top 3.5 positions but earn under half the click rate that position usually gets. Reaching 70% of the typical rate is worth roughly <b>' + fmt(g.upside_month) + ' extra clicks a month</b>.</p>' +
+      oppTable(g.rows.slice(0, n || 25), [['Query', function (r) { return esc(r.query); }], ['Position', function (r) { return r.position.toFixed(1); }, 1], ['Impressions', function (r) { return fmt(r.impressions); }, 1], ['CTR', function (r) { return (r.ctr * 100).toFixed(1) + '%'; }, 1], ['Typical at that position', function (r) { return '~' + Math.round(r.bench * 100) + '%'; }, 1], ['Page', function (r) { return esc(sitePath(r.page)); }], ['Est. extra clicks / month', function (r) { return '+' + r.upside_month.toFixed(1); }, 1]]) +
+      '<p class="foot">A low click rate at the top is often not about your listing: Google may answer the question itself (a featured snippet or an AI overview), or the query may be generic. Check the results page for the query; if your listing is the only thing missing clicks, a clearer title and description is the fix.</p>';
+  }
+  function oppCannibal(o, n) {
+    var c = o.cannibal; if (!c || !c.rows.length) return '<p class="sub">No query is split between two of your pages.</p>';
+    return '<p class="sub"><b>' + c.total + '</b> queries are shown by two or more of your pages, each taking a real share of the impressions' + (c.same_language != null ? ' (' + c.same_language + ' within the same language)' : '') + '. When the pages compete, neither ranks as well as one combined page would. Brand queries are left out.</p>' +
+      oppTable(c.rows.slice(0, n || 25), [['Query', function (r) { return esc(r.query) + (r.languages ? '<br><small>German and English versions: usually fine (hreflang)</small>' : ''); }], ['Impressions', function (r) { return fmt(r.impressions); }, 1], ['Pages competing (position · impressions · clicks)', function (r) { return r.pages.map(function (p) { return esc(sitePath(p.url)) + ' · ' + p.position.toFixed(1) + ' · ' + fmt(p.impressions) + ' · ' + fmt(p.clicks); }).join('<br>'); }]]) +
+      '<p class="foot">Typical fixes: merge the weaker page into the stronger one with a redirect, make each page clearly about a different query, or point internal links at the page you want to rank.</p>';
+  }
+  function opportunitiesSection(o, opts) {
+    if (!o || !o.striking) return '';
+    var tab = opts && opts.tab, h = (opts && opts.noTitle ? '' : '<h2>Opportunities</h2>');
+    h += '<p class="sub">From the query-by-page rows of ' + dLong(o.window.start) + ' to ' + dLong(o.window.end) + ' (' + fmt(o.rows_scanned) + ' rows). Web search; brand queries are left out of the first two lists.</p>';
+    if (!tab || tab === 'striking') h += (tab ? '' : '<h2 style="margin-top:14px">Striking distance</h2>') + oppStriking(o, tab ? 40 : 12);
+    if (!tab || tab === 'gap') h += (tab ? '' : '<h2 style="margin-top:14px">CTR gaps at the top</h2>') + oppGap(o, tab ? 25 : 10);
+    if (!tab || tab === 'cannibal') h += (tab ? '' : '<h2 style="margin-top:14px">Cannibalisation</h2>') + oppCannibal(o, tab ? 25 : 10);
+    return h + '<p class="foot">Expected click rates are rough industry averages by position, not this site’s own, so the “extra clicks” are indications, not forecasts. Query-by-page rows hide small combinations, so totals read lower than the query-only figures.</p>';
+  }
+
   function monthsSection(months) {
     if (!months || !months.length) return '';
     return '<h2>Saved days, by month</h2><p class="sub">Days Brand Checker saved before Google deleted them. A month marked partial has fewer saved days than the month has.</p><table><thead><tr><th>Month</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Avg position</th><th>Days saved</th></tr></thead><tbody>'
@@ -320,6 +350,7 @@
     else {
       if (trend.length >= 28) h += headline(trend) + trendSection(trend) + typesSection(trend, s.trend_types);
       h += expectedSection(s.expected);
+      h += opportunitiesSection(s.opportunities);
       h += cwvSection(s.cwv);
       h += brandSection(s.brand);
       if (s.seg) { h += segCore(s.seg); (s.seg.segments || []).filter(function (x) { return x.kind === 'focus'; }).forEach(function (x) { h += segFocus(s.seg, x.id); }); }
@@ -328,5 +359,5 @@
     h += '<p class="end">Figures are from Google Search Console for ' + esc(site) + '. Days older than Google’s 16-month window come from Brand Checker’s archive. Search Console’s own daily totals can differ slightly from the sum of query rows. Generated by Brand Checker (brandchecker.eu).</p></div>';
     return h;
   }
-  window.GscReport = { render: render, css: CSS, esc: esc, seg: { core: segCore, focus: segFocus }, cwv: cwvSection, expected: expectedSection, brand: { all: bAll, weeks: bWeeks, months: bMonths, sum: sum, stats: bStats, chart: bChart } };
+  window.GscReport = { render: render, css: CSS, esc: esc, seg: { core: segCore, focus: segFocus }, cwv: cwvSection, expected: expectedSection, opportunities: opportunitiesSection, brand: { all: bAll, weeks: bWeeks, months: bMonths, sum: sum, stats: bStats, chart: bChart } };
 })();
