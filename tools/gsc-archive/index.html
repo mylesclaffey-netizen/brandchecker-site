@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <script src="/assets/visitor.js"></script>
-<script src="/assets/gsc-report.js?v=11"></script>
+<script src="/assets/gsc-report.js?v=12"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Search Console Archive</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
@@ -838,6 +838,26 @@ function renderChanges() {
   box.querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { if (!confirm('Delete this logged change?')) return; b.disabled = true; api('/gsc-archive/changes', { id: CUR, action: 'delete', cid: b.dataset.del }).then(function (r) { CH.msg = 'Deleted.'; CH.data = r; renderChanges(); }); }; });
 }
 
+/* ---- indexing check: what Google's index says (URL Inspection API) ---- */
+var IX = { id: '', data: null, error: null, source: 'lost', busy: false };
+function indexCard() { return '<div class="card" id="ixCard"><h2>Indexing check</h2><div id="ixOut"></div></div>'; }
+function renderIndex() {
+  var box = $('ixOut'); if (!box) return; ensureGrStyle();
+  var h = '<p class="sub" style="margin:0 0 10px">Asks Google’s own index about each page (Search Console’s URL Inspection): indexed or not, and if not, why: crawled but not indexed, discovered but not crawled, a redirect, a 404, noindex, a duplicate. Beside the page-health check, it shows whether Google has caught up with a change and whether a page that works is really indexed.</p>' +
+    '<label class="fl" for="ixSrc">Which pages</label><select id="ixSrc">' + [['lost', 'The 25 pages that lost the most clicks'], ['top', 'The 30 pages earning the most clicks'], ['custom', 'Pages I enter']].map(function (o) { return '<option value="' + o[0] + '"' + (IX.source === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select> ' +
+    '<div id="ixCustomWrap" style="margin-top:10px;display:' + (IX.source === 'custom' ? 'block' : 'none') + '"><label class="fl" for="ixUrls">Page addresses, one per line (up to 40)</label><textarea id="ixUrls" style="min-height:80px" spellcheck="false">' + esc(IX.urls || '') + '</textarea></div>' +
+    '<div class="acts"><button class="btn2 small" type="button" id="ixGo">Check with Google</button>' + (IX.data ? '<button class="btn2 small" type="button" id="ixCsv">Download (CSV)</button>' : '') + '</div><div id="ixMsg" style="margin-top:12px">' +
+    (IX.busy ? '<p class="hint">Asking Google about each page… (about 10–20 seconds)</p>' : '') + (IX.error ? '<div class="err">' + esc(IX.error.error) + '</div>' + (IX.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : '') : '') + '</div>';
+  if (IX.data) h += '<div class="gr">' + GscReport.indexing(IX.data, { noTitle: true }) + '</div>' + (IX.data.quota_hit ? '<p class="hint">Google’s daily inspection quota was reached, so some pages were skipped.</p>' : '') + '<p class="hint">Included in the full report, PDF and shared link (the last check).</p>';
+  box.innerHTML = h;
+  $('ixSrc').onchange = function () { IX.source = this.value; $('ixCustomWrap').style.display = IX.source === 'custom' ? 'block' : 'none'; };
+  $('ixGo').onclick = function () {
+    IX.source = $('ixSrc').value; IX.urls = $('ixUrls') ? $('ixUrls').value : ''; IX.busy = true; IX.error = null; renderIndex();
+    api('/gsc-archive/index-check', { id: CUR, source: IX.source, limit: IX.source === 'top' ? 30 : IX.source === 'lost' ? 25 : 40, urls: IX.urls.split(/\n/).map(function (x) { return x.trim(); }).filter(Boolean), refresh: true }).then(function (r) { IX.busy = false; if (r.error) { IX.error = r; } else IX.data = r; renderIndex(); }).catch(function () { IX.busy = false; IX.error = { error: 'Could not reach the server.' }; renderIndex(); });
+  };
+  if ($('ixCsv')) $('ixCsv').onclick = function () { download('gsc-indexing-check.csv', toCsv([['page', 'clicks', 'clicks_lost', 'on_the_site_now', 'google_state', 'google_coverage', 'page_fetch', 'last_crawl', 'google_canonical', 'note']].concat(IX.data.rows.map(function (r) { return [r.url, r.clicks, r.lost, r.site_kind, r.label || r.state, r.coverage, r.fetch, r.last_crawl, r.google_canonical, r.note || r.error || '']; })))); };
+}
+
 /* ---- whole-report PDF and sign-in-free share links ---- */
 var SH = { site: '' };
 function shareCard() {
@@ -858,7 +878,7 @@ function wireShare(site) {
   var pdf = $('shPdf'), mk = $('shMake'); if (!pdf) return;
   pdf.onclick = function () {
     $('shOut').innerHTML = '<p class="hint">Preparing the report…</p>';
-    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, expected: EX.data || null, opportunities: OP.data || null, lost: LW.data ? { window: LW.data.window, lost_total: LW.data.lost_total, listed_lost: LW.data.listed_lost, by_kind: LW.data.by_kind, pages_total: LW.data.pages_total, pages: LW.data.pages.slice(0, 15), queries: LW.data.queries.slice(0, 10), queries_total: LW.data.queries_total } : null, changes: (CH.data && CH.data.changes.length) ? CH.data.changes.slice(0, 15).map(function (c) { return Object.assign({}, c, { effect: CH.data.effects[c.id] || null }); }) : null, cwv: (CW.data && CW.data.current) ? { origin: CW.data.origin, current: CW.data.current, history: CW.data.history, pages: CW.data.pages || [] } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
+    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, expected: EX.data || null, opportunities: OP.data || null, indexing: IX.data ? { checked_at: IX.data.checked_at, source: IX.data.source, counts: IX.data.counts, rows: IX.data.rows.slice(0, 25).map(function (r) { var o = Object.assign({}, r); delete o.link; return o; }) } : null, lost: LW.data ? { window: LW.data.window, lost_total: LW.data.lost_total, listed_lost: LW.data.listed_lost, by_kind: LW.data.by_kind, pages_total: LW.data.pages_total, pages: LW.data.pages.slice(0, 15), queries: LW.data.queries.slice(0, 10), queries_total: LW.data.queries_total } : null, changes: (CH.data && CH.data.changes.length) ? CH.data.changes.slice(0, 15).map(function (c) { return Object.assign({}, c, { effect: CH.data.effects[c.id] || null }); }) : null, cwv: (CW.data && CW.data.current) ? { origin: CW.data.origin, current: CW.data.current, history: CW.data.history, pages: CW.data.pages || [] } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
     if (TREND.id === CUR && TREND.data && TREND.types) return go(TREND.data);
     api('/gsc-archive/live-types', { id: CUR }).then(function (r) { if (r.error) { $('shOut').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } TREND.id = CUR; TREND.types = r.types || {}; TREND.errors = r.errors || {}; TREND.data = TREND.types.web || []; go(TREND.data); });
   };
@@ -897,7 +917,7 @@ function openView(id) {
   CUR = id;
   api('/gsc-archive/daily', { id: id }).then(function (r) {
     if (r.error) return alert(r.error);
-    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null; MO.id = ''; MO.data = null; MO.error = null; MO.msg = ''; EX.id = ''; EX.data = null; EX.error = null; OP.id = ''; OP.data = null; OP.error = null; LW.id = ''; LW.data = null; LW.error = null; CH.id = ''; CH.data = null; CH.error = null; CH.msg = '';
+    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null; MO.id = ''; MO.data = null; MO.error = null; MO.msg = ''; EX.id = ''; EX.data = null; EX.error = null; OP.id = ''; OP.data = null; OP.error = null; LW.id = ''; LW.data = null; LW.error = null; IX.data = null; IX.error = null; IX.busy = false; CH.id = ''; CH.data = null; CH.error = null; CH.msg = '';
     api('/gsc-archive/compare-options', { id: id }).then(function (o) { CMP.opts = o && !o.error ? o : null; if (CMP.opts && CMP.opts.months.length && !CMP.start) { var okm = CMP.opts.months.filter(function (m) { return m.available && m.twin_available; }); CMP.start = (okm.filter(function (m) { return m.month === CMP.opts.latest_stored_month; })[0] || okm[okm.length - 1] || {}).month || ''; } $('view').style.display = ''; drawView(r.site_url); $('view').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   });
 }
@@ -941,7 +961,7 @@ function drawView(site) {
   // Align the previous year's buckets to the current ones by position in the range.
   var prevAligned = cur.map(function (b) { return prev.filter(function (p) { return p.k === b.k; })[0] || null; });
   var tc = totals(days), tp = shifted.length > 20 ? totals(shifted) : null;
-  var h = '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + expectedCard() + lostCard() + opportunitiesCard() + changesCard() + brandCard() + segArea() + cwvCard() + monitorCard() + shareCard() + '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
+  var h = '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + expectedCard() + lostCard() + indexCard() + opportunitiesCard() + changesCard() + brandCard() + segArea() + cwvCard() + monitorCard() + shareCard() + '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
     '<div class="seg" data-g="range">' + [['28d', '28 days'], ['3m', '3 months'], ['12m', '12 months'], ['all', 'All stored']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (RANGE === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="gran">' + [['day', 'Daily'], ['week', 'Weekly'], ['month', 'Monthly']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (GRAN === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="metric">' + [['clicks', 'Clicks'], ['impressions', 'Impressions'], ['ctr', 'CTR'], ['position', 'Position']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (METRIC === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
@@ -966,6 +986,7 @@ function drawView(site) {
   loadTrend();
   loadExpected();
   loadLost();
+  renderIndex();
   loadOpps();
   loadChanges();
   loadBrand();
