@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <script src="/assets/visitor.js"></script>
-<script src="/assets/gsc-report.js?v=13"></script>
+<script src="/assets/gsc-report.js?v=14"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GSC Suite</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
@@ -171,14 +171,15 @@
   <div id="suiteIntro">
     <div class="suitegrid">
       <div><b>Overview</b><span>Google’s own 16-month trend with sustained drops flagged, search types, an expected-vs-actual range for every week, and the brand vs non-brand split.</span></div>
+      <div><b>Audience</b><span>Which country, device and part of the site the traffic came from, where it was lost, and how much of it Google hides query detail for.</span></div>
       <div><b>Segments</b><span>Compare your core terms side by side and give any focus (a city, a product) its own report.</span></div>
       <div><b>Opportunities</b><span>Queries just off page one, top rankings that barely get clicked, and queries split between two of your pages.</span></div>
       <div><b>Recovery</b><span>The pages and queries that lost the most, what each address does now, suggested redirects, and a tracker that measures what your changes did.</span></div>
       <div><b>Technical</b><span>Core Web Vitals from real Chrome users, and what Google’s own index says about your pages.</span></div>
       <div><b>Archive</b><span>The days Google is about to delete, saved: daily totals, month comparisons, top queries and pages, every row as CSV.</span></div>
       <div><b>Alerts &amp; reports</b><span>A daily page-health check, alerts when clicks fall below their expected range, a Monday digest, and PDF or shareable-link reports.</span></div>
-      <div><b>Free while in beta</b><span>Needs a Brand Checker account and read-only access to your Search Console.</span></div>
     </div>
+    <p class="hint" style="margin:-8px 0 18px">Free while in beta. Needs a Brand Checker account and read-only access to your Search Console.</p>
   </div>
   <div id="msg"></div>
   <div id="gate" style="display:none"></div>
@@ -423,13 +424,14 @@ function renderTrend() {
     if (i0 !== -1 && i1 >= i0) g += '<rect x="' + x(i0) + '" y="' + T + '" width="' + Math.max(4, x(i1) - x(i0)) + '" height="' + (H - T - B) + '" fill="#34517a" opacity=".10"/><text x="' + (x(i0) + 3) + '" y="' + (T + 11) + '" font-size="10.5" fill="#34517a">saved in the archive</text>';
   }
   g += '<polyline fill="none" stroke="#34517A" stroke-width="3" stroke-linejoin="round" points="' + weeks.map(function (w, i) { return x(i).toFixed(1) + ',' + y(w[metric]).toFixed(1); }).join(' ') + '"/>';
+  var annM = GscReport.annMarks(weeks, ANN, x, T, H, B); 
   drops.forEach(function (d) { var xx = x(d.i); g += '<line x1="' + xx + '" x2="' + xx + '" y1="' + T + '" y2="' + (H - B) + '" stroke="#d40000" stroke-width="2" stroke-dasharray="5 4"/><text x="' + (xx + 5) + '" y="' + (T + 24) + '" font-size="11" font-weight="700" fill="#d40000">' + Math.round((1 - d.ratio) * 100) + '% drop</text><text x="' + (xx + 5) + '" y="' + (T + 37) + '" font-size="10.5" fill="#d40000">week of ' + esc(MN[+weeks[d.i].k.slice(5, 7) - 1] + ' ' + (+weeks[d.i].k.slice(8))) + '</text>'; });
   var last = weeks[n - 1], peak = weeks.reduce(function (p, w) { return w[metric] > p[metric] ? w : p; }, weeks[0]);
   var tiles = metric === 'position' ? '' : '<div class="tiles"><div class="tile"><div class="k">Peak week</div><div class="v">' + f(peak[metric]) + '</div><div class="d" style="color:#3d3d3d;font-weight:400">week of ' + esc(DLONG(peak.k)) + '</div></div><div class="tile"><div class="k">Latest full week</div><div class="v">' + f(last[metric]) + '</div><div class="d" style="color:#3d3d3d;font-weight:400">week of ' + esc(DLONG(last.k)) + '</div></div><div class="tile"><div class="k">Since the peak</div><div class="v ' + (last[metric] < peak[metric] ? 'dn' : 'up') + '">' + (peak[metric] ? (last[metric] / peak[metric] * 100 - 100).toFixed(0) : 0) + '%</div><div class="d" style="color:#3d3d3d;font-weight:400">latest vs peak week</div></div><div class="tile"><div class="k">Window</div><div class="v">' + n + '</div><div class="d" style="color:#3d3d3d;font-weight:400">weeks, ' + esc(DLONG(weeks[0].k)) + ' on</div></div></div>';
   var list = drops.length ? '<h3 class="h" style="font-size:16px;margin:14px 0 6px">Sustained drops</h3><ul style="margin:0 0 6px 20px;font-size:14.5px">' + drops.map(function (d) { return '<li><b>Week of ' + esc(DLONG(weeks[d.i].k)) + '</b> — the next four weeks averaged <b>' + f(d.after) + '</b> a week, against <b>' + f(d.before) + '</b> in the four before (' + Math.round((1 - d.ratio) * 100) + '% lower).</li>'; }).join('') + '</ul><p class="hint">A drop is flagged when the four weeks after a week average under 65% of the four weeks before it. It shows when something changed, not why — check what was published, moved or removed around those dates.</p>' : (metric === 'position' ? '' : '<p class="hint">No sustained drop of more than a third in this window.</p>');
   box.innerHTML = tb + '<p class="sub" style="margin:10px 0 10px">' + esc(TYPE_LABELS[TREND.type] || 'Web') + ' search · Google’s own weekly totals for the last ' + n + ' full weeks — the part of the history Search Console still serves.' + (TREND.type === 'web' ? ' The shaded band is what the archive has saved, so you can see how much of the past is kept beyond this.' : '') + '</p>' +
     '<div class="seg" data-g="tmetric">' + [['clicks', 'Clicks'], ['impressions', 'Impressions'], ['ctr', 'CTR'], ['position', 'Position']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (metric === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' + tiles +
-    '<div class="chart"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Weekly ' + metric + ' over the last 16 months">' + g + '</svg></div>' + list;
+    '<div class="chart"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Weekly ' + metric + ' over the last 16 months">' + g + annM.svg + '</svg><div class="gr" style="font-size:13px">' + annM.legend + '</div></div>' + list;
   wireSegs();
 }
 
@@ -769,7 +771,7 @@ function renderExpected() {
   var d = EX.data; if (!d) return;
   var labels = { clicks: 'Clicks', impressions: 'Impressions', nonbrand: 'Non-brand clicks', brand: 'Brand clicks' }, keys = ['clicks', 'impressions', 'nonbrand', 'brand'].filter(function (k) { return d[k]; });
   if (keys.indexOf(EX.metric) < 0) EX.metric = 'clicks';
-  box.innerHTML = '<p class="sub" style="margin:0 0 10px">Is a dip normal variation or a real change? Each week is compared with the range its recent history and last year’s seasonal shape predict.</p><div class="seg" data-g="exm">' + keys.map(function (k) { return '<button type="button" data-v="' + k + '" aria-pressed="' + (EX.metric === k) + '">' + labels[k] + '</button>'; }).join('') + '</div><div class="gr">' + GscReport.expected(d, { metric: EX.metric, noTitle: true }) + '</div>';
+  box.innerHTML = '<p class="sub" style="margin:0 0 10px">Is a dip normal variation or a real change? Each week is compared with the range its recent history and last year’s seasonal shape predict.</p><div class="seg" data-g="exm">' + keys.map(function (k) { return '<button type="button" data-v="' + k + '" aria-pressed="' + (EX.metric === k) + '">' + labels[k] + '</button>'; }).join('') + '</div><div class="gr">' + GscReport.expected(d, { metric: EX.metric, noTitle: true, annotations: ANN }) + '</div>';
   box.querySelectorAll('.seg[data-g="exm"] button').forEach(function (b) { b.onclick = function () { EX.metric = b.dataset.v; renderExpected(); }; });
 }
 
@@ -841,7 +843,7 @@ function renderChanges() {
   var d = CH.data; if (!d) return;
   var today = new Date().toISOString().slice(0, 10);
   var h = (CH.msg ? '<div class="toast">' + esc(CH.msg) + '</div>' : '') + '<p class="sub" style="margin:0 0 10px">Log what you do to the site (publish a post, apply redirects, rewrite a page) and the tracker measures what followed: the 28 days before against the 28 days after for the pages involved, set against the rest of the site so a site-wide swing is not credited to the change. A redirect should list the old and the new address, so the traffic is counted wherever it lands.</p>' +
-    '<div class="row2"><div><label class="fl" for="chDate">Date it went live</label><input type="date" id="chDate" value="' + today + '" max="' + today + '"></div><div><label class="fl" for="chKind">Type</label><select id="chKind">' + [['published', 'Published a page'], ['updated', 'Updated a page'], ['redirect', 'Redirect applied'], ['removed', 'Removed a page'], ['other', 'Other']].map(function (k) { return '<option value="' + k[0] + '">' + k[1] + '</option>'; }).join('') + '</select></div></div>' +
+    '<div class="row2"><div><label class="fl" for="chDate">Date it went live</label><input type="date" id="chDate" value="' + today + '" max="' + today + '"></div><div><label class="fl" for="chKind">Type</label><select id="chKind">' + [['published', 'Published a page'], ['updated', 'Updated a page'], ['redirect', 'Redirect applied'], ['removed', 'Removed a page'], ['external', 'Outside event (Google update, news, season)'], ['other', 'Other']].map(function (k) { return '<option value="' + k[0] + '">' + k[1] + '</option>'; }).join('') + '</select></div></div>' +
     '<div style="margin-top:10px"><label class="fl" for="chTitle">What you did</label><input type="text" id="chTitle" maxlength="120" placeholder="e.g. Republished the square-brackets post"></div>' +
     '<div style="margin-top:10px"><label class="fl" for="chUrls">Pages involved (one URL per line; for a redirect, the old and the new; leave empty for a site-wide change)</label><textarea id="chUrls" style="min-height:70px" spellcheck="false" placeholder="https://' + esc((SH.site || 'example.com').replace(/^sc-domain:/, '')) + '/blog/…"></textarea></div>' +
     '<div style="margin-top:10px"><label class="fl" for="chNote">Note (optional)</label><input type="text" id="chNote" maxlength="400"></div>' +
@@ -854,10 +856,10 @@ function renderChanges() {
     var b = this; b.disabled = true; $('chMsg').innerHTML = '<p class="hint">Saving…</p>';
     api('/gsc-archive/changes', { id: CUR, action: 'add', date: $('chDate').value, kind: $('chKind').value, title: $('chTitle').value, urls: $('chUrls').value.split(/\n/).map(function (x) { return x.trim(); }).filter(Boolean), note: $('chNote').value }).then(function (r) {
       b.disabled = false; if (r.error) { $('chMsg').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
-      CH.msg = 'Logged. Its effect appears here once a week of data exists after the date.'; CH.data = r; renderChanges();
+      CH.msg = 'Logged. Its effect appears here once a week of data exists after the date. It is also marked on the trend charts.'; CH.data = r; ANN = r.changes || ANN; renderChanges(); renderTrend(); renderExpected();
     });
   };
-  box.querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { if (!confirm('Delete this logged change?')) return; b.disabled = true; api('/gsc-archive/changes', { id: CUR, action: 'delete', cid: b.dataset.del }).then(function (r) { CH.msg = 'Deleted.'; CH.data = r; renderChanges(); }); }; });
+  box.querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { if (!confirm('Delete this logged change?')) return; b.disabled = true; api('/gsc-archive/changes', { id: CUR, action: 'delete', cid: b.dataset.del }).then(function (r) { CH.msg = 'Deleted.'; CH.data = r; ANN = r.changes || ANN; renderChanges(); renderTrend(); renderExpected(); }); }; });
 }
 
 /* ---- indexing check: what Google's index says (URL Inspection API) ---- */
@@ -881,11 +883,12 @@ function renderIndex() {
 }
 
 /* ---- GSC Suite: sections, each loaded the first time it is opened ---- */
-var VIEWS = [['overview', 'Overview'], ['segments', 'Segments'], ['opportunities', 'Opportunities'], ['recovery', 'Recovery'], ['technical', 'Technical'], ['archive', 'Archive'], ['alerts', 'Alerts & reports']];
+var VIEWS = [['overview', 'Overview'], ['audience', 'Audience'], ['segments', 'Segments'], ['opportunities', 'Opportunities'], ['recovery', 'Recovery'], ['technical', 'Technical'], ['archive', 'Archive'], ['alerts', 'Alerts & reports']];
 var CURVIEW = (location.hash || '').slice(1), VISITED = {};
 if (!VIEWS.some(function (v) { return v[0] === CURVIEW; })) CURVIEW = 'overview';
 var VIEW_LOADERS = {
   overview: function () { loadTrend(); loadExpected(); loadBrand(); },
+  audience: function () { loadAudience(); loadHidden(); },
   segments: function () { loadSegments(); },
   opportunities: function () { loadOpps(); },
   recovery: function () { loadLost(); loadChanges(); },
@@ -907,11 +910,47 @@ function ensureAll(cb) {
   Object.keys(VIEW_LOADERS).forEach(function (k) { if (k !== 'archive') VIEW_LOADERS[k](); });
   var t0 = Date.now();
   (function wait() {
-    var done = (TREND.data || TREND.error) && (EX.data || EX.error) && (BR.data || BR.error) && (OP.data || OP.error) && (LW.data || LW.error) && (CH.data || CH.error) && (CW.data || CW.error) && (MO.data || MO.error) &&
+    var done = (TREND.data || TREND.error) && (EX.data || EX.error) && (BR.data || BR.error) && (OP.data || OP.error) && (LW.data || LW.error) && (CH.data || CH.error) && (CW.data || CW.error) && (MO.data || MO.error) && (AU.data || AU.error) && (HQ.data || HQ.error) &&
       (SG.error || (SG.data && Object.keys(SG.details).length >= SG.data.segments.length));
     if (done || Date.now() - t0 > 90000) cb(); else setTimeout(wait, 500);
   })();
 }
+
+/* ---- audience and hidden queries ---- */
+var AU = { id: '', data: null, error: null, days: 90, loadedDays: 0 }, HQ = { id: '', data: null, error: null };
+function audienceCard() { return '<div class="card" id="auCard"><h2>Audience: where the traffic comes from and where it was lost</h2><div id="auOut"><p class="hint">Loading…</p></div></div>'; }
+function hiddenCard() { return '<div class="card" id="hqCard"><h2>Hidden queries</h2><div id="hqOut"><p class="hint">Loading… (reads every month’s queries, a few seconds)</p></div></div>'; }
+function loadAudience(refresh) {
+  if (!refresh && AU.id === CUR && (AU.data || AU.error) && AU.loadedDays === AU.days) { renderAudience(); return; }
+  AU.id = CUR; AU.data = null; AU.error = null; AU.loadedDays = AU.days; renderAudience(true);
+  api('/gsc-archive/audience', { id: CUR, days: AU.days, refresh: !!refresh }).then(function (r) { if (AU.id !== CUR) return; if (r.error) AU.error = r; else AU.data = r; renderAudience(); });
+}
+function renderAudience(loading) {
+  var box = $('auOut'); if (!box) return; ensureGrStyle();
+  if (loading) { box.innerHTML = '<p class="hint">Splitting the last ' + AU.days + ' days by country, device, search appearance and section of the site… (a few seconds)</p>'; return; }
+  if (AU.error) { box.innerHTML = '<div class="err">' + esc(AU.error.error) + '</div>' + (AU.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : ''); return; }
+  var d = AU.data; if (!d) return;
+  box.innerHTML = '<p class="sub" style="margin:0 0 10px">Is the loss everywhere, or concentrated in one country, one device, one part of the site? Each table sets now against the same days a year earlier.</p><div class="seg" data-g="aud">' + [[28, 'Last 28 days'], [90, 'Last 90 days']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (AU.days === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div><div class="gr">' + GscReport.audience(d, { noTitle: true }) + '</div><div class="acts"><button class="btn2 small" type="button" id="auCsv">Download (CSV)</button><button class="btn2 small" type="button" id="auRefresh">Refresh</button></div><p class="hint">Computed ' + esc(String(d.computed || '').slice(0, 16).replace('T', ' ')) + ' UTC' + (d.cached ? ' (cached for 6 hours)' : '') + '. Included in the full report, PDF and shared link.</p>';
+  box.querySelectorAll('.seg[data-g="aud"] button').forEach(function (b) { b.onclick = function () { AU.days = +b.dataset.v; loadAudience(); }; });
+  $('auRefresh').onclick = function () { loadAudience(true); };
+  $('auCsv').onclick = function () { var rows = [['dimension', 'segment', 'clicks_then', 'clicks_now', 'impressions_now', 'ctr_now', 'position_then', 'position_now', 'share_of_loss_pct']]; ['section', 'country', 'device', 'appearance'].forEach(function (dim) { d[dim].rows.forEach(function (r) { rows.push([dim, r.key, r.prev_clicks, r.clicks, r.impressions, r.ctr, r.prev_position, r.position, r.lost_share]); }); }); download('gsc-audience-' + d.window.days + 'd.csv', toCsv(rows)); };
+}
+function loadHidden(refresh) {
+  if (!refresh && HQ.id === CUR && (HQ.data || HQ.error)) { renderHidden(); return; }
+  HQ.id = CUR; HQ.data = null; HQ.error = null;
+  api('/gsc-archive/hidden', { id: CUR, refresh: !!refresh }).then(function (r) { if (HQ.id !== CUR) return; if (r.error) HQ.error = r; else HQ.data = r; renderHidden(); });
+}
+function renderHidden() {
+  var box = $('hqOut'); if (!box) return; ensureGrStyle();
+  if (HQ.error) { box.innerHTML = '<div class="err">' + esc(HQ.error.error) + '</div>' + (HQ.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : ''); return; }
+  var d = HQ.data; if (!d) return;
+  box.innerHTML = '<div class="gr">' + GscReport.hidden(d, { noTitle: true }) + '</div><div class="acts"><button class="btn2 small" type="button" id="hqRefresh">Refresh</button></div><p class="hint">Computed ' + esc(String(d.computed || '').slice(0, 16).replace('T', ' ')) + ' UTC' + (d.cached ? ' (cached for 12 hours)' : '') + '. Included in the full report, PDF and shared link.</p>';
+  $('hqRefresh').onclick = function () { loadHidden(true); };
+}
+
+/* ---- annotations: logged changes and outside events, marked on the weekly charts ---- */
+var ANN = [];
+function loadAnnotations() { api('/gsc-archive/changes', { id: CUR, measure: false }).then(function (r) { if (r && r.changes) { ANN = r.changes; if (typeof renderTrend === 'function') renderTrend(); if (typeof renderExpected === 'function') renderExpected(); } }); }
 
 /* ---- whole-report PDF and sign-in-free share links ---- */
 var SH = { site: '' };
@@ -937,7 +976,7 @@ function wireShare(site) {
   };
   function buildFullPdf() {
     $('shOut').innerHTML = '<p class="hint">Preparing the report…</p>';
-    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, expected: EX.data || null, opportunities: OP.data || null, indexing: IX.data ? { checked_at: IX.data.checked_at, source: IX.data.source, counts: IX.data.counts, rows: IX.data.rows.slice(0, 25).map(function (r) { var o = Object.assign({}, r); delete o.link; return o; }) } : null, lost: LW.data ? { window: LW.data.window, lost_total: LW.data.lost_total, listed_lost: LW.data.listed_lost, by_kind: LW.data.by_kind, pages_total: LW.data.pages_total, pages: LW.data.pages.slice(0, 15), queries: LW.data.queries.slice(0, 10), queries_total: LW.data.queries_total } : null, changes: (CH.data && CH.data.changes.length) ? CH.data.changes.slice(0, 15).map(function (c) { return Object.assign({}, c, { effect: CH.data.effects[c.id] || null }); }) : null, cwv: (CW.data && CW.data.current) ? { origin: CW.data.origin, current: CW.data.current, history: CW.data.history, pages: CW.data.pages || [] } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
+    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, expected: EX.data || null, audience: AU.data ? { window: AU.data.window, country: AU.data.country, device: AU.data.device, appearance: AU.data.appearance, section: AU.data.section } : null, hidden: HQ.data ? { months: HQ.data.months, last28: HQ.data.last28, last90: HQ.data.last90 } : null, annotations: ANN.slice(0, 40).map(function (c) { return { date: c.date, kind: c.kind, title: c.title }; }), opportunities: OP.data || null, indexing: IX.data ? { checked_at: IX.data.checked_at, source: IX.data.source, counts: IX.data.counts, rows: IX.data.rows.slice(0, 25).map(function (r) { var o = Object.assign({}, r); delete o.link; return o; }) } : null, lost: LW.data ? { window: LW.data.window, lost_total: LW.data.lost_total, listed_lost: LW.data.listed_lost, by_kind: LW.data.by_kind, pages_total: LW.data.pages_total, pages: LW.data.pages.slice(0, 15), queries: LW.data.queries.slice(0, 10), queries_total: LW.data.queries_total } : null, changes: (CH.data && CH.data.changes.length) ? CH.data.changes.slice(0, 15).map(function (c) { return Object.assign({}, c, { effect: CH.data.effects[c.id] || null }); }) : null, cwv: (CW.data && CW.data.current) ? { origin: CW.data.origin, current: CW.data.current, history: CW.data.history, pages: CW.data.pages || [] } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
     if (TREND.id === CUR && TREND.data && TREND.types) return go(TREND.data);
     api('/gsc-archive/live-types', { id: CUR }).then(function (r) { if (r.error) { $('shOut').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } TREND.id = CUR; TREND.types = r.types || {}; TREND.errors = r.errors || {}; TREND.data = TREND.types.web || []; go(TREND.data); });
   };
@@ -976,7 +1015,7 @@ function openView(id) {
   CUR = id; VISITED = {}; if ($('suiteIntro')) $('suiteIntro').style.display = 'none';
   api('/gsc-archive/daily', { id: id }).then(function (r) {
     if (r.error) return alert(r.error);
-    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null; MO.id = ''; MO.data = null; MO.error = null; MO.msg = ''; EX.id = ''; EX.data = null; EX.error = null; OP.id = ''; OP.data = null; OP.error = null; LW.id = ''; LW.data = null; LW.error = null; IX.data = null; IX.error = null; IX.busy = false; CH.id = ''; CH.data = null; CH.error = null; CH.msg = '';
+    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null; MO.id = ''; MO.data = null; MO.error = null; MO.msg = ''; EX.id = ''; EX.data = null; EX.error = null; OP.id = ''; OP.data = null; OP.error = null; AU.id = ''; AU.data = null; AU.error = null; HQ.id = ''; HQ.data = null; HQ.error = null; ANN = []; LW.id = ''; LW.data = null; LW.error = null; IX.data = null; IX.error = null; IX.busy = false; CH.id = ''; CH.data = null; CH.error = null; CH.msg = '';
     api('/gsc-archive/compare-options', { id: id }).then(function (o) { CMP.opts = o && !o.error ? o : null; if (CMP.opts && CMP.opts.months.length && !CMP.start) { var okm = CMP.opts.months.filter(function (m) { return m.available && m.twin_available; }); CMP.start = (okm.filter(function (m) { return m.month === CMP.opts.latest_stored_month; })[0] || okm[okm.length - 1] || {}).month || ''; } $('view').style.display = ''; drawView(r.site_url); $('view').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   });
 }
@@ -1022,6 +1061,7 @@ function drawView(site) {
   var tc = totals(days), tp = shifted.length > 20 ? totals(shifted) : null;
   var SEC = {
     overview: '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + expectedCard() + brandCard(),
+    audience: audienceCard() + hiddenCard(),
     segments: segArea(),
     opportunities: opportunitiesCard(),
     recovery: lostCard() + changesCard(),
@@ -1052,6 +1092,7 @@ function drawView(site) {
   $('view').innerHTML = '<nav class="suitenav" id="suiteNav" role="tablist">' + VIEWS.map(function (v) { return '<button type="button" role="tab" data-view="' + v[0] + '" aria-selected="' + (CURVIEW === v[0]) + '">' + v[1] + '</button>'; }).join('') + '</nav>' + VIEWS.map(function (v) { return '<div class="view' + (CURVIEW === v[0] ? ' on' : '') + '" data-view="' + v[0] + '">' + (SEC[v[0]] || '') + '</div>'; }).join('');
   $('view').querySelectorAll('#suiteNav button').forEach(function (b) { b.onclick = function () { showView(b.dataset.view, true); }; });
   wire(site);
+  loadAnnotations();
   Object.keys(VISITED).forEach(function (k) { VIEW_LOADERS[k](); });   // sections already opened were rebuilt: redraw them from their cached data
   showView(CURVIEW);
 }

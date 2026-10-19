@@ -30,7 +30,7 @@
     return kept.slice(0, 3).sort(function (a, b) { return a.i - b.i; });
   }
 
-  function chart(weeks, metric, drops, label) {
+  function chart(weeks, metric, drops, label, anns) {
     var W = 760, H = 230, L = 52, R = 14, T = 22, B = 28, n = weeks.length;
     var vals = weeks.map(function (w) { return w[metric]; }), max = Math.max.apply(null, vals) || 1;
     var x = function (i) { return L + (W - L - R) * i / (n - 1); }, y = function (v) { return T + (H - T - B) * (1 - v / max); };
@@ -39,7 +39,8 @@
     weeks.forEach(function (w, i) { if (i % 8 === 0) g += '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="#3d3d3d">' + MN[+w.k.slice(5, 7) - 1] + ' ' + w.k.slice(2, 4) + '</text>'; });
     drops.forEach(function (d) { g += '<line x1="' + x(d.i) + '" x2="' + x(d.i) + '" y1="' + T + '" y2="' + (H - B) + '" stroke="#d40000" stroke-width="1.5" stroke-dasharray="4 4"/>'; });
     g += '<polyline fill="none" stroke="#34517A" stroke-width="2.6" stroke-linejoin="round" points="' + weeks.map(function (w, i) { return x(i).toFixed(1) + ',' + y(w[metric]).toFixed(1); }).join(' ') + '"/>';
-    return '<div class="chart"><div class="cl">' + esc(label) + ' per week</div><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + ' per week">' + g + '</svg></div>';
+    var am = annMarks(weeks, anns, x, T, H, B); g += am.svg;
+    return '<div class="chart"><div class="cl">' + esc(label) + ' per week</div><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + ' per week">' + g + '</svg>' + am.legend + '</div>';
   }
 
   function headline(days) {
@@ -55,10 +56,10 @@
       + '<div class="tile"><span>Avg position</span><b>' + (c.position == null ? '—' : c.position.toFixed(1)) + '</b>' + d(c.position, p && p.position, true) + '</div></div>';
   }
 
-  function trendSection(days) {
+  function trendSection(days, anns) {
     var weeks = weeklyOf(days); if (weeks.length < 6) return '';
     var dC = findDrops(weeks, 'clicks'), dI = findDrops(weeks, 'impressions');
-    var h = '<h2>Trend</h2><p class="sub">Whole weeks, from ' + dLong(weeks[0].k) + ' to the week of ' + dLong(weeks[weeks.length - 1].k) + ' (everything Search Console still holds).</p>' + chart(weeks, 'clicks', dC, 'Clicks') + chart(weeks, 'impressions', dI, 'Impressions');
+    var h = '<h2>Trend</h2><p class="sub">Whole weeks, from ' + dLong(weeks[0].k) + ' to the week of ' + dLong(weeks[weeks.length - 1].k) + ' (everything Search Console still holds).</p>' + chart(weeks, 'clicks', dC, 'Clicks', anns) + chart(weeks, 'impressions', dI, 'Impressions', anns);
     var lines = [];
     dC.forEach(function (d) { lines.push('Clicks: from the week of ' + dLong(weeks[d.i].k) + ' the next four weeks average <b>' + fmt(d.after) + '</b> a week, against <b>' + fmt(d.before) + '</b> in the four before (' + Math.round((d.ratio - 1) * 100) + '%).'); });
     dI.forEach(function (d) { lines.push('Impressions: from the week of ' + dLong(weeks[d.i].k) + ' the next four weeks average <b>' + fmt(d.after) + '</b> a week, against <b>' + fmt(d.before) + '</b> in the four before (' + Math.round((d.ratio - 1) * 100) + '%).'); });
@@ -241,7 +242,7 @@
 
   /* ---- expected vs actual (computed by the worker: weekly totals against a seasonal baseline +/- two sigma) ---- */
   var EXL = { clicks: 'Clicks', impressions: 'Impressions', nonbrand: 'Non-brand clicks', brand: 'Brand clicks' };
-  function exChart(e, label) {
+  function exChart(e, label, anns) {
     var rows = e && e.weeks ? e.weeks : []; if (rows.length < 10) return '';
     var W = 760, H = 250, L = 52, R = 14, T = 14, B = 28, n = rows.length, max = 1;
     rows.forEach(function (r) { max = Math.max(max, r.v, r.hi || 0); });
@@ -254,7 +255,8 @@
       '<polyline fill="none" stroke="#34517A" stroke-width="1.4" stroke-dasharray="5 4" points="' + idx.map(function (i) { return x(i).toFixed(1) + ',' + y(rows[i].exp).toFixed(1); }).join(' ') + '"/>';
     g += '<polyline fill="none" stroke="#0a0a0a" stroke-width="2.4" stroke-linejoin="round" points="' + rows.map(function (r, i) { return x(i).toFixed(1) + ',' + y(r.v).toFixed(1); }).join(' ') + '"/>';
     rows.forEach(function (r, i) { if (r.flag) g += '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(r.v).toFixed(1) + '" r="4.2" fill="' + (r.flag === 'below' ? '#b3261e' : '#1b7a3d') + '"/>'; });
-    return '<div class="chart"><div class="cl">' + esc(label) + ' per week against the expected range</div><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + ' per week against the expected range">' + g + '</svg><div class="leg"><span><i style="background:#0a0a0a"></i>Actual</span><span><i style="background:#34517A;opacity:.35"></i>Expected range (dashed: expected)</span><span><i style="background:#b3261e;border-radius:50%"></i>Below the range</span><span><i style="background:#1b7a3d;border-radius:50%"></i>Above the range</span></div></div>';
+    var am = annMarks(rows, anns, x, T, H, B); g += am.svg;
+    return '<div class="chart"><div class="cl">' + esc(label) + ' per week against the expected range</div><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + ' per week against the expected range">' + g + '</svg><div class="leg"><span><i style="background:#0a0a0a"></i>Actual</span><span><i style="background:#34517A;opacity:.35"></i>Expected range (dashed: expected)</span><span><i style="background:#b3261e;border-radius:50%"></i>Below the range</span><span><i style="background:#1b7a3d;border-radius:50%"></i>Above the range</span></div>' + am.legend + '</div>';
   }
   function exSentence(label, e) {
     var s = e && e.summary; if (!s || s.exp == null) return '';
@@ -273,7 +275,7 @@
     keys.forEach(function (k) {
       var e = exp[k]; if (!e) return;
       if (!e.summary) { h += '<p class="sub">' + esc(EXL[k]) + ': ' + esc(e.note || 'not enough data yet') + '</p>'; return; }
-      h += '<p style="margin:8px 0 4px">' + exSentence(EXL[k], e) + '</p>' + exChart(e, EXL[k]) + exShifts(EXL[k], e);
+      h += '<p style="margin:8px 0 4px">' + exSentence(EXL[k], e) + '</p>' + exChart(e, EXL[k], opts && opts.annotations) + exShifts(EXL[k], e);
     });
     var seasonal = keys.some(function (k) { return exp[k] && exp[k].weeks && exp[k].weeks.some(function (w) { return w.seasonal; }); });
     return h + '<p class="foot">' + (seasonal ? 'Seasonal adjustment only applies to weeks that have a full year of history behind them (about the last ' + Math.max(...keys.map(function (k) { return exp[k] && exp[k].weeks ? exp[k].weeks.filter(function (w) { return w.seasonal; }).length : 0; })) + ' weeks); earlier weeks are compared with the recent level alone, so the range is wider and less precise. ' : 'There is not yet a full year of history, so no seasonal adjustment is applied; weeks are compared with the recent level alone. ') + 'The baseline follows the data, so a lasting drop stops being flagged after about eight weeks: the flags show when it started, not that it is still unexplained.</p>';
@@ -360,6 +362,69 @@
     return h + '<p class="foot">Google’s URL Inspection reports the state of its index for each address when it last looked; it can lag a recent change. “Page with redirect” is the expected answer for an address that now redirects.</p>';
   }
 
+  /* ---- annotations: logged changes and outside events marked on the weekly charts ---- */
+  var ANK = { published: 'Published', updated: 'Updated', redirect: 'Redirect applied', removed: 'Removed', other: 'Other', external: 'Outside event' };
+  function annIndex(rows, date) { for (var i = 0; i < rows.length; i++) { if (date >= rows[i].k && date < addDays(rows[i].k, 7)) return i; } return -1; }
+  function annMarks(rows, anns, x, T, H, B) {
+    var items = (anns || []).map(function (a) { return { a: a, i: annIndex(rows, a.date) }; }).filter(function (o) { return o.i >= 0; }).sort(function (p, q) { return p.a.date < q.a.date ? -1 : 1; }).slice(0, 12);
+    if (!items.length) return { svg: '', legend: '' };
+    var g = '';
+    items.forEach(function (o, n) { var xx = x(o.i); g += '<line x1="' + xx + '" x2="' + xx + '" y1="' + (T + 8) + '" y2="' + (H - B) + '" stroke="#C99A3E" stroke-width="1.6" stroke-dasharray="3 3"/><circle cx="' + xx + '" cy="' + (T + 8) + '" r="7" fill="#C99A3E"/><text x="' + xx + '" y="' + (T + 11.5) + '" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">' + (n + 1) + '</text>'; });
+    var legend = '<div class="ann"><b>Marked on the chart:</b> ' + items.map(function (o, n) { return '<span>' + (n + 1) + ' · ' + dLong(o.a.date) + ' · ' + esc(ANK[o.a.kind] || o.a.kind) + ': ' + esc(o.a.title) + '</span>'; }).join('') + '</div>';
+    return { svg: g, legend: legend };
+  }
+
+  /* ---- audience: country, device, search appearance, section of the site ---- */
+  var CTRY = { deu: 'Germany', aut: 'Austria', che: 'Switzerland', usa: 'United States', gbr: 'United Kingdom', fra: 'France', esp: 'Spain', ita: 'Italy', nld: 'Netherlands', bel: 'Belgium', pol: 'Poland', tur: 'Turkey', rus: 'Russia', ind: 'India', bra: 'Brazil', can: 'Canada', aus: 'Australia', jpn: 'Japan', chn: 'China', swe: 'Sweden', nor: 'Norway', dnk: 'Denmark', fin: 'Finland', cze: 'Czechia', prt: 'Portugal', irl: 'Ireland', ukr: 'Ukraine', rou: 'Romania', hun: 'Hungary', grc: 'Greece', bgr: 'Bulgaria', hrv: 'Croatia', svk: 'Slovakia', svn: 'Slovenia', lux: 'Luxembourg', isr: 'Israel', are: 'United Arab Emirates', sau: 'Saudi Arabia', mex: 'Mexico', arg: 'Argentina', kor: 'South Korea', idn: 'Indonesia', vnm: 'Vietnam', tha: 'Thailand', mys: 'Malaysia', sgp: 'Singapore', phl: 'Philippines', pak: 'Pakistan', egy: 'Egypt', zaf: 'South Africa', nga: 'Nigeria', ltu: 'Lithuania', lva: 'Latvia', est: 'Estonia', srb: 'Serbia', cyp: 'Cyprus', mlt: 'Malta', isl: 'Iceland' };
+  function audLabel(dim, k) {
+    if (dim === 'country') return CTRY[k] || String(k).toUpperCase();
+    if (dim === 'device') return { DESKTOP: 'Desktop', MOBILE: 'Mobile', TABLET: 'Tablet' }[k] || k;
+    if (dim === 'appearance') return String(k).toLowerCase().replace(/_/g, ' ').replace(/^./, function (c) { return c.toUpperCase(); });
+    return k;
+  }
+  function audTable(dim, d, title) {
+    if (!d || !d.rows || !d.rows.length) return '<p class="sub"><b>' + esc(title) + '</b>: no data in this window.</p>';
+    return '<p class="sub" style="margin-top:10px"><b>' + esc(title) + '</b></p><table><thead><tr><th>' + esc(title.replace(/^By /, '')) + '</th><th>Clicks then → now</th><th>Change</th><th>Impressions now</th><th>CTR now</th><th>Position then → now</th><th>Share of the loss</th></tr></thead><tbody>' + d.rows.map(function (r) {
+      var ch = r.prev_clicks ? Math.round((r.clicks - r.prev_clicks) / r.prev_clicks * 100) : null;
+      return '<tr><td>' + esc(audLabel(dim, r.key)) + '</td><td class="n">' + fmt(r.prev_clicks) + ' → ' + fmt(r.clicks) + '</td><td class="n">' + (ch == null ? 'new' : '<span class="' + (ch >= 0 ? 'ok' : 'bad') + '">' + (ch >= 0 ? '+' : '') + ch + '%</span>') + '</td><td class="n">' + fmt(r.impressions) + '</td><td class="n">' + (r.ctr * 100).toFixed(2) + '%</td><td class="n">' + (r.prev_position == null ? '—' : r.prev_position) + ' → ' + (r.position == null ? '—' : r.position) + '</td><td class="n">' + (r.lost_share ? r.lost_share + '%' : '—') + '</td></tr>';
+    }).join('') + '</tbody></table>' + (d.total > d.rows.length ? '<p class="foot">Top ' + d.rows.length + ' of ' + d.total + '.</p>' : '');
+  }
+  function audienceSection(a, opts) {
+    if (!a || !a.window) return '';
+    var h = (opts && opts.noTitle ? '' : '<h2>Audience</h2>');
+    h += '<p class="sub">Where the traffic comes from, and where it was lost: the last ' + a.window.days + ' days (' + dLong(a.window.start) + ' to ' + dLong(a.window.end) + ') against the same days a year earlier. Web search.</p>';
+    var bullets = [];
+    [['country', 'Country', a.country], ['device', 'Device', a.device], ['section', 'Section of the site', a.section]].forEach(function (x) {
+      var d = x[2]; if (!d || !d.rows.length || !d.lost) return;
+      var top = d.rows.slice().sort(function (p, q) { return q.lost_share - p.lost_share; })[0];
+      if (top && top.lost_share >= 40) bullets.push('<b>' + esc(audLabel(x[0] === 'section' ? 'section' : x[0], top.key)) + '</b> accounts for <b>' + top.lost_share + '%</b> of the lost clicks (' + x[1].toLowerCase() + ': ' + fmt(top.prev_clicks) + ' → ' + fmt(top.clicks) + ').');
+    });
+    if (bullets.length) h += '<ul>' + bullets.map(function (b) { return '<li>' + b + '</li>'; }).join('') + '</ul>';
+    h += audTable('section', a.section, 'By section of the site') + audTable('country', a.country, 'By country') + audTable('device', a.device, 'By device') + audTable('appearance', a.appearance, 'By search appearance');
+    return h + '<p class="foot">The share of the loss is each row’s lost clicks out of all clicks lost across the rows that fell. Search appearance covers only results with a special look (such as product or review snippets), so it is usually small. “Old .htm addresses” are pages whose address ends in .htm or .html.</p>';
+  }
+
+  /* ---- hidden queries ---- */
+  function hiddenSection(hq, opts) {
+    if (!hq || !hq.months || !hq.months.length) return '';
+    var h = (opts && opts.noTitle ? '' : '<h2>Hidden queries</h2>');
+    var l28 = hq.last28, l90 = hq.last90;
+    h += '<p class="sub">Google leaves rare queries out of the query-level data but counts their clicks and impressions in the totals. This is how much of the traffic has no query detail, so everything built from queries (brand split, segments, opportunities) only sees the rest.</p>';
+    h += '<div class="tiles">' + (l28 ? '<div class="tile"><span>Clicks without query detail, last 28 days</span><b>' + l28.hidden_clicks_pct.toFixed(0) + '%</b><span>' + fmt(l28.clicks - l28.visible_clicks) + ' of ' + fmt(l28.clicks) + ' clicks</span></div><div class="tile"><span>Impressions without query detail</span><b>' + l28.hidden_impressions_pct.toFixed(0) + '%</b><span>last 28 days</span></div>' : '') + (l90 ? '<div class="tile"><span>Clicks without query detail, last 90 days</span><b>' + l90.hidden_clicks_pct.toFixed(0) + '%</b><span>' + l90.queries + ' visible queries</span></div>' : '') + '</div>';
+    var ms = hq.months.filter(function (m) { return m.days >= 20; });
+    if (ms.length >= 3) {
+      var W = 760, H = 220, L = 46, R = 14, T = 14, B = 28, n = ms.length, x = function (i) { return L + (W - L - R) * i / (n - 1); }, y = function (v) { return T + (H - T - B) * (1 - v / 100); }, g = '';
+      [0, 25, 50, 75, 100].forEach(function (v) { g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#e2e2dc"/><text x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end" font-size="11" fill="#3d3d3d">' + v + '%</text>'; });
+      ms.forEach(function (m, i) { if (i % 3 === 0 || i === n - 1) g += '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="#3d3d3d">' + MN[+m.label.slice(5) - 1] + ' ' + m.label.slice(2, 4) + '</text>'; });
+      var line = function (f, c) { return '<polyline fill="none" stroke="' + c + '" stroke-width="2.6" stroke-linejoin="round" points="' + ms.map(function (m, i) { return x(i).toFixed(1) + ',' + y(m[f]).toFixed(1); }).join(' ') + '"/>'; };
+      g += line('hidden_impressions_pct', '#C99A3E') + line('hidden_clicks_pct', '#34517A');
+      h += '<div class="chart"><div class="cl">Share of traffic without query detail, by month</div><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Hidden query share by month">' + g + '</svg><div class="leg"><span><i style="background:#34517A"></i>Clicks</span><span><i style="background:#C99A3E"></i>Impressions</span></div></div>';
+    }
+    var rows = hq.months.slice().reverse();
+    h += '<table><thead><tr><th>Month</th><th>Clicks</th><th>With query detail</th><th>Hidden</th><th>Impressions hidden</th></tr></thead><tbody>' + rows.map(function (m) { return '<tr><td>' + esc(monLabel(m.label)) + (m.days < 20 ? ' (' + m.days + ' days)' : '') + '</td><td class="n">' + fmt(m.clicks) + '</td><td class="n">' + fmt(m.visible_clicks) + '</td><td class="n">' + m.hidden_clicks_pct.toFixed(0) + '%</td><td class="n">' + m.hidden_impressions_pct.toFixed(0) + '%</td></tr>'; }).join('') + '</tbody></table>';
+    return h + '<p class="foot">Computed from Search Console’s own totals against the sum of every query it returns for the period' + (hq.months.some(function (m) { return m.truncated; }) ? ' (capped at 50,000 queries a month, so a very large month reads a little high)' : '') + '. A high steady share is normal for a site with a long tail of rare searches; a share that jumps means the mix of queries changed.</p>';
+  }
+
   function monthsSection(months) {
     if (!months || !months.length) return '';
     return '<h2>Saved days, by month</h2><p class="sub">Days Brand Checker saved before Google deleted them. A month marked partial has fewer saved days than the month has.</p><table><thead><tr><th>Month</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Avg position</th><th>Days saved</th></tr></thead><tbody>'
@@ -386,7 +451,7 @@
 
   var CSS = '*{box-sizing:border-box}.gr{font-family:Helvetica,Arial,sans-serif;color:#0a0a0a;font-size:12px;line-height:1.45}.gr h1{font-size:24px;margin:0 0 2px;letter-spacing:-.01em}.gr h2{font-size:14px;margin:22px 0 6px;text-transform:uppercase;letter-spacing:.05em;border-top:3px solid #0a0a0a;padding-top:10px}'
     + '.gr p{margin:0 0 6px}.gr .meta{color:#3d3d3d;margin:0 0 6px}.gr .sub{color:#3d3d3d;margin:0 0 8px}.gr .tiles{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}.gr .tile{border:2px solid #0a0a0a;padding:7px 10px;min-width:130px;flex:1}.gr .tile b{display:block;font-size:22px;letter-spacing:-.02em}.gr .tile span{display:block;color:#3d3d3d;font-size:10.5px}.gr .tile em{display:block;font-style:normal;font-size:10.5px;font-weight:700}'
-    + '.gr .bad{color:#b3261e}.gr .ok{color:#1b7a3d}.gr ul{margin:0 0 8px 18px;padding:0}.gr li{margin:0 0 3px}.gr .chart{border:2px solid #0a0a0a;padding:6px 8px;margin:0 0 8px;break-inside:avoid}.gr .chart svg{width:100%;height:auto;display:block}.gr .leg{display:flex;gap:14px;font-size:10.5px;margin-top:4px}.gr .leg i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px}.gr .b3{display:flex;height:9px;width:100%;min-width:70px;border:1px solid #0a0a0a}.gr .b3 i{display:block;height:100%}.gr .b3t{font-size:9.5px;color:#3d3d3d}.gr .cl{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em}'
+    + '.gr .bad{color:#b3261e}.gr .ok{color:#1b7a3d}.gr ul{margin:0 0 8px 18px;padding:0}.gr li{margin:0 0 3px}.gr .chart{border:2px solid #0a0a0a;padding:6px 8px;margin:0 0 8px;break-inside:avoid}.gr .chart svg{width:100%;height:auto;display:block}.gr .ann{margin-top:6px;font-size:10.5px;color:#3d3d3d;line-height:1.5}.gr .ann span{display:block}.gr .leg{display:flex;gap:14px;font-size:10.5px;margin-top:4px}.gr .leg i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px}.gr .b3{display:flex;height:9px;width:100%;min-width:70px;border:1px solid #0a0a0a}.gr .b3 i{display:block;height:100%}.gr .b3t{font-size:9.5px;color:#3d3d3d}.gr .cl{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em}'
     + '.gr table{width:100%;border-collapse:collapse;margin-top:6px}.gr th,.gr td{border:1px solid #0a0a0a;padding:4px 6px;text-align:left;vertical-align:top;word-break:break-word;font-size:10.5px}.gr th{background:#0a0a0a;color:#fff;font-size:9.5px;text-transform:uppercase}.gr td.n{text-align:right;white-space:nowrap}.gr tr{break-inside:avoid}.gr thead{display:table-header-group}.gr .foot{margin-top:8px;color:#3d3d3d;font-size:10px}.gr .end{margin-top:22px;border-top:3px solid #0a0a0a;padding-top:8px;color:#3d3d3d;font-size:10px}';
 
   function render(s) {
@@ -399,8 +464,10 @@
     if (kind === 'core') h += s.seg ? segCore(s.seg) : '<p>No data.</p>';
     else if (kind === 'focus') h += s.seg ? segFocus(s.seg, s.focus) : '<p>No data.</p>';
     else {
-      if (trend.length >= 28) h += headline(trend) + trendSection(trend) + typesSection(trend, s.trend_types);
-      h += expectedSection(s.expected);
+      if (trend.length >= 28) h += headline(trend) + trendSection(trend, s.annotations) + typesSection(trend, s.trend_types);
+      h += expectedSection(s.expected, { annotations: s.annotations });
+      h += audienceSection(s.audience);
+      h += hiddenSection(s.hidden);
       h += lostSection(s.lost, { n: 15 });
       h += indexingSection(s.indexing);
       h += changesSection(s.changes);
@@ -413,5 +480,5 @@
     h += '<p class="end">Figures are from Google Search Console for ' + esc(site) + '. Days older than Google’s 16-month window come from Brand Checker’s archive. Search Console’s own daily totals can differ slightly from the sum of query rows. Generated by the GSC Suite from Brand Checker (brandchecker.eu).</p></div>';
     return h;
   }
-  window.GscReport = { render: render, css: CSS, esc: esc, seg: { core: segCore, focus: segFocus }, cwv: cwvSection, expected: expectedSection, opportunities: opportunitiesSection, lost: lostSection, changes: changesSection, indexing: indexingSection, brand: { all: bAll, weeks: bWeeks, months: bMonths, sum: sum, stats: bStats, chart: bChart } };
+  window.GscReport = { render: render, css: CSS, esc: esc, seg: { core: segCore, focus: segFocus }, cwv: cwvSection, expected: expectedSection, opportunities: opportunitiesSection, lost: lostSection, changes: changesSection, indexing: indexingSection, audience: audienceSection, hidden: hiddenSection, annMarks: annMarks, brand: { all: bAll, weeks: bWeeks, months: bMonths, sum: sum, stats: bStats, chart: bChart } };
 })();
