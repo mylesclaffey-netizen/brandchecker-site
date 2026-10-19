@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <script src="/assets/visitor.js"></script>
-<script src="/assets/gsc-report.js?v=14"></script>
+<script src="/assets/gsc-report.js?v=15"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GSC Suite</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
@@ -890,7 +890,7 @@ var VIEW_LOADERS = {
   overview: function () { loadTrend(); loadExpected(); loadBrand(); },
   audience: function () { loadAudience(); loadHidden(); },
   segments: function () { loadSegments(); },
-  opportunities: function () { loadOpps(); },
+  opportunities: function () { loadRank(); loadOpps(); },
   recovery: function () { loadLost(); loadChanges(); },
   technical: function () { loadCwv(); renderIndex(); },
   archive: function () { if (TOPMONTHS.length) loadTop(); },
@@ -910,7 +910,7 @@ function ensureAll(cb) {
   Object.keys(VIEW_LOADERS).forEach(function (k) { if (k !== 'archive') VIEW_LOADERS[k](); });
   var t0 = Date.now();
   (function wait() {
-    var done = (TREND.data || TREND.error) && (EX.data || EX.error) && (BR.data || BR.error) && (OP.data || OP.error) && (LW.data || LW.error) && (CH.data || CH.error) && (CW.data || CW.error) && (MO.data || MO.error) && (AU.data || AU.error) && (HQ.data || HQ.error) &&
+    var done = (TREND.data || TREND.error) && (EX.data || EX.error) && (BR.data || BR.error) && (OP.data || OP.error) && (LW.data || LW.error) && (CH.data || CH.error) && (CW.data || CW.error) && (MO.data || MO.error) && (AU.data || AU.error) && (HQ.data || HQ.error) && (RK.data || RK.error) &&
       (SG.error || (SG.data && Object.keys(SG.details).length >= SG.data.segments.length));
     if (done || Date.now() - t0 > 90000) cb(); else setTimeout(wait, 500);
   })();
@@ -950,7 +950,46 @@ function renderHidden() {
 
 /* ---- annotations: logged changes and outside events, marked on the weekly charts ---- */
 var ANN = [];
-function loadAnnotations() { api('/gsc-archive/changes', { id: CUR, measure: false }).then(function (r) { if (r && r.changes) { ANN = r.changes; if (typeof renderTrend === 'function') renderTrend(); if (typeof renderExpected === 'function') renderExpected(); } }); }
+function loadAnnotations() { api('/gsc-archive/changes', { id: CUR, measure: false }).then(function (r) { if (r && r.changes) { ANN = r.changes; if (typeof renderTrend === 'function') renderTrend(); if (typeof renderExpected === 'function') renderExpected(); if (typeof renderRank === 'function' && RK.data) renderRank(); } }); }
+
+/* ---- rank history ---- */
+var RK = { id: '', data: null, error: null, tracked: null, sel: '', sugg: null, msg: '' };
+function rankCard() { return '<div class="card" id="rkCard"><h2>Rank history</h2><div id="rkOut"><p class="hint">Loading…</p></div></div>'; }
+function loadRank(force) {
+  if (!force && RK.id === CUR && (RK.data || RK.error)) { renderRank(); return; }
+  RK.id = CUR; RK.data = null; RK.error = null; renderRank(true);
+  api('/gsc-archive/rank-history', { id: CUR, refresh: !!force }).then(function (r) { if (RK.id !== CUR) return; if (r.error) RK.error = r; else { RK.data = r; RK.tracked = r.queries.map(function (q) { return q.query; }); } renderRank(); });
+}
+function renderRank(loading) {
+  var box = $('rkOut'); if (!box) return; ensureGrStyle();
+  if (loading) { box.innerHTML = '<p class="hint">Reading each tracked query’s history from Search Console…</p>'; return; }
+  if (RK.error) { box.innerHTML = '<div class="err">' + esc(RK.error.error) + '</div>' + (RK.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : ''); return; }
+  var d = RK.data; if (!d) return;
+  var qs = (d.queries || []).filter(function (q) { return !q.error; });
+  if (!RK.sel || !qs.some(function (q) { return q.query === RK.sel; })) RK.sel = qs.length ? qs[0].query : '';
+  var h = (RK.msg ? '<div class="toast">' + esc(RK.msg) + '</div>' : '') + '<p class="sub" style="margin:0 0 10px">Track the queries that matter and watch their average position over time, including past Google’s 16-month limit: the archive stores each tracked query’s figures for every day it saves. Position 1 is the top of the first results page.</p>' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><input type="text" id="rkNew" placeholder="Query to track, e.g. macbook reparatur hamburg" style="max-width:380px"><button class="btn2 small" type="button" id="rkAdd">Track</button><button class="btn2 small" type="button" id="rkSugg">Suggest my top queries</button></div><div id="rkMsg" style="margin-top:8px"></div><div id="rkSuggOut"></div>';
+  if (!qs.length) h += '<p class="hint" style="margin-top:12px">No queries tracked yet. Add one above, or use the suggestions.</p>';
+  else {
+    h += '<div class="gr" style="margin-top:12px">' + GscReport.rank(d, { noTitle: true, selectable: true, selected: RK.sel, charts: [RK.sel], annotations: ANN }) + '</div><p class="hint">Click a query to chart it. Tracked (' + qs.length + ' of 30): ' + qs.map(function (q) { return esc(q.query) + ' <a href="#" data-rm="' + esc(q.query) + '" title="Stop tracking">✕</a>'; }).join(' · ') + '</p><div class="acts"><button class="btn2 small" type="button" id="rkCsv">Download weekly history (CSV)</button><button class="btn2 small" type="button" id="rkRefresh">Refresh</button></div><p class="hint">Included in the full report, PDF and shared link, and in the Monday digest when a query moves three places or more.</p>';
+  }
+  box.innerHTML = h;
+  var add = function (queries) { api('/gsc-archive/rank-queries', { id: CUR, action: 'add', queries: queries }).then(function (r) { if (r.error) { $('rkMsg').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } RK.msg = 'Tracking ' + queries.length + ' query' + (queries.length === 1 ? '' : 'ies') + ' now. The days already saved in the archive are being added to its history in the background.'.replace('queryies', 'queries'); loadRank(true); }); };
+  $('rkAdd').onclick = function () { var q = $('rkNew').value.trim(); if (q) add([q]); };
+  $('rkNew').onkeydown = function (e) { if (e.key === 'Enter') $('rkAdd').onclick(); };
+  $('rkSugg').onclick = function () {
+    var out = $('rkSuggOut'); out.innerHTML = '<p class="hint">Looking through the last 90 days…</p>';
+    api('/gsc-archive/rank-queries', { id: CUR, suggest: true }).then(function (r) {
+      if (!r.suggestions || !r.suggestions.length) { out.innerHTML = '<p class="hint">No suggestions: ' + esc(r.suggest_error || 'every top query is tracked already') + '.</p>'; return; }
+      out.innerHTML = '<p class="fl" style="margin-top:10px">Your biggest non-brand queries (last 90 days), not tracked yet</p><div class="tblwrap"><table class="tbl"><tr><th>Query</th><th>Clicks</th><th>Impressions</th><th>Position</th><th></th></tr>' + r.suggestions.map(function (x) { return '<tr><td>' + esc(x.query) + '</td><td class="num">' + fmt(x.clicks) + '</td><td class="num">' + fmt(x.impressions) + '</td><td class="num">' + x.position + '</td><td><button class="btn2 small" type="button" data-track="' + esc(x.query) + '">Track</button></td></tr>'; }).join('') + '</table></div>';
+      out.querySelectorAll('[data-track]').forEach(function (b) { b.onclick = function () { b.disabled = true; b.textContent = 'Added'; add([b.dataset.track]); }; });
+    });
+  };
+  box.querySelectorAll('[data-pick]').forEach(function (a) { a.onclick = function (e) { e.preventDefault(); RK.sel = a.dataset.pick; renderRank(); }; });
+  box.querySelectorAll('[data-rm]').forEach(function (a) { a.onclick = function (e) { e.preventDefault(); if (!confirm('Stop tracking “' + a.dataset.rm + '” and delete its stored history?')) return; api('/gsc-archive/rank-queries', { id: CUR, action: 'remove', query: a.dataset.rm }).then(function () { RK.msg = 'Removed.'; loadRank(true); }); }; });
+  if ($('rkRefresh')) $('rkRefresh').onclick = function () { RK.msg = ''; loadRank(true); };
+  if ($('rkCsv')) $('rkCsv').onclick = function () { var rows = [['query', 'week_starting', 'avg_position', 'clicks', 'impressions']]; qs.forEach(function (q) { (q.weeks || []).forEach(function (w) { rows.push([q.query, w.k, w.pos, w.clicks, w.impressions]); }); }); download('gsc-rank-history.csv', toCsv(rows)); };
+}
 
 /* ---- whole-report PDF and sign-in-free share links ---- */
 var SH = { site: '' };
@@ -976,7 +1015,7 @@ function wireShare(site) {
   };
   function buildFullPdf() {
     $('shOut').innerHTML = '<p class="hint">Preparing the report…</p>';
-    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, expected: EX.data || null, audience: AU.data ? { window: AU.data.window, country: AU.data.country, device: AU.data.device, appearance: AU.data.appearance, section: AU.data.section } : null, hidden: HQ.data ? { months: HQ.data.months, last28: HQ.data.last28, last90: HQ.data.last90 } : null, annotations: ANN.slice(0, 40).map(function (c) { return { date: c.date, kind: c.kind, title: c.title }; }), opportunities: OP.data || null, indexing: IX.data ? { checked_at: IX.data.checked_at, source: IX.data.source, counts: IX.data.counts, rows: IX.data.rows.slice(0, 25).map(function (r) { var o = Object.assign({}, r); delete o.link; return o; }) } : null, lost: LW.data ? { window: LW.data.window, lost_total: LW.data.lost_total, listed_lost: LW.data.listed_lost, by_kind: LW.data.by_kind, pages_total: LW.data.pages_total, pages: LW.data.pages.slice(0, 15), queries: LW.data.queries.slice(0, 10), queries_total: LW.data.queries_total } : null, changes: (CH.data && CH.data.changes.length) ? CH.data.changes.slice(0, 15).map(function (c) { return Object.assign({}, c, { effect: CH.data.effects[c.id] || null }); }) : null, cwv: (CW.data && CW.data.current) ? { origin: CW.data.origin, current: CW.data.current, history: CW.data.history, pages: CW.data.pages || [] } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
+    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, expected: EX.data || null, audience: AU.data ? { window: AU.data.window, country: AU.data.country, device: AU.data.device, appearance: AU.data.appearance, section: AU.data.section } : null, hidden: HQ.data ? { months: HQ.data.months, last28: HQ.data.last28, last90: HQ.data.last90 } : null, rank: (RK.data && RK.data.queries && RK.data.queries.length) ? { computed: RK.data.computed, queries: RK.data.queries.filter(function (q) { return !q.error; }).slice(0, 8) } : null, annotations: ANN.slice(0, 40).map(function (c) { return { date: c.date, kind: c.kind, title: c.title }; }), opportunities: OP.data || null, indexing: IX.data ? { checked_at: IX.data.checked_at, source: IX.data.source, counts: IX.data.counts, rows: IX.data.rows.slice(0, 25).map(function (r) { var o = Object.assign({}, r); delete o.link; return o; }) } : null, lost: LW.data ? { window: LW.data.window, lost_total: LW.data.lost_total, listed_lost: LW.data.listed_lost, by_kind: LW.data.by_kind, pages_total: LW.data.pages_total, pages: LW.data.pages.slice(0, 15), queries: LW.data.queries.slice(0, 10), queries_total: LW.data.queries_total } : null, changes: (CH.data && CH.data.changes.length) ? CH.data.changes.slice(0, 15).map(function (c) { return Object.assign({}, c, { effect: CH.data.effects[c.id] || null }); }) : null, cwv: (CW.data && CW.data.current) ? { origin: CW.data.origin, current: CW.data.current, history: CW.data.history, pages: CW.data.pages || [] } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
     if (TREND.id === CUR && TREND.data && TREND.types) return go(TREND.data);
     api('/gsc-archive/live-types', { id: CUR }).then(function (r) { if (r.error) { $('shOut').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } TREND.id = CUR; TREND.types = r.types || {}; TREND.errors = r.errors || {}; TREND.data = TREND.types.web || []; go(TREND.data); });
   };
@@ -1015,7 +1054,7 @@ function openView(id) {
   CUR = id; VISITED = {}; if ($('suiteIntro')) $('suiteIntro').style.display = 'none';
   api('/gsc-archive/daily', { id: id }).then(function (r) {
     if (r.error) return alert(r.error);
-    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null; MO.id = ''; MO.data = null; MO.error = null; MO.msg = ''; EX.id = ''; EX.data = null; EX.error = null; OP.id = ''; OP.data = null; OP.error = null; AU.id = ''; AU.data = null; AU.error = null; HQ.id = ''; HQ.data = null; HQ.error = null; ANN = []; LW.id = ''; LW.data = null; LW.error = null; IX.data = null; IX.error = null; IX.busy = false; CH.id = ''; CH.data = null; CH.error = null; CH.msg = '';
+    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null; MO.id = ''; MO.data = null; MO.error = null; MO.msg = ''; EX.id = ''; EX.data = null; EX.error = null; OP.id = ''; OP.data = null; OP.error = null; RK.id = ''; RK.data = null; RK.error = null; RK.msg = ''; AU.id = ''; AU.data = null; AU.error = null; HQ.id = ''; HQ.data = null; HQ.error = null; ANN = []; LW.id = ''; LW.data = null; LW.error = null; IX.data = null; IX.error = null; IX.busy = false; CH.id = ''; CH.data = null; CH.error = null; CH.msg = '';
     api('/gsc-archive/compare-options', { id: id }).then(function (o) { CMP.opts = o && !o.error ? o : null; if (CMP.opts && CMP.opts.months.length && !CMP.start) { var okm = CMP.opts.months.filter(function (m) { return m.available && m.twin_available; }); CMP.start = (okm.filter(function (m) { return m.month === CMP.opts.latest_stored_month; })[0] || okm[okm.length - 1] || {}).month || ''; } $('view').style.display = ''; drawView(r.site_url); $('view').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   });
 }
@@ -1063,7 +1102,7 @@ function drawView(site) {
     overview: '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + expectedCard() + brandCard(),
     audience: audienceCard() + hiddenCard(),
     segments: segArea(),
-    opportunities: opportunitiesCard(),
+    opportunities: rankCard() + opportunitiesCard(),
     recovery: lostCard() + changesCard(),
     technical: cwvCard() + indexCard(),
     alerts: monitorCard() + shareCard()

@@ -425,6 +425,40 @@
     return h + '<p class="foot">Computed from Search Console’s own totals against the sum of every query it returns for the period' + (hq.months.some(function (m) { return m.truncated; }) ? ' (capped at 50,000 queries a month, so a very large month reads a little high)' : '') + '. A high steady share is normal for a site with a long tail of rare searches; a share that jumps means the mix of queries changed.</p>';
   }
 
+  /* ---- rank history: the average position of tracked queries over time (1 = the top of the page) ---- */
+  function rkChange(now, prev) { if (now == null || prev == null) return '<span style="color:#777">—</span>'; var d = Math.round((prev - now) * 10) / 10; if (Math.abs(d) < 0.3) return '<span style="color:#777">≈ same</span>'; return '<b class="' + (d > 0 ? 'ok' : 'bad') + '">' + (d > 0 ? '▲ ' : '▼ ') + Math.abs(d).toFixed(1) + '</b>'; }
+  function rkSpark(weeks) {
+    var w = weeks.slice(-52); if (w.length < 3) return '';
+    var mn = Math.min.apply(null, w.map(function (x) { return x.pos; })), mx = Math.max.apply(null, w.map(function (x) { return x.pos; })), W = 110, H = 26, pad = 3;
+    var x = function (i) { return pad + (W - 2 * pad) * i / (w.length - 1); }, y = function (v) { return pad + (H - 2 * pad) * (mx === mn ? 0.5 : (v - mn) / (mx - mn)); };
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="display:block"><polyline fill="none" stroke="#34517A" stroke-width="1.8" stroke-linejoin="round" points="' + w.map(function (p, i) { return x(i).toFixed(1) + ',' + y(p.pos).toFixed(1); }).join(' ') + '"/></svg>';
+  }
+  function rkChart(q, anns) {
+    var weeks = q.weeks || []; if (weeks.length < 4) return '';
+    var rows = weeks.map(function (w) { return { k: w.k, pos: w.pos }; }), W = 760, H = 230, L = 52, R = 14, T = 20, B = 28, n = rows.length;
+    var mn = Math.max(1, Math.floor(Math.min.apply(null, rows.map(function (r) { return r.pos; })))), mx = Math.ceil(Math.max.apply(null, rows.map(function (r) { return r.pos; }))); if (mx === mn) mx = mn + 1;
+    var x = function (i) { return L + (W - L - R) * i / (n - 1); }, y = function (v) { return T + (H - T - B) * ((v - mn) / (mx - mn)); }, g = '';
+    for (var t = 0; t <= 4; t++) { var v = mn + (mx - mn) * t / 4, yy = y(v); g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#e2e2dc"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="11" fill="#3d3d3d">' + v.toFixed(v % 1 ? 1 : 0) + '</text>'; }
+    if (mn <= 10 && mx >= 10) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(10.5) + '" y2="' + y(10.5) + '" stroke="#b3261e" stroke-dasharray="4 4" opacity=".5"/><text x="' + (W - R) + '" y="' + (y(10.5) - 3) + '" text-anchor="end" font-size="10" fill="#b3261e">page 1 ends</text>';
+    rows.forEach(function (r, i) { if (i % 8 === 0) g += '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="#3d3d3d">' + MN[+r.k.slice(5, 7) - 1] + ' ' + r.k.slice(2, 4) + '</text>'; });
+    g += '<polyline fill="none" stroke="#34517A" stroke-width="2.4" stroke-linejoin="round" points="' + rows.map(function (r, i) { return x(i).toFixed(1) + ',' + y(r.pos).toFixed(1); }).join(' ') + '"/>';
+    var am = annMarks(rows, anns, x, T - 6, H, B); g += am.svg;
+    return '<div class="chart"><div class="cl">“' + esc(q.query) + '”: average position per week (higher on the chart = better)</div><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Average position of ' + esc(q.query) + ' per week">' + g + '</svg>' + am.legend + '</div>';
+  }
+  function rankSection(rk, opts) {
+    if (!rk || !rk.queries || !rk.queries.length) return '';
+    var qs = rk.queries.filter(function (q) { return !q.error; }), h = (opts && opts.noTitle ? '' : '<h2>Rank history</h2>');
+    h += '<p class="sub">The average position of the queries being tracked: the last 7 days against the 7 before, the last 28 days against the 28 before, and against the same 28 days a year earlier. Position 1 is the top of the first results page; a ▲ means the query moved up.' + (opts && opts.hint ? ' ' + opts.hint : '') + '</p>';
+    h += '<table><thead><tr><th>Query</th><th>Position, last 7 days</th><th>vs the week before</th><th>vs the 28 days before</th><th>vs a year earlier</th><th>Clicks, 28 days</th><th>Weekly trend</th></tr></thead><tbody>' + qs.map(function (q) {
+      var sel = opts && opts.selected === q.query;
+      return '<tr data-q="' + esc(q.query) + '"' + (sel ? ' style="background:#f3f3ef"' : '') + '><td>' + (opts && opts.selectable ? '<a href="#" data-pick="' + esc(q.query) + '">' + esc(q.query) + '</a>' : esc(q.query)) + '</td><td class="n">' + (q.now7.position == null ? '—' : q.now7.position.toFixed(1)) + '</td><td class="n">' + rkChange(q.now7.position, q.prev7.position) + '</td><td class="n">' + rkChange(q.now28.position, q.prev28.position) + '</td><td class="n">' + rkChange(q.now28.position, q.year_ago28.position) + '</td><td class="n">' + fmt(q.now28.clicks) + '</td><td>' + rkSpark(q.weeks || []) + '</td></tr>';
+    }).join('') + '</tbody></table>';
+    var charts = opts && opts.charts ? qs.filter(function (q) { return opts.charts.indexOf(q.query) >= 0; }) : qs.slice(0, 6);
+    h += charts.map(function (q) { return rkChart(q, opts && opts.annotations); }).join('');
+    var older = qs.reduce(function (m, q) { return Math.max(m, q.older_days || 0); }, 0);
+    return h + '<p class="foot">Average position is weighted by impressions and can mix several pages and result types, so a change of a place or two on few impressions is noise. The live part comes from Search Console’s last 16 months' + (older ? '; ' + older + ' earlier archived days are included, summed from the saved query rows (small combinations Google hides read slightly low)' : '; days the archive saves from now on extend the history past that') + '.</p>';
+  }
+
   function monthsSection(months) {
     if (!months || !months.length) return '';
     return '<h2>Saved days, by month</h2><p class="sub">Days Brand Checker saved before Google deleted them. A month marked partial has fewer saved days than the month has.</p><table><thead><tr><th>Month</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Avg position</th><th>Days saved</th></tr></thead><tbody>'
@@ -472,6 +506,7 @@
       h += indexingSection(s.indexing);
       h += changesSection(s.changes);
       h += opportunitiesSection(s.opportunities);
+      h += rankSection(s.rank, { annotations: s.annotations });
       h += cwvSection(s.cwv);
       h += brandSection(s.brand);
       if (s.seg) { h += segCore(s.seg); (s.seg.segments || []).filter(function (x) { return x.kind === 'focus'; }).forEach(function (x) { h += segFocus(s.seg, x.id); }); }
@@ -480,5 +515,5 @@
     h += '<p class="end">Figures are from Google Search Console for ' + esc(site) + '. Days older than Google’s 16-month window come from Brand Checker’s archive. Search Console’s own daily totals can differ slightly from the sum of query rows. Generated by the GSC Suite from Brand Checker (brandchecker.eu).</p></div>';
     return h;
   }
-  window.GscReport = { render: render, css: CSS, esc: esc, seg: { core: segCore, focus: segFocus }, cwv: cwvSection, expected: expectedSection, opportunities: opportunitiesSection, lost: lostSection, changes: changesSection, indexing: indexingSection, audience: audienceSection, hidden: hiddenSection, annMarks: annMarks, brand: { all: bAll, weeks: bWeeks, months: bMonths, sum: sum, stats: bStats, chart: bChart } };
+  window.GscReport = { render: render, css: CSS, esc: esc, seg: { core: segCore, focus: segFocus }, cwv: cwvSection, expected: expectedSection, opportunities: opportunitiesSection, lost: lostSection, changes: changesSection, indexing: indexingSection, rank: rankSection, audience: audienceSection, hidden: hiddenSection, annMarks: annMarks, brand: { all: bAll, weeks: bWeeks, months: bMonths, sum: sum, stats: bStats, chart: bChart } };
 })();
