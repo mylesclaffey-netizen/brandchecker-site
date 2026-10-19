@@ -309,6 +309,37 @@
     return h + '<p class="foot">Expected click rates are rough industry averages by position, not this site’s own, so the “extra clicks” are indications, not forecasts. Query-by-page rows hide small combinations, so totals read lower than the query-only figures.</p>';
   }
 
+  /* ---- lost winners and change tracker ---- */
+  var KINDL = { home: 'Redirects to the homepage', gone: 'Gone (404/410)', moved: 'Redirects to another page', live: 'Still live', elsewhere: 'Redirects to another site', noindex: 'Live, but noindex', error: 'Could not check' };
+  var KINDC = { home: 'bad', gone: 'bad', elsewhere: 'bad', noindex: 'bad', moved: '', live: '', error: '' };
+  function lostSection(l, opts) {
+    if (!l || !l.pages) return '';
+    var n = opts && opts.n ? opts.n : l.pages.length, h = (opts && opts.noTitle ? '' : '<h2>Lost winners</h2>');
+    var share = l.lost_total ? Math.round(l.listed_lost / l.lost_total * 100) : 0;
+    h += '<p class="sub">The pages and queries that lost the most clicks: the last ' + l.window.days + ' days (' + dLong(l.window.start) + ' to ' + dLong(l.window.end) + ') against the same days a year earlier. Search Console lost <b>' + fmt(l.lost_total) + '</b> clicks across <b>' + l.pages_total + '</b> pages; the pages listed below account for <b>' + fmt(l.listed_lost) + '</b> (' + share + '%).</p>';
+    var kinds = Object.keys(l.by_kind || {}).sort(function (a, b) { return l.by_kind[b].lost - l.by_kind[a].lost; });
+    if (kinds.length) h += '<div class="tiles">' + kinds.map(function (k) { var b = l.by_kind[k]; return '<div class="tile"><span>' + esc(KINDL[k] || k) + '</span><b class="' + (KINDC[k] || '') + '">−' + fmt(b.lost) + '</b><span>' + b.n + ' page' + (b.n === 1 ? '' : 's') + ' · ' + (l.listed_lost ? Math.round(b.lost / l.listed_lost * 100) : 0) + '% of the listed loss</span></div>'; }).join('') + '</div>';
+    h += '<table><thead><tr><th>Page</th><th>Clicks then → now</th><th>Position then → now</th><th>Today</th><th>What to do</th></tr></thead><tbody>' + l.pages.slice(0, n).map(function (r) { return '<tr><td>' + esc(sitePath(r.url)) + '</td><td class="n">' + fmt(r.prev.c) + ' → ' + fmt(r.cur.c) + '</td><td class="n">' + (r.prev.pos == null ? '—' : r.prev.pos) + ' → ' + (r.cur.pos == null ? '—' : r.cur.pos) + '</td><td><b class="' + (KINDC[r.kind] || '') + '">' + esc(KINDL[r.kind] || r.kind) + '</b>' + (r.final && r.kind !== 'home' ? '<br><small>→ ' + esc(r.kind === 'elsewhere' ? r.final : sitePath(r.final)) + '</small>' : '') + '</td><td>' + esc(r.action || '') + '</td></tr>'; }).join('') + '</tbody></table>';
+    if (l.queries && l.queries.length) h += '<p class="sub" style="margin-top:10px"><b>Queries that lost the most</b> (' + l.queries_total + ' lost three or more clicks)</p><table><thead><tr><th>Query</th><th>Clicks then → now</th><th>Position then → now</th></tr></thead><tbody>' + l.queries.slice(0, opts && opts.n ? Math.min(10, opts.n) : 30).map(function (q) { return '<tr><td>' + esc(q.query) + '</td><td class="n">' + fmt(q.prev.c) + ' → ' + fmt(q.cur.c) + '</td><td class="n">' + (q.prev.pos == null ? '—' : q.prev.pos) + ' → ' + (q.cur.pos == null ? '—' : q.cur.pos) + '</td></tr>'; }).join('') + '</tbody></table>';
+    return h + '<p class="foot">Suggested replacement pages are a slug-word match against the sitemap and must be checked by a person: only a page that answers the same question should receive the redirect. A page redirected to the homepage passes almost nothing on.</p>';
+  }
+  var CHK = { published: 'Published', updated: 'Updated', redirect: 'Redirect applied', removed: 'Removed', other: 'Other' };
+  function changeEffectText(e) {
+    if (!e) return '<span style="color:#777">Not measured</span>';
+    if (e.status === 'too_early') return '<span style="color:#777">Too early: measured from ' + (e.days_left || 7) + ' more day' + ((e.days_left || 7) === 1 ? '' : 's') + ' (needs a week of data after the change)</span>';
+    if (e.status === 'no_baseline') return '<span style="color:#777">No before-period: Search Console no longer holds the weeks before this date</span>';
+    if (e.status === 'error') return '<span style="color:#777">Could not measure</span>';
+    var up = e.net_pct == null ? null : e.net_pct >= 0, scope = e.scope === 'pages' ? 'these pages' : 'the site';
+    return '<b class="' + (up == null ? '' : up ? 'ok' : 'bad') + '">' + (e.net_pct == null ? 'n/a' : (e.net_pct >= 0 ? '+' : '') + e.net_pct + '% net') + '</b><br><small>' + esc(e.before.per_day) + ' → ' + esc(e.after.per_day) + ' clicks/day on ' + scope + ' (' + (e.own_pct >= 0 ? '+' : '') + e.own_pct + '%)' + (e.scope === 'pages' ? '; the rest of the site ' + (e.site_pct >= 0 ? '+' : '') + e.site_pct + '%' : '') + (e.status === 'partial' ? '; only ' + e.after.days + ' days since' : '') + (e.tiny ? '; very few clicks, so treat as noise' : '') + '</small>';
+  }
+  function changesSection(list, opts) {
+    if (!list || !list.length) return '';
+    var h = (opts && opts.noTitle ? '' : '<h2>Change tracker</h2>');
+    h += '<p class="sub">Changes logged by the site owner and what followed: the 28 days before each against the 28 days after, for the pages involved, set against the rest of the site over the same days so a site-wide swing is not credited to the change.</p>';
+    h += '<table><thead><tr><th>Date</th><th>Change</th><th>Pages</th><th>Effect</th></tr></thead><tbody>' + list.map(function (c) { var e = c.effect || (opts && opts.effects ? opts.effects[c.id] : null); return '<tr><td class="n">' + esc(c.date) + '</td><td><b>' + esc(CHK[c.kind] || c.kind) + '</b>: ' + esc(c.title) + (c.note ? '<br><small>' + esc(c.note) + '</small>' : '') + '</td><td>' + (c.urls && c.urls.length ? c.urls.slice(0, 4).map(function (u) { return esc(sitePath(u)); }).join('<br>') + (c.urls.length > 4 ? '<br>+' + (c.urls.length - 4) + ' more' : '') : '<small>whole site</small>') + '</td><td>' + changeEffectText(e) + '</td></tr>'; }).join('') + '</tbody></table>';
+    return h + '<p class="foot">An effect of a few percent on small click counts is noise. Several changes at once, or a Google update in the same weeks, make a single change impossible to isolate.</p>';
+  }
+
   function monthsSection(months) {
     if (!months || !months.length) return '';
     return '<h2>Saved days, by month</h2><p class="sub">Days Brand Checker saved before Google deleted them. A month marked partial has fewer saved days than the month has.</p><table><thead><tr><th>Month</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Avg position</th><th>Days saved</th></tr></thead><tbody>'
@@ -350,6 +381,8 @@
     else {
       if (trend.length >= 28) h += headline(trend) + trendSection(trend) + typesSection(trend, s.trend_types);
       h += expectedSection(s.expected);
+      h += lostSection(s.lost, { n: 15 });
+      h += changesSection(s.changes);
       h += opportunitiesSection(s.opportunities);
       h += cwvSection(s.cwv);
       h += brandSection(s.brand);
@@ -359,5 +392,5 @@
     h += '<p class="end">Figures are from Google Search Console for ' + esc(site) + '. Days older than Google’s 16-month window come from Brand Checker’s archive. Search Console’s own daily totals can differ slightly from the sum of query rows. Generated by Brand Checker (brandchecker.eu).</p></div>';
     return h;
   }
-  window.GscReport = { render: render, css: CSS, esc: esc, seg: { core: segCore, focus: segFocus }, cwv: cwvSection, expected: expectedSection, opportunities: opportunitiesSection, brand: { all: bAll, weeks: bWeeks, months: bMonths, sum: sum, stats: bStats, chart: bChart } };
+  window.GscReport = { render: render, css: CSS, esc: esc, seg: { core: segCore, focus: segFocus }, cwv: cwvSection, expected: expectedSection, opportunities: opportunitiesSection, lost: lostSection, changes: changesSection, brand: { all: bAll, weeks: bWeeks, months: bMonths, sum: sum, stats: bStats, chart: bChart } };
 })();

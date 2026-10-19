@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <script src="/assets/visitor.js"></script>
-<script src="/assets/gsc-report.js?v=10"></script>
+<script src="/assets/gsc-report.js?v=11"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Search Console Archive</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
@@ -780,6 +780,64 @@ function renderOpps(loading) {
   };
 }
 
+/* ---- lost winners ---- */
+var LW = { id: '', data: null, error: null, days: 90 };
+function lostCard() { return '<div class="card" id="lwCard"><h2>Lost winners</h2><div id="lwOut"><p class="hint">Comparing pages and queries with a year earlier and checking what each address does now…</p></div></div>'; }
+function loadLost(refresh) {
+  if (!refresh && LW.id === CUR && (LW.data || LW.error) && LW.loadedDays === LW.days) { renderLost(); return; }
+  LW.id = CUR; LW.data = null; LW.error = null; LW.loadedDays = LW.days; renderLost(true);
+  api('/gsc-archive/lost-winners', { id: CUR, days: LW.days, refresh: !!refresh }).then(function (r) { if (LW.id !== CUR) return; if (r.error) LW.error = r; else LW.data = r; renderLost(); });
+}
+function renderLost(loading) {
+  var box = $('lwOut'); if (!box) return; ensureGrStyle();
+  if (loading) { box.innerHTML = '<p class="hint">Comparing pages and queries with a year earlier and requesting each of the biggest losers… (about 20 seconds)</p>'; return; }
+  if (LW.error) { box.innerHTML = '<div class="err">' + esc(LW.error.error) + '</div>' + (LW.error.reconnect ? '<p><button class="btn2 small" type="button" onclick="connect()">Reconnect Search Console</button></p>' : ''); return; }
+  var d = LW.data; if (!d) return;
+  box.innerHTML = '<p class="sub" style="margin:0 0 10px">Which pages and queries lost the most clicks against a year earlier, what each address does today (live, moved, homepage redirect, gone), and what to do about it.</p><div class="seg" data-g="lwd">' + [[28, 'Last 28 days'], [90, 'Last 90 days']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (LW.days === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div><div class="gr">' + GscReport.lost(d, { noTitle: true }) + '</div>' +
+    '<div class="acts"><button class="btn2 small" type="button" id="lwCsv">Download pages (CSV)</button><button class="btn2 small" type="button" id="lwRedirects">Download redirect suggestions (CSV)</button><button class="btn2 small" type="button" id="lwRefresh">Refresh</button></div><p class="hint">Computed ' + esc(String(d.computed || '').slice(0, 16).replace('T', ' ')) + ' UTC' + (d.cached ? ' (cached for 6 hours)' : '') + '. Included in the full report, PDF and shared link.</p>';
+  box.querySelectorAll('.seg[data-g="lwd"] button').forEach(function (b) { b.onclick = function () { LW.days = +b.dataset.v; loadLost(); }; });
+  $('lwRefresh').onclick = function () { loadLost(true); };
+  $('lwCsv').onclick = function () { download('gsc-lost-winners-' + d.window.days + 'd.csv', toCsv([['page', 'clicks_then', 'clicks_now', 'impressions_then', 'impressions_now', 'position_then', 'position_now', 'status_today', 'redirects_to', 'suggested_target', 'action']].concat(d.pages.map(function (r) { return [r.url, r.prev.c, r.cur.c, r.prev.i, r.cur.i, r.prev.pos, r.cur.pos, r.label, r.final || '', r.suggest ? r.suggest.url : '', r.action]; })))); };
+  $('lwRedirects').onclick = function () {
+    var rows = d.pages.filter(function (r) { return r.suggest; }).map(function (r) { return [r.url, r.suggest.url, r.suggest.score, r.prev.c]; });
+    if (!rows.length) { alert('No page has a close enough replacement in the sitemap. Restore the pages instead, or choose targets by hand.'); return; }
+    download('gsc-redirect-suggestions.csv', toCsv([['old_url', 'suggested_new_url', 'match_score', 'clicks_then']].concat(rows)));
+  };
+}
+
+/* ---- change tracker ---- */
+var CH = { id: '', data: null, error: null, msg: '' };
+function changesCard() { return '<div class="card" id="chCard"><h2>Change tracker</h2><div id="chOut"><p class="hint">Loading…</p></div></div>'; }
+function loadChanges(force) {
+  if (!force && CH.id === CUR && (CH.data || CH.error)) { renderChanges(); return; }
+  CH.id = CUR; CH.data = null; CH.error = null;
+  api('/gsc-archive/changes', { id: CUR }).then(function (r) { if (r.error) CH.error = r; else CH.data = r; renderChanges(); });
+}
+function renderChanges() {
+  var box = $('chOut'); if (!box) return; ensureGrStyle();
+  if (CH.error) { box.innerHTML = '<div class="err">' + esc(CH.error.error) + '</div>'; return; }
+  var d = CH.data; if (!d) return;
+  var today = new Date().toISOString().slice(0, 10);
+  var h = (CH.msg ? '<div class="toast">' + esc(CH.msg) + '</div>' : '') + '<p class="sub" style="margin:0 0 10px">Log what you do to the site (publish a post, apply redirects, rewrite a page) and the tracker measures what followed: the 28 days before against the 28 days after for the pages involved, set against the rest of the site so a site-wide swing is not credited to the change. A redirect should list the old and the new address, so the traffic is counted wherever it lands.</p>' +
+    '<div class="row2"><div><label class="fl" for="chDate">Date it went live</label><input type="date" id="chDate" value="' + today + '" max="' + today + '"></div><div><label class="fl" for="chKind">Type</label><select id="chKind">' + [['published', 'Published a page'], ['updated', 'Updated a page'], ['redirect', 'Redirect applied'], ['removed', 'Removed a page'], ['other', 'Other']].map(function (k) { return '<option value="' + k[0] + '">' + k[1] + '</option>'; }).join('') + '</select></div></div>' +
+    '<div style="margin-top:10px"><label class="fl" for="chTitle">What you did</label><input type="text" id="chTitle" maxlength="120" placeholder="e.g. Republished the square-brackets post"></div>' +
+    '<div style="margin-top:10px"><label class="fl" for="chUrls">Pages involved (one URL per line; for a redirect, the old and the new; leave empty for a site-wide change)</label><textarea id="chUrls" style="min-height:70px" spellcheck="false" placeholder="https://' + esc((SH.site || 'example.com').replace(/^sc-domain:/, '')) + '/blog/…"></textarea></div>' +
+    '<div style="margin-top:10px"><label class="fl" for="chNote">Note (optional)</label><input type="text" id="chNote" maxlength="400"></div>' +
+    '<div class="acts"><button class="btn2 small" type="button" id="chAdd">Log this change</button></div><div id="chMsg"></div>';
+  if (d.changes.length) {
+    h += '<h3 class="h" style="font-size:16px;margin:16px 0 6px">Logged changes</h3><div class="gr">' + GscReport.changes(d.changes, { noTitle: true, effects: d.effects }) + '</div><div class="acts">' + d.changes.slice(0, 15).map(function (c) { return '<button class="btn2 small" type="button" data-del="' + esc(c.id) + '">Delete: ' + esc(c.date + ' ' + c.title.slice(0, 28)) + '</button>'; }).join('') + '</div>';
+  } else h += '<p class="hint" style="margin-top:12px">Nothing logged yet.</p>';
+  box.innerHTML = h;
+  $('chAdd').onclick = function () {
+    var b = this; b.disabled = true; $('chMsg').innerHTML = '<p class="hint">Saving…</p>';
+    api('/gsc-archive/changes', { id: CUR, action: 'add', date: $('chDate').value, kind: $('chKind').value, title: $('chTitle').value, urls: $('chUrls').value.split(/\n/).map(function (x) { return x.trim(); }).filter(Boolean), note: $('chNote').value }).then(function (r) {
+      b.disabled = false; if (r.error) { $('chMsg').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; }
+      CH.msg = 'Logged. Its effect appears here once a week of data exists after the date.'; CH.data = r; renderChanges();
+    });
+  };
+  box.querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { if (!confirm('Delete this logged change?')) return; b.disabled = true; api('/gsc-archive/changes', { id: CUR, action: 'delete', cid: b.dataset.del }).then(function (r) { CH.msg = 'Deleted.'; CH.data = r; renderChanges(); }); }; });
+}
+
 /* ---- whole-report PDF and sign-in-free share links ---- */
 var SH = { site: '' };
 function shareCard() {
@@ -800,7 +858,7 @@ function wireShare(site) {
   var pdf = $('shPdf'), mk = $('shMake'); if (!pdf) return;
   pdf.onclick = function () {
     $('shOut').innerHTML = '<p class="hint">Preparing the report…</p>';
-    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, expected: EX.data || null, opportunities: OP.data || null, cwv: (CW.data && CW.data.current) ? { origin: CW.data.origin, current: CW.data.current, history: CW.data.history, pages: CW.data.pages || [] } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
+    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, expected: EX.data || null, opportunities: OP.data || null, lost: LW.data ? { window: LW.data.window, lost_total: LW.data.lost_total, listed_lost: LW.data.listed_lost, by_kind: LW.data.by_kind, pages_total: LW.data.pages_total, pages: LW.data.pages.slice(0, 15), queries: LW.data.queries.slice(0, 10), queries_total: LW.data.queries_total } : null, changes: (CH.data && CH.data.changes.length) ? CH.data.changes.slice(0, 15).map(function (c) { return Object.assign({}, c, { effect: CH.data.effects[c.id] || null }); }) : null, cwv: (CW.data && CW.data.current) ? { origin: CW.data.origin, current: CW.data.current, history: CW.data.history, pages: CW.data.pages || [] } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
     if (TREND.id === CUR && TREND.data && TREND.types) return go(TREND.data);
     api('/gsc-archive/live-types', { id: CUR }).then(function (r) { if (r.error) { $('shOut').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } TREND.id = CUR; TREND.types = r.types || {}; TREND.errors = r.errors || {}; TREND.data = TREND.types.web || []; go(TREND.data); });
   };
@@ -839,7 +897,7 @@ function openView(id) {
   CUR = id;
   api('/gsc-archive/daily', { id: id }).then(function (r) {
     if (r.error) return alert(r.error);
-    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null; MO.id = ''; MO.data = null; MO.error = null; MO.msg = ''; EX.id = ''; EX.data = null; EX.error = null; OP.id = ''; OP.data = null; OP.error = null;
+    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null; MO.id = ''; MO.data = null; MO.error = null; MO.msg = ''; EX.id = ''; EX.data = null; EX.error = null; OP.id = ''; OP.data = null; OP.error = null; LW.id = ''; LW.data = null; LW.error = null; CH.id = ''; CH.data = null; CH.error = null; CH.msg = '';
     api('/gsc-archive/compare-options', { id: id }).then(function (o) { CMP.opts = o && !o.error ? o : null; if (CMP.opts && CMP.opts.months.length && !CMP.start) { var okm = CMP.opts.months.filter(function (m) { return m.available && m.twin_available; }); CMP.start = (okm.filter(function (m) { return m.month === CMP.opts.latest_stored_month; })[0] || okm[okm.length - 1] || {}).month || ''; } $('view').style.display = ''; drawView(r.site_url); $('view').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   });
 }
@@ -883,7 +941,7 @@ function drawView(site) {
   // Align the previous year's buckets to the current ones by position in the range.
   var prevAligned = cur.map(function (b) { return prev.filter(function (p) { return p.k === b.k; })[0] || null; });
   var tc = totals(days), tp = shifted.length > 20 ? totals(shifted) : null;
-  var h = '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + expectedCard() + opportunitiesCard() + brandCard() + segArea() + cwvCard() + monitorCard() + shareCard() + '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
+  var h = '<div class="card" id="trendCard"><h2>Trend: everything Search Console still has</h2><div id="trendOut"><p class="hint">Loading Google’s own daily totals…</p></div></div>' + expectedCard() + lostCard() + opportunitiesCard() + changesCard() + brandCard() + segArea() + cwvCard() + monitorCard() + shareCard() + '<div class="card"><h2>' + esc(site) + '</h2><p class="sub" style="margin:0 0 12px">' + esc(first) + ' to ' + esc(last) + ' · ' + days.length + ' days stored</p>' +
     '<div class="seg" data-g="range">' + [['28d', '28 days'], ['3m', '3 months'], ['12m', '12 months'], ['all', 'All stored']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (RANGE === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="gran">' + [['day', 'Daily'], ['week', 'Weekly'], ['month', 'Monthly']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (GRAN === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
     '<div class="seg" data-g="metric">' + [['clicks', 'Clicks'], ['impressions', 'Impressions'], ['ctr', 'CTR'], ['position', 'Position']].map(function (r) { return '<button type="button" data-v="' + r[0] + '" aria-pressed="' + (METRIC === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
@@ -907,7 +965,9 @@ function drawView(site) {
   wire(site);
   loadTrend();
   loadExpected();
+  loadLost();
   loadOpps();
+  loadChanges();
   loadBrand();
   loadSegments();
   loadCwv();
