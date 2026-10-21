@@ -6,29 +6,29 @@
 <script src="/assets/visitor.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>llms.txt generator</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23c4cbdb'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;
         --you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000;--gold:#0a0a0a}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+  body{background:var(--paper);color:var(--ink);font-family:'Archivo',system-ui,sans-serif;
        line-height:1.5;padding:22px 16px 60px}
   .wrap{max-width:640px;margin:0 auto}
   .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-  h1{font-family:'Archivo',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+  h1{font-family:'Archivo','Archivo',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
      line-height:1.14;margin:8px 0;color:var(--gold)}
   .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
   fieldset{border:0;margin-bottom:24px}
-  legend{font-family:'Archivo',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+  legend{font-family:'Archivo','Archivo',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
          text-transform:uppercase;color:var(--muted);margin-bottom:4px}
   .hint{font-size:11.5px;color:var(--muted);margin:0 0 12px;line-height:1.5}
   label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;margin-top:14px}
   label:first-child{margin-top:0}
-  input,textarea{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+  input,textarea{width:100%;font-family:'Archivo',system-ui,sans-serif;font-size:14px;color:var(--ink);
         background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
   input:focus,textarea:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
-  textarea{resize:vertical;min-height:60px;font-family:'IBM Plex Mono',monospace}
+  textarea{resize:vertical;min-height:60px;font-family:'Archivo',system-ui,sans-serif}
   .field{margin-bottom:12px;position:relative}
 
   .siterow{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px}
@@ -36,25 +36,32 @@
   .rmbtn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:7px;
         width:38px;height:38px;flex:none;cursor:pointer;font-size:16px;margin-top:1px}
   .addbtn{font-size:12px;color:var(--you);background:none;border:1px dashed var(--line);
-        border-radius:7px;padding:9px 14px;cursor:pointer;font-family:'IBM Plex Mono',monospace}
+        border-radius:7px;padding:9px 14px;cursor:pointer;font-family:'Archivo',system-ui,sans-serif}
   .addbtn.small{font-size:11px;padding:6px 11px}
 
+  .fillrow{display:grid;grid-template-columns:1fr auto;gap:10px}
+  .fillrow .submit{width:auto;margin:0;padding:12px 20px}
+  .notebox{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:12px 14px;margin-top:10px;font-size:13.5px;color:var(--mc-ink2)}
+  .notebox.warn{border-color:#f3dcae;background:#fdf3e1}
+  .pairbox{margin-top:18px;border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:14px;color:var(--mc-ink2);background:var(--card)}
+  .pairbox a{color:var(--you)}
+  @media (max-width:560px){.fillrow{grid-template-columns:1fr}}
   .block{background:var(--card);border:1px solid var(--line);border-radius:10px;
         padding:16px;margin-bottom:12px;position:relative}
   .block .rmblock{position:absolute;top:12px;right:12px;background:none;border:1px solid var(--line);
         color:var(--muted);border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px}
-  .block .blocktitle{font-family:'Archivo',sans-serif;font-size:11px;font-weight:700;
+  .block .blocktitle{font-family:'Archivo','Archivo',sans-serif;font-size:11px;font-weight:700;
         letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
 
-  .outheading{font-family:'Archivo',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+  .outheading{font-family:'Archivo','Archivo',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
      text-transform:uppercase;color:var(--muted);margin:28px 0 10px}
   .codebox{background:var(--card);border:1px solid var(--line);border-radius:10px;
         padding:16px;max-height:420px;overflow:auto;margin-bottom:14px}
-  .codebox pre{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ok);
+  .codebox pre{font-family:'Archivo',system-ui,sans-serif;font-size:12px;color:var(--ok);
         white-space:pre-wrap;word-break:break-word}
   .codebox .empty{color:var(--muted);white-space:normal}
 
-  .submit{width:100%;font-family:'Archivo',sans-serif;font-size:15px;font-weight:700;
+  .submit{width:100%;font-family:'Archivo','Archivo',sans-serif;font-size:15px;font-weight:700;
           background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer}
   .submit:hover{background:#d92f00}
   .submit[disabled]{opacity:.5;cursor:not-allowed}
@@ -67,10 +74,12 @@
   .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
   .sidenav-link:hover{color:var(--ink)}
   .sidenav-link.accent{color:var(--you);font-weight:500}
-  .sidenav-link.accent:hover{color:#ff3d00}
+  .sidenav-link.accent:hover{color:#d92f00}
   body.embed .sidenav{display:none}
 </style>
+<style>:root{--card2:#f3f3ef;--mc-display:'Archivo',system-ui,sans-serif;--mc-body:'Archivo',system-ui,sans-serif;--mc-mono:'IBM Plex Mono',ui-monospace,monospace;--mc-ink2:#0a0a0a;--mc-line2:#0a0a0a;--mc-soft:#f3f3ef;--mc-warm:#ff3d00}.tab[aria-selected=true]{color:#0a0a0a}</style>
 <link rel="stylesheet" href="/assets/theme.css">
+<script src="/assets/llms-draft.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -89,6 +98,13 @@
     <p class="eyebrow">Free tool · no access code needed</p>
     <h1>llms.txt generator</h1>
     <p class="lede">A curated map of your site for AI assistants to read — the same idea as robots.txt or a sitemap, but written for language models instead of crawlers. Fill in what applies, then host the result at <b>yoursite.com/llms.txt</b>.</p>
+
+    <fieldset id="fillBox">
+      <legend>Fill from my website</legend>
+      <p class="hint" style="margin:0 0 10px">We read your homepage, sitemap and key pages and draft every section for you, titles and notes included. You then trim it here.</p>
+      <div class="fillrow"><input id="fillUrl" type="text" placeholder="yoursite.com" autocapitalize="off" spellcheck="false"><button class="submit" id="fillBtn" type="button">Draft it</button></div>
+      <div id="fillMsg"></div>
+    </fieldset>
 
     <fieldset>
       <legend>Basics</legend>
@@ -112,6 +128,7 @@
     <div class="codebox"><pre id="output" class="empty">Add a site name and at least one link above to generate your file.</pre></div>
     <button class="submit" id="copyBtn" type="button" disabled>Copy code</button>
     <p class="after">Save this as a plain text file named <b>llms.txt</b> and host it at your site's root — <b>yoursite.com/llms.txt</b>, same place as robots.txt. Spec at <a href="https://llmstxt.org" target="_blank" rel="noopener">llmstxt.org</a>.</p>
+    <div class="pairbox"><b>Want the full text too?</b> llms.txt is the index; its companion <b>llms-full.txt</b> holds the text of the pages. <a href="/tools/lil-rag-chunker/" id="toChunker">Lil Rag Chunker</a> makes it, plus RAG-ready chunks for your own chatbot or Custom GPT, in one ZIP.</div>
 
     <div class="sidenav">
       <a href="/" class="sidenav-link">← Back to tools</a>
@@ -246,6 +263,56 @@ datalist.innerHTML = SECTION_PRESETS.map(s => '<option value="' + s + '">').join
 document.body.appendChild(datalist);
 
 addSectionBlock('Docs');
+
+/* ---- drafts: from Lil Rag Chunker, or "Fill from my website" ---- */
+function loadDraft(d) {
+  $('siteName').value = d.name || ''; $('summary').value = d.summary || ''; $('context').value = d.context || '';
+  $('sections').innerHTML = ''; $('addSection').style.display = '';
+  (d.sections || []).slice(0, MAX_SECTIONS).forEach(sec => {
+    const block = addSectionBlock(sec.name);
+    const rows = block.querySelector('.linkrows');
+    sec.links.slice(0, MAX_LINKS).forEach((l, i) => {
+      if (i > 0) addLinkRow(rows);
+      const row = rows.children[i];
+      row.querySelector('.link-title').value = l.title; row.querySelector('.link-url').value = l.url; row.querySelector('.link-desc').value = l.desc || '';
+    });
+  });
+  if (!$('sections').children.length) addSectionBlock('Docs');
+  regenerate();
+}
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const say = (html, warn) => { $('fillMsg').innerHTML = html ? '<div class="notebox' + (warn ? ' warn' : '') + '">' + html + '</div>' : ''; };
+const QS = new URLSearchParams(location.search);
+const API_RAG = (/^(127\.0\.0\.1|localhost)$/.test(location.hostname) && QS.get('api')) || API;
+const post = (path, body) => fetch(API_RAG + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign(CODE ? { code: CODE } : {}, body)) })
+  .then(r => r.json().catch(() => ({ error: 'The server sent an unreadable reply. Please try again.' }))).catch(() => ({ error: 'Could not reach the server. Check your connection and try again.' }));
+
+$('fillBtn').onclick = async () => {
+  const u = $('fillUrl').value.trim();
+  if (!u) return say('Enter your website, like yoursite.com.', true);
+  $('fillBtn').disabled = true; say('Reading your homepage and sitemap…');
+  const d = await post('/rag/discover', { url: u });
+  if (d.error) { $('fillBtn').disabled = false; return say(esc(d.error), true); }
+  // The pages to describe: the ones in the site's own llms.txt if it has one, else the key pages, then the shortest paths.
+  const pick = (d.candidates.some(c => c.in_llms) ? d.candidates.filter(c => c.in_llms) : d.candidates).filter(c => c.role !== 'home').slice(0, 30);
+  say('Reading ' + pick.length + ' page' + (pick.length === 1 ? '' : 's') + ' for titles and notes…');
+  const r = await post('/rag/describe', { url: d.domain, urls: pick.map(c => c.url) });
+  $('fillBtn').disabled = false;
+  if (r.error) return say(esc(r.error), true);
+  loadDraft(MC2LlmsDraft.build({ brand: d.brand, domain: d.domain, summary: d.summary, pages: r.pages }));
+  $('toChunker').href = '/tools/lil-rag-chunker/?u=' + encodeURIComponent(d.domain);
+  const l = d.llms_txt || {};
+  if (l.found) {
+    const pr = l.problems, issues = [pr.broken ? pr.broken + ' broken' : '', pr.redirect ? pr.redirect + ' redirecting' : '', pr.thin ? pr.thin + ' with little text' : ''].filter(Boolean).join(', ');
+    say('Drafted from ' + r.pages.length + ' pages in your current <a href="' + esc(l.url) + '" target="_blank" rel="noopener">llms.txt</a>. ' + (issues ? 'We checked its links: <b>' + esc(issues) + '</b>.' + (pr.broken ? ' Broken links are left out here.' : '') + ' <a href="/tools/lil-rag-chunker/?u=' + encodeURIComponent(d.domain) + '">See which ones</a>. ' : 'Every link in it works. ') + 'Check the notes, then copy the new version below.', !!issues);
+  } else say('Drafted from ' + r.pages.length + ' of your pages. Your site has no llms.txt yet: trim the sections below, then copy it.');
+};
+
+if (QS.get('u')) { $('fillUrl').value = QS.get('u'); }
+if (QS.get('from') === 'chunker') {
+  const d = MC2LlmsDraft.takeHandoff();
+  if (d) { loadDraft(d); say('Filled in from <b>Lil Rag Chunker</b>: the pages you exported. Trim the sections and notes, then copy it.'); $('fillUrl').value = (d.sections[0] && d.sections[0].links[0] ? new URL(d.sections[0].links[0].url).hostname.replace(/^www\./, '') : ''); }
+}
 </script>
 <script src="/assets/presets.js"></script>
 </body>

@@ -41,7 +41,7 @@ GROUPS = [
     ('What AI says about you', 'Ask the models your buyers use and read what comes back: who gets named, recommended and cited.',
      ['state-of-the-llm-union', 'search-on-off', 'model-compare', 'ai-mentions', 'brand-sentiment', 'brand-questions']),
     ('Make sure AI can read you', 'Free checks and files that decide whether AI crawlers can reach your site and understand it.',
-     ['crawler-check', 'llms-txt']),
+     ['crawler-check', 'llms-txt', 'lil-rag-chunker']),
 ]
 missing = [s for _, _, slugs in GROUPS for s in slugs if s not in cards]
 if missing:

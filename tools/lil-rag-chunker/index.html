@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<script src="/assets/visitor.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lil Rag Chunker: RAG-ready chunks from your website | Brand Checker</title>
+<meta name="description" content="Turn your website into RAG-ready chunks for your own chatbot, Custom GPT or AI assistant: cleaned, chunked by heading and downloaded as JSONL, Markdown, CSV and llms-full.txt in one ZIP. Then test which chunk answers your buyers' questions. Free for up to 10 pages.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{line-height:1.55;padding:28px 16px 64px}
+  .wrap{max-width:860px;margin:0 auto}
+  h1{font-size:clamp(28px,4vw,38px);margin:10px 0 12px}
+  .lede{margin-bottom:28px;max-width:66ch}
+  h2{font-size:22px;margin:0 0 6px}
+  h3{font-size:17px;margin:0}
+  .step{margin-bottom:28px}
+  .step-n{font-family:var(--mc-display);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .row{display:grid;grid-template-columns:1.4fr 1fr auto;gap:10px;align-items:end}
+  .field label{display:block;margin-bottom:6px}
+  input[type=text],textarea{width:100%;padding:11px 13px}
+  textarea{min-height:150px;resize:vertical;line-height:1.5}
+  .submit{padding:13px 20px;cursor:pointer}
+  .submit.full{width:100%;margin-top:14px;padding:15px}
+  .hint,.after{font-size:13px;color:var(--muted);margin-top:8px}
+  .err{padding:12px 14px;border:1px solid #f3c2bd;margin-top:12px}
+  .pages{margin-top:14px;max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+  .pg{display:flex;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--line);font-size:14px;cursor:pointer}
+  .pg:last-child{border-bottom:0}
+  .pg:hover{background:var(--card)}
+  .pg .path{font-family:var(--mc-mono);font-size:12.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+  .pg .how{font-size:12px;color:var(--muted);white-space:nowrap}
+  .tagr{font-family:var(--mc-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--mc-line2);border-radius:4px;padding:1px 6px;color:var(--muted);white-space:nowrap}
+  .count{font-family:var(--mc-mono);font-size:12px;color:var(--muted);margin-top:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}
+  .qchip{font-family:var(--mc-body);font-size:13px;border:1px solid var(--mc-line2);background:#fff;color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+  .qchip:hover{border-color:var(--you);color:var(--you)}
+  .qchip.used{opacity:.4;cursor:default}
+
+  #result{display:none;margin-top:28px}
+  .verdict{border:1px solid var(--line);border-left-width:12px;padding:18px 20px;margin:0 0 18px;background:#fff}
+  .verdict.good{border-left-color:var(--ok)} .verdict.bad{border-left-color:var(--bad)} .verdict.warn{border-left-color:var(--warn)}
+  .verdict h2{font-weight:700;font-size:clamp(22px,3.6vw,30px);letter-spacing:-.02em;line-height:1.15;margin:0 0 6px}
+  .verdict p{font-size:15px;color:var(--muted)}
+  .tally{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .vpill{font-family:var(--mc-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border:1px solid var(--line);border-radius:3px;white-space:nowrap;background:#fff}
+  .v-answered{color:var(--ok);border-color:var(--ok)}
+  .v-weak{color:var(--warn);border-color:var(--warn)}
+  .v-missing{background:var(--bad);border-color:var(--bad);color:#fff}
+  .v-unrated{color:var(--muted)}
+  .caveat{font-size:13.5px;color:var(--mc-ink2);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:22px}
+  .sec{margin:34px 0 12px}
+  .sec h2{font-size:22px;font-weight:600;letter-spacing:-.015em;margin:0 0 4px}
+  .sec .hint{margin-top:0}
+  .q{border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:12px}
+  .q-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+  .q-head h3{font-size:17px;line-height:1.35}
+  .q-note{font-size:13.5px;color:var(--mc-ink2);margin-top:6px}
+  .hit{border-top:1px solid var(--line);padding:12px 0 2px;margin-top:12px}
+  .hit-meta{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12.5px;color:var(--muted)}
+  .hit-meta .pth{font-family:var(--mc-mono);color:var(--ink)}
+  .rank{font-family:var(--mc-mono);font-size:11px;color:#fff;background:var(--ink);border-radius:4px;padding:1px 6px}
+  .hit p.txt{font-size:14px;color:var(--mc-ink2);margin-top:6px;white-space:pre-line}
+  .scores{font-family:var(--mc-mono);font-size:11px;color:var(--muted)}
+  .linkbtn{background:none;border:0;color:var(--you);font-family:var(--mc-mono);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;padding:6px 0;margin-right:14px}
+  .answer{margin-top:12px;border-radius:10px;background:var(--mc-soft);padding:12px 14px;font-size:14.5px;color:var(--ink);white-space:pre-line}
+  .answer .by{display:block;font-family:var(--mc-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .grid-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+  table.cov{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}
+  table.cov th,table.cov td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:center}
+  table.cov th{font-family:var(--mc-mono);font-weight:400;font-size:11px;color:var(--muted);vertical-align:bottom}
+  table.cov td:first-child,table.cov th:first-child{text-align:left;max-width:260px}
+  table.cov td.cell{font-family:var(--mc-mono);font-size:11.5px}
+  table.cov td.win{outline:2px solid var(--ink);outline-offset:-3px;font-weight:600}
+  .pgcard{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+  .pgcard summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .pgcard summary::-webkit-details-marker{display:none}
+  .pgcard summary .pth{font-family:var(--mc-mono);font-size:13px;flex:1;min-width:0;overflow-wrap:anywhere}
+  .pgcard .flags{padding:0 14px 10px}
+  .flag{font-size:13px;color:var(--warn);margin-top:4px}
+  .chunk{border-top:1px solid var(--line);padding:10px 14px}
+  .chunk .cpath{font-family:var(--mc-mono);font-size:11.5px;color:var(--muted)}
+  .chunk p{font-size:13.5px;color:var(--mc-ink2);margin-top:4px;white-space:pre-line}
+  .more-q{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:10px}
+  .share{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
+  .sharebtn{padding:6px 13px;cursor:pointer}
+  .sidenav{margin-top:32px;padding-top:18px;display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:13px}
+  body.embed .sidenav{display:none}
+  .pickbar{display:flex;gap:14px;align-items:center;margin-top:8px}
+  .tabs{display:flex;gap:10px;margin:0 0 24px}
+  .tab{flex:1;font:13.5px var(--mc-body);font-weight:500;color:var(--muted);background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;text-align:center;transition:background .15s ease,color .15s ease,border-color .15s ease}
+  .tab[aria-selected=true]{background:var(--you);border-color:var(--you);color:#fff}
+  .settings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px}
+  .setting{border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .setting label{display:flex;gap:8px;align-items:center;margin:0}
+  .setting select{width:100%;padding:9px 10px;margin-top:6px}
+  .setting p{font-size:12.5px;color:var(--muted);margin-top:6px}
+  .setting.off{opacity:.55}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:14px 0}
+  .stats div{padding:14px 16px;border-right:1px solid var(--line)}
+  .stats div:last-child{border-right:0}
+  .stats b{display:block;font-family:var(--mc-display);font-size:24px;letter-spacing:-.02em}
+  .stats span{font-family:var(--mc-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .dl{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:6px 0 4px}
+  .dl select{padding:11px 12px;min-width:240px}
+  .guide{border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-top:14px;background:#fff}
+  .guide h1{font-size:19px;margin:0 0 6px}
+  .guide h2{font-size:15.5px;margin:16px 0 6px}
+  .guide p,.guide li{font-size:14.5px;color:var(--mc-ink2);line-height:1.6}
+  .guide ol,.guide ul{padding-left:20px;margin:4px 0 8px}
+  .guide code{font-family:var(--mc-mono);font-size:12.5px;background:var(--card2);padding:1px 4px;border-radius:3px}
+  .guide pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow:auto;font-size:12.5px;line-height:1.5;margin:6px 0 10px}
+  .guide pre code{background:none;padding:0}
+  .guide table{border-collapse:collapse;width:100%;margin:6px 0 10px;font-size:13.5px}
+  .guide th,.guide td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+  .guide th{font-family:var(--mc-mono);font-weight:400;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .guide a{color:var(--you);overflow-wrap:anywhere}
+  .llmsbox{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:14px;background:var(--card)}
+  .llmsbox h3{font-size:15px;margin-bottom:4px}
+  .llmsbox .row2{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .lk{font-size:13px;display:flex;gap:8px;align-items:baseline;padding:3px 0}
+  .lk .u{font-family:var(--mc-mono);font-size:12px;color:var(--ink);overflow-wrap:anywhere}
+  .st{font-family:var(--mc-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:4px;white-space:nowrap}
+  .st-ok{background:#e8f6ec;color:var(--ok)} .st-broken{background:#fdecea;color:var(--bad)} .st-redirect,.st-thin{background:#fdf3e1;color:var(--warn)} .st-offsite{background:var(--card2);color:var(--muted)}
+  pre.llms{white-space:pre-wrap;font-size:12.5px;line-height:1.55;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;max-height:340px;overflow:auto;margin-top:8px}
+  .btn2s{font-family:var(--mc-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--mc-line2);background:#fff;color:var(--ink);border-radius:6px;padding:12px 16px;cursor:pointer}
+  .btn2s:hover{border-color:var(--ink)}
+  .files{font-size:13px;color:var(--muted)}
+  .files code{font-family:var(--mc-mono);font-size:12px;color:var(--ink)}
+  @media (max-width:640px){.row{grid-template-columns:1fr}.q-head{flex-direction:column}.more-q{grid-template-columns:1fr}.settings{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.stats div:nth-child(2){border-right:0}.stats div:nth-child(-n+2){border-bottom:1px solid var(--line)}}
+</style>
+<style>:root{--card2:#f3f3ef;--mc-display:'Archivo',system-ui,sans-serif;--mc-body:'Archivo',system-ui,sans-serif;--mc-mono:'IBM Plex Mono',ui-monospace,monospace;--mc-ink2:#0a0a0a;--mc-line2:#0a0a0a;--mc-soft:#f3f3ef;--mc-warm:#ff3d00}.tab[aria-selected=true]{color:#0a0a0a}</style>
+<link rel="stylesheet" href="/assets/theme.css">
+<script src="/assets/llms-draft.js"></script>
+<script src="/assets/rag-presets.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Free tool · AI search</p>
+  <h1>Lil Rag Chunker</h1>
+  <p class="lede">Turn your website into RAG-ready chunks for your own chatbot, Custom GPT or AI assistant: cleaned, split by heading, and downloaded in one ZIP. Then test them: ask your buyers’ questions and see which chunk would answer. Free for up to 10 pages.</p>
+
+  <div class="step">
+    <p class="step-n">Your pages</p>
+    <div class="row">
+      <div class="field"><label for="url">Your website</label><input id="url" type="text" placeholder="yourproduct.com" autocapitalize="off" spellcheck="false"></div>
+      <div class="field"><label for="brand">Brand name</label><input id="brand" type="text" placeholder="Acme"></div>
+      <button class="submit" id="findBtn" type="button">Find my pages</button>
+    </div>
+    <div id="findMsg"></div>
+    <div id="pageList"></div>
+  </div>
+
+  <div class="tabs" id="tabs" role="tablist" style="display:none">
+    <button class="tab" id="tabExport" role="tab" aria-selected="true" aria-controls="exportPanel">Export chunks</button>
+    <button class="tab" id="tabTest" role="tab" aria-selected="false" aria-controls="qStep">Test retrieval</button>
+  </div>
+
+  <div class="step" id="exportPanel" role="tabpanel" style="display:none">
+    <p class="step-n">How to chunk</p>
+    <div class="settings">
+      <div class="setting"><label for="size">Chunk size</label>
+        <select id="size"><option value="small">Small: about 150 words</option><option value="medium" selected>Medium: about 250 words</option><option value="large">Large: about 500 words</option></select>
+        <p>Medium suits most chatbots. Small for short factual answers, large for long-form reading.</p></div>
+      <div class="setting"><label><input type="checkbox" id="context" checked> Add context to each chunk</label>
+        <p>Prefixes every chunk with “Page title › Section”, so it still makes sense when retrieved on its own.</p></div>
+      <div class="setting"><label><input type="checkbox" id="overlap" checked> Overlap long sections</label>
+        <p>When a long section is split, the last paragraph of one chunk is repeated at the start of the next.</p></div>
+      <div class="setting"><label><input type="checkbox" id="schema"> Schema extras</label>
+        <p>Uses each page’s structured data: its types and key facts as metadata, FAQ markup as one Q&amp;A chunk per question, and a flag where the markup and the page disagree.</p></div>
+      <div class="setting" id="renderSetting"><label><input type="checkbox" id="render"> Render JavaScript</label>
+        <p id="renderNote">Re-reads pages that are near-empty without JavaScript in a real browser. Needs an access code.</p></div>
+    </div>
+    <button class="submit full" id="chunkBtn" type="button">Chunk my pages</button>
+    <p class="after">Nothing is stored: the chunks come back to your browser and the ZIP is built here.</p>
+    <div id="chunkMsg"></div>
+  </div>
+
+  <div class="step" id="qStep" role="tabpanel" style="display:none">
+    <p class="step-n">Your buyers’ questions</p>
+    <p class="hint" style="margin:0 0 8px">Tap a suggestion to add it, or write your own: one per line, up to 10. Any language works; verdicts are given for English questions.</p>
+    <div class="chips" id="qChips"></div>
+    <textarea id="questions" placeholder="How much does Acme cost per user?&#10;Does Acme integrate with HubSpot?"></textarea>
+    <button class="submit full" id="runBtn" type="button">Run the retrieval test</button>
+    <p class="after">Reads your pages like an AI crawler (no JavaScript), chunks and embeds them, then retrieves for each question. About 20 seconds.</p>
+    <div id="runMsg"></div>
+  </div>
+
+  <div id="result"><div id="exportOut"></div><div id="testOut"></div></div>
+
+  <div class="sidenav">
+    <a href="/" class="sidenav-link">← Back to tools</a>
+    <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+  </div>
+</div>
+
+<script>
+if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
+var QS = new URLSearchParams(location.search);
+// A local Worker can be pointed at during development (?api=http://127.0.0.1:8790/api, on a local host only).
+var API = (/^(127\.0\.0\.1|localhost)$/.test(location.hostname) && QS.get('api')) || 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+var CODE = QS.get('k') || window.MC_VISITOR || '';
+// Brand Checker's anonymous visitor ids (v-…) travel as a code too, but only a real access code opens the client tier.
+var CLIENT = !!CODE && !/^v-[a-f0-9]{24}$/.test(CODE);
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function api(path, body) {
+  if (CODE) body.code = CODE;
+  return fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(function (r) { return r.json().catch(function () { return { error: 'The server sent an unreadable reply. Please try again.' }; }); })
+    .catch(function () { return { error: 'Could not reach the server. Check your connection and try again.' }; });
+}
+var errBox = function (el, msg) { el.innerHTML = '<div class="err">' + esc(msg) + '</div>'; };
+var MAXP = 10, MAXT = 10, CANDS = [], REPORT = null, PACK = null, TAB = 'export', LLMS = null, SUMMARY = '', PRESET = 'all';
+var VERDICT = { answered: 'Answered', weak: 'Weak match', missing: 'Not on your pages', unrated: 'No verdict' };
+var ROLE = { home: 'Homepage', pricing: 'Pricing', product: 'Product', integrations: 'Integrations', comparison: 'Comparison', customers: 'Customers', docs: 'Docs', security: 'Security' };
+
+/* ---- step 1: pages ---- */
+$('findBtn').onclick = function () {
+  var u = $('url').value.trim();
+  if (!u) return errBox($('findMsg'), 'Enter your website, like yourproduct.com.');
+  $('findMsg').innerHTML = '<p class="hint">Reading your homepage and sitemap…</p>'; $('findBtn').disabled = true;
+  api('/rag/discover', { url: u }).then(function (d) {
+    $('findBtn').disabled = false;
+    if (d.error) return errBox($('findMsg'), d.error);
+    $('findMsg').innerHTML = '';
+    MAXP = d.max_pages; MAXT = d.max_test_pages || 10; CANDS = d.candidates; LLMS = d.llms_txt || null; SUMMARY = d.summary || '';
+    if (!$('brand').value.trim()) $('brand').value = d.brand;
+    renderPages(); renderChips();
+    $('tabs').style.display = 'flex'; setTab(TAB);
+  });
+};
+function selected() { return CANDS.filter(function (c) { return c.selected; }); }
+function renderPages() {
+  var h = '<div class="pages">' + CANDS.map(function (c, i) {
+    return '<label class="pg"><input type="checkbox" data-i="' + i + '"' + (c.selected ? ' checked' : '') + '><span class="path">' + esc(c.path) + '</span>' + (c.role ? '<span class="tagr">' + esc(ROLE[c.role] || c.role) + '</span>' : '') + '<span class="how">' + esc(c.how) + '</span></label>';
+  }).join('') + '</div><div class="pickbar"><p class="count" id="pcount" style="margin:0"></p><button type="button" class="linkbtn" id="pickAll">Select ' + (CANDS.length > MAXP ? 'first ' + MAXP : 'all') + '</button><button type="button" class="linkbtn" id="pickNone">Select none</button></div>';
+  $('pageList').innerHTML = h;
+  $('pageList').querySelectorAll('input').forEach(function (b) {
+    b.onchange = function () {
+      var c = CANDS[+b.dataset.i];
+      if (b.checked && selected().length >= MAXP) { b.checked = false; return count('You can pick up to ' + MAXP + ' pages' + (MAXP === 10 ? ' free. For bigger sites, ask us about a client project.' : '.')); }
+      c.selected = b.checked; count();
+    };
+  });
+  if (LLMS) $('pageList').insertAdjacentHTML('beforeend', llmsBox());
+  if ($('useLlms')) $('useLlms').onclick = function () { var n = 0; CANDS.forEach(function (c) { c.selected = !!c.in_llms && n < MAXP && ++n > 0; }); renderPages(); };
+  if ($('llmsMore')) $('llmsMore').onclick = function () { var el = $('llmsList'); el.style.display = el.style.display === 'none' ? 'block' : 'none'; };
+  $('pickAll').onclick = function () { CANDS.forEach(function (c, i) { c.selected = i < MAXP; }); renderPages(); };
+  $('pickNone').onclick = function () { CANDS.forEach(function (c) { c.selected = false; }); renderPages(); };
+  count();
+}
+function count(msg) { $('pcount').textContent = msg || (selected().length + ' of up to ' + MAXP + ' pages picked' + (TAB === 'test' && selected().length > MAXT ? ' · the test reads the first ' + MAXT : '')); }
+
+/* ---- the site's own llms.txt ---- */
+var ST = { ok: 'OK', broken: 'Broken', redirect: 'Redirects', thin: 'Little text', offsite: 'Other site' };
+function llmsBox() {
+  if (!LLMS.found) return '<div class="llmsbox"><h3>No llms.txt on this site</h3><p class="hint" style="margin:0">The export drafts one from the pages you pick, ready to edit in our <a href="/tools/llms-txt/">llms.txt generator</a>.</p></div>';
+  var links = [].concat.apply([], LLMS.sections.map(function (s) { return s.links; })), inList = CANDS.filter(function (c) { return c.in_llms; }).length, pr = LLMS.problems;
+  var issues = [pr.broken ? pr.broken + ' broken' : '', pr.redirect ? pr.redirect + ' redirect' + (pr.redirect > 1 ? '' : 's') : '', pr.thin ? pr.thin + ' with little text' : ''].filter(Boolean).join(', ');
+  return '<div class="llmsbox"><h3>Your llms.txt lists ' + links.length + ' link' + (links.length === 1 ? '' : 's') + '</h3>' +
+    '<p class="hint" style="margin:0">' + (issues ? 'Checked ' + LLMS.checked + ': ' + esc(issues) + '. AI assistants that follow your llms.txt hit these.' : 'Checked ' + LLMS.checked + ': every link works and has text.') + '</p>' +
+    '<div class="row2">' + (inList ? '<button type="button" class="btn2s" id="useLlms">Use the pages in your llms.txt</button>' : '') + '<button type="button" class="linkbtn" id="llmsMore">Show the links</button></div>' +
+    '<div id="llmsList" style="display:none;margin-top:8px">' + LLMS.sections.map(function (s) {
+      return '<p class="cpath" style="margin-top:8px">' + esc(s.name || '(no section)') + '</p>' + s.links.map(function (l) {
+        return '<div class="lk"><span class="st st-' + l.status + '">' + ST[l.status] + '</span><span class="u">' + esc(l.url) + '</span>' + (l.detail ? '<span class="hint" style="margin:0">' + esc(l.detail) + '</span>' : '') + '</div>';
+      }).join('');
+    }).join('') + '</div></div>';
+}
+
+/* ---- tabs ---- */
+function setTab(t) {
+  TAB = t;
+  $('tabExport').setAttribute('aria-selected', String(t === 'export')); $('tabTest').setAttribute('aria-selected', String(t === 'test'));
+  $('exportPanel').style.display = t === 'export' ? 'block' : 'none'; $('qStep').style.display = t === 'test' ? 'block' : 'none';
+  $('exportOut').style.display = t === 'export' ? 'block' : 'none'; $('testOut').style.display = t === 'test' ? 'block' : 'none';
+  if (CANDS.length) count();
+}
+$('tabExport').onclick = function () { setTab('export'); };
+$('tabTest').onclick = function () { setTab('test'); };
+if (!CLIENT) { $('render').disabled = true; $('renderSetting').classList.add('off'); }
+else { $('renderNote').textContent = 'Re-reads pages that are near-empty without JavaScript in a real browser (up to 30 a run).'; }
+
+/* ---- step 2: questions ---- */
+function templates(b) {
+  return ['What is ' + b + '?', 'Who is ' + b + ' for?', 'How much does ' + b + ' cost?', 'Does ' + b + ' have a free trial?', 'What does ' + b + ' integrate with?',
+    'What are the best alternatives to ' + b + '?', 'Is ' + b + ' secure and GDPR compliant?', 'How do I get started with ' + b + '?'];
+}
+function lines() { return $('questions').value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean); }
+function renderChips() {
+  var b = $('brand').value.trim() || 'your product', have = lines();
+  $('qChips').innerHTML = templates(b).map(function (t) { return '<button type="button" class="qchip' + (have.indexOf(t) !== -1 ? ' used' : '') + '">' + esc(t) + '</button>'; }).join('');
+  $('qChips').querySelectorAll('.qchip').forEach(function (btn) {
+    btn.onclick = function () {
+      var l = lines(); if (l.indexOf(btn.textContent) !== -1 || l.length >= 10) return;
+      $('questions').value = l.concat(btn.textContent).join('\n'); renderChips();
+    };
+  });
+}
+$('brand').oninput = function () { if (CANDS.length) renderChips(); };
+$('questions').oninput = renderChips;
+
+$('runBtn').onclick = function () {
+  var pages = selected().slice(0, MAXT).map(function (c) { return c.url; }), qs = lines();
+  if (!pages.length) return errBox($('runMsg'), 'Pick at least one page.');
+  if (!qs.length) return errBox($('runMsg'), 'Add at least one question.');
+  if (qs.length > 10) return errBox($('runMsg'), 'Up to 10 questions per run.');
+  $('runMsg').innerHTML = '<p class="hint">Reading ' + pages.length + ' page' + (pages.length > 1 ? 's' : '') + ', chunking, embedding and retrieving…</p>'; $('runBtn').disabled = true;
+  api('/rag/build', { url: $('url').value.trim(), brand: $('brand').value.trim(), urls: pages, questions: qs }).then(function (d) {
+    $('runBtn').disabled = false;
+    if (d.error) return errBox($('runMsg'), d.error);
+    $('runMsg').innerHTML = '';
+    show(d);
+  });
+};
+
+/* ---- the report ---- */
+function show(d) {
+  REPORT = d;
+  history.replaceState(null, '', '?id=' + d.id + (QS.get('embed') ? '&embed=1' : ''));
+  render();
+  $('result').style.display = 'block'; setTab('test');
+  $('testOut').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function pageName(p) { return p.title ? p.title : p.path; }
+function chunkHtml(t, k, full) {
+  var c = REPORT.chunks[t.chunk], p = REPORT.pages[c.page];
+  var txt = full || c.text.length <= 320 ? c.text : c.text.slice(0, 300).replace(/\s+\S*$/, '') + '…';
+  return '<div class="hit"><div class="hit-meta"><span class="rank">' + (k + 1) + '</span><span class="pth">' + esc(p.path) + '</span>' +
+    (c.path.length ? '<span>' + esc(c.path.join(' › ')) + '</span>' : '') + '</div>' +
+    '<p class="txt">' + esc(txt) + '</p>' +
+    '<p class="scores">' + (t.relevance != null ? 'relevance ' + t.relevance.toFixed(2) + ' · ' : '') + 'meaning match ' + t.similarity.toFixed(2) + ' (#' + t.meaning_rank + ') · keywords ' + (t.keyword_rank ? t.keyword.toFixed(2) + ' (#' + t.keyword_rank + ')' : 'none') + ' · ' + c.words + ' words</p></div>';
+}
+function render() {
+  var d = REPORT, n = { answered: 0, weak: 0, missing: 0, unrated: 0 };
+  d.results.forEach(function (r) { n[r.verdict] = (n[r.verdict] || 0) + 1; });
+  var okPages = d.pages.filter(function (p) { return !p.error; });
+  var head = n.missing ? n.missing + ' of ' + d.results.length + ' questions have no good chunk on your pages' : n.weak ? n.weak + ' of ' + d.results.length + ' questions only have a weak match' : n.answered ? 'Every rated question has a chunk that answers it' : 'Your matches are below';
+  var cls = n.missing ? 'bad' : n.weak ? 'warn' : 'good';
+  var h = '<div class="verdict ' + cls + '"><h2>' + esc(head) + '</h2><p>' + esc(d.domain) + ' · ' + okPages.length + ' page' + (okPages.length === 1 ? '' : 's') + ' read · ' + d.chunks.length + ' chunks · ' + d.results.length + ' question' + (d.results.length === 1 ? '' : 's') + '</p><div class="tally">' +
+    ['answered', 'weak', 'missing', 'unrated'].filter(function (v) { return n[v]; }).map(function (v) { return '<span class="vpill v-' + v + '">' + n[v] + ' ' + VERDICT[v].toLowerCase() + '</span>'; }).join('') + '</div></div>';
+  h += '<p class="caveat">This simulates a standard RAG pipeline (heading-based chunks, multilingual embeddings, keyword + meaning retrieval, then a relevance check). ChatGPT, Perplexity and Google don’t publish theirs, so read the results as signals about your pages, not a forecast of one assistant’s answer. A verdict comes from the best chunk’s relevance: answered from ' + d.thresholds.relevant + ', weak from ' + d.thresholds.partial + '.</p>';
+
+  h += '<div class="sec"><h2>Your questions</h2></div>';
+  d.results.forEach(function (r, qi) {
+    var ans = d.answers && d.answers[qi];
+    h += '<div class="q" id="q' + qi + '"><div class="q-head"><h3>' + esc(r.question) + '</h3><span class="vpill v-' + r.verdict + '">' + VERDICT[r.verdict] + (r.best != null ? ' · ' + Number(r.best).toFixed(2) : '') + '</span></div>' +
+      (r.note ? '<p class="q-note">' + esc(r.note) + '</p>' : '') +
+      r.top.slice(0, 2).map(function (t, k) { return chunkHtml(t, k); }).join('') +
+      '<div class="more" style="display:none">' + r.top.slice(2).map(function (t, k) { return chunkHtml(t, k + 2); }).join('') + '</div>' +
+      '<div style="margin-top:6px">' + (r.top.length > 2 ? '<button class="linkbtn" data-more="' + qi + '">Show ' + (r.top.length - 2) + ' more</button>' : '') +
+      (ans ? '' : '<button class="linkbtn" data-ans="' + qi + '">Write the AI answer' + (CLIENT ? '' : ' (access code)') + '</button>') + '</div>' +
+      '<div class="ansbox">' + (ans ? '<div class="answer"><span class="by">What an AI would say from these chunks</span>' + esc(ans.text) + '</div>' : '') + '</div></div>';
+  });
+  h += '<div class="more-q"><input type="text" id="moreQ" placeholder="Ask another question about the same pages"><button class="submit" id="moreBtn" type="button">Ask</button></div><div id="moreMsg"></div>';
+
+  // Coverage: questions × pages, the best meaning match each page has; the winning page outlined.
+  h += '<div class="sec"><h2>Where each answer lives</h2><p class="hint">Best meaning match per page (0–1); the page the top chunk came from is outlined.</p></div><div class="grid-wrap"><table class="cov"><tr><th>Question</th>' +
+    okPages.map(function (p) { return '<th title="' + esc(p.url) + '">' + esc(p.path.length > 18 ? '…' + p.path.slice(-17) : p.path) + '</th>'; }).join('') + '</tr>';
+  d.results.forEach(function (r) {
+    var win = d.chunks[r.top[0].chunk].page;
+    var vals = d.pages.map(function (p, i) { return p.error ? null : r.per_page[i]; }).filter(function (v) { return v != null && v >= 0; });
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    h += '<tr><td>' + esc(r.question) + '</td>' + d.pages.map(function (p, i) {
+      if (p.error) return '';
+      var v = r.per_page[i], a = hi > lo ? (v - lo) / (hi - lo) : 1;
+      return '<td class="cell' + (i === win ? ' win' : '') + '" style="background:rgba(79,91,213,' + (0.06 + a * 0.32).toFixed(2) + ')">' + (v >= 0 ? v.toFixed(2) : '–') + '</td>';
+    }).join('') + '</tr>';
+  });
+  h += '</table></div>';
+
+  // Pages and their chunks, with the problems found.
+  h += '<div class="sec"><h2>Your pages, chunked</h2><p class="hint">What a retrieval system would store from each page. Chunks that can’t stand on their own are flagged.</p></div>';
+  d.pages.forEach(function (p, pi) {
+    var cs = d.chunks.filter(function (c) { return c.page === pi; }), bad = cs.filter(function (c) { return c.flags.length; }).length;
+    h += '<details class="pgcard"><summary><span class="pth">' + esc(p.path) + '</span>' +
+      (p.error ? '<span class="vpill v-missing">' + esc(p.error) + '</span>' : '<span class="tagr">' + cs.length + ' chunk' + (cs.length === 1 ? '' : 's') + ' · ' + p.words + ' words</span>' + (bad ? '<span class="vpill v-weak">' + bad + ' flagged</span>' : '')) + '</summary>' +
+      ((p.flags || []).length ? '<div class="flags">' + p.flags.map(function (f) { return '<p class="flag">' + esc(f.message) + '</p>'; }).join('') + '</div>' : '') +
+      cs.map(function (c) { return '<div class="chunk"><p class="cpath">' + esc(c.path.join(' › ') || '(no heading)') + ' · ' + c.words + ' words</p>' + c.flags.map(function (f) { return '<p class="flag">' + esc(f.message) + '</p>'; }).join('') + '<p>' + esc(c.text.length > 600 ? c.text.slice(0, 580) + '…' : c.text) + '</p></div>'; }).join('') + '</details>';
+  });
+
+  h += '<div class="share"><span class="sharelabel">Share this report (kept ' + d.keep_days + ' days):</span><button class="sharebtn" id="copyLink">Copy link</button></div>';
+  $('testOut').innerHTML = h;
+  wire();
+}
+function wire() {
+  $('testOut').querySelectorAll('[data-more]').forEach(function (b) { b.onclick = function () { var m = b.closest('.q').querySelector('.more'); var open = m.style.display === 'none'; m.style.display = open ? 'block' : 'none'; b.textContent = open ? 'Show fewer' : 'Show ' + m.children.length + ' more'; }; });
+  $('testOut').querySelectorAll('[data-ans]').forEach(function (b) {
+    b.onclick = function () {
+      var qi = +b.dataset.ans, box = b.closest('.q').querySelector('.ansbox');
+      if (!CLIENT) { box.innerHTML = '<p class="q-note">Writing the AI answer runs a paid model, so it needs an access code. <a href="mailto:mylesclaffey@gmail.com?subject=Brand%20Checker%20access%20code">Ask us for one</a>, or open this tool from the link you were sent.</p>'; return; }
+      b.disabled = true; box.innerHTML = '<p class="hint">Writing the answer from the retrieved chunks…</p>';
+      api('/rag/answer', { id: REPORT.id, q: qi }).then(function (a) {
+        b.disabled = false;
+        if (a.error) return errBox(box, a.error);
+        REPORT.answers = REPORT.answers || {}; REPORT.answers[qi] = a;
+        b.remove(); box.innerHTML = '<div class="answer"><span class="by">What an AI would say from these chunks</span>' + esc(a.text) + '</div>';
+      });
+    };
+  });
+  $('moreBtn').onclick = function () {
+    var q = $('moreQ').value.trim(); if (!q) return;
+    $('moreBtn').disabled = true; $('moreMsg').innerHTML = '<p class="hint">Retrieving…</p>';
+    api('/rag/ask', { id: REPORT.id, questions: [q] }).then(function (d) {
+      $('moreBtn').disabled = false;
+      if (d.error) return errBox($('moreMsg'), d.error);
+      REPORT = d; render(); var last = $('q' + (d.results.length - 1)); if (last) last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
+  $('copyLink').onclick = function () {
+    var link = location.origin + location.pathname + '?id=' + REPORT.id;
+    (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () { $('copyLink').textContent = 'Copied ✓'; $('copyLink').classList.add('copied'); }, function () { prompt('Copy this link', link); });
+  };
+}
+
+/* ---- export: chunk, preview, ZIP ---- */
+$('chunkBtn').onclick = function () {
+  var pages = selected().map(function (c) { return c.url; });
+  if (!pages.length) return errBox($('chunkMsg'), 'Pick at least one page.');
+  $('chunkMsg').innerHTML = '<p class="hint">Reading and chunking ' + pages.length + ' page' + (pages.length > 1 ? 's' : '') + '…' + (pages.length > 40 ? ' (a big site can take a minute)' : '') + '</p>'; $('chunkBtn').disabled = true;
+  api('/rag/chunk', { url: $('url').value.trim(), brand: $('brand').value.trim(), urls: pages, size: $('size').value, context: $('context').checked, overlap: $('overlap').checked, render: $('render').checked, schema: $('schema').checked }).then(function (d) {
+    $('chunkBtn').disabled = false;
+    if (d.error) return errBox($('chunkMsg'), d.error);
+    $('chunkMsg').innerHTML = ''; PACK = d; renderPack();
+    $('result').style.display = 'block'; $('exportOut').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+};
+function renderPack() {
+  var d = PACK, ok = d.pages.filter(function (p) { return !p.error; }), flagged = d.chunks.filter(function (c) { return c.flags.length; }).length;
+  var tokens = d.chunks.reduce(function (t, c) { return t + c.tokens_est; }, 0);
+  var h = '<div class="verdict ' + (flagged ? 'warn' : 'good') + '"><h2>' + d.chunks.length + ' chunks from ' + ok.length + ' page' + (ok.length === 1 ? '' : 's') + ', ready to download</h2>' +
+    '<p>' + esc(d.domain) + ' · ' + esc(d.settings.size) + ' chunks · context ' + (d.settings.context ? 'on' : 'off') + ' · overlap ' + (d.settings.overlap ? 'on' : 'off') + (d.settings.render ? ' · JavaScript rendered where needed' : '') + (d.settings.schema ? ' · schema extras on' : '') + '</p></div>' +
+    '<div class="stats"><div><b>' + ok.length + '</b><span>Pages</span></div><div><b>' + d.chunks.length + '</b><span>Chunks</span></div><div title="How much text is in the pack, in tokens (the units AI models read). An estimate, not a cost: exporting uses no AI."><b>' + tokens.toLocaleString() + '</b><span>Pack size (tokens)</span></div><div><b>' + flagged + '</b><span>Flagged</span></div></div>' +
+    '<div class="dl"><label for="preset" class="sr" style="position:absolute;left:-9999px">Prepare for</label><select id="preset">' + MC2RagPresets.LIST.map(function (p) { return '<option value="' + p.id + '"' + (p.id === PRESET ? ' selected' : '') + '>Prepare for: ' + esc(p.label) + '</option>'; }).join('') + '</select><button class="submit" id="zipBtn" type="button">Download ZIP</button><button class="btn2s" id="toGen" type="button">Edit llms.txt in the generator</button></div>' +
+    '<p class="files" id="filesNote">Contains <code>chunks.jsonl</code>, <code>chunks.csv</code>, <code>markdown/</code> (one file per page), <code>llms-full.txt</code>, a draft <code>llms.txt</code>' + (d.settings.schema ? ', <code>schema.json</code>' : '') + ' and a <code>README.txt</code></p>' +
+    (d.settings.schema ? schemaSummary(d) : '') +
+    (flagged ? '<p class="q-note">' + flagged + ' chunk' + (flagged > 1 ? 's' : '') + ' may not stand on their own when retrieved. They are still in the export; fixing them on the page makes your assistant’s answers better.</p>' : '') +
+    '<p class="q-note">Want to check them first? Switch to <a href="#" id="toTest">Test retrieval</a> and ask the questions your customers ask.</p>';
+  h += '<div class="guide" id="guide"></div>';
+  h += '<details class="pgcard"><summary><span class="pth">llms.txt draft</span><span class="tagr">' + (LLMS && LLMS.found ? 'compare with your current file' : 'you have none yet') + '</span></summary><div style="padding:0 14px 12px"><pre class="llms">' + esc(MC2LlmsDraft.toMarkdown(llmsDraft())) + '</pre></div></details>';
+  h += '<div class="sec"><h2>Your chunks, page by page</h2><p class="hint">Exactly what goes into the files.</p></div>';
+  d.pages.forEach(function (p, pi) {
+    var cs = d.chunks.filter(function (c) { return c.page === pi; }), bad = cs.filter(function (c) { return c.flags.length; }).length;
+    h += '<details class="pgcard"><summary><span class="pth">' + esc(p.path) + '</span>' +
+      (p.error ? '<span class="vpill v-missing">' + esc(p.error) + '</span>' : '<span class="tagr">' + cs.length + ' chunk' + (cs.length === 1 ? '' : 's') + ' · ' + p.words + ' words</span>' + (p.rendered ? '<span class="tagr">rendered</span>' : '') + (p.schema ? '<span class="tagr">schema: ' + esc(p.schema.types.slice(0, 3).join(', ') || 'none') + (p.schema.types.length > 3 ? '…' : '') + '</span>' : '') + (bad ? '<span class="vpill v-weak">' + bad + ' flagged</span>' : '')) + '</summary>' +
+      ((p.flags || []).length ? '<div class="flags">' + p.flags.map(function (f) { return '<p class="flag">' + esc(f.message) + '</p>'; }).join('') + '</div>' : '') +
+      cs.map(function (c) { return '<div class="chunk"><p class="cpath">' + (c.source === 'schema' ? '<span class="vpill v-unrated">from structured data</span> ' : '') + esc(c.id) + ' · ' + esc(c.section || '(no heading)') + ' · ' + c.words + ' words</p>' + c.flags.map(function (f) { return '<p class="flag">' + esc(f.message) + '</p>'; }).join('') + '<p>' + esc(c.text_with_context.length > 700 ? c.text_with_context.slice(0, 680) + '…' : c.text_with_context) + '</p></div>'; }).join('') + '</details>';
+  });
+  $('exportOut').innerHTML = h;
+  $('zipBtn').onclick = downloadZip;
+  $('preset').onchange = function () { PRESET = this.value; showGuide(); };
+  showGuide();
+  $('toGen').onclick = function () { MC2LlmsDraft.handoff(llmsDraft()); window.open('/tools/llms-txt/?from=chunker', '_blank'); };
+  $('toTest').onclick = function (e) { e.preventDefault(); setTab('test'); $('qStep').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+}
+function schemaSummary(d) {
+  var withLd = d.pages.filter(function (p) { return p.schema; }), faq = d.chunks.filter(function (c) { return c.source === 'schema'; }).length;
+  var mm = withLd.reduce(function (t, p) { return t + p.schema.mismatches.length; }, 0);
+  if (!withLd.length) return '<p class="q-note">Schema extras: none of these pages carries structured data (JSON-LD), so there was nothing to add.</p>';
+  return '<p class="q-note">Schema extras: structured data on ' + withLd.length + ' of ' + d.pages.filter(function (p) { return !p.error; }).length + ' pages' + (faq ? ', ' + faq + ' FAQ question' + (faq > 1 ? 's' : '') + ' added as Q&amp;A chunks' : '') + (mm ? '. <b>' + mm + ' place' + (mm > 1 ? 's' : '') + ' where the markup and the page disagree</b>, flagged on the pages below.' : '. The markup matches the page text.') + '</p>';
+}
+function llmsDraft() {
+  return MC2LlmsDraft.build({ brand: PACK.brand, domain: PACK.domain, summary: SUMMARY || (PACK.pages[0] && PACK.pages[0].description) || '', pages: PACK.pages.filter(function (p) { return !p.error; }) });
+}
+// The install guide for the chosen platform, rendered from the same Markdown that goes into the ZIP as INSTALL.md.
+function mdToHtml(md) {
+  var inline = function (t) { return esc(t).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/(https?:\/\/[^\s)<]+[^\s)<.,])/g, '<a href="$1" target="_blank" rel="noopener">$1</a>'); };
+  var out = [], lines = md.split('\n'), i = 0;
+  while (i < lines.length) {
+    var l = lines[i];
+    if (/^```/.test(l)) { var code = []; i++; while (i < lines.length && !/^```/.test(lines[i])) code.push(lines[i++]); i++; out.push('<pre><code>' + esc(code.join('\n')) + '</code></pre>'); continue; }
+    if (/^# /.test(l)) { out.push('<h1>' + inline(l.slice(2)) + '</h1>'); i++; continue; }
+    if (/^## /.test(l)) { out.push('<h2>' + inline(l.slice(3)) + '</h2>'); i++; continue; }
+    if (/^\|/.test(l)) { var rows = []; while (i < lines.length && /^\|/.test(lines[i])) rows.push(lines[i++]); rows = rows.filter(function (r) { return !/^\|\s*-/.test(r); }).map(function (r) { return r.replace(/^\||\|$/g, '').split('|').map(function (c) { return c.trim(); }); });
+      out.push('<table><tr>' + rows[0].map(function (c) { return '<th>' + inline(c) + '</th>'; }).join('') + '</tr>' + rows.slice(1).map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + inline(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</table>'); continue; }
+    if (/^\d+\. /.test(l)) { var ol = []; while (i < lines.length && /^\d+\. /.test(lines[i])) ol.push(lines[i++].replace(/^\d+\. /, '')); out.push('<ol>' + ol.map(function (x) { return '<li>' + inline(x) + '</li>'; }).join('') + '</ol>'); continue; }
+    if (/^- /.test(l)) { var ul = []; while (i < lines.length && /^- /.test(lines[i])) ul.push(lines[i++].slice(2)); out.push('<ul>' + ul.map(function (x) { return '<li>' + inline(x) + '</li>'; }).join('') + '</ul>'); continue; }
+    if (l.trim()) out.push('<p>' + inline(l) + '</p>');
+    i++;
+  }
+  return out.join('');
+}
+function showGuide() {
+  if ($('guide')) $('guide').innerHTML = mdToHtml(MC2RagPresets.guide(PRESET, PACK));
+  if ($('filesNote')) $('filesNote').style.display = PRESET === 'all' ? '' : 'none';   // each platform's guide lists its own files
+}
+function csvCell(v) { var s = String(v == null ? '' : v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+function packFiles(d) {
+  var files = {}, date = d.fetched_at.slice(0, 10);
+  files['chunks.jsonl'] = d.chunks.map(function (c) {
+    var o = { id: c.id, url: c.url, title: c.title, heading_path: c.heading_path, section: c.section, text: c.text, text_with_context: c.text_with_context, words: c.words, tokens_est: c.tokens_est, lang: c.lang, hash: c.hash, fetched_at: c.fetched_at };
+    if (d.settings.schema) { o.source = c.source; o.schema_types = c.schema_types; }
+    return JSON.stringify(o);
+  }).join('\n') + '\n';
+  var sc = d.settings.schema;
+  files['chunks.csv'] = '﻿' + ['id', 'url', 'title', 'section'].concat(sc ? ['source', 'schema_types'] : []).concat(['words', 'hash', 'text']).join(',') + '\r\n' +
+    d.chunks.map(function (c) { return [c.id, c.url, c.title, c.section].concat(sc ? [c.source, (c.schema_types || []).join(' ')] : []).concat([c.words, c.hash, d.settings.context ? c.text_with_context : c.text]).map(csvCell).join(','); }).join('\r\n') + '\r\n';
+  if (sc) files['schema.json'] = JSON.stringify(d.pages.filter(function (p) { return !p.error; }).map(function (p) { return { url: p.url, title: p.title, schema: p.schema }; }), null, 2) + '\n';
+  d.pages.forEach(function (p, pi) {
+    if (p.error) return;
+    var cs = d.chunks.filter(function (c) { return c.page === pi; });
+    files['markdown/' + p.slug + '.md'] = '# ' + (p.title || p.path) + '\n\nSource: ' + p.url + '  \nFetched: ' + date + '\n\n' +
+      cs.map(function (c) { return '## ' + (c.section || p.title || p.path) + '\n<!-- chunk ' + c.id + ' · ' + c.words + ' words · ' + c.hash + ' -->\n\n' + c.text + '\n'; }).join('\n');
+  });
+  files['llms-full.txt'] = '# ' + d.brand + '\n\n> The text of ' + d.domain + ' (' + d.pages.filter(function (p) { return !p.error; }).length + ' pages), fetched ' + date + '.\n\n' +
+    d.pages.map(function (p, pi) {
+      if (p.error) return '';
+      return '## ' + (p.title || p.path) + '\n\nSource: ' + p.url + '\n\n' + d.chunks.filter(function (c) { return c.page === pi && c.source !== 'schema'; }).map(function (c) { return c.text; }).join('\n\n') + '\n';
+    }).filter(Boolean).join('\n');
+  files['llms.txt'] = MC2LlmsDraft.toMarkdown(llmsDraft());
+  files['README.txt'] = [
+    'RAG-ready chunks of ' + d.domain + ', made with Lil Rag Chunker by Brand Checker (https://brandchecker.eu/tools/lil-rag-chunker/)',
+    'Fetched: ' + d.fetched_at + '   Pages: ' + d.pages.filter(function (p) { return !p.error; }).length + '   Chunks: ' + d.chunks.length,
+    'Settings: ' + d.settings.size + ' chunks (about ' + d.settings.target + ' words, at most ' + d.settings.max + '), context ' + (d.settings.context ? 'on' : 'off') + ', overlap ' + (d.settings.overlap ? 'on' : 'off') + (d.settings.render ? ', JavaScript rendered where needed' : ''),
+    '',
+    'chunks.jsonl   One chunk per line, for developers: load it into a vector database (Pinecone, Weaviate, pgvector, Qdrant)',
+    '               or a framework (LangChain, LlamaIndex) and embed the "text_with_context" field with your own model.',
+    '               "hash" changes only when a chunk\'s text changes, so a later export can update just what changed.',
+    'chunks.csv     The same chunks in a spreadsheet, for reviewing or for no-code tools.',
+    'markdown/      One file per page, a heading per chunk. Upload these to a Custom GPT, a Claude Project,',
+    '               or a help-desk AI (Intercom, Zendesk) as knowledge files.',
+    'llms-full.txt  The whole text in one file, following the llms.txt convention (https://llmstxt.org/).',
+    'llms.txt       A DRAFT index of these pages for AI assistants (name, summary, sections of links with notes).',
+    '               Review it, ideally in https://brandchecker.eu/tools/llms-txt/, then host it at your site\'s root.',
+  ].concat(d.settings.schema ? [
+    'schema.json    Schema extras: each page\'s structured-data types, key facts (prices, rating, dates, contact)',
+    '               and every place where the markup and the visible page disagree. In the chunks, "source" is',
+    '               "page" or "schema" (an FAQ question and answer taken from FAQPage markup), and "schema_types"',
+    '               lists the page\'s types, for filtering. llms-full.txt leaves the schema chunks out.'
+  ] : []).concat([
+    '',
+    'Pages are read the way an AI crawler reads them: the page\'s HTML' + (d.settings.render ? ' (or a real browser render, where marked)' : ', without running JavaScript') + ', with navigation,',
+    'headers, footers and cookie banners removed. Re-export after you change your pages.'
+  ]).join('\n') + '\n';
+  return files;
+}
+function loadZipLib(cb) {
+  if (window.JSZip) return cb();
+  var sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  sc.onload = cb; sc.onerror = function () { errBox($('chunkMsg'), 'Could not load the ZIP library. Check your connection and try again.'); };
+  document.head.appendChild(sc);
+}
+function downloadZip() {
+  var btn = $('zipBtn'); btn.disabled = true; btn.textContent = 'Building ZIP…';
+  loadZipLib(function () {
+    var zip = new JSZip(), name = PACK.domain.replace(/[^a-z0-9.-]/gi, '') + '-rag-' + (PRESET === 'all' ? 'chunks' : PRESET) + '-' + PACK.fetched_at.slice(0, 10);
+    MC2RagPresets.files(PRESET, PACK, packFiles(PACK)).then(function (files) {
+      Object.keys(files).forEach(function (f) { zip.file(name + '/' + f, files[f]); });
+      return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+    }).then(function (blob) {
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name + '.zip';
+      document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      btn.disabled = false; btn.textContent = 'Download ZIP';
+    });
+  });
+}
+
+/* ---- a shared report or a prefilled site ---- */
+if (QS.get('id')) {
+  $('result').style.display = 'block'; TAB = 'test'; setTab('test'); $('testOut').innerHTML = '<p class="hint">Opening the report…</p>';
+  api('/rag/get', { id: QS.get('id') }).then(function (d) {
+    if (d.error) { $('testOut').innerHTML = ''; return errBox($('testOut'), d.error); }
+    $('url').value = d.domain; $('brand').value = d.brand; REPORT = d; render();
+  });
+} else if (QS.get('u')) { $('url').value = QS.get('u'); $('findBtn').click(); }
+</script>
+<script src="/assets/presets.js"></script>
+</body>
+</html>
