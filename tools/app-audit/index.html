@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<script src="/assets/visitor.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App listing audit | Brand Checker</title>
+<meta name="description" content="Score your App Store listing the way an ASO consultant would: name and subtitle, description, screenshots and video, ratings, updates and languages, with a fix for every gap. Free.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brand Checker">
+<meta property="og:url" content="https://brandchecker.eu/tools/app-audit/">
+<meta property="og:title" content="App listing audit | Brand Checker">
+<meta property="og:description" content="Score your App Store listing the way an ASO consultant would, with a fix for every gap. Free.">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--card2:#f3f3ef;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#fff;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;line-height:1.5;padding:22px 16px 60px;font-size:16px}
+  .wrap{max-width:860px;margin:0 auto}
+  h1{margin:10px 0 8px}
+  .lede{margin-bottom:26px}
+  .row{display:grid;grid-template-columns:1fr 170px auto;gap:12px;align-items:end}
+  .field label{display:block;font-weight:800;font-size:14px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.05em}
+  input[type=text],select{width:100%;padding:13px 14px;font-size:16px;font-family:inherit;border:3px solid #0a0a0a;border-radius:0;background:#fff;color:#0a0a0a}
+  select{padding:12px 10px}
+  .submit{padding:15px 22px;font-size:15px;cursor:pointer;white-space:nowrap}
+  .hint{font-size:13.5px;color:#3d3d3d;margin:8px 0 0}
+  .err{margin:16px 0 0;padding:12px 14px}
+  .loading{margin:22px 0 0;font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+  .loading::after{content:'';display:inline-block;width:1.2em;text-align:left;animation:dots 1.2s steps(4) infinite}
+  @keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+
+  .matches{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:22px}
+  .match{display:flex;gap:12px;align-items:center;border:2px solid #0a0a0a;background:#fff;padding:12px;cursor:pointer;text-align:left;font:inherit;color:inherit}
+  .match:hover{background:#f3f3ef;box-shadow:4px 4px 0 #ff3d00}
+  .match img{width:52px;height:52px;border:1px solid #ddd;flex:none}
+  .match b{display:block;font-size:15px;line-height:1.25}
+  .match span{font-size:12.5px;color:#3d3d3d}
+
+  .head{display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:center;border:3px solid #0a0a0a;padding:20px;margin-top:28px;box-shadow:6px 6px 0 #0a0a0a}
+  .head .icon{width:96px;height:96px;border:1px solid #ddd}
+  .head h2{font-size:26px;line-height:1.1;margin:0 0 4px}
+  .head .sub{font-size:16px;color:#3d3d3d;margin:0 0 8px}
+  .head .meta{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#3d3d3d;letter-spacing:.03em}
+  .gauge{position:relative;width:132px;height:132px}
+  .gauge svg{width:132px;height:132px;transform:rotate(-90deg)}
+  .gauge .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .gauge .num b{font-size:40px;font-weight:900;line-height:1}
+  .gauge .num span{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;margin-top:4px}
+  .gauge circle{fill:none;stroke-width:12}
+  .gauge .track{stroke:#f3f3ef}
+  .gauge .bar{stroke-linecap:butt;transition:stroke-dashoffset 1.3s cubic-bezier(.2,.7,.2,1)}
+
+  .tally{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 0}
+  .tally span{border:2px solid #0a0a0a;padding:6px 10px;font-weight:700;font-size:13.5px}
+  .tally .t-ok{background:#e6f4ec}.tally .t-warn{background:#fdf0dd}.tally .t-bad{background:#fde6e6}
+
+  .note{border:3px solid #0a0a0a;background:#f3f3ef;padding:12px 14px;margin:18px 0 0;font-size:14px}
+  .sect{margin-top:30px}
+  .sect h3{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;border-bottom:3px solid #0a0a0a;padding-bottom:6px;margin-bottom:4px}
+  .check{display:grid;grid-template-columns:34px 1fr;gap:12px;padding:14px 0;border-bottom:1px solid #d9d9d4;opacity:0;transform:translateY(6px);animation:in .35s ease forwards}
+  @keyframes in{to{opacity:1;transform:none}}
+  .badge{width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;border:2px solid #0a0a0a}
+  .s-ok .badge{background:#00844a;color:#fff;border-color:#00844a}
+  .s-warn .badge{background:#ffb84d}
+  .s-bad .badge{background:#d40000;color:#fff;border-color:#d40000}
+  .s-info .badge{background:#fff;font-family:'IBM Plex Mono',monospace}
+  .check b{display:block;font-size:16px;line-height:1.3;margin-bottom:3px}
+  .check p{font-size:14.5px;color:#262626;max-width:68ch}
+
+  .shots{display:flex;gap:10px;overflow-x:auto;padding:12px 2px 6px;margin-top:6px}
+  .shots figure{flex:none;text-align:center}
+  .shots img{height:220px;width:auto;border:2px solid #0a0a0a;display:block;border-radius:0}
+  .shots figure.top img{box-shadow:4px 4px 0 #ff3d00}
+  .shots figcaption{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;margin-top:6px;color:#3d3d3d}
+  .stars{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center;max-width:420px;margin-top:12px;font-size:13px}
+  .stars .bar{height:12px;background:#f3f3ef;border:1px solid #0a0a0a}
+  .stars .bar i{display:block;height:100%;background:#0a0a0a;width:0;transition:width 1s ease}
+  .stars .bar.low i{background:#d40000}
+  .stars span{font-family:'IBM Plex Mono',monospace;font-size:12px}
+
+  .share{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:28px 0 0}
+  .btn2{display:inline-block;border:2px solid #0a0a0a;background:#fff;color:#0a0a0a;padding:10px 14px;font:700 13px 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;text-decoration:none}
+  .btn2:hover{background:#ff3d00}
+  /* App icons are rounded squares on every Apple device: theme.css squares all corners, so the ids win here */
+  #out .head .icon{border-radius:22%!important}#out .match img{border-radius:22%!important}
+  .fine{font-size:12.5px;color:#3d3d3d;margin:18px 0 0;max-width:70ch}
+  @media(max-width:640px){.row{grid-template-columns:1fr}.head{grid-template-columns:auto 1fr}.head .gauge{grid-column:1 / -1;justify-self:center}.head .icon{width:72px;height:72px}.head h2{font-size:21px}}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Free tool · App Store</p>
+  <h1>App listing audit</h1>
+  <p class="lede">Score your App Store listing the way an ASO consultant would on a first look: the words Apple searches, the screenshots people decide on, ratings, updates and reach. Every gap comes with the fix.</p>
+
+  <div class="row">
+    <div class="field"><label for="app">App Store link or app name</label><input id="app" type="text" placeholder="apps.apple.com/… or “Duolingo”" autocapitalize="off" spellcheck="false"></div>
+    <div class="field"><label for="country">Country</label><select id="country"></select></div>
+    <button class="submit" id="go" type="button">Audit my listing</button>
+  </div>
+  <p class="hint">Uses Apple’s public app directory and the public App Store page. Nothing to install, no sign-in, free.</p>
+  <div id="msg"></div>
+  <div id="out"></div>
+
+  <div class="sidenav">
+    <a href="/" class="sidenav-link">← Back to tools</a>
+    <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+  </div>
+</div>
+
+<script>
+if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
+var QS = new URLSearchParams(location.search);
+// A local Worker can be pointed at during development (?api=http://127.0.0.1:8790/api, on a local host only).
+var API = (/^(127\.0\.0\.1|localhost)$/.test(location.hostname) && QS.get('api')) || 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+var CODE = QS.get('k') || window.MC_VISITOR || '';
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function api(body) {
+  if (CODE) body.code = CODE;
+  return fetch(API + '/app-audit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(function (r) { return r.json().catch(function () { return { error: 'The server sent an unreadable reply. Please try again.' }; }); })
+    .catch(function () { return { error: 'Could not reach the server. Check your connection and try again.' }; });
+}
+function errBox(text) { $('msg').innerHTML = '<div class="err">' + esc(text) + '</div>'; }
+
+var COUNTRIES = [['us', 'United States'], ['gb', 'United Kingdom'], ['ie', 'Ireland'], ['ca', 'Canada'], ['au', 'Australia'], ['de', 'Germany'], ['at', 'Austria'], ['ch', 'Switzerland'],
+  ['fr', 'France'], ['es', 'Spain'], ['it', 'Italy'], ['nl', 'Netherlands'], ['be', 'Belgium'], ['se', 'Sweden'], ['dk', 'Denmark'], ['no', 'Norway'], ['fi', 'Finland'],
+  ['pl', 'Poland'], ['cz', 'Czechia'], ['pt', 'Portugal'], ['br', 'Brazil'], ['mx', 'Mexico'], ['in', 'India'], ['jp', 'Japan'], ['sg', 'Singapore'], ['ae', 'United Arab Emirates']];
+$('country').innerHTML = COUNTRIES.map(function (c) { return '<option value="' + c[0] + '">' + c[1] + '</option>'; }).join('');
+
+function run(app) {
+  var raw = (app || $('app').value).trim();
+  if (!raw) return errBox('Paste an App Store link, or type the app’s name.');
+  $('msg').innerHTML = ''; $('out').innerHTML = '<p class="loading">Reading the App Store</p>'; $('go').disabled = true;
+  api({ app: raw, country: $('country').value }).then(function (d) {
+    $('go').disabled = false; $('out').innerHTML = '';
+    if (d.error) return errBox(d.error);
+    if (d.matches) return showMatches(d.matches);
+    render(d);
+    history.replaceState(null, '', location.pathname + '?app=' + d.app.id + '&c=' + d.country + (QS.get('api') ? '&api=' + encodeURIComponent(QS.get('api')) : ''));
+  });
+}
+function showMatches(list) {
+  if (!list.length) return errBox('No apps by that name in this country’s App Store. Try the App Store link instead.');
+  $('out').innerHTML = '<p class="hint" style="margin-top:22px">Which one is yours?</p><div class="matches">' + list.map(function (m) {
+    return '<button class="match" type="button" data-id="' + esc(m.id) + '"><img src="' + esc(m.icon) + '" alt="" loading="lazy"><div><b>' + esc(m.name) + '</b><span>' + esc(m.developer) +
+      (m.ratings ? ' · ★ ' + Number(m.rating).toFixed(1) + ' (' + Number(m.ratings).toLocaleString('en-US') + ')' : '') + '</span></div></button>';
+  }).join('') + '</div>';
+  [].forEach.call(document.querySelectorAll('.match'), function (b) { b.onclick = function () { run(b.getAttribute('data-id')); }; });
+}
+
+var MARK = { ok: '✓', warn: '!', bad: '✕', info: 'i' };
+function render(d) {
+  var a = d.app, color = d.score >= 80 ? '#00844a' : d.score >= 55 ? '#ff3d00' : '#d40000', label = d.score >= 80 ? 'Strong' : d.score >= 55 ? 'Needs work' : 'Weak';
+  var n = { ok: 0, warn: 0, bad: 0 }; d.checks.forEach(function (c) { if (n[c.status] != null) n[c.status]++; });
+  var R = 54, C = 2 * Math.PI * R;
+  var h = '<div class="head"><img class="icon" src="' + esc(a.icon) + '" alt=""><div><h2>' + esc(a.name) + '</h2>' +
+    (a.subtitle ? '<p class="sub">' + esc(a.subtitle) + '</p>' : '') +
+    '<p class="meta">' + esc(a.developer) + ' · ' + esc(a.category) + ' · ' + esc(a.price) + ' · ' + esc(d.country.toUpperCase()) + ' App Store</p></div>' +
+    '<div class="gauge" aria-label="Score ' + d.score + ' out of 100"><svg viewBox="0 0 132 132"><circle class="track" cx="66" cy="66" r="' + R + '"/><circle class="bar" id="gbar" cx="66" cy="66" r="' + R + '" stroke="' + color + '" stroke-dasharray="' + C + '" stroke-dashoffset="' + C + '"/></svg>' +
+    '<div class="num"><b id="gnum">0</b><span>' + label + '</span></div></div></div>';
+  h += '<div class="tally"><span class="t-ok">' + n.ok + ' good</span><span class="t-warn">' + n.warn + ' to improve</span><span class="t-bad">' + n.bad + ' to fix</span></div>';
+  if (!d.page_read) h += '<p class="note">We couldn’t read the App Store page itself this time, so the subtitle, preview video, in-app events and star breakdown aren’t checked. Everything else is.</p>';
+
+  var order = [], groups = {}, i = 0;
+  d.checks.forEach(function (c) { if (!groups[c.section]) { groups[c.section] = []; order.push(c.section); } groups[c.section].push(c); });
+  order.forEach(function (s) {
+    h += '<div class="sect"><h3>' + esc(s) + '</h3>';
+    groups[s].forEach(function (c) {
+      h += '<div class="check s-' + c.status + '" style="animation-delay:' + (0.05 * i++) + 's"><div class="badge" aria-label="' + c.status + '">' + MARK[c.status] + '</div><div><b>' + esc(c.title) + '</b><p>' + esc(c.detail) + '</p></div></div>';
+    });
+    if (s === 'Screenshots and video' && a.screenshots && a.screenshots.length) {
+      h += '<div class="shots">' + a.screenshots.map(function (u, k) {
+        return '<figure class="' + (k < 3 ? 'top' : '') + '"><img src="' + esc(u) + '" alt="Screenshot ' + (k + 1) + '" loading="lazy"><figcaption>' + (k < 3 ? 'Shown in search' : '#' + (k + 1)) + '</figcaption></figure>';
+      }).join('') + '</div>';
+    }
+    if (s === 'Ratings' && a.histogram) {
+      var tot = a.histogram.reduce(function (t, x) { return t + x; }, 0) || 1;
+      h += '<div class="stars">' + a.histogram.map(function (x, k) {
+        var pct = Math.round(100 * x / tot);
+        return '<span>' + (5 - k) + '★</span><div class="bar' + (k === 4 ? ' low' : '') + '"><i data-w="' + pct + '"></i></div><span>' + pct + '%</span>';
+      }).join('') + '</div>';
+    }
+    h += '</div>';
+  });
+  h += '<div class="share"><button class="btn2" id="copy" type="button">Copy link to this audit</button><a class="btn2" href="' + esc(a.url) + '" target="_blank" rel="noopener">Open in the App Store ↗</a></div>' +
+    '<p class="fine">Checked ' + esc(new Date(d.fetched_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })) + '. Apple’s keyword field is private, so no outside audit can see it. Scores weigh each check equally; “i” notes don’t count.</p>';
+  $('out').innerHTML = h;
+
+  // Animate the gauge, the count and the star bars.
+  requestAnimationFrame(function () { requestAnimationFrame(function () {
+    $('gbar').style.strokeDashoffset = C * (1 - d.score / 100);
+    [].forEach.call(document.querySelectorAll('.stars .bar i'), function (b) { b.style.width = b.getAttribute('data-w') + '%'; });
+  }); });
+  var t0 = null; (function tick(t) { if (!t0) t0 = t; var p = Math.min(1, (t - t0) / 1300), e = 1 - Math.pow(1 - p, 3); $('gnum').textContent = Math.round(d.score * e); if (p < 1) requestAnimationFrame(tick); })(performance.now());
+  $('copy').onclick = function () {
+    var link = location.origin + location.pathname + '?app=' + a.id + '&c=' + d.country;
+    (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () { $('copy').textContent = 'Link copied'; }, function () { prompt('Copy this link:', link); });
+  };
+}
+
+$('go').onclick = function () { run(); };
+$('app').addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });
+if (QS.get('c') && /^[a-z]{2}$/.test(QS.get('c'))) { if (![].some.call($('country').options, function (o) { return o.value === QS.get('c'); })) $('country').insertAdjacentHTML('beforeend', '<option value="' + QS.get('c') + '">' + QS.get('c').toUpperCase() + '</option>'); $('country').value = QS.get('c'); }
+if (QS.get('app')) { $('app').value = QS.get('app'); run(QS.get('app')); }
+</script>
+<script src="/assets/presets.js"></script>
+</body>
+</html>
