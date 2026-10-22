@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<script src="/assets/visitor.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App review themes | Brand Checker</title>
+<meta name="description" content="Read your app's latest 500 App Store reviews in one go: what people complain about and praise, sorted into themes with real quotes, what's rising, and how each version landed. Free.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brand Checker">
+<meta property="og:url" content="https://brandchecker.eu/tools/app-reviews/">
+<meta property="og:title" content="App review themes | Brand Checker">
+<meta property="og:description" content="What your App Store reviews complain about and praise, sorted into themes with real quotes, what's rising, and how each version landed.">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--card2:#f3f3ef;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#fff;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;line-height:1.5;padding:22px 16px 60px;font-size:16px}
+  .wrap{max-width:920px;margin:0 auto}
+  h1{margin:10px 0 8px}
+  .lede{margin-bottom:26px}
+  .row{display:grid;grid-template-columns:1fr 170px auto;gap:12px;align-items:end}
+  .field label{display:block;font-weight:800;font-size:14px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.05em}
+  input[type=text],select{width:100%;padding:13px 14px;font-size:16px;font-family:inherit;border:3px solid #0a0a0a;border-radius:0;background:#fff;color:#0a0a0a}
+  select{padding:12px 10px}
+  .submit{padding:15px 22px;font-size:15px;cursor:pointer;white-space:nowrap}
+  .hint{font-size:13.5px;color:#3d3d3d;margin:8px 0 0}
+  .err{margin:16px 0 0;padding:12px 14px}
+  .loading{margin:22px 0 0;font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+  .loading::after{content:'';display:inline-block;width:1.2em;text-align:left;animation:dots 1.2s steps(4) infinite}
+  @keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+  .matches{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:22px}
+  .match{display:flex;gap:12px;align-items:center;border:2px solid #0a0a0a;background:#fff;padding:12px;cursor:pointer;text-align:left;font:inherit;color:inherit}
+  .match:hover{background:#f3f3ef;box-shadow:4px 4px 0 #ff3d00}
+  .match img{width:52px;height:52px;border:1px solid #ddd;flex:none}
+  .match b{display:block;font-size:15px;line-height:1.25}
+  .match span{font-size:12.5px;color:#3d3d3d}
+
+  .appcard{display:flex;gap:16px;align-items:center;border:3px solid #0a0a0a;padding:16px;margin:28px 0 0;box-shadow:6px 6px 0 #0a0a0a}
+  .appcard img{width:72px;height:72px;border:1px solid #ddd;flex:none}
+  .appcard h2{font-size:22px;line-height:1.15}
+  .appcard p{font-size:14px;color:#3d3d3d}
+  .hero{display:grid;grid-template-columns:1fr 1fr;gap:24px;border:3px solid #0a0a0a;padding:20px;margin-top:22px}
+  .big{font-size:52px;font-weight:900;line-height:.95;letter-spacing:-.03em}
+  .big small{font-size:18px;font-weight:700;color:#3d3d3d;letter-spacing:0;display:block;margin-top:6px}
+  .hero p{font-size:14.5px;margin-top:10px}
+  .stars{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center;font-size:13px}
+  .stars .bar,.tbar{height:12px;background:#f3f3ef;border:1px solid #0a0a0a}
+  .stars .bar i,.tbar i{display:block;height:100%;width:0;background:#0a0a0a;transition:width 1s cubic-bezier(.2,.7,.2,1)}
+  .stars .bar.low i{background:#d40000}
+  .stars span{font-family:'IBM Plex Mono',monospace;font-size:12px}
+
+  .callout{border:3px solid #0a0a0a;background:#ff3d00;padding:14px 16px;margin-top:22px;font-weight:600}
+  .callout b{font-weight:900}
+  .cols{display:grid;grid-template-columns:1.25fr 1fr;gap:28px;margin-top:8px}
+  h3.sect{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;border-bottom:3px solid #0a0a0a;padding-bottom:6px;margin:30px 0 8px}
+  .theme{border-bottom:1px solid #d9d9d4}
+  .theme>button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:1fr auto;gap:4px 12px;width:100%;padding:12px 0;cursor:pointer}
+  .theme>button:focus-visible{outline:3px solid #ff3d00}
+  .theme .nm{font-weight:700;font-size:15.5px}
+  .theme .pct{font-family:'IBM Plex Mono',monospace;font-size:13px;text-align:right}
+  .theme .tbar{grid-column:1 / -1}
+  .neg .tbar i{background:#d40000}.pos .tbar i{background:#00844a}
+  .theme .meta{grid-column:1 / -1;font-size:12.5px;color:#3d3d3d}
+  .up{color:#d40000;font-weight:800}.down{color:#00844a;font-weight:800}
+  .quotes{display:none;padding:0 0 14px}
+  .theme.open .quotes{display:block}
+  .q{border-left:4px solid #0a0a0a;padding:6px 0 6px 12px;margin:8px 0;font-size:14px}
+  .q .who{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3d3d3d;margin-top:3px}
+  .vers{width:100%;border-collapse:collapse;font-size:14px}
+  .vers th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:500;padding:8px;border-bottom:2px solid #0a0a0a}
+  .vers td{padding:9px 8px;border-bottom:1px solid #d9d9d4}
+  .vers .sb{display:inline-block;width:80px;height:10px;background:#f3f3ef;border:1px solid #0a0a0a;vertical-align:middle;margin-right:8px}
+  .vers .sb i{display:block;height:100%;background:#0a0a0a}
+  .todo{margin:0;padding:0;list-style:none}
+  .todo li{border-left:6px solid #ff3d00;padding:8px 0 8px 14px;margin-bottom:12px;font-size:14.5px}
+  .todo li b{display:block;font-size:15.5px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .chip{border:2px solid #0a0a0a;padding:5px 10px;font-size:13px;font-weight:600;background:#fff;color:#0a0a0a;text-decoration:none}
+  .chip:hover{background:#ff3d00}
+  .share{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:28px 0 0}
+  .btn2{display:inline-block;border:2px solid #0a0a0a;background:#fff;color:#0a0a0a;padding:10px 14px;font:700 13px 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;text-decoration:none}
+  .btn2:hover{background:#ff3d00}
+  .fine{font-size:12.5px;color:#3d3d3d;margin:18px 0 0;max-width:74ch}
+  #main .appcard img,#main .match img{border-radius:22%!important}
+  @media(max-width:720px){.row{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.cols{grid-template-columns:1fr}.big{font-size:44px}}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap" id="main">
+  <p class="eyebrow">Free tool · App Store</p>
+  <h1>App review themes</h1>
+  <p class="lede">Read your latest 500 App Store reviews in one go. See what people complain about and praise, sorted into themes with real quotes, what’s rising, and how each version landed.</p>
+
+  <div id="pick">
+    <div class="row">
+      <div class="field"><label for="app">App Store link or app name</label><input id="app" type="text" placeholder="apps.apple.com/… or “Forest”" autocapitalize="off" spellcheck="false"></div>
+      <div class="field"><label for="country">Country</label><select id="country"></select></div>
+      <button class="submit" id="go" type="button">Read my reviews</button>
+    </div>
+    <p class="hint">Reviews come from Apple’s public reviews feed for that country’s App Store: the most recent 500 written reviews. Works for any app, yours or a competitor’s.</p>
+    <div id="msg"></div>
+  </div>
+  <div id="out"></div>
+
+  <div class="sidenav">
+    <a href="/" class="sidenav-link">← Back to tools</a>
+    <a href="/tools/app-audit/" class="sidenav-link">App listing audit →</a>
+    <a href="/tools/app-ai/" class="sidenav-link">Does AI recommend your app? →</a>
+    <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+  </div>
+</div>
+
+<script>
+if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
+var QS = new URLSearchParams(location.search);
+// A local Worker can be pointed at during development (?api=http://127.0.0.1:8790/api, on a local host only).
+var API = (/^(127\.0\.0\.1|localhost)$/.test(location.hostname) && QS.get('api')) || 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+var CODE = QS.get('k') || window.MC_VISITOR || '';
+var DEV = QS.get('api') ? '&api=' + encodeURIComponent(QS.get('api')) : '';
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function api(path, body) {
+  if (CODE) body.code = CODE;
+  return fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(function (r) { return r.json().catch(function () { return { error: 'The server sent an unreadable reply. Please try again.' }; }); })
+    .catch(function () { return { error: 'Could not reach the server. Check your connection and try again.' }; });
+}
+function errBox(text) { $('msg').innerHTML = '<div class="err">' + esc(text) + '</div>'; }
+var COUNTRIES = [['us', 'United States'], ['gb', 'United Kingdom'], ['ie', 'Ireland'], ['ca', 'Canada'], ['au', 'Australia'], ['de', 'Germany'], ['at', 'Austria'], ['ch', 'Switzerland'],
+  ['fr', 'France'], ['es', 'Spain'], ['it', 'Italy'], ['nl', 'Netherlands'], ['be', 'Belgium'], ['se', 'Sweden'], ['dk', 'Denmark'], ['no', 'Norway'], ['fi', 'Finland'],
+  ['pl', 'Poland'], ['cz', 'Czechia'], ['pt', 'Portugal'], ['br', 'Brazil'], ['mx', 'Mexico'], ['in', 'India'], ['jp', 'Japan'], ['sg', 'Singapore'], ['ae', 'United Arab Emirates']];
+$('country').innerHTML = COUNTRIES.map(function (c) { return '<option value="' + c[0] + '">' + c[1] + '</option>'; }).join('');
+
+// What to do about each kind of complaint.
+var FIX = {
+  bugs: 'Check crash reports for the versions where this peaks, ship a fix, then reply to the reviews that mention it: a reply shows on the listing.',
+  update: 'Name what changed and why in What’s New, and give people a way back to what they lost. Reply to these reviews; many people update their rating after a fix.',
+  speed: 'Profile app start and the slowest screens on older iPhones; slow loading reads as “broken” to users.',
+  account: 'Make sign-in and restore-purchases obvious, and explain sync in the app. Lost data is the complaint most likely to end in 1 star.',
+  pricing: 'Say clearly what the paid plan adds and what it costs, in the listing and before the paywall. Surprise is the complaint, more than the price.',
+  paywall: 'Decide what the free version is for and say it upfront. Moving a free feature behind payment is the classic cause of this.',
+  ads: 'Cap how often ads appear, and never mid-task. Offer an ad-free option if you don’t.',
+  support: 'Reply to reviews (it shows on the listing) and put a visible support route in the app.',
+  ux: 'Watch where new users get stuck; the reviews usually name the screen.',
+  features: 'The requests here are a free roadmap: group them, and reply when you ship one.',
+  content: 'Fix the specific errors people quote; accuracy complaints spread to other reviewers.',
+  notifications: 'Let people choose how often reminders come, and make them easy to switch off.',
+  privacy: 'Explain in the app what you collect and why, and keep your App Store privacy labels accurate.',
+  useful: 'These people didn’t get what they came for: check the listing promises what the app actually does.'
+};
+
+function run(raw) {
+  raw = (raw || $('app').value).trim();
+  if (!raw) return errBox('Paste an App Store link, or type the app’s name.');
+  $('msg').innerHTML = '<p class="loading">Reading up to 500 reviews and sorting them: about 30 seconds</p>'; $('go').disabled = true; $('out').innerHTML = '';
+  api('/app-reviews/run', { app: raw, country: $('country').value }).then(function (d) {
+    $('go').disabled = false; $('msg').innerHTML = '';
+    if (d.error) return errBox(d.error);
+    if (d.matches) {
+      if (!d.matches.length) return errBox('No apps by that name in this country’s App Store. Try the App Store link instead.');
+      $('msg').innerHTML = '<p class="hint" style="margin-top:20px">Which app?</p><div class="matches">' + d.matches.map(function (m) {
+        return '<button class="match" type="button" data-id="' + esc(m.id) + '"><img src="' + esc(m.icon) + '" alt="" loading="lazy"><div><b>' + esc(m.name) + '</b><span>' + esc(m.developer) + '</span></div></button>';
+      }).join('') + '</div>';
+      [].forEach.call(document.querySelectorAll('.match'), function (b) { b.onclick = function () { run(b.getAttribute('data-id')); }; });
+      return;
+    }
+    render(d);
+    history.replaceState(null, '', location.pathname + '?id=' + d.id + DEV);
+  });
+}
+
+function pp(t) { var d = Math.round(100 * (t.recent_share - t.earlier_share)); return d >= 3 ? '<span class="up">↑ ' + d + ' pts</span>' : d <= -3 ? '<span class="down">↓ ' + (-d) + ' pts</span>' : 'steady'; }
+function themeList(list, side, max, total) {
+  return list.slice(0, 8).map(function (t) {
+    return '<div class="theme ' + side + '"><button type="button" aria-expanded="false"><span class="nm">' + esc(t.label) + '</span><span class="pct">' + Math.round(t.share * 100) + '% · ' + t.count + '</span>' +
+      '<span class="tbar"><i data-w="' + Math.round(100 * t.count / max) + '"></i></span>' +
+      '<span class="meta">avg ' + (t.avg_stars != null ? t.avg_stars.toFixed(1) : '–') + '★' + (side === 'neg' ? ' · newer half vs older: ' + pp(t) : '') + ' · tap for quotes</span></button>' +
+      '<div class="quotes">' + t.quotes.map(function (q) { return '<div class="q">' + (q.title ? '<b>' + esc(q.title) + '</b> ' : '') + esc(q.text) + '<div class="who">' + '★'.repeat(q.stars) + ' · v' + esc(q.version) + ' · ' + esc(q.date) + '</div></div>'; }).join('') + '</div></div>';
+  }).join('');
+}
+
+function render(d) {
+  var s = d.summary, a = d.app;
+  var h = '<div class="appcard"><img src="' + esc(a.icon) + '" alt=""><div><h2>' + esc(a.name) + '</h2><p>' + (a.subtitle ? esc(a.subtitle) + ' · ' : '') + esc(a.developer) + ' · ' + esc(d.country.toUpperCase()) + ' App Store · ' + Number(a.rating).toFixed(1) + '★ overall from ' + Number(a.ratings).toLocaleString('en-US') + ' ratings</p></div></div>';
+  var tot = s.stars.reduce(function (t, x) { return t + x; }, 0) || 1;
+  h += '<div class="hero"><div><div class="big">' + s.reviews_read + '<small>written reviews, ' + esc(s.oldest) + ' to ' + esc(s.newest) + '</small></div>' +
+    '<p>They average <b>' + (s.avg_stars != null ? s.avg_stars.toFixed(1) : '–') + '★</b>, against ' + Number(a.rating).toFixed(1) + '★ for all ratings. People who write a review are usually less happy than those who only tap stars, so watch the trend more than the gap: the newer half averages <b>' + (s.recent_avg != null ? s.recent_avg.toFixed(1) : '–') + '★</b>, the older half <b>' + (s.earlier_avg != null ? s.earlier_avg.toFixed(1) : '–') + '★</b>.</p></div>' +
+    '<div class="stars">' + s.stars.map(function (x, k) { var p = Math.round(100 * x / tot); return '<span>' + (5 - k) + '★</span><div class="bar' + (k === 4 ? ' low' : '') + '"><i data-w="' + p + '"></i></div><span>' + p + '%</span>'; }).join('') + '</div></div>';
+
+  var rising = s.complaints.filter(function (t) { return t.count >= 5 && t.recent_share - t.earlier_share >= 0.05; }).sort(function (x, y) { return (y.recent_share - y.earlier_share) - (x.recent_share - x.earlier_share); });
+  if (rising.length) h += '<div class="callout">Rising: <b>' + rising.slice(0, 3).map(function (t) { return esc(t.label.toLowerCase()) + '</b> (' + Math.round(t.earlier_share * 100) + '% → ' + Math.round(t.recent_share * 100) + '%)'; }).join(', <b>') + ' in the newer half of reviews (' + esc(s.recent_span.from) + ' to ' + esc(s.recent_span.to) + ').</div>';
+
+  var maxN = Math.max.apply(null, s.complaints.concat(s.praise).map(function (t) { return t.count; }).concat([1]));
+  h += '<div class="cols"><div><h3 class="sect">What people complain about</h3>' + (s.complaints.length ? themeList(s.complaints, 'neg', maxN) : '<p class="hint">Nothing specific: the reviews are overwhelmingly happy.</p>') + '</div>' +
+    '<div><h3 class="sect">What people praise</h3>' + (s.praise.length ? themeList(s.praise, 'pos', maxN) : '<p class="hint">Little specific praise in these reviews.</p>') + '</div></div>';
+
+  if (s.versions.length) {
+    h += '<h3 class="sect">How each version landed</h3><table class="vers"><thead><tr><th>Version</th><th>First review</th><th>Reviews</th><th>Average</th><th>Top complaint</th></tr></thead><tbody>' +
+      s.versions.map(function (v) {
+        var top = s.complaints.find(function (t) { return t.id === v.top_complaint; });
+        return '<tr><td><b>' + esc(v.version) + '</b></td><td>' + esc(v.first_seen) + '</td><td>' + v.reviews + '</td><td><span class="sb"><i style="width:' + Math.round(v.avg_stars / 5 * 100) + '%"></i></span>' + v.avg_stars.toFixed(1) + '★</td><td>' + (top ? esc(top.label) : '–') + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+
+  var first = s.complaints.slice().sort(function (x, y) { return y.count * (5 - (y.avg_stars || 5)) - x.count * (5 - (x.avg_stars || 5)); }).slice(0, 3);
+  if (first.length) h += '<h3 class="sect">What to fix first</h3><ul class="todo">' + first.map(function (t) {
+    return '<li><b>' + esc(t.label) + ' · ' + t.count + ' reviews, avg ' + (t.avg_stars != null ? t.avg_stars.toFixed(1) : '–') + '★</b>' + esc(FIX[t.id] || '') + '</li>';
+  }).join('') + '</ul>';
+
+  if (d.similar && d.similar.length) h += '<h3 class="sect">Read a competitor’s reviews</h3><p class="hint" style="margin:-2px 0 4px">Apple lists these as similar to ' + esc(a.name) + '. Their complaints are your opening.</p><div class="chips">' +
+    d.similar.slice(0, 8).map(function (x) { return '<a class="chip" href="?app=' + encodeURIComponent(x.id) + '&c=' + encodeURIComponent(d.country) + DEV + '">' + esc(x.name) + '</a>'; }).join('') + '</div>';
+
+  h += '<div class="share"><button class="btn2" id="copy" type="button">Copy link to these results</button><a class="btn2" href="/tools/app-audit/?app=' + encodeURIComponent(a.id) + '&c=' + encodeURIComponent(d.country) + DEV + '">Audit the listing →</a><a class="btn2" href="/tools/app-ai/?app=' + encodeURIComponent(a.id) + '&c=' + encodeURIComponent(d.country) + DEV + '">Does AI recommend it? →</a></div>' +
+    '<p class="fine">Read ' + esc(new Date(d.created_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })) + '. Apple’s feed gives the most recent 500 written reviews in one country; reviews without text aren’t in it. An AI model sorts each review into themes, so counts can shift a little between runs: read the order and the quotes, not the decimals. Results are kept for 30 days.</p>';
+  $('pick').style.display = 'none';
+  $('out').innerHTML = h;
+  [].forEach.call(document.querySelectorAll('.theme>button'), function (b) { b.onclick = function () { var t = b.parentNode, o = t.classList.toggle('open'); b.setAttribute('aria-expanded', o ? 'true' : 'false'); }; });
+  requestAnimationFrame(function () { requestAnimationFrame(function () { [].forEach.call(document.querySelectorAll('[data-w]'), function (b) { b.style.width = b.getAttribute('data-w') + '%'; }); }); });
+  $('copy').onclick = function () {
+    var link = location.origin + location.pathname + '?id=' + d.id;
+    (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () { $('copy').textContent = 'Link copied'; }, function () { prompt('Copy this link:', link); });
+  };
+}
+
+$('go').onclick = function () { run(); };
+$('app').addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });
+if (QS.get('c') && /^[a-z]{2}$/.test(QS.get('c'))) $('country').value = QS.get('c');
+if (QS.get('id')) {
+  $('pick').style.display = 'none'; $('out').innerHTML = '<p class="loading">Opening the results</p>';
+  api('/app-reviews/get', { id: QS.get('id') }).then(function (d) { if (d.error) { $('pick').style.display = ''; $('out').innerHTML = ''; return errBox(d.error); } render(d); });
+} else if (QS.get('app')) { $('app').value = QS.get('app'); run(QS.get('app')); }
+</script>
+<script src="/assets/presets.js"></script>
+</body>
+</html>

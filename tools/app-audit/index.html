@@ -109,6 +109,7 @@
   <div class="sidenav">
     <a href="/" class="sidenav-link">← Back to tools</a>
     <a href="/tools/app-ai/" class="sidenav-link">Does AI recommend your app? →</a>
+    <a href="/tools/app-reviews/" class="sidenav-link">App review themes →</a>
     <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
   </div>
 </div>
@@ -189,7 +190,7 @@ function render(d) {
     }
     h += '</div>';
   });
-  h += '<div class="share"><button class="btn2" id="copy" type="button">Copy link to this audit</button><a class="btn2" href="/tools/app-ai/?app=' + encodeURIComponent(a.id) + '&c=' + encodeURIComponent(d.country) + '">Does AI recommend it? →</a><a class="btn2" href="' + esc(a.url) + '" target="_blank" rel="noopener">Open in the App Store ↗</a></div>' +
+  h += '<div class="share"><button class="btn2" id="copy" type="button">Copy link to this audit</button><a class="btn2" href="/tools/app-ai/?app=' + encodeURIComponent(a.id) + '&c=' + encodeURIComponent(d.country) + '">Does AI recommend it? →</a><a class="btn2" href="/tools/app-reviews/?app=' + encodeURIComponent(a.id) + '&c=' + encodeURIComponent(d.country) + '">Read its reviews →</a><a class="btn2" href="' + esc(a.url) + '" target="_blank" rel="noopener">Open in the App Store ↗</a></div>' +
     '<p class="fine">Checked ' + esc(new Date(d.fetched_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })) + '. Apple’s keyword field is private, so no outside audit can see it. Scores weigh each check equally; “i” notes don’t count.</p>';
   $('out').innerHTML = h;
 
