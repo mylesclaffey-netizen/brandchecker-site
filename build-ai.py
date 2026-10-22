@@ -39,7 +39,7 @@ for m in re.finditer(r'  <div class="live">.*?\n  </div>\n', src[cat_start:cat_e
 
 GROUPS = [
     ('What AI says about you', 'Ask the models your buyers use and read what comes back: who gets named, recommended and cited.',
-     ['state-of-the-llm-union', 'search-on-off', 'model-compare', 'ai-mentions', 'brand-sentiment', 'brand-questions']),
+     ['state-of-the-llm-union', 'search-on-off', 'model-compare', 'ai-mentions', 'brand-sentiment', 'brand-questions', 'app-ai']),
     ('Make sure AI can read you', 'Free checks and files that decide whether AI crawlers can reach your site and understand it.',
      ['crawler-check', 'llms-txt', 'lil-rag-chunker']),
 ]

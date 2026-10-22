@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<script src="/assets/visitor.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Does AI recommend your app? | Brand Checker</title>
+<meta name="description" content="Ask ChatGPT, Claude and Perplexity the questions people ask when they need an app like yours, and see whether they recommend it, where it ranks, and who they recommend instead. Free.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brand Checker">
+<meta property="og:url" content="https://brandchecker.eu/tools/app-ai/">
+<meta property="og:title" content="Does AI recommend your app? | Brand Checker">
+<meta property="og:description" content="See whether ChatGPT, Claude and Perplexity recommend your app, where it ranks, and who they recommend instead.">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--card2:#f3f3ef;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#fff;color:#0a0a0a;font-family:'Archivo',system-ui,sans-serif;line-height:1.5;padding:22px 16px 60px;font-size:16px}
+  .wrap{max-width:900px;margin:0 auto}
+  h1{margin:10px 0 8px}
+  .lede{margin-bottom:26px}
+  .step{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#3d3d3d;margin:0 0 8px}
+  .row{display:grid;grid-template-columns:1fr 170px auto;gap:12px;align-items:end}
+  .field label,.fl{display:block;font-weight:800;font-size:14px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.05em}
+  input[type=text],select,textarea{width:100%;padding:13px 14px;font-size:16px;font-family:inherit;border:3px solid #0a0a0a;border-radius:0;background:#fff;color:#0a0a0a}
+  select{padding:12px 10px}
+  textarea{min-height:170px;resize:vertical;line-height:1.55}
+  .submit{padding:15px 22px;font-size:15px;cursor:pointer;white-space:nowrap}
+  .submit.full{width:100%;margin-top:16px}
+  .hint{font-size:13.5px;color:#3d3d3d;margin:8px 0 0}
+  .err{margin:16px 0 0;padding:12px 14px}
+  .loading{margin:22px 0 0;font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+  .loading::after{content:'';display:inline-block;width:1.2em;text-align:left;animation:dots 1.2s steps(4) infinite}
+  @keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+  .note{border:3px solid #0a0a0a;background:#f3f3ef;padding:12px 14px;margin:16px 0 0;font-size:14px}
+
+  .matches{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:22px}
+  .match{display:flex;gap:12px;align-items:center;border:2px solid #0a0a0a;background:#fff;padding:12px;cursor:pointer;text-align:left;font:inherit;color:inherit}
+  .match:hover{background:#f3f3ef;box-shadow:4px 4px 0 #ff3d00}
+  .match img{width:52px;height:52px;border:1px solid #ddd;flex:none}
+  .match b{display:block;font-size:15px;line-height:1.25}
+  .match span{font-size:12.5px;color:#3d3d3d}
+  .appcard{display:flex;gap:16px;align-items:center;border:3px solid #0a0a0a;padding:16px;margin:26px 0 20px;box-shadow:6px 6px 0 #0a0a0a}
+  .appcard img{width:72px;height:72px;border:1px solid #ddd;flex:none}
+  .appcard h2{font-size:22px;line-height:1.15}
+  .appcard p{font-size:14px;color:#3d3d3d}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .chip{border:2px solid #0a0a0a;padding:4px 9px;font-size:13px;font-weight:600;background:#fff}
+  .chip.apple{background:#f3f3ef}
+
+  .hero{display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:center;border:3px solid #0a0a0a;padding:22px;margin-top:28px;box-shadow:6px 6px 0 #0a0a0a}
+  .big{font-size:64px;font-weight:900;line-height:.9;letter-spacing:-.04em;white-space:nowrap}
+  .big small{font-size:26px;color:#3d3d3d;font-weight:800}
+  .hero h2{font-size:22px;line-height:1.2;margin-bottom:6px}
+  .hero p{font-size:14.5px;color:#262626}
+  .models{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+  .mcard{border:2px solid #0a0a0a;padding:12px}
+  .mcard b{display:block;font-size:15px}
+  .mcard .tag{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#3d3d3d}
+  .meter{height:12px;background:#f3f3ef;border:1px solid #0a0a0a;margin:8px 0 4px}
+  .meter i{display:block;height:100%;width:0;background:#ff3d00;transition:width 1s cubic-bezier(.2,.7,.2,1)}
+  .mcard span{font-size:13px}
+
+  h3.sect{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;border-bottom:3px solid #0a0a0a;padding-bottom:6px;margin:32px 0 12px}
+  .grid{width:100%;border-collapse:collapse;font-size:14px}
+  .grid th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:500;padding:8px;border-bottom:2px solid #0a0a0a}
+  .grid td{padding:10px 8px;border-bottom:1px solid #d9d9d4;vertical-align:top}
+  .grid td.q{font-weight:600;max-width:340px}
+  .cell{display:inline-flex;align-items:center;justify-content:center;min-width:54px;padding:6px 8px;border:2px solid #0a0a0a;font-weight:800;cursor:pointer;background:#fff;font-family:inherit;font-size:14px;color:#0a0a0a}
+  .cell.top{background:#00844a;color:#fff;border-color:#00844a}
+  .cell.low{background:#ffb84d}
+  .cell.none{background:#fff;color:#767676;font-weight:600}
+  .cell.ment{background:#f3f3ef;font-size:11.5px}
+  .cell.fail{border-style:dashed;color:#767676;font-weight:500;font-size:12px}
+  .cell[aria-expanded=true]{box-shadow:3px 3px 0 #ff3d00}
+  .answer{margin:8px 0 2px;padding:12px 14px;background:#f3f3ef;border:2px solid #0a0a0a;font-size:14px}
+  .answer ol{margin:6px 0 0 20px}
+  .answer li.you{font-weight:800;background:#ffd9cc}
+  .answer .src{font-size:12.5px;color:#3d3d3d;margin-top:8px}
+
+  .rivals{display:grid;grid-template-columns:minmax(120px,220px) 1fr auto;gap:8px 12px;align-items:center}
+  .rivals .nm{font-weight:700;font-size:14.5px}
+  .rivals .nm em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:#f3f3ef;border:1px solid #0a0a0a;padding:1px 5px;margin-left:6px;white-space:nowrap}
+  .rivals .bar{height:14px;background:#f3f3ef;border:1px solid #0a0a0a}
+  .rivals .bar i{display:block;height:100%;width:0;background:#0a0a0a;transition:width 1s ease}
+  .rivals .bar.you i{background:#ff3d00}
+  .rivals .ct{font-family:'IBM Plex Mono',monospace;font-size:12px}
+  .todo{margin:0;padding:0;list-style:none}
+  .todo li{border-left:6px solid #ff3d00;padding:8px 0 8px 14px;margin-bottom:12px;font-size:14.5px}
+  .todo li b{display:block;font-size:15.5px}
+  .share{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:28px 0 0}
+  .btn2{display:inline-block;border:2px solid #0a0a0a;background:#fff;color:#0a0a0a;padding:10px 14px;font:700 13px 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;text-decoration:none}
+  .btn2:hover{background:#ff3d00}
+  .fine{font-size:12.5px;color:#3d3d3d;margin:18px 0 0;max-width:72ch}
+  #main .appcard img,#main .match img{border-radius:22%!important}
+  @media(max-width:700px){.row{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.models{grid-template-columns:1fr}.big{font-size:52px}.grid td.q{max-width:none}.rivals{grid-template-columns:1fr auto}.rivals .bar{grid-column:1 / -1}}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap" id="main">
+  <p class="eyebrow">Free tool · App Store × AI</p>
+  <h1>Does AI recommend your app?</h1>
+  <p class="lede">People now ask ChatGPT, Claude and Perplexity which app to download. Ask them the questions your future users ask, and see whether they recommend your app, where it ranks, and who they recommend instead.</p>
+
+  <div id="pick">
+    <p class="step">Step 1 of 2 · your app</p>
+    <div class="row">
+      <div class="field"><label for="app">App Store link or app name</label><input id="app" type="text" placeholder="apps.apple.com/… or “Duolingo”" autocapitalize="off" spellcheck="false"></div>
+      <div class="field"><label for="country">Country</label><select id="country"></select></div>
+      <button class="submit" id="find" type="button">Find my app</button>
+    </div>
+    <p class="hint">The country sets which App Store we read and where the assistants are told you are.</p>
+    <div id="pickMsg"></div>
+  </div>
+
+  <div id="ask" style="display:none">
+    <div id="appBox"></div>
+    <p class="step">Step 2 of 2 · the questions</p>
+    <label class="fl" for="qs">What people ask when they need an app like yours: one per line, up to 5</label>
+    <textarea id="qs" spellcheck="true"></textarea>
+    <p class="hint" id="qHint">Leave your app’s name out: a question that names it gets dropped, because it would rig the answer.</p>
+    <div id="simBox"></div>
+    <div class="note"><b>What happens next:</b> ChatGPT and Claude answer from what they already know, and Perplexity searches the web, for every question (up to 15 answers). Each lists the apps it recommends; we check where yours is. About 30 seconds.</div>
+    <button class="submit full" id="run" type="button">Ask the AI assistants</button>
+    <div id="runMsg"></div>
+  </div>
+
+  <div id="out"></div>
+
+  <div class="sidenav">
+    <a href="/" class="sidenav-link">← Back to tools</a>
+    <a href="/tools/app-audit/" class="sidenav-link">App listing audit →</a>
+    <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+  </div>
+</div>
+
+<script>
+if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
+var QS = new URLSearchParams(location.search);
+// A local Worker can be pointed at during development (?api=http://127.0.0.1:8790/api, on a local host only).
+var API = (/^(127\.0\.0\.1|localhost)$/.test(location.hostname) && QS.get('api')) || 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+var CODE = QS.get('k') || window.MC_VISITOR || '';
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function api(path, body) {
+  if (CODE) body.code = CODE;
+  return fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(function (r) { return r.json().catch(function () { return { error: 'The server sent an unreadable reply. Please try again.' }; }); })
+    .catch(function () { return { error: 'Could not reach the server. Check your connection and try again.' }; });
+}
+function errBox(el, text) { el.innerHTML = '<div class="err">' + esc(text) + '</div>'; }
+var COUNTRIES = [['us', 'United States'], ['gb', 'United Kingdom'], ['ie', 'Ireland'], ['ca', 'Canada'], ['au', 'Australia'], ['de', 'Germany'], ['at', 'Austria'], ['ch', 'Switzerland'],
+  ['fr', 'France'], ['es', 'Spain'], ['it', 'Italy'], ['nl', 'Netherlands'], ['be', 'Belgium'], ['se', 'Sweden'], ['dk', 'Denmark'], ['no', 'Norway'], ['fi', 'Finland'],
+  ['pl', 'Poland'], ['cz', 'Czechia'], ['pt', 'Portugal'], ['br', 'Brazil'], ['mx', 'Mexico'], ['in', 'India'], ['jp', 'Japan'], ['sg', 'Singapore'], ['ae', 'United Arab Emirates']];
+$('country').innerHTML = COUNTRIES.map(function (c) { return '<option value="' + c[0] + '">' + c[1] + '</option>'; }).join('');
+var APP = null, COUNTRY = 'us';
+
+function find(raw) {
+  raw = (raw || $('app').value).trim();
+  if (!raw) return errBox($('pickMsg'), 'Paste an App Store link, or type the app’s name.');
+  $('pickMsg').innerHTML = '<p class="loading">Reading the App Store</p>'; $('find').disabled = true;
+  api('/app-ai/suggest', { app: raw, country: $('country').value }).then(function (d) {
+    $('find').disabled = false; $('pickMsg').innerHTML = '';
+    if (d.error) return errBox($('pickMsg'), d.error);
+    if (d.matches) {
+      if (!d.matches.length) return errBox($('pickMsg'), 'No apps by that name in this country’s App Store. Try the App Store link instead.');
+      $('pickMsg').innerHTML = '<p class="hint" style="margin-top:20px">Which one is yours?</p><div class="matches">' + d.matches.map(function (m) {
+        return '<button class="match" type="button" data-id="' + esc(m.id) + '"><img src="' + esc(m.icon) + '" alt="" loading="lazy"><div><b>' + esc(m.name) + '</b><span>' + esc(m.developer) + '</span></div></button>';
+      }).join('') + '</div>';
+      [].forEach.call(document.querySelectorAll('.match'), function (b) { b.onclick = function () { find(b.getAttribute('data-id')); }; });
+      return;
+    }
+    APP = d.app; COUNTRY = d.country;
+    $('appBox').innerHTML = appCard(d.app, d.country);
+    $('qs').value = d.questions.join('\n');
+    $('qHint').textContent = (d.drafted ? 'Drafted from your listing. ' : 'Starter questions from your category: make them sound like your users. ') + 'Leave your app’s name out: a question that names it gets dropped, because it would rig the answer.';
+    $('simBox').innerHTML = d.similar && d.similar.length ? '<p class="hint" style="margin-top:14px">Apple shows these as similar apps on your page. We’ll check whether AI recommends them instead:</p><div class="chips">' +
+      d.similar.map(function (s) { return '<span class="chip apple">' + esc(s.name) + '</span>'; }).join('') + '</div>' : '';
+    $('ask').style.display = ''; $('qs').focus();
+  });
+}
+function appCard(a, cc) {
+  return '<div class="appcard"><img src="' + esc(a.icon) + '" alt=""><div><h2>' + esc(a.name) + '</h2><p>' + (a.subtitle ? esc(a.subtitle) + ' · ' : '') + esc(a.developer) + ' · ' + esc(a.category) + ' · ' + esc(String(cc).toUpperCase()) + ' App Store</p></div></div>';
+}
+
+function run() {
+  var qs = $('qs').value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean).slice(0, 5);
+  if (!qs.length) return errBox($('runMsg'), 'Add at least one question.');
+  $('runMsg').innerHTML = '<p class="loading">Asking ChatGPT, Claude and Perplexity ' + (qs.length * 3) + ' times</p>'; $('run').disabled = true;
+  api('/app-ai/run', { app: APP.id, country: COUNTRY, questions: qs }).then(function (d) {
+    $('run').disabled = false; $('runMsg').innerHTML = '';
+    if (d.error) return errBox($('runMsg'), d.error);
+    render(d);
+    history.replaceState(null, '', location.pathname + '?id=' + d.id + (QS.get('api') ? '&api=' + encodeURIComponent(QS.get('api')) : ''));
+  });
+}
+
+function cellFor(a) {
+  if (a.error) return '<span class="cell fail" title="' + esc(a.error) + '">no answer</span>';
+  var cls = a.you_rank ? (a.you_rank <= 3 ? 'top' : 'low') : a.mentioned ? 'ment' : 'none';
+  var txt = a.you_rank ? '#' + a.you_rank : a.mentioned ? 'mentioned' : '—';
+  return '<button class="cell ' + cls + '" type="button" aria-expanded="false">' + txt + '</button>';
+}
+function render(d) {
+  var s = d.summary, a = d.app, brand = a.brand || a.name;
+  var lead = !s.named ? 'None of the assistants recommended ' + brand + '.' : s.named === s.answers_read ? 'Every answer recommended ' + brand + '.' : brand + ' was recommended in ' + s.named + ' of ' + s.answers_read + ' answers.';
+  var sub = s.named ? 'In the top 3 in ' + s.top3 + (s.avg_rank ? ', average position ' + s.avg_rank : '') + '.' : (s.mentioned_unlisted ? 'It was mentioned ' + s.mentioned_unlisted + ' time' + (s.mentioned_unlisted === 1 ? '' : 's') + ' without making a list.' : 'Below are the apps they recommend instead.');
+  var h = appCard(a, d.country) +
+    '<div class="hero"><div class="big">' + s.named + '<small>/' + s.answers_read + '</small></div><div><h2>' + esc(lead) + '</h2><p>' + esc(sub) + ' ' + d.questions.length + ' question' + (d.questions.length === 1 ? '' : 's') + ' × ' + d.models.length + ' assistants, asked as someone in ' + esc(d.country.toUpperCase()) + ' with an iPhone.</p></div></div>';
+  h += '<div class="models">' + s.by_model.map(function (m) {
+    return '<div class="mcard"><b>' + esc(m.label) + '</b><span class="tag">' + (m.web ? 'searches the web' : 'own knowledge') + '</span><div class="meter"><i data-w="' + (m.read ? Math.round(100 * m.named / m.read) : 0) + '"></i></div><span>Named you in ' + m.named + ' of ' + m.read + '</span></div>';
+  }).join('') + '</div>';
+
+  h += '<h3 class="sect">Question by question</h3><p class="hint" style="margin:-4px 0 10px">Your place in each answer’s list. Tap a cell to read the answer.</p><table class="grid"><thead><tr><th>Question</th>' +
+    d.models.map(function (m) { return '<th>' + esc(m.label) + '</th>'; }).join('') + '</tr></thead><tbody>';
+  d.rows.forEach(function (r, ri) {
+    h += '<tr><td class="q">' + esc(r.question) + '</td>' + r.answers.map(function (x, ai) { return '<td data-r="' + ri + '" data-a="' + ai + '">' + cellFor(x) + '</td>'; }).join('') + '</tr>' +
+      '<tr class="ansrow" id="ans' + ri + '" style="display:none"><td colspan="' + (1 + d.models.length) + '"></td></tr>';
+  });
+  h += '</tbody></table>';
+
+  if (s.rivals.length) {
+    var max = Math.max(s.answers_read, 1);
+    h += '<h3 class="sect">Who AI recommends instead</h3><p class="hint" style="margin:-4px 0 12px">Apps named across all ' + s.answers_read + ' answers. “Apple: similar” means Apple also lists it as similar on your App Store page.</p><div class="rivals">' +
+      '<div class="nm">' + esc(brand) + ' (you)</div><div class="bar you"><i data-w="' + Math.round(100 * s.named / max) + '"></i></div><div class="ct">' + s.named + '</div>' +
+      s.rivals.map(function (r) { return '<div class="nm">' + esc(r.name) + (r.apple_similar ? '<em>Apple: similar</em>' : '') + '</div><div class="bar"><i data-w="' + Math.round(100 * r.answers / max) + '"></i></div><div class="ct">' + r.answers + '</div>'; }).join('') + '</div>';
+    if (s.similar_not_named && s.similar_not_named.length) h += '<p class="hint" style="margin-top:14px">Apple lists these as similar, but no assistant named them: ' + s.similar_not_named.map(esc).join(', ') + '.</p>';
+  }
+
+  // Where Perplexity got its answers: the pages to be on.
+  var hosts = {}; d.rows.forEach(function (r) { r.answers.forEach(function (x) { (x.sources || []).forEach(function (hst) { hosts[hst] = (hosts[hst] || 0) + 1; }); }); });
+  var hl = Object.keys(hosts).sort(function (x, y) { return hosts[y] - hosts[x]; }).slice(0, 10);
+  h += '<h3 class="sect">What moves these answers</h3><ul class="todo">';
+  if (hl.length) h += '<li><b>Get into the pages Perplexity reads</b>It built its answers from: ' + hl.map(function (x) { return esc(x) + (hosts[x] > 1 ? ' (' + hosts[x] + ')' : ''); }).join(', ') + '. “Best apps” lists and reviews there are where a pitch, an update or a review request pays off.</li>';
+  h += '<li><b>Be described the way people ask</b>ChatGPT and Claude answer from what they learned in training: lists, reviews and articles that describe ' + esc(brand) + ' in your users’ words. That changes slowly, so start with the questions where you’re missing.</li>';
+  h += '<li><b>Make the listing say it too</b>Your App Store name, subtitle and description should use the same words as these questions. <a href="/tools/app-audit/?app=' + encodeURIComponent(a.id) + '&c=' + encodeURIComponent(d.country) + '">Run the App listing audit →</a></li></ul>';
+
+  h += '<div class="share"><button class="btn2" id="copy" type="button">Copy link to these results</button><button class="btn2" id="again" type="button">Ask different questions</button></div>' +
+    '<p class="fine">Asked ' + esc(new Date(d.created_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })) + '. AI answers vary from one asking to the next, so treat one run as a snapshot and compare runs over time. ChatGPT and Claude answered without web search; Perplexity searched. Results are kept for 30 days.</p>';
+  $('pick').style.display = 'none'; $('ask').style.display = 'none';
+  $('out').innerHTML = h;
+
+  [].forEach.call(document.querySelectorAll('.grid td[data-r]'), function (td) {
+    var btn = td.querySelector('button'); if (!btn) return;
+    btn.onclick = function () {
+      var ri = +td.getAttribute('data-r'), ai = +td.getAttribute('data-a'), x = d.rows[ri].answers[ai], row = $('ans' + ri), open = btn.getAttribute('aria-expanded') === 'true';
+      [].forEach.call(document.querySelectorAll('.cell[aria-expanded=true]'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+      [].forEach.call(document.querySelectorAll('.ansrow'), function (rw) { rw.style.display = 'none'; });
+      if (open) return;
+      btn.setAttribute('aria-expanded', 'true');
+      row.firstChild.innerHTML = '<div class="answer"><b>' + esc(x.label) + '</b>' + (x.items && x.items.length ? '<ol>' + x.items.map(function (it, k) { return '<li' + (k + 1 === x.you_rank ? ' class="you"' : '') + '>' + esc(it) + '</li>'; }).join('') + '</ol>' : '<p>' + esc(x.text || '') + '</p>') +
+        (x.sources && x.sources.length ? '<p class="src">Sources: ' + x.sources.map(esc).join(', ') + '</p>' : '') + '</div>';
+      row.style.display = '';
+    };
+  });
+  requestAnimationFrame(function () { requestAnimationFrame(function () { [].forEach.call(document.querySelectorAll('[data-w]'), function (b) { b.style.width = b.getAttribute('data-w') + '%'; }); }); });
+  $('copy').onclick = function () {
+    var link = location.origin + location.pathname + '?id=' + d.id;
+    (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () { $('copy').textContent = 'Link copied'; }, function () { prompt('Copy this link:', link); });
+  };
+  $('again').onclick = function () { location.href = location.pathname + '?app=' + encodeURIComponent(a.id) + '&c=' + encodeURIComponent(d.country) + (QS.get('api') ? '&api=' + encodeURIComponent(QS.get('api')) : ''); };
+}
+
+$('find').onclick = function () { find(); };
+$('app').addEventListener('keydown', function (e) { if (e.key === 'Enter') find(); });
+$('run').onclick = run;
+if (QS.get('c') && /^[a-z]{2}$/.test(QS.get('c'))) $('country').value = QS.get('c');
+if (QS.get('id')) {
+  $('pick').style.display = 'none'; $('out').innerHTML = '<p class="loading">Opening the results</p>';
+  api('/app-ai/get', { id: QS.get('id') }).then(function (d) { if (d.error) { $('pick').style.display = ''; $('out').innerHTML = ''; return errBox($('pickMsg'), d.error); } render(d); });
+} else if (QS.get('app')) { $('app').value = QS.get('app'); find(QS.get('app')); }
+</script>
+<script src="/assets/presets.js"></script>
+</body>
+</html>
