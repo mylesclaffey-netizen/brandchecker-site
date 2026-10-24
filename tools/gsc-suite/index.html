@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <script src="/assets/visitor.js"></script>
-<script src="/assets/gsc-report.js?v=15"></script>
+<script src="/assets/gsc-report.js?v=16"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GSC Suite</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
@@ -177,7 +177,7 @@
       <div><b>Recovery</b><span>The pages and queries that lost the most, what each address does now, suggested redirects, and a tracker that measures what your changes did.</span></div>
       <div><b>Technical</b><span>Core Web Vitals from real Chrome users, and what Google’s own index says about your pages.</span></div>
       <div><b>Archive</b><span>The days Google is about to delete, saved: daily totals, month comparisons, top queries and pages, every row as CSV.</span></div>
-      <div><b>Alerts &amp; reports</b><span>A daily page-health check, alerts when clicks fall below their expected range, a Monday digest, and PDF or shareable-link reports.</span></div>
+      <div><b>Alerts &amp; reports</b><span>A daily page-health check, a robots.txt and sitemap watcher, alerts when clicks fall below their expected range, a Monday digest, and PDF or shareable-link reports.</span></div>
     </div>
     <p class="hint" style="margin:-8px 0 18px">Free while in beta. Needs a Brand Checker account and read-only access to your Search Console.</p>
   </div>
@@ -699,7 +699,7 @@ function renderCwv(loading) {
 /* ---- monitoring: page-health checks (daily) and the Monday digest ---- */
 var MO = { id: '', data: null, error: null, msg: '' };
 var MO_KIND = { live: ['Live', 'up'], moved: ['Redirects to another page', ''], home: ['Redirects to the homepage', 'dn'], gone: ['Gone (404 / 410)', 'dn'], elsewhere: ['Redirects to another site', 'dn'], noindex: ['Live, but noindex', 'dn'], error: ['Could not check', ''] };
-function monitorCard() { return '<div class="card" id="monCard"><h2>Monitoring: page health and weekly digest</h2><div id="monOut"><p class="hint">Loading…</p></div></div>'; }
+function monitorCard() { return '<div class="card" id="monCard"><h2>Monitoring: page health and weekly digest</h2><div id="monOut"><p class="hint">Loading…</p></div></div><div class="card" id="sfCard"><h2>Site files: robots.txt and sitemap</h2><div id="sfOut"><p class="hint">Loading…</p></div></div>'; }
 function loadMonitor(force) {
   if (!force && MO.id === CUR && (MO.data || MO.error)) { renderMonitor(); return; }
   MO.id = CUR; MO.data = null; MO.error = null;
@@ -715,6 +715,7 @@ function renderMonitor() {
     '<p class="sub" style="margin:0 0 10px">Every day the pages that earn the most Search Console clicks (the top ' + d.config.top_n + ' of the last 28 days) are requested and compared with the last check. If one that earns clicks starts redirecting to the homepage or another site, returns 404/410 or is set to noindex, you get an email. Every Monday a digest summarises the week: clicks against last week and last year, brand vs non-brand, core terms, the biggest page and query movers, page-health changes and the archive’s status.</p>' +
     '<label style="font-size:14px;display:block;margin:0 0 6px"><input type="checkbox" id="moDigest"' + (d.config.digest ? ' checked' : '') + '> Weekly digest email (Mondays)</label>' +
     '<label style="font-size:14px;display:block;margin:0 0 6px"><input type="checkbox" id="moAlerts"' + (d.config.alerts ? ' checked' : '') + '> Email me when a page that earns clicks breaks</label>' +
+    '<label style="font-size:14px;display:block;margin:0 0 6px"><input type="checkbox" id="moSite"' + (d.config.sitewatch ? ' checked' : '') + '> Email me when robots.txt or the sitemap changes in a way that matters</label>' +
     '<label style="font-size:14px;display:block;margin:0 0 6px"><input type="checkbox" id="moAnom"' + (d.config.anomaly ? ' checked' : '') + '> Email me when weekly clicks fall below their expected range (once when it first happens, once more if it lasts three weeks)</label>' +
     '<label style="font-size:14px;display:block;margin:0 0 10px">…only for pages with at least <input type="text" id="moMin" inputmode="numeric" value="' + esc(d.config.min_clicks) + '" style="width:64px;padding:6px 8px;display:inline-block"> clicks in 28 days</label>' +
     '<p class="hint" style="margin:0 0 10px">Emails go to: ' + (d.recipients.length ? d.recipients.map(esc).join(', ') : 'nobody: no address is on file for this account') + '.' + (d.last_digest ? ' Last digest sent ' + esc(d.last_digest.slice(0, 10)) + '.' : '') + '</p>' +
@@ -729,7 +730,7 @@ function renderMonitor() {
   var out = $('moOut2'), busy = function (b, t) { b.disabled = true; out.innerHTML = '<p class="hint">' + t + '</p>'; };
   $('moSave').onclick = function () {
     var b = this; busy(b, 'Saving…');
-    api('/gsc-archive/monitor-config', { id: CUR, digest: $('moDigest').checked, alerts: $('moAlerts').checked, anomaly: $('moAnom').checked, min_clicks: $('moMin').value }).then(function (r) { MO.msg = r.error ? '' : 'Settings saved.'; if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; b.disabled = false; return; } MO.data = r; renderMonitor(); });
+    api('/gsc-archive/monitor-config', { id: CUR, digest: $('moDigest').checked, alerts: $('moAlerts').checked, anomaly: $('moAnom').checked, sitewatch: $('moSite').checked, min_clicks: $('moMin').value }).then(function (r) { MO.msg = r.error ? '' : 'Settings saved.'; if (r.error) { out.innerHTML = '<div class="err">' + esc(r.error) + '</div>'; b.disabled = false; return; } MO.data = r; renderMonitor(); });
   };
   $('moCheck').onclick = function () {
     var b = this; busy(b, 'Requesting each page… (about 15 seconds)');
@@ -894,7 +895,7 @@ var VIEW_LOADERS = {
   recovery: function () { loadLost(); loadChanges(); },
   technical: function () { loadCwv(); renderIndex(); },
   archive: function () { if (TOPMONTHS.length) loadTop(); },
-  alerts: function () { loadMonitor(); }
+  alerts: function () { loadMonitor(); loadSiteFiles(); }
 };
 function showView(v, scroll) {
   CURVIEW = v; VISITED[v] = true;
@@ -910,7 +911,7 @@ function ensureAll(cb) {
   Object.keys(VIEW_LOADERS).forEach(function (k) { if (k !== 'archive') VIEW_LOADERS[k](); });
   var t0 = Date.now();
   (function wait() {
-    var done = (TREND.data || TREND.error) && (EX.data || EX.error) && (BR.data || BR.error) && (OP.data || OP.error) && (LW.data || LW.error) && (CH.data || CH.error) && (CW.data || CW.error) && (MO.data || MO.error) && (AU.data || AU.error) && (HQ.data || HQ.error) && (RK.data || RK.error) &&
+    var done = (TREND.data || TREND.error) && (EX.data || EX.error) && (BR.data || BR.error) && (OP.data || OP.error) && (LW.data || LW.error) && (CH.data || CH.error) && (CW.data || CW.error) && (MO.data || MO.error) && (AU.data || AU.error) && (HQ.data || HQ.error) && (SF.data || SF.error) && (RK.data || RK.error) &&
       (SG.error || (SG.data && Object.keys(SG.details).length >= SG.data.segments.length));
     if (done || Date.now() - t0 > 90000) cb(); else setTimeout(wait, 500);
   })();
@@ -991,6 +992,27 @@ function renderRank(loading) {
   if ($('rkCsv')) $('rkCsv').onclick = function () { var rows = [['query', 'week_starting', 'avg_position', 'clicks', 'impressions']]; qs.forEach(function (q) { (q.weeks || []).forEach(function (w) { rows.push([q.query, w.k, w.pos, w.clicks, w.impressions]); }); }); download('gsc-rank-history.csv', toCsv(rows)); };
 }
 
+/* ---- site files: robots.txt and sitemap ---- */
+var SF = { id: '', data: null, error: null, msg: '', busy: false };
+function loadSiteFiles(action) {
+  if (!action && SF.id === CUR && (SF.data || SF.error)) { renderSiteFiles(); return; }
+  SF.id = CUR; if (!action) { SF.data = null; SF.error = null; } SF.busy = !!action; renderSiteFiles();
+  api('/gsc-archive/site-files', { id: CUR, action: action }).then(function (r) { if (SF.id !== CUR) return; SF.busy = false; if (r.error) SF.error = r; else { SF.data = r; SF.error = null; } renderSiteFiles(); });
+}
+function renderSiteFiles() {
+  var box = $('sfOut'); if (!box) return; ensureGrStyle();
+  if (SF.error) { box.innerHTML = '<div class="err">' + esc(SF.error.error) + '</div>'; return; }
+  var d = SF.data; if (!d) { box.innerHTML = '<p class="hint">Loading…</p>'; return; }
+  var sf = { robots: d.files.robots, sitemap: d.files.sitemap, log: d.log };
+  var h = '<p class="sub" style="margin:0 0 10px">Every day the suite reads your robots.txt and sitemap, remembers them, and tells you when something changes that could cost you pages in Google: a rule that blocks Googlebot from the site or from pages that earn clicks, a robots.txt that starts failing, a sitemap that shrinks by a fifth or more, goes empty or disappears, or pages that earn clicks leaving it. Comment and spacing edits are ignored.</p>';
+  if (!d.files.robots && !d.files.sitemap) h += '<p class="hint">Not checked yet. The first check stores a baseline and never emails.</p>';
+  else h += '<div class="gr">' + GscReport.sitefiles(sf, { noTitle: true }) + '</div>';
+  h += '<div class="acts"><button class="btn2 small" type="button" id="sfCheck"' + (SF.busy ? ' disabled' : '') + '>' + (SF.busy ? 'Checking…' : 'Check now') + '</button></div>';
+  if (d.robots_text) h += '<details style="margin-top:10px"><summary><b>Current robots.txt</b></summary><pre style="white-space:pre-wrap;border:3px solid #0a0a0a;padding:12px;font-size:12.5px;font-family:\'IBM Plex Mono\',monospace;background:#f3f3ef;max-height:320px;overflow:auto">' + esc(d.robots_text) + '</pre></details>';
+  box.innerHTML = h;
+  $('sfCheck').onclick = function () { loadSiteFiles('check'); };
+}
+
 /* ---- whole-report PDF and sign-in-free share links ---- */
 var SH = { site: '' };
 function shareCard() {
@@ -1015,7 +1037,7 @@ function wireShare(site) {
   };
   function buildFullPdf() {
     $('shOut').innerHTML = '<p class="hint">Preparing the report…</p>';
-    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, expected: EX.data || null, audience: AU.data ? { window: AU.data.window, country: AU.data.country, device: AU.data.device, appearance: AU.data.appearance, section: AU.data.section } : null, hidden: HQ.data ? { months: HQ.data.months, last28: HQ.data.last28, last90: HQ.data.last90 } : null, rank: (RK.data && RK.data.queries && RK.data.queries.length) ? { computed: RK.data.computed, queries: RK.data.queries.filter(function (q) { return !q.error; }).slice(0, 8) } : null, annotations: ANN.slice(0, 40).map(function (c) { return { date: c.date, kind: c.kind, title: c.title }; }), opportunities: OP.data || null, indexing: IX.data ? { checked_at: IX.data.checked_at, source: IX.data.source, counts: IX.data.counts, rows: IX.data.rows.slice(0, 25).map(function (r) { var o = Object.assign({}, r); delete o.link; return o; }) } : null, lost: LW.data ? { window: LW.data.window, lost_total: LW.data.lost_total, listed_lost: LW.data.listed_lost, by_kind: LW.data.by_kind, pages_total: LW.data.pages_total, pages: LW.data.pages.slice(0, 15), queries: LW.data.queries.slice(0, 10), queries_total: LW.data.queries_total } : null, changes: (CH.data && CH.data.changes.length) ? CH.data.changes.slice(0, 15).map(function (c) { return Object.assign({}, c, { effect: CH.data.effects[c.id] || null }); }) : null, cwv: (CW.data && CW.data.current) ? { origin: CW.data.origin, current: CW.data.current, history: CW.data.history, pages: CW.data.pages || [] } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
+    var go = function (trend) { $('shOut').innerHTML = ''; printReport('Search Console report - ' + site, GscReport.render({ site: site, created: new Date().toISOString(), trend: trend, trend_types: typesForReport(), brand: (BR.data && !BR.data.needs_terms) ? { terms: BR.data.terms, days: BR.data.days, older: BR.data.older } : null, seg: SG.data ? Object.assign({}, SG.data, { details: SG.details }) : null, expected: EX.data || null, audience: AU.data ? { window: AU.data.window, country: AU.data.country, device: AU.data.device, appearance: AU.data.appearance, section: AU.data.section } : null, hidden: HQ.data ? { months: HQ.data.months, last28: HQ.data.last28, last90: HQ.data.last90 } : null, sitefiles: (SF.data && (SF.data.files.robots || SF.data.files.sitemap)) ? { robots: SF.data.files.robots, sitemap: SF.data.files.sitemap, log: SF.data.log.slice(0, 10) } : null, rank: (RK.data && RK.data.queries && RK.data.queries.length) ? { computed: RK.data.computed, queries: RK.data.queries.filter(function (q) { return !q.error; }).slice(0, 8) } : null, annotations: ANN.slice(0, 40).map(function (c) { return { date: c.date, kind: c.kind, title: c.title }; }), opportunities: OP.data || null, indexing: IX.data ? { checked_at: IX.data.checked_at, source: IX.data.source, counts: IX.data.counts, rows: IX.data.rows.slice(0, 25).map(function (r) { var o = Object.assign({}, r); delete o.link; return o; }) } : null, lost: LW.data ? { window: LW.data.window, lost_total: LW.data.lost_total, listed_lost: LW.data.listed_lost, by_kind: LW.data.by_kind, pages_total: LW.data.pages_total, pages: LW.data.pages.slice(0, 15), queries: LW.data.queries.slice(0, 10), queries_total: LW.data.queries_total } : null, changes: (CH.data && CH.data.changes.length) ? CH.data.changes.slice(0, 15).map(function (c) { return Object.assign({}, c, { effect: CH.data.effects[c.id] || null }); }) : null, cwv: (CW.data && CW.data.current) ? { origin: CW.data.origin, current: CW.data.current, history: CW.data.history, pages: CW.data.pages || [] } : null, months: monthsOfDays(), pages: psPayload() }), GscReport.css + '@page{size:A4;margin:14mm}body{margin:0}'); };
     if (TREND.id === CUR && TREND.data && TREND.types) return go(TREND.data);
     api('/gsc-archive/live-types', { id: CUR }).then(function (r) { if (r.error) { $('shOut').innerHTML = '<div class="err">' + esc(r.error) + '</div>'; return; } TREND.id = CUR; TREND.types = r.types || {}; TREND.errors = r.errors || {}; TREND.data = TREND.types.web || []; go(TREND.data); });
   };
@@ -1054,7 +1076,7 @@ function openView(id) {
   CUR = id; VISITED = {}; if ($('suiteIntro')) $('suiteIntro').style.display = 'none';
   api('/gsc-archive/daily', { id: id }).then(function (r) {
     if (r.error) return alert(r.error);
-    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null; MO.id = ''; MO.data = null; MO.error = null; MO.msg = ''; EX.id = ''; EX.data = null; EX.error = null; OP.id = ''; OP.data = null; OP.error = null; RK.id = ''; RK.data = null; RK.error = null; RK.msg = ''; AU.id = ''; AU.data = null; AU.error = null; HQ.id = ''; HQ.data = null; HQ.error = null; ANN = []; LW.id = ''; LW.data = null; LW.error = null; IX.data = null; IX.error = null; IX.busy = false; CH.id = ''; CH.data = null; CH.error = null; CH.msg = '';
+    DAYS = r.days || []; TOPMONTHS = (r.top_months || []).slice().reverse(); TOPMONTH = ''; CMP.data = null; PS.rows = []; PS.meta = null; PS.month = ''; PS.token++; BR.id = ''; BR.data = null; BR.error = null; BR.edit = false; BR.msg = ''; SG.id = ''; SG.data = null; SG.error = null; SG.edit = false; SG.details = {}; CW.id = ''; CW.data = null; CW.error = null; MO.id = ''; MO.data = null; MO.error = null; MO.msg = ''; EX.id = ''; EX.data = null; EX.error = null; OP.id = ''; OP.data = null; OP.error = null; SF.id = ''; SF.data = null; SF.error = null; RK.id = ''; RK.data = null; RK.error = null; RK.msg = ''; AU.id = ''; AU.data = null; AU.error = null; HQ.id = ''; HQ.data = null; HQ.error = null; ANN = []; LW.id = ''; LW.data = null; LW.error = null; IX.data = null; IX.error = null; IX.busy = false; CH.id = ''; CH.data = null; CH.error = null; CH.msg = '';
     api('/gsc-archive/compare-options', { id: id }).then(function (o) { CMP.opts = o && !o.error ? o : null; if (CMP.opts && CMP.opts.months.length && !CMP.start) { var okm = CMP.opts.months.filter(function (m) { return m.available && m.twin_available; }); CMP.start = (okm.filter(function (m) { return m.month === CMP.opts.latest_stored_month; })[0] || okm[okm.length - 1] || {}).month || ''; } $('view').style.display = ''; drawView(r.site_url); $('view').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   });
 }
