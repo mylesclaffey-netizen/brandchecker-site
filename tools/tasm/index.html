@@ -170,10 +170,35 @@ async function load(id) {
 }
 
 function bars(rows, total, accKey) {
-  const max = Math.max(1, ...rows.map(r => r.volume));
-  return `<table><tr><th>${accKey}</th><th class="r">Searches/mo</th><th class="r">Share</th><th></th><th class="r">Winnable clicks</th></tr>` +
+  const max = Math.max(1, ...rows.map(r => r.volume)), cap = DATA.captured;
+  return `<table><tr><th>${accKey}</th><th class="r">Searches/mo</th><th class="r">Share</th><th></th><th class="r">Winnable clicks</th>${cap ? '<th class="r">Captured</th>' : ''}</tr>` +
     rows.map(r => `<tr><td>${esc(r.name)}</td><td class="r">${nf(r.volume)}</td><td class="r">${r.share}%</td>
-      <td style="width:22%"><div class="bar"><i style="width:${r.volume / max * 100}%"></i></div></td><td class="r">${nf(r.accessible)}</td></tr>`).join('') + '</table>';
+      <td style="width:22%"><div class="bar"><i style="width:${r.volume / max * 100}%"></i></div></td><td class="r">${nf(r.accessible)}</td>${cap ? `<td class="r">${nf(r.captured)}</td>` : ''}</tr>`).join('') + '</table>';
+}
+
+function capturedBlock(d) {
+  const c = d.captured;
+  if (!c) {
+    const props = d.properties || [];
+    return `<h2>Captured today</h2><p class="sub">What this site already gets from this market, measured against what's winnable.</p>
+      ${props.length ? `<div class="noprint"><select id="prop" style="max-width:340px;display:inline-block">${props.map(p => `<option value="${esc(p.id)}"${p.domain === d.site ? ' selected' : ''}>${esc(p.site_url)}</option>`).join('')}</select>
+        <button class="btn small" id="cap" style="margin-left:8px">Compare with Search Console</button> <span class="hint" id="capMsg">Free — reads the last 90 days from your connected property.</span></div>`
+        : `<p class="hint">Connect Search Console in the <a href="/tools/gsc-suite/?k=${encodeURIComponent(CODE)}" style="color:var(--you)">GSC Suite</a>, then come back to compare this market with what the site captures.</p>`}`;
+  }
+  const out = c.outside;
+  return `<h2>Captured today</h2>
+    <p class="sub">From Search Console, the last ${c.window_days} days${c.window ? ' (' + esc(c.window.start) + ' to ' + esc(c.window.end) + ')' : ''}, shown per month. Search Console hides rare queries, so captured is a floor.
+      <span class="noprint"><button class="btn ghost small" id="cap" style="margin-left:8px">Refresh</button></span></p>
+    <div class="cards">
+      <div class="card"><div class="k">Captured clicks</div><div class="n">${nf(c.clicks)}</div><div class="d">a month from ${nf(c.matched_queries)} queries in ${nf(c.matched_clusters)} of ${nf(d.totals.clusters)} clusters; ${nf(c.on_page_one)} on page one.</div></div>
+      <div class="card hero"><div class="k">Capture rate</div><div class="n">${c.capture_pct == null ? '–' : c.capture_pct + '%'}</div><div class="d">of the winnable clicks (${esc(c.basis === 'site' ? 'at ' + d.site + '’s authority' : 'new-entrant view')}). Over 100% means the site beats the model.</div></div>
+      <div class="card"><div class="k">Still untapped</div><div class="n">${nf(c.untapped)}</div><div class="d">winnable clicks a month not yet captured, cluster by cluster. Impressions cover ${c.impression_share_pct}% of the market's searches.</div></div>
+    </div>
+    <p class="sub">Outside this market: ${nf(out.clicks)} clicks a month from ${nf(out.queries)} other queries, of which ${nf(out.brand_clicks)} are brand searches.</p>
+    <h2>Biggest gaps</h2><p class="sub">Where the most winnable clicks are still unclaimed, and how visible the site is on each today.</p>
+    <div class="tablewrap"><table><tr><th>Keyword</th><th class="r">Searches/mo</th><th class="r">Winnable</th><th class="r">Captured</th><th class="r">Position</th><th>Today</th><th class="r">Gap</th></tr>
+      ${(d.gaps || []).map(g => `<tr><td class="kw">${esc(g.keyword)}</td><td class="r">${nf(g.volume)}</td><td class="r">${nf(g.accessible)}</td><td class="r">${nf(g.captured)}</td><td class="r">${g.position ?? '–'}</td>
+        <td>${esc(g.status)}</td><td class="r"><b>${nf(g.gap)}</b></td></tr>`).join('') || '<tr><td>No gaps — the site captures everything modelled as winnable.</td></tr>'}</table></div>`;
 }
 
 function seasonSvg(s) {
@@ -204,7 +229,7 @@ function show(d) {
         <div class="d">clicks a month at this site's authority (${t.accessible_site_pct}% of searches). Authority ${nf(d.site_rank)} of 1,000.</div></div>`
         : `<div class="card soon"><div class="k">Accessible · your site</div><div class="n">–</div><div class="d">Add a website above to judge difficulty against its authority.</div></div>`}
     </div>
-    <p class="sub">Next layer, <b>captured today</b> — what a site already gets from this market — will come from the GSC Suite archive.</p>
+    ${capturedBlock(d)}
 
     <div class="refine noprint"><div class="grid2">
       <div><label for="rx">Leave out anything containing</label><input id="rx" value="${esc(d.params.exclude.join(', '))}" placeholder="iphone, samsung"></div>
@@ -250,6 +275,7 @@ function show(d) {
       Site view: difficulty moves by up to ±${d.model.authority_swing} points depending on how the site's authority compares with the sites ranking today. Cost of this report: $${Number(d.cost).toFixed(2)}.
     </div>`;
   fillTable();
+  if ($('cap')) $('cap').onclick = () => attach();
   $('csv').onclick = downloadCsv;
   $('print').onclick = () => window.print();
   $('apply').onclick = () => recalc({ exclude: list($('rx').value), brands: list($('rb').value) });
@@ -262,9 +288,24 @@ function show(d) {
 function fillTable() {
   const f = FILTER.trim().toLowerCase();
   const rows = DATA.top.filter(k => !f || k.keyword.toLowerCase().includes(f));
-  $('kwtable').innerHTML = '<tr><th>Keyword</th><th class="r">Searches/mo</th><th class="r">Difficulty</th><th class="r">CPC</th><th>Intent</th><th class="r">Winnable clicks</th></tr>' +
+  const cap = !!DATA.captured;
+  $('kwtable').innerHTML = '<tr><th>Keyword</th><th class="r">Searches/mo</th><th class="r">Difficulty</th><th class="r">CPC</th><th>Intent</th><th class="r">Winnable clicks</th>' + (cap ? '<th class="r">Captured</th><th class="r">Position</th>' : '') + '</tr>' +
     rows.map(k => `<tr><td class="kw">${esc(k.keyword)}${k.ai_overview ? '<span class="tag">AI</span>' : ''}${k.members > 1 ? `<span class="tag">${k.members} variants</span>` : ''}</td>
-      <td class="r">${nf(k.volume)}</td><td class="r">${k.kd ?? '–'}</td><td class="r">${k.cpc == null ? '–' : '€' + Number(k.cpc).toFixed(2)}</td><td>${esc(k.intent || '–')}</td><td class="r">${nf(k.accessible)}</td></tr>`).join('');
+      <td class="r">${nf(k.volume)}</td><td class="r">${k.kd ?? '–'}</td><td class="r">${k.cpc == null ? '–' : '€' + Number(k.cpc).toFixed(2)}</td><td>${esc(k.intent || '–')}</td><td class="r">${nf(k.accessible)}</td>${cap ? `<td class="r">${k.captured ? nf(k.captured) : '–'}</td><td class="r">${k.position ?? '–'}</td>` : ''}</tr>`).join('');
+}
+
+async function attach() {
+  const sel = $('prop'), msg = $('capMsg'), btn = $('cap');
+  btn.disabled = true; if (msg) msg.textContent = 'Reading Search Console…';
+  const d = await call('/tasm/captured', { id: DATA.id, property_id: sel ? sel.value : undefined });
+  btn.disabled = false;
+  if (d.error || d.choose) {
+    if (!msg) { alert(d.error); return; }
+    msg.textContent = d.error || 'Choose the property to compare with.';
+    if (d.reconnect || /Connect Search Console/.test(d.error || '')) msg.insertAdjacentHTML('beforeend', ` <a href="/tools/gsc-suite/?k=${encodeURIComponent(CODE)}" style="color:var(--you)">Open the GSC Suite →</a>`);
+    return;
+  }
+  show(d);
 }
 
 async function recalc(over) {
