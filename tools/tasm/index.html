@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Total Accessible Search Market | Brand Checker</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236e7bff'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#fff;--card:#fff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--soft:#e6e6e6;--you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000;--bar:#0a0a0a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5;padding:22px 16px 70px}
+  .wrap{max-width:980px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Archivo',sans-serif;font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.12;margin:8px 0}
+  h2{font-family:'Archivo',sans-serif;font-size:18px;font-weight:700;margin:34px 0 4px}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.6;max-width:720px}
+  .sub{font-size:12px;color:var(--muted);margin-bottom:12px;max-width:760px}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input,select,textarea{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:7px;padding:10px 12px}
+  select{height:42px}
+  textarea{resize:vertical;min-height:90px;line-height:1.6}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px}
+  .btn{font-family:'Archivo',sans-serif;font-size:14px;font-weight:700;background:var(--you);color:#fff;border:0;border-radius:8px;padding:13px 20px;cursor:pointer}
+  .btn:hover{background:#d92f00} .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)} .btn.ghost:hover{background:#f3f3f3}
+  .btn.small{font-size:12px;padding:8px 12px}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--bad);border-radius:8px;margin-top:14px}
+  .warn{color:var(--warn);font-size:12px;padding:10px 12px;border:1px solid var(--warn);border-radius:8px;margin:10px 0}
+  details.adv{margin:4px 0 16px} details.adv summary{cursor:pointer;font-size:12px;color:var(--muted)}
+  details.adv .inner{margin-top:12px}
+  #results{display:none;margin-top:28px}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+  .card{border:1px solid var(--line);border-radius:10px;padding:16px;background:var(--card)}
+  .card .k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .card .n{font-family:'Archivo',sans-serif;font-size:32px;font-weight:800;letter-spacing:-.02em;margin:4px 0 2px}
+  .card .d{font-size:11.5px;color:var(--muted);line-height:1.5}
+  .card.soon{border-style:dashed}
+  .card.hero .n{color:var(--you)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--line)}
+  td{padding:7px 8px;border-bottom:1px solid var(--soft);vertical-align:top}
+  th.r,td.r{text-align:right;white-space:nowrap}
+  td .kw{word-break:break-word}
+  .bar{height:8px;background:var(--soft);border-radius:4px;min-width:60px}
+  .bar i{display:block;height:100%;background:var(--bar);border-radius:4px}
+  .bar.acc i{background:var(--you)}
+  .tag{display:inline-block;font-size:10px;padding:1px 6px;border:1px solid var(--line);border-radius:10px;margin-left:4px;color:var(--muted)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-size:12px;border:1px solid var(--line);border-radius:14px;padding:3px 10px;background:#fff;cursor:pointer;font-family:inherit}
+  .chip:hover{background:#f3f3f3} .chip b{font-weight:500;color:var(--muted);margin-left:4px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .tablewrap{overflow-x:auto}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:14px 0}
+  .refine{border:1px solid var(--line);border-radius:10px;padding:14px;margin:18px 0}
+  .assump{font-size:11.5px;color:var(--muted);line-height:1.7}
+  .assump code{background:#f3f3f3;padding:1px 5px;border-radius:4px}
+  .foot{font-size:10.5px;color:var(--muted);margin-top:30px;line-height:1.6;max-width:800px}
+  .back{font-size:12px;color:var(--muted)} .back:hover{color:var(--ink)}
+  .spin{font-size:13px;color:var(--muted);margin-top:14px}
+  #gate{display:none;max-width:420px}
+  @media (max-width:760px){.grid2,.grid3,.cards,.cols{grid-template-columns:1fr}}
+  @media print{.noprint{display:none!important} body{padding:0} .card{break-inside:avoid}}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate">
+    <p class="eyebrow">By access link</p>
+    <h1>This tool runs on a personal link</h1>
+    <p class="lede">The Total Accessible Search Market tool is available to clients and prospects by access link. Open the link you were sent, or enter the code below.</p>
+    <div class="field"><label for="manual">Access code</label><input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="btn" id="enter" type="button">Continue</button>
+    <p class="hint" style="margin-top:12px">No link yet? <a href="mailto:mylesclaffey@gmail.com?subject=Total%20Accessible%20Search%20Market" style="color:var(--you)">Ask us for one</a>.</p>
+  </div>
+
+  <div id="app" style="display:none">
+    <p class="eyebrow">Market sizing · by access link</p>
+    <h1>Total Accessible Search Market</h1>
+    <p class="lede">How much search demand exists in an industry, and how much of it a site could realistically win. Three layers: the <b>total market</b> (monthly searches, with close variants counted once), the <b>accessible market</b> (clicks winnable at an achievable position, for a brand-new entrant and for a specific site's authority), and what a site <b>captures</b> today.</p>
+
+    <div id="form">
+      <div class="grid2">
+        <div class="field"><label for="industry">Industry</label><input id="industry" type="text" placeholder="Mac repair" maxlength="80"></div>
+        <div class="field"><label for="market">Market</label><select id="market"></select></div>
+      </div>
+      <div class="field"><label for="seeds">Seed keywords — one per line, up to 6</label>
+        <textarea id="seeds" placeholder="macbook reparatur&#10;imac reparatur&#10;mac reparatur"></textarea>
+        <div class="hint">The market is built from searches that contain these phrases. Leave empty to use the industry name.</div></div>
+      <div class="grid2">
+        <div class="field"><label for="site">Website for the site view (optional)</label><input id="site" type="text" placeholder="sadaghian.com">
+          <div class="hint">Judges difficulty against this site's authority. Without it you get the new-entrant view only.</div></div>
+        <div class="field"><label for="focus">Focus terms (optional, comma separated)</label><input id="focus" type="text" placeholder="hamburg">
+          <div class="hint">Reported as its own slice, e.g. one city.</div></div>
+      </div>
+      <details class="adv"><summary>More options</summary><div class="inner">
+        <div class="grid2">
+          <div class="field"><label for="brands">Other brands to set aside (comma separated)</label><input id="brands" type="text" placeholder="gravis, cancom, apple store">
+            <div class="hint">Searches for a named competitor are demand, but not demand a service page can win.</div></div>
+          <div class="field"><label for="exclude">Leave out anything containing (comma separated)</label><input id="exclude" type="text" placeholder="iphone, samsung">
+            <div class="hint">Narrows the market, e.g. to one product line.</div></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label for="depth">Depth</label><select id="depth"><option value="standard">Standard — up to ~400 keywords per seed</option><option value="deep">Deep — up to ~1,000 per seed (costs about 2½× more)</option></select></div>
+          <div class="field"><label for="minvol">Ignore searches below (per month)</label><input id="minvol" type="number" min="1" max="1000" value="10"></div>
+        </div>
+      </div></details>
+      <button class="btn" id="go" type="button">Size the market</button>
+      <span class="hint" style="margin-left:10px">Takes a few seconds. Real data cost: roughly $0.15–0.60 per run.</span>
+      <div id="formErr"></div>
+    </div>
+
+    <div id="spin" class="spin" style="display:none">Reading Google search demand…</div>
+
+    <div id="results"></div>
+
+    <p class="foot">Volumes are Google's own rounded monthly estimates (DataForSEO Labs), not exact counts. The accessible market is a model with the stated assumptions — a guide to where the opportunity is, not a forecast of traffic. Local demand is searched as "near me" and is not attributed to a city; a focus term only catches searches that name it.</p>
+    <p class="foot noprint"><a class="back" href="/">← Back to tools</a></p>
+  </div>
+</div>
+
+<script>
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const MARKETS = ['Germany','United Kingdom','United States','Canada','Ireland','Australia','France','Netherlands','Switzerland','Austria','Spain','Italy','Poland','Czechia','Slovakia'];
+const qs = new URLSearchParams(location.search);
+let CODE = (qs.get('k') || '').trim();
+try { if (!CODE) CODE = (sessionStorage.getItem('tasmk') || ''); } catch (e) {}
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nf = n => (n == null ? '–' : Math.round(n).toLocaleString('en'));
+const list = s => String(s || '').split(/[\n,]/).map(x => x.trim()).filter(Boolean);
+let DATA = null, FILTER = '';
+
+$('market').innerHTML = MARKETS.map(m => `<option>${esc(m)}</option>`).join('');
+if (/^v-[a-f0-9]{24}$/i.test(CODE)) CODE = '';   // an anonymous visitor id is not an access link
+if (!CODE) { $('gate').style.display = 'block'; }
+else { try { sessionStorage.setItem('tasmk', CODE); } catch (e) {} $('app').style.display = 'block'; if (qs.get('id')) load(qs.get('id')); }
+$('enter').onclick = () => { const v = $('manual').value.trim(); if (v) location.search = '?k=' + encodeURIComponent(v); };
+
+async function call(path, body) {
+  try { const r = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, ...body }) }); return await r.json(); }
+  catch (e) { return { error: 'Could not reach the service. Try again in a moment.' }; }
+}
+
+$('go').onclick = async () => {
+  $('formErr').innerHTML = ''; $('go').disabled = true; $('spin').style.display = 'block';
+  const d = await call('/tasm/run', {
+    industry: $('industry').value, seeds: list($('seeds').value), market: $('market').value, site: $('site').value, focus: list($('focus').value),
+    brands: list($('brands').value), exclude: list($('exclude').value), depth: $('depth').value, min_volume: Number($('minvol').value) || 10
+  });
+  $('go').disabled = false; $('spin').style.display = 'none';
+  if (d.error) { $('formErr').innerHTML = `<div class="err">${esc(d.error)}</div>`; return; }
+  history.replaceState(null, '', '?k=' + encodeURIComponent(CODE) + '&id=' + encodeURIComponent(d.id));
+  show(d);
+};
+
+async function load(id) {
+  $('spin').style.display = 'block';
+  const d = await call('/tasm/get', { id });
+  $('spin').style.display = 'none';
+  if (d.error) { $('formErr').innerHTML = `<div class="err">${esc(d.error)}</div>`; return; }
+  show(d);
+}
+
+function bars(rows, total, accKey) {
+  const max = Math.max(1, ...rows.map(r => r.volume));
+  return `<table><tr><th>${accKey}</th><th class="r">Searches/mo</th><th class="r">Share</th><th></th><th class="r">Winnable clicks</th></tr>` +
+    rows.map(r => `<tr><td>${esc(r.name)}</td><td class="r">${nf(r.volume)}</td><td class="r">${r.share}%</td>
+      <td style="width:22%"><div class="bar"><i style="width:${r.volume / max * 100}%"></i></div></td><td class="r">${nf(r.accessible)}</td></tr>`).join('') + '</table>';
+}
+
+function seasonSvg(s) {
+  if (!s.series.length) return '';
+  const max = Math.max(...s.series, 1), w = 520, h = 90, bw = w / s.series.length;
+  const bars = s.series.map((v, i) => `<rect x="${i * bw + 3}" y="${h - v / max * h}" width="${bw - 6}" height="${v / max * h}" fill="${s.months[i] === s.peak ? '#ff3d00' : '#0a0a0a'}"><title>${esc(s.months[i])}: ${nf(v)}</title></rect>`).join('');
+  const lab = s.months.map((m, i) => i % 2 === 0 ? `<text x="${i * bw + bw / 2}" y="${h + 14}" font-size="9" text-anchor="middle" fill="#3d3d3d">${esc(m.slice(2))}</text>` : '').join('');
+  return `<svg viewBox="0 0 ${w} ${h + 20}" width="100%" role="img" aria-label="Monthly search volume">${bars}${lab}</svg>`;
+}
+
+function show(d) {
+  DATA = d; const t = d.totals, siteView = d.site_rank != null;
+  const accKey = siteView ? 'for ' + d.site : 'new entrant';
+  const warn = (d.warnings || []).map(w => `<div class="warn">${esc(w)}</div>`).join('');
+  const adj = d.adjacent || { clusters: 0, volume: 0, top: [] };
+  const tr = d.seasonality.trend_pct;
+  $('results').style.display = 'block';
+  $('results').innerHTML = `
+    <div class="toolbar noprint"><button class="btn ghost small" id="csv">Download keywords (CSV)</button><button class="btn ghost small" id="print">Print / save as PDF</button>
+      <span class="hint">${esc(d.params.industry || d.params.seeds.join(', '))} · ${esc(d.params.market)} · ${new Date(d.created_at).toLocaleDateString('en-GB')}</span></div>
+    ${warn}
+    <div class="cards">
+      <div class="card"><div class="k">Total market</div><div class="n">${nf(t.market_volume)}</div>
+        <div class="d">searches a month across ${nf(t.clusters)} keyword clusters. Close variants counted once (${t.overlap_pct}% overlap removed from a raw ${nf(t.raw_volume)}).</div></div>
+      <div class="card hero"><div class="k">Accessible · new entrant</div><div class="n">${nf(t.accessible_generic)}</div>
+        <div class="d">clicks a month a brand-new site could win (${t.accessible_generic_pct}% of searches), judged on keyword difficulty alone.</div></div>
+      ${siteView ? `<div class="card hero"><div class="k">Accessible · ${esc(d.site)}</div><div class="n">${nf(t.accessible_site)}</div>
+        <div class="d">clicks a month at this site's authority (${t.accessible_site_pct}% of searches). Authority ${nf(d.site_rank)} of 1,000.</div></div>`
+        : `<div class="card soon"><div class="k">Accessible · your site</div><div class="n">–</div><div class="d">Add a website above to judge difficulty against its authority.</div></div>`}
+    </div>
+    <p class="sub">Next layer, <b>captured today</b> — what a site already gets from this market — will come from the GSC Suite archive.</p>
+
+    <div class="refine noprint"><div class="grid2">
+      <div><label for="rx">Leave out anything containing</label><input id="rx" value="${esc(d.params.exclude.join(', '))}" placeholder="iphone, samsung"></div>
+      <div><label for="rb">Set aside other brands</label><input id="rb" value="${esc(d.params.brands.join(', '))}" placeholder="gravis, cancom"></div>
+    </div><div style="margin-top:10px"><button class="btn small" id="apply">Recalculate</button> <span class="hint">Free — re-works the saved data, no new search spend.</span></div></div>
+
+    <div class="cols">
+      <div><h2>By intent</h2><p class="sub">What searchers want. Transactional demand is the most valuable to a service business.</p><div class="tablewrap">${bars(d.intent, t.market_volume, 'Intent')}</div></div>
+      <div><h2>By difficulty</h2><p class="sub">How hard the first page is to reach.</p><div class="tablewrap">${bars(d.difficulty, t.market_volume, 'Difficulty')}</div></div>
+    </div>
+
+    <h2>By topic</h2><p class="sub">Demand grouped by the seed phrase it contains.</p><div class="tablewrap">${bars(d.topics, t.market_volume, 'Topic')}</div>
+
+    <h2>What searchers add</h2><p class="sub">The words that appear across the most demand. Click one to leave it out.</p>
+    <div class="chips">${d.modifiers.map(m => `<button class="chip noprint-x" data-x="${esc(m.term)}">${esc(m.term)}<b>${nf(m.volume)}</b></button>`).join('') || '<span class="hint">None yet.</span>'}</div>
+
+    ${d.focus.map(f => `<h2>Focus: “${esc(f.term)}”</h2><p class="sub">${nf(f.volume)} searches a month (${f.share}% of the market) in ${f.clusters} clusters; ${nf(f.accessible)} winnable clicks.</p>
+      <div class="tablewrap"><table>${f.top.map(k => `<tr><td class="kw">${esc(k.keyword)}</td><td class="r">${nf(k.volume)}</td></tr>`).join('') || '<tr><td>No searches name this term.</td></tr>'}</table></div>`).join('')}
+
+    <h2>Through the year</h2>
+    <p class="sub">${tr == null ? '' : `Demand is ${tr > 0 ? 'up' : 'down'} ${Math.abs(tr)}% over the last three months compared with the first three of the year shown. `}Peak ${esc(d.seasonality.peak || '–')}, low ${esc(d.seasonality.low || '–')}.</p>
+    ${seasonSvg(d.seasonality)}
+
+    <h2>Biggest winnable opportunities</h2><p class="sub">Large demand with a reachable position, ranked by winnable clicks (${esc(accKey)}).</p>
+    <div class="tablewrap"><table><tr><th>Keyword</th><th class="r">Searches/mo</th><th class="r">Difficulty</th><th>Intent</th><th class="r">Winnable clicks</th></tr>
+      ${d.quick_wins.map(k => `<tr><td class="kw">${esc(k.keyword)}</td><td class="r">${nf(k.volume)}</td><td class="r">${k.kd ?? '–'}</td><td>${esc(k.intent || '–')}</td><td class="r">${nf(k.accessible)}</td></tr>`).join('')}</table></div>
+
+    <h2>Adjacent demand — not counted</h2>
+    <p class="sub">Related searches Google associates with your seeds but that don't contain them: ${nf(adj.clusters)} clusters, ${nf(adj.volume)} searches a month. These drift off-topic, so they stay out of the totals unless you include them.</p>
+    <div class="tablewrap"><table>${adj.top.map(k => `<tr><td class="kw">${esc(k.keyword)}</td><td class="r">${nf(k.volume)}</td></tr>`).join('') || '<tr><td>None.</td></tr>'}</table></div>
+    <div class="noprint" style="margin-top:10px">${d.scope === 'all' ? '<button class="btn ghost small" id="scope" data-s="core">Count core demand only</button>' : '<button class="btn ghost small" id="scope" data-s="all">Include adjacent demand in the totals</button>'}</div>
+
+    <h2>Every keyword cluster</h2>
+    <div class="toolbar noprint"><input id="filter" placeholder="Filter keywords…" value="${esc(FILTER)}" style="max-width:320px"></div>
+    <div class="tablewrap"><table id="kwtable"></table></div>
+    <p class="hint">Showing the top 300 clusters by volume — download the CSV for all of them.</p>
+
+    <h2>Assumptions behind “accessible”</h2>
+    <div class="assump">
+      Difficulty → the position a competent new page can reasonably reach: ${d.model.reach.map(([lim, pos]) => `under ${lim} → position ${pos}`).join(', ')}; 80 and above is treated as out of reach.<br>
+      Click-through by position (organic): ${d.model.ctr.map((c, i) => `<code>#${i + 1} ${Math.round(c * 100)}%</code>`).join(' ')} <code>11–20 ${Math.round(d.model.ctr_tail * 100)}%</code><br>
+      Keywords whose results page carries an AI Overview keep ${Math.round(d.model.ai_overview_factor * 100)}% of those clicks. Navigational searches (one named destination, such as a competitor) count as ${Math.round(d.model.navigational_factor * 100)}%.<br>
+      Site view: difficulty moves by up to ±${d.model.authority_swing} points depending on how the site's authority compares with the sites ranking today. Cost of this report: $${Number(d.cost).toFixed(2)}.
+    </div>`;
+  fillTable();
+  $('csv').onclick = downloadCsv;
+  $('print').onclick = () => window.print();
+  $('apply').onclick = () => recalc({ exclude: list($('rx').value), brands: list($('rb').value) });
+  $('scope').onclick = e => recalc({ scope: e.currentTarget.dataset.s });
+  $('filter').oninput = e => { FILTER = e.target.value; fillTable(); };
+  document.querySelectorAll('.chip[data-x]').forEach(b => b.onclick = () => recalc({ exclude: [...new Set([...DATA.params.exclude, b.dataset.x])] }));
+  $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function fillTable() {
+  const f = FILTER.trim().toLowerCase();
+  const rows = DATA.top.filter(k => !f || k.keyword.toLowerCase().includes(f));
+  $('kwtable').innerHTML = '<tr><th>Keyword</th><th class="r">Searches/mo</th><th class="r">Difficulty</th><th class="r">CPC</th><th>Intent</th><th class="r">Winnable clicks</th></tr>' +
+    rows.map(k => `<tr><td class="kw">${esc(k.keyword)}${k.ai_overview ? '<span class="tag">AI</span>' : ''}${k.members > 1 ? `<span class="tag">${k.members} variants</span>` : ''}</td>
+      <td class="r">${nf(k.volume)}</td><td class="r">${k.kd ?? '–'}</td><td class="r">${k.cpc == null ? '–' : '€' + Number(k.cpc).toFixed(2)}</td><td>${esc(k.intent || '–')}</td><td class="r">${nf(k.accessible)}</td></tr>`).join('');
+}
+
+async function recalc(over) {
+  const d = await call('/tasm/get', { id: DATA.id, ...over });
+  if (d.error) { alert(d.error); return; }
+  show(d);
+}
+
+async function downloadCsv() {
+  const d = await call('/tasm/export', { id: DATA.id });
+  if (d.error) { alert(d.error); return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + d.csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'search-market-' + (DATA.params.industry || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.csv';
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+</script>
+</body>
+</html>
