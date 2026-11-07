@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KPI Monitor | Brand Checker</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236e7bff'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#fff;--card:#fff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--soft:#e6e6e6;--you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5;padding:22px 16px 70px}
+  .wrap{max-width:980px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Archivo',sans-serif;font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.12;margin:8px 0}
+  h2{font-family:'Archivo',sans-serif;font-size:18px;font-weight:700;margin:30px 0 8px}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.6;max-width:720px}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input,select{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:7px;padding:10px 12px}
+  select{height:42px}
+  input:focus,select:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px}
+  .btn{font-family:'Archivo',sans-serif;font-size:14px;font-weight:700;background:var(--you);color:#fff;border:0;border-radius:8px;padding:12px 18px;cursor:pointer}
+  .btn:hover{background:#d92f00} .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)} .btn.ghost:hover{background:#f3f3f3}
+  .btn.small{font-size:12px;padding:7px 11px}
+  .err{color:var(--bad);font-size:13px;padding:12px;border:1px solid var(--bad);border-radius:8px;margin:12px 0}
+  .ok{color:var(--ok);font-size:13px;padding:12px;border:1px solid var(--ok);border-radius:8px;margin:12px 0}
+  .panel{border:1px solid var(--line);border-radius:10px;padding:16px;margin:14px 0;background:var(--card)}
+  .boards{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+  .bchip{font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;border:1px solid var(--line);border-radius:18px;padding:6px 14px;background:#fff;cursor:pointer}
+  .bchip.on{background:var(--ink);color:#fff}
+  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:14px 0}
+  .kpi{border:1px solid var(--line);border-radius:10px;padding:16px;background:var(--card);position:relative}
+  .kpi .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .kpi .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .kpi .n{font-family:'Archivo',sans-serif;font-size:34px;font-weight:800;letter-spacing:-.02em;margin:4px 0 0}
+  .kpi .n small{font-size:14px;font-weight:600;color:var(--muted);margin-left:3px}
+  .delta{font-size:12px;margin-bottom:6px} .delta.up{color:var(--ok)} .delta.down{color:var(--bad)} .delta.flat{color:var(--muted)}
+  .chip{font-size:10.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;border:1px solid;border-radius:12px;padding:2px 9px;white-space:nowrap}
+  .chip.on_track{color:var(--ok)} .chip.at_risk{color:var(--warn)} .chip.off{color:var(--bad)} .chip.tracking,.chip.no_data{color:var(--muted)}
+  .spark{display:block;width:100%;height:46px;margin:6px 0}
+  .tgt{margin-top:8px;font-size:12px;color:var(--muted)}
+  .bar{height:8px;background:var(--soft);border-radius:4px;position:relative;margin:5px 0 3px}
+  .bar i{display:block;height:100%;border-radius:4px;background:var(--ok)}
+  .bar.at_risk i{background:var(--warn)} .bar.off i{background:var(--bad)}
+  .bar b{position:absolute;top:-3px;width:2px;height:14px;background:var(--ink)}
+  .anom{font-size:12px;color:var(--bad);margin-top:8px}
+  .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+  .mini{font-size:11px;font-family:inherit;border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px 8px;cursor:pointer;color:var(--ink)} .mini:hover{background:#f3f3f3}
+  .inline{display:flex;gap:6px;margin-top:8px} .inline input{padding:6px 8px;font-size:12px}
+  .empty{border:1px dashed var(--line);border-radius:10px;padding:26px;text-align:center;color:var(--muted);font-size:13px}
+  .summary{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:6px 0 2px}
+  .summary b{color:var(--ink);font-family:'Archivo',sans-serif;font-size:16px}
+  .foot{font-size:10.5px;color:var(--muted);margin-top:30px;line-height:1.6;max-width:800px}
+  .back{font-size:12px;color:var(--muted)} .back:hover{color:var(--ink)}
+  #gate{display:none;max-width:420px}
+  @media (max-width:760px){.grid2,.grid3,.kpis{grid-template-columns:1fr}}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate">
+    <p class="eyebrow">By access link</p>
+    <h1>Sign in to your KPI board</h1>
+    <p class="lede">The KPI Monitor runs on a personal access link. Open the link you were sent, or enter your code below.</p>
+    <div class="field"><label for="manual">Access code</label><input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="btn" id="enter" type="button">Continue</button>
+    <p class="hint" style="margin-top:12px">No link yet? <a href="mailto:mylesclaffey@gmail.com?subject=KPI%20Monitor" style="color:var(--you)">Ask us for one</a>.</p>
+  </div>
+
+  <div id="app" style="display:none">
+    <p class="eyebrow">KPI monitor · by access link</p>
+    <h1>KPI Monitor</h1>
+    <p class="lede">The handful of numbers that matter, checked every day against the targets you set. You get a weekly or monthly summary by email, and an alert when a number leaves its expected range or slips off its target. Numbers come from Search Console, rank and AI-answer trackers, or figures you type in.</p>
+
+    <div id="msg"></div>
+    <div class="boards" id="boards"></div>
+    <div id="board"></div>
+
+    <p class="foot">Search clicks and impressions use the last 28 days against the 28 before. Rank and AI-answer figures compare the latest run with the one before. A target path runs in a straight line from where a KPI stood when you set it to the target date: on track is within 10% of that line, at risk within 35%. The expected range for Search Console counts comes from the prior eight weeks and last year's seasonal shape.</p>
+    <p class="foot"><a class="back" href="/">← Back to tools</a></p>
+  </div>
+</div>
+
+<script>
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const qs = new URLSearchParams(location.search);
+let CODE = (qs.get('k') || '').trim();
+try { if (!CODE) CODE = sessionStorage.getItem('kpik') || ''; } catch (e) {}
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const STATUS = { on_track: 'On track', at_risk: 'At risk', off: 'Off target', tracking: 'Tracking', no_data: 'No data yet' };
+let BOARDS = [], CUR = null, OPTS = null, ADDING = false;
+
+if (/^v-[a-f0-9]{24}$/i.test(CODE)) CODE = '';
+if (!CODE) $('gate').style.display = 'block';
+else { try { sessionStorage.setItem('kpik', CODE); } catch (e) {} $('app').style.display = 'block'; init(); }
+$('enter').onclick = () => { const v = $('manual').value.trim(); if (v) location.search = '?k=' + encodeURIComponent(v); };
+
+async function call(path, body) {
+  try { const r = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, ...body }) }); return await r.json(); }
+  catch (e) { return { error: 'Could not reach the service. Try again in a moment.' }; }
+}
+const say = (t, ok) => { $('msg').innerHTML = t ? `<div class="${ok ? 'ok' : 'err'}">${esc(t)}</div>` : ''; if (t && ok) setTimeout(() => { if ($('msg').textContent.includes(t)) $('msg').innerHTML = ''; }, 4000); };
+const fmt = (v, u) => v == null ? '–' : Number(v).toLocaleString('en', { maximumFractionDigits: Math.abs(v) >= 100 ? 0 : 1 }) + (u === '%' ? '%' : '');
+const unitTxt = u => (u && u !== '%' ? `<small>${esc(u)}</small>` : '');
+
+async function init() {
+  OPTS = await call('/kpi/options', {});
+  if (OPTS.signin_required || OPTS.error) { say(OPTS.error || 'Could not load your account.'); return; }
+  await loadBoards(qs.get('id'));
+}
+async function loadBoards(pick) {
+  const d = await call('/kpi/list', {});
+  if (d.error) { say(d.error); return; }
+  BOARDS = d.boards;
+  const id = pick || CUR || (BOARDS[0] && BOARDS[0].id);
+  drawChips(id);
+  if (id && BOARDS.some(b => b.id === id)) await openBoard(id); else { CUR = null; $('board').innerHTML = createForm(true); wireCreate(); }
+}
+function drawChips(active) {
+  $('boards').innerHTML = BOARDS.map(b => `<button class="bchip ${b.id === active ? 'on' : ''}" data-id="${esc(b.id)}">${esc(b.name)}</button>`).join('')
+    + (BOARDS.length < OPTS.limits.boards ? `<button class="bchip" data-new="1">+ New board</button>` : '');
+  $('boards').querySelectorAll('.bchip').forEach(b => b.onclick = () => { if (b.dataset.new) { CUR = null; drawChips(null); $('board').innerHTML = createForm(false); wireCreate(); } else openBoard(b.dataset.id); });
+}
+const createForm = first => `<div class="panel"><h2 style="margin-top:0">${first ? 'Create your first board' : 'New board'}</h2>
+  <div class="grid3"><div class="field"><label>Board name</label><input id="cn" maxlength="80" placeholder="Acme, 2026 goals"></div>
+  <div class="field"><label>Website (optional)</label><input id="cs" placeholder="acme.com"></div>
+  <div class="field"><label>Send reports and alerts to</label><input id="ce" type="email" placeholder="you@company.com"></div></div>
+  <button class="btn" id="cgo">Create board</button></div>`;
+function wireCreate() {
+  $('cgo').onclick = async () => {
+    const d = await call('/kpi/create', { name: $('cn').value, site: $('cs').value, email: $('ce').value });
+    if (d.error) return say(d.error); say('');
+    CUR = d.board.id; await loadBoards(CUR);
+  };
+}
+
+async function openBoard(id) {
+  CUR = id; drawChips(id); ADDING = false;
+  history.replaceState(null, '', '?k=' + encodeURIComponent(CODE) + '&id=' + encodeURIComponent(id));
+  $('board').innerHTML = '<p class="hint">Loading…</p>';
+  const d = await call('/kpi/get', { id });
+  if (d.error) { $('board').innerHTML = ''; return say(d.error); }
+  renderBoard(d);
+}
+
+function spark(pts, status) {
+  if (!pts || pts.length < 2) return '<div class="spark"></div>';
+  const vs = pts.map(p => p.v), lo = Math.min(...vs), hi = Math.max(...vs), W = 300, H = 46, rng = hi - lo || 1;
+  const xy = pts.map((p, i) => [i / (pts.length - 1) * W, H - 4 - (p.v - lo) / rng * (H - 8)]);
+  const col = status === 'off' ? '#d40000' : status === 'at_risk' ? '#b45f00' : '#0a0a0a';
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polyline fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke" points="${xy.map(p => p.join(',')).join(' ')}"/></svg>`;
+}
+function kpiCard(k) {
+  const better = k.direction === 'down' ? (k.change_pct < 0) : (k.change_pct > 0);
+  const d = k.change_pct == null ? '' : `<div class="delta ${k.change_pct === 0 ? 'flat' : better ? 'up' : 'down'}">${k.change_pct > 0 ? '+' : ''}${k.change_pct}% vs the period before</div>`;
+  let tgt = '';
+  if (k.target != null) {
+    const p = Math.max(0, Math.min(100, k.progress_pct ?? 0));
+    tgt = `<div class="tgt">Target ${esc(fmt(k.target, k.unit))}${k.target_date ? ' by ' + esc(k.target_date) : ''} · ${k.met ? 'met' : p + '% of the way'}
+      <div class="bar ${k.status}"><i style="width:${p}%"></i>${k.expected_pct != null ? `<b style="left:${k.expected_pct}%" title="Where it should be today"></b>` : ''}</div></div>`;
+  }
+  const manual = k.source === 'manual';
+  return `<div class="kpi" data-id="${esc(k.id)}">
+    <div class="top"><div class="lbl">${esc(k.label)}</div><span class="chip ${k.status}">${STATUS[k.status]}</span></div>
+    <div class="n">${esc(fmt(k.current, k.unit))}${unitTxt(k.unit)}</div>${d}${spark(k.spark, k.status)}${tgt}
+    ${k.anomaly ? `<div class="anom">Outside its expected range: ${esc(k.anomaly.reason)}</div>` : ''}
+    ${k.error ? `<div class="anom">${esc(k.error)}</div>` : ''}
+    <div class="acts">${manual ? '<button class="mini" data-act="value">+ Add value</button>' : ''}<button class="mini" data-act="target">Target</button><button class="mini" data-act="remove">Remove</button></div>
+    <div class="slot"></div></div>`;
+}
+
+function renderBoard({ board, kpis }) {
+  const off = kpis.filter(k => k.status === 'off').length, risk = kpis.filter(k => k.status === 'at_risk').length, anom = kpis.filter(k => k.anomaly).length;
+  $('board').innerHTML = `<div class="summary"><span><b>${kpis.length}</b> KPIs</span><span><b>${kpis.filter(k => k.status === 'on_track').length}</b> on track</span><span><b>${risk}</b> at risk</span><span><b>${off}</b> off target</span><span><b>${anom}</b> outside range</span></div>
+    ${kpis.length ? `<div class="kpis">${kpis.map(kpiCard).join('')}</div>` : '<div class="empty" style="margin:14px 0">No KPIs yet. Add the first one below.</div>'}
+    <div><button class="btn" id="addbtn">+ Add a KPI</button></div><div id="addform"></div>
+    <h2>Reports and alerts</h2>
+    <div class="panel"><div class="grid3">
+      <div class="field"><label>Send to</label><input id="se" type="email" value="${esc(board.email)}"></div>
+      <div class="field"><label>Summary email</label><select id="sd"><option value="weekly">Weekly (Mondays)</option><option value="monthly">Monthly (1st)</option><option value="off">Off</option></select></div>
+      <div class="field"><label>Alerts</label><select id="sa"><option value="1">On: tell me when something moves</option><option value="0">Off</option></select></div></div>
+      <div class="acts"><button class="btn small" id="ssave">Save</button><button class="btn small ghost" id="stest">Send me a summary now</button><button class="btn small ghost" id="sdel" style="margin-left:auto;color:var(--bad)">Delete board</button></div></div>`;
+  $('sd').value = board.digest; $('sa').value = board.alerts ? '1' : '0';
+  $('addbtn').onclick = () => { ADDING = !ADDING; $('addform').innerHTML = ADDING ? addForm() : ''; if (ADDING) wireAdd(board.id); };
+  $('ssave').onclick = async () => { const d = await call('/kpi/update', { id: board.id, email: $('se').value, digest: $('sd').value, alerts: $('sa').value === '1' }); d.error ? say(d.error) : say('Saved.', true); };
+  $('stest').onclick = async () => { const d = await call('/kpi/digest-send', { id: board.id }); d.error ? say(d.error) : say('Sent to ' + d.to + '.', true); };
+  $('sdel').onclick = async () => { if (!confirm('Delete this board and all its KPIs?')) return; const d = await call('/kpi/delete', { id: board.id }); if (d.error) return say(d.error); CUR = null; history.replaceState(null, '', '?k=' + encodeURIComponent(CODE)); await loadBoards(); };
+  $('board').querySelectorAll('.kpi').forEach(el => el.querySelectorAll('[data-act]').forEach(b => b.onclick = () => kpiAct(el, b.dataset.act, kpis.find(k => k.id === el.dataset.id))));
+}
+
+async function kpiAct(el, act, k) {
+  const slot = el.querySelector('.slot');
+  if (act === 'remove') { if (!confirm('Remove "' + k.label + '"?')) return; const d = await call('/kpi/remove', { id: k.id }); return d.error ? say(d.error) : openBoard(CUR); }
+  if (act === 'value') {
+    slot.innerHTML = `<div class="inline"><input type="number" step="any" placeholder="value" class="v"><input type="date" class="dt" value="${new Date().toISOString().slice(0, 10)}"><button class="mini go">Save</button></div>`;
+    slot.querySelector('.go').onclick = async () => { const d = await call('/kpi/point', { id: k.id, value: slot.querySelector('.v').value, date: slot.querySelector('.dt').value }); d.error ? say(d.error) : openBoard(CUR); };
+  }
+  if (act === 'target') {
+    slot.innerHTML = `<div class="inline"><input type="number" step="any" placeholder="target" class="t" value="${k.target ?? ''}"><input type="date" class="td" value="${k.target_date || ''}"><button class="mini go">Save</button></div><div class="hint">Changing the target restarts the path from today's value. Clear the target to just track.</div>`;
+    slot.querySelector('.go').onclick = async () => { const d = await call('/kpi/target', { id: k.id, target: slot.querySelector('.t').value, target_date: slot.querySelector('.td').value }); d.error ? say(d.error) : openBoard(CUR); };
+  }
+}
+
+function addForm() {
+  const groups = { gsc: 'Search Console', rank: 'Rank tracker', llm: 'AI answers', manual: 'Typed in by you' };
+  const opts = Object.entries(groups).map(([s, name]) => `<optgroup label="${name}">${OPTS.metrics.filter(m => m.source === s).map(m => `<option value="${m.key}">${esc(m.label)}</option>`).join('')}</optgroup>`).join('');
+  return `<div class="panel"><div class="grid2"><div class="field"><label>What to measure</label><select id="am">${opts}</select></div>
+    <div class="field" id="asw"><label>Source</label><select id="as"></select></div></div>
+    <div class="grid3"><div class="field"><label>Name (optional)</label><input id="al" maxlength="80"></div>
+    <div class="field"><label>Target (optional)</label><input id="at" type="number" step="any"></div>
+    <div class="field"><label>Target date</label><input id="ad" type="date"></div></div>
+    <div class="grid3" id="manrow"><div class="field"><label>Current value</label><input id="av" type="number" step="any"></div>
+    <div class="field"><label>Unit (optional)</label><input id="au" maxlength="12" placeholder="leads, EUR"></div><div></div></div>
+    <div id="aerr"></div><button class="btn small" id="ago">Add KPI</button></div>`;
+}
+function wireAdd(boardId) {
+  const sync = () => {
+    const m = OPTS.metrics.find(x => x.key === $('am').value), src = OPTS.sources[m.source] || [];
+    $('manrow').style.display = m.source === 'manual' ? '' : 'none';
+    $('asw').style.display = m.source === 'manual' ? 'none' : '';
+    $('as').innerHTML = src.length ? src.map(s => `<option value="${esc(s.id)}">${esc(s.label)}</option>`).join('') : '<option value="">None connected yet</option>';
+  };
+  $('am').onchange = sync; sync();
+  $('ago').onclick = async () => {
+    const m = OPTS.metrics.find(x => x.key === $('am').value);
+    const d = await call('/kpi/add', { board_id: boardId, metric: m.key, ref: $('as').value, label: $('al').value, target: $('at').value, target_date: $('ad').value, value: $('av').value, unit: $('au').value });
+    if (d.error) { $('aerr').innerHTML = `<div class="err">${esc(d.error)}</div>`; return; }
+    openBoard(boardId);
+  };
+}
+</script>
+</body>
+</html>
