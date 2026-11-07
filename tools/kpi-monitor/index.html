@@ -251,7 +251,7 @@ async function kpiAct(el, act, k) {
 }
 
 function addForm() {
-  const groups = { gsc: 'Search Console', rank: 'Rank tracker', llm: 'AI answers', hist: 'From your saved tool runs (PageSpeed, backlinks, schema, sitemap, grid and more)', auto: 'Checked for you every week', manual: 'Typed in by you' };
+  const groups = { gsc: 'Search Console', rank: 'Rank tracker', llm: 'AI answers', health: 'Page health (your top Search Console pages, checked daily)', hist: 'From your saved tool runs (PageSpeed, backlinks, schema, sitemap, grid and more)', auto: 'Checked for you every week', manual: 'Typed in by you' };
   const opts = Object.entries(groups).map(([g, name]) => `<optgroup label="${name}">${OPTS.metrics.filter(m => m.group === g).map(m => `<option value="${m.key}">${esc(m.label)}</option>`).join('')}</optgroup>`).join('');
   return `<div class="panel"><div class="grid2"><div class="field"><label>What to measure</label><select id="am">${opts}</select></div>
     <div class="field" id="asw"><label id="asl">Source</label><select id="as"></select><input id="au2" placeholder="example.com/pricing" style="display:none"><div class="hint" id="ash"></div></div></div>
@@ -273,6 +273,7 @@ function wireAdd(boardId) {
     $('asl').textContent = { property: 'Search Console property', segment: 'Query segment', rank: 'Rank watch', llm: 'AI tracker', history: 'Site or page', url: 'Page to check' }[kind] || 'Source';
     $('ash').textContent = kind === 'url' ? 'Measured now and then every week, up to ' + OPTS.limits.auto_urls + ' pages per board. Scores from earlier PageSpeed runs on the same address are added as history.'
       : kind === 'history' && !list.length ? 'No saved runs of that check yet. Run the tool once while signed in and it will appear here.'
+      : m.group === 'health' ? 'Counts the pages that earn you clicks and checks whether they still load. The history starts today and builds daily; it needs the GSC Suite page monitor to have run once.'
       : kind === 'segment' && !list.length ? 'No query segments yet. Create one in the GSC Suite (a core-terms group or a city).' : '';
     $('as').innerHTML = list.length ? list.map(s => `<option value="${esc(s.id)}">${esc(s.label)}${s.runs ? ' (' + s.runs + ' run' + (s.runs > 1 ? 's' : '') + ')' : ''}</option>`).join('') : '<option value="">None available yet</option>';
   };
