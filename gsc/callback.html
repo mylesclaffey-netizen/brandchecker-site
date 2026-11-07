@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connecting Search Console | Brand Checker</title>
+<style>body{font-family:system-ui,sans-serif;margin:0;padding:48px 20px;color:#0a0a0a;background:#fff;line-height:1.6}main{max-width:480px;margin:0 auto}a{color:#d92f00}</style>
+</head>
+<body>
+<main>
+  <h1 style="font-size:20px">Connecting Search Console…</h1>
+  <p id="msg">One moment, finishing the connection.</p>
+  <noscript><p>This page needs JavaScript to finish connecting. <a href="/tools/gsc-suite/">Go back to the GSC Suite</a> and try again in a browser that allows it.</p></noscript>
+</main>
+<script>
+// Google sends the sign-in result here (brandchecker.eu/gsc/callback). This page only hands it on to the Brand Checker service,
+// which checks it and saves the connection; nothing is stored or read here. Only Google's own result fields are passed on.
+(function () {
+  var API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api/gsc/callback';
+  var keep = ['code', 'state', 'error', 'scope', 'authuser', 'prompt', 'hd'];
+  var from = new URLSearchParams(location.search), to = new URLSearchParams();
+  keep.forEach(function (k) { if (from.has(k)) to.set(k, from.get(k)); });
+  if (!to.has('state')) {
+    document.getElementById('msg').innerHTML = 'This page is used by Google to finish connecting Search Console. Open the <a href="/tools/gsc-suite/">GSC Suite</a> and press Connect.';
+    return;
+  }
+  location.replace(API + '?' + to.toString());
+})();
+</script>
+</body>
+</html>
