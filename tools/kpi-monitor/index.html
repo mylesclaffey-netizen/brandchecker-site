@@ -78,13 +78,13 @@
   <div id="app" style="display:none">
     <p class="eyebrow">KPI monitor · by access link</p>
     <h1>KPI Monitor</h1>
-    <p class="lede">The handful of numbers that matter, checked every day against the targets you set. You get a weekly or monthly summary by email, and an alert when a number leaves its expected range or slips off its target. Numbers come from Search Console, rank and AI-answer trackers, or figures you type in.</p>
+    <p class="lede">The handful of numbers that matter, checked every day against the targets you set. You get a weekly or monthly summary by email, and an alert when a number leaves its expected range or slips off its target. Numbers come from Search Console, your rank and AI-answer trackers, the results of other tools you have run (PageSpeed, backlinks, schema, sitemap, local grid), a PageSpeed check we run every week, or figures you type in.</p>
 
     <div id="msg"></div>
     <div class="boards" id="boards"></div>
     <div id="board"></div>
 
-    <p class="foot">Search clicks and impressions use the last 28 days against the 28 before. Rank and AI-answer figures compare the latest run with the one before. A target path runs in a straight line from where a KPI stood when you set it to the target date: on track is within 10% of that line, at risk within 35%. The expected range for Search Console counts comes from the prior eight weeks and last year's seasonal shape.</p>
+    <p class="foot">Search clicks and impressions use the last 28 days against the 28 before. Rank and AI-answer figures compare the latest run with the one before. A target path runs in a straight line from where a KPI stood when you set it to the target date: on track is within 10% of that line, at risk within 35%. Figures from your saved tool runs update whenever you run that tool again; the weekly PageSpeed check runs on its own. The expected range for Search Console counts comes from the prior eight weeks and last year's seasonal shape.</p>
     <p class="foot"><a class="back" href="/">← Back to tools</a></p>
   </div>
 </div>
@@ -211,10 +211,10 @@ async function kpiAct(el, act, k) {
 }
 
 function addForm() {
-  const groups = { gsc: 'Search Console', rank: 'Rank tracker', llm: 'AI answers', manual: 'Typed in by you' };
-  const opts = Object.entries(groups).map(([s, name]) => `<optgroup label="${name}">${OPTS.metrics.filter(m => m.source === s).map(m => `<option value="${m.key}">${esc(m.label)}</option>`).join('')}</optgroup>`).join('');
+  const groups = { gsc: 'Search Console', rank: 'Rank tracker', llm: 'AI answers', hist: 'From your saved tool runs (PageSpeed, backlinks, schema, sitemap, grid and more)', auto: 'Checked for you every week', manual: 'Typed in by you' };
+  const opts = Object.entries(groups).map(([g, name]) => `<optgroup label="${name}">${OPTS.metrics.filter(m => m.group === g).map(m => `<option value="${m.key}">${esc(m.label)}</option>`).join('')}</optgroup>`).join('');
   return `<div class="panel"><div class="grid2"><div class="field"><label>What to measure</label><select id="am">${opts}</select></div>
-    <div class="field" id="asw"><label>Source</label><select id="as"></select></div></div>
+    <div class="field" id="asw"><label id="asl">Source</label><select id="as"></select><input id="au2" placeholder="example.com/pricing" style="display:none"><div class="hint" id="ash"></div></div></div>
     <div class="grid3"><div class="field"><label>Name (optional)</label><input id="al" maxlength="80"></div>
     <div class="field"><label>Target (optional)</label><input id="at" type="number" step="any"></div>
     <div class="field"><label>Target date</label><input id="ad" type="date"></div></div>
@@ -223,16 +223,23 @@ function addForm() {
     <div id="aerr"></div><button class="btn small" id="ago">Add KPI</button></div>`;
 }
 function wireAdd(boardId) {
+  const cur = () => OPTS.metrics.find(x => x.key === $('am').value);
   const sync = () => {
-    const m = OPTS.metrics.find(x => x.key === $('am').value), src = OPTS.sources[m.source] || [];
-    $('manrow').style.display = m.source === 'manual' ? '' : 'none';
-    $('asw').style.display = m.source === 'manual' ? 'none' : '';
-    $('as').innerHTML = src.length ? src.map(s => `<option value="${esc(s.id)}">${esc(s.label)}</option>`).join('') : '<option value="">None connected yet</option>';
+    const m = cur(), kind = m.ref;
+    const list = kind === 'history' ? (OPTS.sources.hist[m.key] || []) : kind === 'property' ? OPTS.sources.property : (OPTS.sources[kind] || []);
+    $('manrow').style.display = kind === 'none' ? '' : 'none';
+    $('asw').style.display = kind === 'none' ? 'none' : '';
+    $('as').style.display = kind === 'url' ? 'none' : ''; $('au2').style.display = kind === 'url' ? '' : 'none';
+    $('asl').textContent = { property: 'Search Console property', segment: 'Query segment', rank: 'Rank watch', llm: 'AI tracker', history: 'Site or page', url: 'Page to check' }[kind] || 'Source';
+    $('ash').textContent = kind === 'url' ? 'Measured now and then every week, up to ' + OPTS.limits.auto_urls + ' pages per board. Scores from earlier PageSpeed runs on the same address are added as history.'
+      : kind === 'history' && !list.length ? 'No saved runs of that check yet. Run the tool once while signed in and it will appear here.'
+      : kind === 'segment' && !list.length ? 'No query segments yet. Create one in the GSC Suite (a core-terms group or a city).' : '';
+    $('as').innerHTML = list.length ? list.map(s => `<option value="${esc(s.id)}">${esc(s.label)}${s.runs ? ' (' + s.runs + ' run' + (s.runs > 1 ? 's' : '') + ')' : ''}</option>`).join('') : '<option value="">None available yet</option>';
   };
   $('am').onchange = sync; sync();
   $('ago').onclick = async () => {
-    const m = OPTS.metrics.find(x => x.key === $('am').value);
-    const d = await call('/kpi/add', { board_id: boardId, metric: m.key, ref: $('as').value, label: $('al').value, target: $('at').value, target_date: $('ad').value, value: $('av').value, unit: $('au').value });
+    const m = cur();
+    const d = await call('/kpi/add', { board_id: boardId, metric: m.key, ref: m.ref === 'url' ? $('au2').value : $('as').value, label: $('al').value, target: $('at').value, target_date: $('ad').value, value: $('av').value, unit: $('au').value });
     if (d.error) { $('aerr').innerHTML = `<div class="err">${esc(d.error)}</div>`; return; }
     openBoard(boardId);
   };
