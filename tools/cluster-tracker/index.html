@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cluster Activity Tracker | Brand Checker</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236e7bff'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#fff;--card:#fff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--soft:#e6e6e6;--you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000;--g:#1a56db;--l:#7c3aed;--c:#0a0a0a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5;padding:22px 16px 70px}
+  .wrap{max-width:1040px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Archivo',sans-serif;font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.12;margin:8px 0}
+  h2{font-family:'Archivo',sans-serif;font-size:18px;font-weight:700;margin:30px 0 8px}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.6;max-width:740px}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input,select,textarea{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:7px;padding:10px 12px}
+  textarea{resize:vertical;min-height:70px;line-height:1.6}
+  select{height:42px}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px}
+  .btn{font-family:'Archivo',sans-serif;font-size:14px;font-weight:700;background:var(--you);color:#fff;border:0;border-radius:8px;padding:12px 18px;cursor:pointer}
+  .btn:hover{background:#d92f00} .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)} .btn.ghost:hover{background:#f3f3f3}
+  .btn.small{font-size:12px;padding:7px 11px}
+  .err{color:var(--bad);font-size:13px;padding:12px;border:1px solid var(--bad);border-radius:8px;margin:12px 0}
+  .ok{color:var(--ok);font-size:13px;padding:12px;border:1px solid var(--ok);border-radius:8px;margin:12px 0}
+  .warn{color:var(--warn);font-size:12.5px;padding:10px 12px;border:1px solid var(--warn);border-radius:8px;margin:12px 0}
+  .panel{border:1px solid var(--line);border-radius:10px;padding:16px;margin:14px 0;background:var(--card)}
+  .boards{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+  .bchip{font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;border:1px solid var(--line);border-radius:18px;padding:6px 14px;background:#fff;cursor:pointer}
+  .bchip.on{background:var(--ink);color:#fff}
+  .chart{border:1px solid var(--line);border-radius:10px;padding:10px 10px 4px;background:var(--card)}
+  .chart svg{display:block;width:100%;height:auto;overflow:visible}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:10px 0;font-size:12px}
+  .legend label{display:flex;gap:6px;align-items:center;margin:0;font-size:12px;color:var(--ink);cursor:pointer}
+  .legend input{width:auto}
+  .sw{display:inline-block;width:12px;height:12px;border-radius:2px}
+  .stats{display:flex;gap:22px;flex-wrap:wrap;margin:14px 0;font-size:12px;color:var(--muted)}
+  .stats b{font-family:'Archivo',sans-serif;font-size:20px;color:var(--ink);display:block}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--line)}
+  td{padding:8px;border-bottom:1px solid var(--soft);vertical-align:top}
+  th.r,td.r{text-align:right;white-space:nowrap}
+  .tablewrap{overflow-x:auto}
+  .k{font-size:10.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;border:1px solid;border-radius:12px;padding:2px 9px;white-space:nowrap}
+  .k.own{color:var(--you)} .k.google{color:var(--g)} .k.llm{color:var(--l)} .k.competitor{color:var(--c)}
+  .up{color:var(--ok)} .down{color:var(--bad)}
+  .mini{font-size:11px;font-family:inherit;border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px 8px;cursor:pointer;color:var(--ink)} .mini:hover{background:#f3f3f3}
+  .empty{border:1px dashed var(--line);border-radius:10px;padding:26px;text-align:center;color:var(--muted);font-size:13px}
+  .seg button{font-family:inherit;font-size:12px;border:1px solid var(--line);background:#fff;padding:5px 10px;cursor:pointer;margin-right:-1px} .seg button.on{background:var(--ink);color:#fff}
+  .foot{font-size:10.5px;color:var(--muted);margin-top:30px;line-height:1.6;max-width:820px}
+  .back{font-size:12px;color:var(--muted)} .back:hover{color:var(--ink)}
+  #gate{display:none;max-width:420px}
+  @media (max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate">
+    <p class="eyebrow">By access link</p>
+    <h1>Sign in to your cluster tracker</h1>
+    <p class="lede">The Cluster Activity Tracker runs on a personal access link. Open the link you were sent, or enter your code below.</p>
+    <div class="field"><label for="manual">Access code</label><input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="btn" id="enter" type="button">Continue</button>
+    <p class="hint" style="margin-top:12px">No link yet? <a href="mailto:mylesclaffey@gmail.com?subject=Cluster%20Activity%20Tracker" style="color:var(--you)">Ask us for one</a>.</p>
+  </div>
+
+  <div id="app" style="display:none">
+    <p class="eyebrow">Cluster activity tracker · by access link</p>
+    <h1>Cluster Activity Tracker</h1>
+    <p class="lede">Follow a group of keywords week by week and see what happened around each move: the changes you made, Google updates, new AI models, and pages your competitors published on the same topic.</p>
+
+    <div id="msg"></div>
+    <div class="boards" id="boards"></div>
+    <div id="cluster"></div>
+
+    <p class="foot">Visibility is your clicks from Search Console for the cluster's queries, or, for a rank-checked cluster, the estimated clicks of its weekly checks (search volume times the click rate at the position). The numbers beside each event compare the four complete weeks before it with the four after: they show what moved around it, not what caused it. Several things usually change at once, a rollout takes weeks, and small numbers move for no reason, so treat a link between an event and a move as a lead to check. Google updates come from Google's own Search Status Dashboard; model releases come from OpenRouter's public list and cover the main families only.</p>
+    <p class="foot"><a class="back" href="/">← Back to tools</a></p>
+  </div>
+</div>
+
+<script>
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const qs = new URLSearchParams(location.search);
+let CODE = (qs.get('k') || '').trim();
+try { if (!CODE) CODE = sessionStorage.getItem('cltk') || ''; } catch (e) {}
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const KIND = { own: ['Your change', '#ff3d00'], google: ['Google update', '#1a56db'], llm: ['AI model', '#7c3aed'], competitor: ['Competitor', '#0a0a0a'] };
+let CLUSTERS = [], CUR = null, OPTS = null, DATA = null, SHOW = { own: true, google: true, competitor: true, llm: false }, METRIC = 'idx';
+
+if (/^v-[a-f0-9]{24}$/i.test(CODE)) CODE = '';
+if (!CODE) $('gate').style.display = 'block';
+else { try { sessionStorage.setItem('cltk', CODE); } catch (e) {} $('app').style.display = 'block'; init(); }
+$('enter').onclick = () => { const v = $('manual').value.trim(); if (v) location.search = '?k=' + encodeURIComponent(v); };
+
+async function call(path, body) {
+  try { const r = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, ...body }) }); return await r.json(); }
+  catch (e) { return { error: 'Could not reach the service. Try again in a moment.' }; }
+}
+const say = (t, ok) => { $('msg').innerHTML = t ? `<div class="${ok ? 'ok' : 'err'}">${esc(t)}</div>` : ''; if (t && ok) setTimeout(() => { if ($('msg').textContent.includes(t)) $('msg').innerHTML = ''; }, 4000); };
+const fmtDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const pctTxt = p => (p == null ? '–' : `<span class="${p > 0 ? 'up' : p < 0 ? 'down' : ''}">${p > 0 ? '+' : ''}${p}%</span>`);
+
+async function init() {
+  OPTS = await call('/clt/options', {});
+  if (OPTS.error) { say(OPTS.error); return; }
+  const d = await call('/clt/list', {});
+  if (d.error) { say(d.error); return; }
+  CLUSTERS = d.clusters;
+  const id = qs.get('id') || CUR || (CLUSTERS[0] && CLUSTERS[0].id);
+  drawChips(id);
+  if (id && CLUSTERS.some(c => c.id === id)) await openCluster(id); else { CUR = null; $('cluster').innerHTML = createForm(true); wireCreate(); }
+}
+function drawChips(active) {
+  $('boards').innerHTML = CLUSTERS.map(c => `<button class="bchip ${c.id === active ? 'on' : ''}" data-id="${esc(c.id)}">${esc(c.name)}</button>`).join('')
+    + (CLUSTERS.length < OPTS.limits.clusters ? '<button class="bchip" data-new="1">+ New cluster</button>' : '');
+  $('boards').querySelectorAll('.bchip').forEach(b => b.onclick = () => { if (b.dataset.new) { CUR = null; drawChips(null); $('cluster').innerHTML = createForm(false); wireCreate(); } else openCluster(b.dataset.id); });
+}
+function createForm(first) {
+  const hasG = OPTS.properties.length, hasR = OPTS.rank_watches.length;
+  return `<div class="panel"><h2 style="margin-top:0">${first ? 'Create your first cluster' : 'New cluster'}</h2>
+    ${hasG || hasR ? '' : '<div class="warn">No data source yet. Connect Search Console and add a property in the GSC Suite, or set up a rank watch in the Rank Scheduler, then come back.</div>'}
+    <div class="grid2"><div class="field"><label>Cluster name</label><input id="cn" maxlength="80" placeholder="Battery and water damage"></div>
+    <div class="field"><label>Data from</label><select id="cs">${OPTS.properties.map(p => `<option value="gsc|${esc(p.id)}">Search Console: ${esc(p.label)}</option>`).join('')}${OPTS.rank_watches.map(w => `<option value="rank|${esc(w.id)}">Rank checks: ${esc(w.label)}</option>`).join('')}</select></div></div>
+    <div class="field"><label>Keywords (one per line, up to ${OPTS.limits.keywords})</label><textarea id="ck" placeholder="macbook akku wechseln&#10;macbook wasserschaden"></textarea>
+    <div class="hint" id="chint">For Search Console, use the queries exactly as people search them (lower case). The tracker reads the history right away.</div></div>
+    <button class="btn" id="cgo">Create cluster</button></div>`;
+}
+function wireCreate() {
+  const sync = () => { const [src, id] = ($('cs').value || '|').split('|'); const w = OPTS.rank_watches.find(x => x.id === id);
+    $('chint').textContent = src === 'rank' ? 'Leave empty to use all of the rank watch\'s keywords, or list the ones that form this cluster.' : 'For Search Console, use the queries exactly as people search them (lower case). The tracker reads the history right away.';
+    if (src === 'rank' && w && !$('ck').value) $('ck').placeholder = w.keywords.join('\n'); };
+  if ($('cs')) { $('cs').onchange = sync; sync(); }
+  $('cgo').onclick = async () => {
+    const [source, ref] = ($('cs').value || '|').split('|');
+    const d = await call('/clt/create', { name: $('cn').value, source, ref, keywords: $('ck').value });
+    if (d.error) return say(d.error); say('');
+    CUR = d.cluster.id; await init();
+  };
+}
+
+async function openCluster(id) {
+  CUR = id; drawChips(id);
+  history.replaceState(null, '', '?k=' + encodeURIComponent(CODE) + '&id=' + encodeURIComponent(id));
+  $('cluster').innerHTML = '<p class="hint">Reading Search Console and the event feeds…</p>';
+  const d = await call('/clt/get', { id });
+  if (d.error) { $('cluster').innerHTML = ''; return say(d.error); }
+  DATA = d; render();
+}
+
+/* ---- the chart --------------------------------------------------------------------------------------------------------------------------- */
+function chartSvg(d) {
+  const S = d.series; if (!S.length) return '<div class="empty">No weekly data yet for this cluster.</div>';
+  const W = 960, H = 330, L = 52, R = 14, T = 16, B = 34, pw = W - L - R, ph = H - T - B;
+  const t0 = Date.parse(S[0].week + 'T00:00:00Z'), t1 = Date.parse(S[S.length - 1].week + 'T00:00:00Z') + 7 * 864e5, span = Math.max(t1 - t0, 1);
+  const X = date => L + (Date.parse(date + 'T00:00:00Z') - t0) / span * pw;
+  const val = p => (METRIC === 'idx' ? p.idx : p.avg_pos);
+  const vs = S.map(val).filter(v => v != null), lo = METRIC === 'idx' ? 0 : Math.min(...vs, 1), hi = Math.max(...vs, 1) * (METRIC === 'idx' ? 1.1 : 1.08);
+  const Y = v => (METRIC === 'idx' ? T + ph - (v - lo) / ((hi - lo) || 1) * ph : T + (v - lo) / ((hi - lo) || 1) * ph);   // position: 1 at the top
+  const ticks = [0, .25, .5, .75, 1].map(f => lo + (hi - lo) * f);
+  let g = ticks.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e6e6e6"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="#555">${METRIC === 'idx' ? Math.round(v) : v.toFixed(1)}</text>`).join('');
+  // month ticks
+  const seen = new Set(); S.forEach(p => { const m = p.week.slice(0, 7); if (!seen.has(m) && p.week.slice(8) <= '14') { seen.add(m); g += `<text x="${X(p.week)}" y="${H - 12}" font-size="11" fill="#555">${new Date(p.week + 'T00:00:00Z').toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' })}</text>`; } });
+  // Google update bands, behind the line
+  const ev = d.events.filter(e => SHOW[e.kind]);
+  ev.filter(e => e.kind === 'google').forEach(e => { const x0 = X(e.date), x1 = Math.max(X(e.end_date || e.date), x0 + 3); if (x1 < L || x0 > W - R) return; g += `<rect x="${Math.max(x0, L)}" y="${T}" width="${Math.min(x1, W - R) - Math.max(x0, L)}" height="${ph}" fill="#1a56db" opacity=".12"><title>${esc(e.title)}: ${fmtDate(e.date)}${e.end_date ? ' to ' + fmtDate(e.end_date) : ''}</title></rect>`; });
+  // the line (a gap where there is no figure; partial weeks dashed)
+  const pts = S.map(p => ({ p, v: val(p) })).filter(o => o.v != null);
+  const path = o => `${X(o.p.week) + 0}`;
+  let dstr = ''; pts.forEach((o, i) => { dstr += (i ? 'L' : 'M') + (X(o.p.week) + (pw / S.length) / 2).toFixed(1) + ',' + Y(o.v).toFixed(1) + ' '; });
+  if (METRIC === 'idx') g += `<path d="${dstr} L${(X(pts[pts.length - 1].p.week) + (pw / S.length) / 2).toFixed(1)},${T + ph} L${(X(pts[0].p.week) + (pw / S.length) / 2).toFixed(1)},${T + ph} Z" fill="#0a0a0a" opacity=".06"/>`;
+  g += `<path d="${dstr}" fill="none" stroke="#0a0a0a" stroke-width="2"/>`;
+  pts.forEach(o => { const f = d.flagged.find(x => x.week === o.p.week); const cx = X(o.p.week) + (pw / S.length) / 2; g += `<circle cx="${cx.toFixed(1)}" cy="${Y(o.v).toFixed(1)}" r="${f ? 5 : 2.5}" fill="${f ? (f.dir === 'up' ? '#00844a' : '#d40000') : (o.p.partial ? '#fff' : '#0a0a0a')}" stroke="#0a0a0a"><title>Week of ${fmtDate(o.p.week)}: ${METRIC === 'idx' ? Math.round(o.p.idx) + ' ' + d.cluster.measure : 'position ' + o.p.avg_pos}${o.p.partial ? ' (week not finished)' : ''}; ${o.p.top10} of ${d.cluster.keywords.length} keywords in the top 10${f ? `; ${f.pct > 0 ? '+' : ''}${f.pct}% against the weeks before` : ''}</title></circle>`; });
+  // markers: own changes (orange lines), competitors (diamonds), models (triangles)
+  ev.filter(e => e.kind === 'own').forEach(e => { const x = X(e.date); if (x < L || x > W - R) return; g += `<line x1="${x}" x2="${x}" y1="${T}" y2="${T + ph}" stroke="#ff3d00" stroke-width="2" stroke-dasharray="5 3"/><circle cx="${x}" cy="${T + 6}" r="5.5" fill="#ff3d00"><title>${esc(e.title)}: ${fmtDate(e.date)}</title></circle>`; });
+  ev.filter(e => e.kind === 'competitor').forEach(e => { const x = X(e.date); if (x < L || x > W - R) return; g += `<path d="M${x},${T + ph - 16} l6,6 l-6,6 l-6,-6 Z" fill="#0a0a0a"><title>${esc(e.title)}: ${fmtDate(e.date)}</title></path>`; });
+  ev.filter(e => e.kind === 'llm').forEach(e => { const x = X(e.date); if (x < L || x > W - R) return; g += `<path d="M${x - 5},${T + ph - 2} l5,-9 l5,9 Z" fill="#7c3aed"><title>${esc(e.title)}: ${fmtDate(e.date)}</title></path>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weekly visibility with events">${g}</svg>`;
+}
+
+function render() {
+  const d = DATA, c = d.cluster, S = d.series, last = S.filter(p => !p.partial).slice(-1)[0], prev = S.filter(p => !p.partial).slice(-5, -1);
+  const avgPrev = prev.length ? prev.reduce((a, p) => a + p.idx, 0) / prev.length : null;
+  const ev = d.events.filter(e => SHOW[e.kind]);
+  $('cluster').innerHTML = `
+    <div class="stats"><div><b>${last ? Math.round(last.idx).toLocaleString('en') : '–'}</b>${esc(c.measure)}, last full week</div>
+      <div><b>${last && avgPrev ? pctTxt(Math.round((last.idx - avgPrev) / (avgPrev || 1) * 100)) : '–'}</b>vs the four weeks before</div>
+      <div><b>${last && last.avg_pos != null ? last.avg_pos : '–'}</b>average position</div>
+      <div><b>${last ? last.top10 : '–'} / ${c.keywords.length}</b>keywords in the top 10</div>
+      <div><b>${S.length}</b>weeks of history</div></div>
+    ${d.warning ? `<div class="warn">${esc(d.warning)}${d.reconnect ? ' <a href="/tools/gsc-suite/?k=' + encodeURIComponent(CODE) + '" style="color:var(--you)">Reconnect</a>' : ''}</div>` : ''}
+    <div class="seg" style="margin:8px 0"><button data-m="idx" class="${METRIC === 'idx' ? 'on' : ''}">${esc(c.measure)}</button><button data-m="pos" class="${METRIC === 'pos' ? 'on' : ''}">Average position</button></div>
+    <div class="chart">${chartSvg(d)}</div>
+    <div class="legend">${Object.entries(KIND).map(([k, [name, col]]) => `<label><input type="checkbox" data-k="${k}" ${SHOW[k] ? 'checked' : ''}><span class="sw" style="background:${col}${k === 'google' ? ';opacity:.5' : ''}"></span>${name} (${d.kinds[k] || 0})</label>`).join('')}
+      <span class="hint" style="margin:0">Red and green dots: a week far outside the weeks before it.</span></div>
+
+    <h2>What happened around it</h2>
+    ${ev.length ? `<div class="tablewrap"><table><thead><tr><th>Date</th><th>Event</th><th class="r">Before</th><th class="r">After</th><th class="r">Change</th><th class="r">Position</th><th></th></tr></thead><tbody>${[...ev].reverse().map(e => {
+      const i = e.impact, none = !i || !i.enough;
+      return `<tr><td style="white-space:nowrap">${fmtDate(e.date)}${e.end_date && e.end_date !== e.date ? `<div class="hint" style="margin:0">to ${fmtDate(e.end_date)}</div>` : ''}</td>
+        <td><span class="k ${e.kind}">${KIND[e.kind][0]}</span> <b>${esc(e.title)}</b>${e.detail ? `<div class="hint" style="margin:2px 0 0">${esc(String(e.detail).slice(0, 200))}</div>` : ''}${(e.pages || []).slice(0, 3).map(p => `<div class="hint" style="margin:2px 0 0"><a href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${esc(p.title || p.url)}</a></div>`).join('')}${e.from_suite ? '<div class="hint" style="margin:2px 0 0">logged in the GSC Suite</div>' : ''}</td>
+        <td class="r">${none ? '' : Math.round(i.before)}</td><td class="r">${none ? '' : Math.round(i.after)}</td><td class="r">${none ? `<span class="hint">${i && i.weeks_after < 2 ? 'too recent' : i ? 'not enough weeks' : 'before the data starts'}</span>` : pctTxt(i.change_pct)}</td>
+        <td class="r">${none || i.pos_delta == null ? '' : `${i.pos_before} → ${i.pos_after}`}</td>
+        <td class="r">${e.kind === 'own' && e.change_id ? `<button class="mini" data-delchange="${esc(e.change_id)}">Remove</button>` : ''}</td></tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">No events in view. Switch event types on above, or log what you have changed below.</div>'}
+
+    <h2>Log a change</h2>
+    <div class="panel"><div class="grid3"><div class="field"><label>Date</label><input type="date" id="xd" value="${new Date().toISOString().slice(0, 10)}"></div>
+      <div class="field"><label>Kind</label><select id="xk"><option value="published">New page</option><option value="updated">Page updated</option><option value="technical">Technical fix</option><option value="links">Links / PR</option><option value="redirect">Redirect</option><option value="removed">Page removed</option><option value="other">Other</option></select></div>
+      <div class="field"><label>What changed</label><input id="xt" maxlength="120" placeholder="Rewrote the battery replacement page"></div></div>
+      <div class="field"><label>Page addresses (optional, one per line)</label><textarea id="xu" style="min-height:50px"></textarea></div>
+      <button class="btn small" id="xadd">Add to the timeline</button>${c.source === 'gsc' ? '<div class="hint">Changes you log in the GSC Suite for this property also appear here.</div>' : ''}</div>
+
+    <h2>Cluster</h2>
+    <div class="panel"><div class="grid2"><div class="field"><label>Name</label><input id="un" value="${esc(c.name)}" maxlength="80"></div><div class="field"><label>Source</label><input value="${esc(c.source_label)}" disabled></div></div>
+      <div class="field"><label>Keywords (one per line)</label><textarea id="uk">${esc(c.keywords.join('\n'))}</textarea><div class="hint">Changing the keywords starts a new history for this cluster${c.source === 'gsc' ? ' (Search Console is read again for the new set)' : ''}.</div></div>
+      <div style="display:flex;gap:8px"><button class="btn small" id="usave">Save</button><button class="btn small ghost" id="udel" style="margin-left:auto;color:var(--bad)">Delete cluster</button></div></div>`;
+  $('cluster').querySelectorAll('[data-m]').forEach(b => b.onclick = () => { METRIC = b.dataset.m; render(); });
+  $('cluster').querySelectorAll('[data-k]').forEach(b => b.onchange = () => { SHOW[b.dataset.k] = b.checked; render(); });
+  $('cluster').querySelectorAll('[data-delchange]').forEach(b => b.onclick = async () => { if (!confirm('Remove this change from the timeline?')) return; const r = await call('/clt/change-delete', { id: CUR, change_id: b.dataset.delchange }); r.error ? say(r.error) : openCluster(CUR); });
+  $('xadd').onclick = async () => { const r = await call('/clt/change-add', { id: CUR, date: $('xd').value, kind: $('xk').value, title: $('xt').value, urls: $('xu').value }); r.error ? say(r.error) : openCluster(CUR); };
+  $('usave').onclick = async () => { const r = await call('/clt/update', { id: CUR, name: $('un').value, keywords: $('uk').value }); if (r.error) return say(r.error); say('Saved.', true); openCluster(CUR); init(); };
+  $('udel').onclick = async () => { if (!confirm('Delete this cluster and its logged changes?')) return; const r = await call('/clt/delete', { id: CUR }); if (r.error) return say(r.error); CUR = null; history.replaceState(null, '', '?k=' + encodeURIComponent(CODE)); await init(); };
+}
+</script>
+</body>
+</html>
