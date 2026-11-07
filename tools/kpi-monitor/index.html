@@ -56,6 +56,10 @@
   .empty{border:1px dashed var(--line);border-radius:10px;padding:26px;text-align:center;color:var(--muted);font-size:13px}
   .summary{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:6px 0 2px}
   .summary b{color:var(--ink);font-family:'Archivo',sans-serif;font-size:16px}
+  .note2{border:1px solid var(--line);border-left:6px solid var(--you);border-radius:8px;padding:12px 14px;margin:14px 0;font-size:13px;line-height:1.6}
+  .note2 b{font-family:'Archivo',sans-serif}
+  .links{margin-top:12px;font-size:12px} .links .row{display:flex;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--soft)} .links .url{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ro .acts,.ro .slot{display:none}
   .foot{font-size:10.5px;color:var(--muted);margin-top:30px;line-height:1.6;max-width:800px}
   .back{font-size:12px;color:var(--muted)} .back:hover{color:var(--ink)}
   #gate{display:none;max-width:420px}
@@ -99,9 +103,29 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const STATUS = { on_track: 'On track', at_risk: 'At risk', off: 'Off target', tracking: 'Tracking', no_data: 'No data yet' };
 let BOARDS = [], CUR = null, OPTS = null, ADDING = false;
 
+const TOKEN = (qs.get('t') || '').trim();
 if (/^v-[a-f0-9]{24}$/i.test(CODE)) CODE = '';
-if (!CODE) $('gate').style.display = 'block';
+if (TOKEN) { $('app').style.display = 'block'; showShared(); }
+else if (!CODE) $('gate').style.display = 'block';
 else { try { sessionStorage.setItem('kpik', CODE); } catch (e) {} $('app').style.display = 'block'; init(); }
+
+// A share link: the board as it stands, read only, no sign-in.
+async function showShared() {
+  const h = document.querySelector('#app h1'); $('app').querySelector('.lede').style.display = 'none'; h.textContent = 'KPI report';
+  $('app').querySelector('.eyebrow').textContent = 'Read-only view';
+  $('board').innerHTML = '<p class="hint">Loading…</p>';
+  let d; try { d = await (await fetch(API + '/kpi/shared', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: TOKEN }) })).json(); } catch (e) { d = { error: 'Could not reach the service. Try again in a moment.' }; }
+  if (d.error) { $('board').innerHTML = `<div class="err">${esc(d.error)}</div>`; return; }
+  h.textContent = d.board.name + (d.board.site ? ' · ' + d.board.site : '');
+  document.title = d.board.name + ' | KPI report';
+  $('app').querySelector('.foot').style.display = 'none';
+  const kpis = d.kpis;
+  $('board').innerHTML = `<div class="ro">${d.commentary ? `<div class="note2"><b>What changed.</b> ${esc(d.commentary)}</div>` : ''}
+    ${summaryHtml(kpis)}
+    ${kpis.length ? `<div class="kpis">${kpis.map(kpiCard).join('')}</div>` : '<div class="empty">No KPIs on this board yet.</div>'}
+    <p class="hint">Updated ${esc(new Date(d.generated_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }))}. This is a read-only view.</p></div>`;
+}
+const summaryHtml = kpis => `<div class="summary"><span><b>${kpis.length}</b> KPIs</span><span><b>${kpis.filter(k => k.status === 'on_track').length}</b> on track</span><span><b>${kpis.filter(k => k.status === 'at_risk').length}</b> at risk</span><span><b>${kpis.filter(k => k.status === 'off').length}</b> off target</span><span><b>${kpis.filter(k => k.anomaly).length}</b> outside range</span></div>`;
 $('enter').onclick = () => { const v = $('manual').value.trim(); if (v) location.search = '?k=' + encodeURIComponent(v); };
 
 async function call(path, body) {
@@ -179,10 +203,12 @@ function kpiCard(k) {
 }
 
 function renderBoard({ board, kpis }) {
-  const off = kpis.filter(k => k.status === 'off').length, risk = kpis.filter(k => k.status === 'at_risk').length, anom = kpis.filter(k => k.anomaly).length;
-  $('board').innerHTML = `<div class="summary"><span><b>${kpis.length}</b> KPIs</span><span><b>${kpis.filter(k => k.status === 'on_track').length}</b> on track</span><span><b>${risk}</b> at risk</span><span><b>${off}</b> off target</span><span><b>${anom}</b> outside range</span></div>
+  $('board').innerHTML = `<div id="comm"></div>${summaryHtml(kpis)}
     ${kpis.length ? `<div class="kpis">${kpis.map(kpiCard).join('')}</div>` : '<div class="empty" style="margin:14px 0">No KPIs yet. Add the first one below.</div>'}
     <div><button class="btn" id="addbtn">+ Add a KPI</button></div><div id="addform"></div>
+    <h2>Share a read-only link</h2>
+    <div class="panel"><p class="hint" style="margin:0 0 10px">Anyone with the link sees these numbers as they stand, with no sign-in. They cannot change anything and never see your email or account. Revoke a link at any time.</p>
+      <button class="btn small" id="shnew">Create a link</button><div class="links" id="shlinks"></div></div>
     <h2>Reports and alerts</h2>
     <div class="panel"><div class="grid3">
       <div class="field"><label>Send to</label><input id="se" type="email" value="${esc(board.email)}"></div>
@@ -190,11 +216,25 @@ function renderBoard({ board, kpis }) {
       <div class="field"><label>Alerts</label><select id="sa"><option value="1">On: tell me when something moves</option><option value="0">Off</option></select></div></div>
       <div class="acts"><button class="btn small" id="ssave">Save</button><button class="btn small ghost" id="stest">Send me a summary now</button><button class="btn small ghost" id="sdel" style="margin-left:auto;color:var(--bad)">Delete board</button></div></div>`;
   $('sd').value = board.digest; $('sa').value = board.alerts ? '1' : '0';
+  loadComment(board.id); loadShares(board.id);
+  $('shnew').onclick = async () => { const d = await call('/kpi/share-create', { id: board.id }); d.error ? say(d.error) : loadShares(board.id); };
   $('addbtn').onclick = () => { ADDING = !ADDING; $('addform').innerHTML = ADDING ? addForm() : ''; if (ADDING) wireAdd(board.id); };
   $('ssave').onclick = async () => { const d = await call('/kpi/update', { id: board.id, email: $('se').value, digest: $('sd').value, alerts: $('sa').value === '1' }); d.error ? say(d.error) : say('Saved.', true); };
   $('stest').onclick = async () => { const d = await call('/kpi/digest-send', { id: board.id }); d.error ? say(d.error) : say('Sent to ' + d.to + '.', true); };
   $('sdel').onclick = async () => { if (!confirm('Delete this board and all its KPIs?')) return; const d = await call('/kpi/delete', { id: board.id }); if (d.error) return say(d.error); CUR = null; history.replaceState(null, '', '?k=' + encodeURIComponent(CODE)); await loadBoards(); };
   $('board').querySelectorAll('.kpi').forEach(el => el.querySelectorAll('[data-act]').forEach(b => b.onclick = () => kpiAct(el, b.dataset.act, kpis.find(k => k.id === el.dataset.id))));
+}
+
+async function loadComment(id) {
+  const d = await call('/kpi/commentary', { id });
+  if (d && d.text && CUR === id && $('comm')) $('comm').innerHTML = `<div class="note2"><b>What changed.</b> ${esc(d.text)}</div>`;
+}
+async function loadShares(id) {
+  const d = await call('/kpi/share-list', { id });
+  if (!$('shlinks')) return;
+  $('shlinks').innerHTML = (d.links || []).map(l => `<div class="row"><span class="url">${esc(l.url)}</span><span class="hint" style="margin:0">${esc((l.created || '').slice(0, 10))}</span><button class="mini" data-copy="${esc(l.url)}">Copy</button><button class="mini" data-rev="${esc(l.t)}">Revoke</button></div>`).join('') || '<p class="hint">No links yet.</p>';
+  $('shlinks').querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = 'Copied'; } catch (e) { prompt('Copy this link', b.dataset.copy); } });
+  $('shlinks').querySelectorAll('[data-rev]').forEach(b => b.onclick = async () => { if (!confirm('Revoke this link? Anyone using it will lose access.')) return; const r = await call('/kpi/share-revoke', { id, t: b.dataset.rev }); r.error ? say(r.error) : loadShares(id); });
 }
 
 async function kpiAct(el, act, k) {
