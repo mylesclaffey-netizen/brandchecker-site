@@ -1,0 +1,115 @@
+{
+ "base": "https://brandchecker.eu",
+ "note": "The pages search engines may index. Everything else on the site stays noindex. Edit this list, then run: python3 build-sitemap.py",
+ "pages": [
+  {
+   "path": "/"
+  },
+  {
+   "path": "/tools/schema-pack/",
+   "description": "Free generator for software companies: ready-to-paste Organization, WebSite, SoftwareApplication (one Offer per plan) and FAQ structured data."
+  },
+  {
+   "path": "/tools/docs-ai/",
+   "description": "Free check of whether AI crawlers can fetch and read your product docs, and whether they can tell what each page covers."
+  },
+  {
+   "path": "/tools/key-pages/",
+   "description": "Free audit of the pages that decide a software deal: homepage, pricing, product, integrations, comparison, customers, docs and security."
+  },
+  {
+   "path": "/tools/trust-check/",
+   "description": "Free check for the trust and security pages a software buyer asks for, and the ones AI assistants answer 'is it SOC 2 compliant?' from."
+  },
+  {
+   "path": "/tools/price-localisation/",
+   "description": "Free check that your pricing page shows the right currency in each market, and what AI crawlers will read when they fetch it."
+  },
+  {
+   "path": "/tools/price-visibility/",
+   "description": "Free check of whether your plan prices are in the HTML that Googlebot and the ChatGPT, Claude and Perplexity crawlers actually read."
+  },
+  {
+   "path": "/tools/page-audit/",
+   "description": "Free one-URL report: can search engines index the page, are the on-page basics right, and can AI assistants reach, read and trust it."
+  },
+  {
+   "path": "/tools/llms-txt/",
+   "description": "Free llms.txt generator: a curated map of your site written for AI assistants, the way robots.txt and sitemaps are written for crawlers."
+  },
+  {
+   "path": "/tools/lil-rag-chunker/"
+  },
+  {
+   "path": "/tools/app-audit/"
+  },
+  {
+   "path": "/tools/crawler-check/",
+   "description": "Free check of whether your robots.txt blocks ChatGPT, Claude, Perplexity and other AI crawlers from reading your site."
+  },
+  {
+   "path": "/tools/schema-builder/",
+   "description": "Free JSON-LD generator for your brand: the structured data Google uses for rich results and AI answer engines use to get your facts right."
+  },
+  {
+   "path": "/tools/redirect-check/",
+   "description": "Free redirect map validator for site migrations: does each old URL redirect, and to the right new page rather than just any page that returns 200?"
+  },
+  {
+   "path": "/tools/redirect-tracer/",
+   "description": "Free redirect tracer: paste a URL to see every hop, or check that a domain's four http, https, www and non-www versions land in one place."
+  },
+  {
+   "path": "/tools/migration-checklist/",
+   "description": "Free website migration checklist: every stage of a domain move, replatform or redesign in order, from the pre-migration audit to post-launch monitoring."
+  },
+  {
+   "path": "/tools/optimizely-to-webflow-migration-checklist/",
+   "description": "Free phase-by-phase checklist for migrating from Optimizely CMS to Webflow, including content-type-to-collection mapping and redirects."
+  },
+  {
+   "path": "/tools/schema-audit/",
+   "description": "Free structured data audit: what a page carries, what is missing for its type, and where the markup claims something the page does not show."
+  },
+  {
+   "path": "/tools/sitemap-audit/",
+   "description": "Free sitemap analysis: finds your sitemap, checks its structure and spot-checks the URLs it lists for dead links."
+  },
+  {
+   "path": "/tools/sitemap-generator/",
+   "description": "Free sitemap.xml generator: crawls your site and builds a sitemap for sites that have none or whose current one is stale or broken."
+  },
+  {
+   "path": "/tools/image-audit/",
+   "description": "Free image audit for a page: missing alt text, layout-shift risk, lazy-loading, legacy formats and broken or oversized images."
+  },
+  {
+   "path": "/tools/eeat-audit/",
+   "description": "Free E-E-A-T check: author, freshness, substance, citations, HTTPS and the other individually checkable signals Google's rater guidelines point at."
+  },
+  {
+   "path": "/tools/hreflang-audit/",
+   "description": "Free hreflang audit: finds the mistakes that break international targeting, such as missing self-reference, invalid codes and relative URLs."
+  },
+  {
+   "path": "/tools/ua-compare/",
+   "description": "Free user-agent comparison: fetches a page as two different crawlers and shows what differs in status, title, canonical, noindex, H1 and structured data."
+  },
+  {
+   "path": "/tools/locale-audit/",
+   "description": "Free locale check: fetches a page with different Accept-Language headers and flags automatic redirects or content swaps by language."
+  },
+  {
+   "path": "/tools/pagespeed/",
+   "description": "Free PageSpeed comparison: your Lighthouse score and Core Web Vitals next to up to two competitors', on mobile and desktop."
+  },
+  {
+   "path": "/tools/indexnow/",
+   "description": "Free IndexNow pinger: tell Bing and other IndexNow search engines that specific URLs changed, instead of waiting for the next crawl."
+  },
+  {
+   "path": "/tools/review-link/",
+   "description": "Free Google review link generator: a direct link to the 'leave a review' box on your Google Business Profile."
+  }
+ ]
+}

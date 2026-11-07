@@ -5,9 +5,13 @@
 
 The two pages share all behaviour — the shell reads its own path to know it is at /make/ and
 passes preset=make to every tool. Only the headline copy below differs."""
-import os, sys
+import os, re, sys
 
 src = open('index.html', encoding='utf-8').read()
+
+# The homepage is indexable (see sitemap-pages.json) but its copies are not: force noindex and drop the canonical so /make/ can never open to search by accident.
+src = src.replace('<meta name="robots" content="index, follow">', '<meta name="robots" content="noindex, nofollow">')
+src = re.sub(r'<link rel="canonical"[^>]*>\n?', '', src)
 
 swaps = [
     ('<title>SEO Tools for Brand Managers — Brand Checker</title>',

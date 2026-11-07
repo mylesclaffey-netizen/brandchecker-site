@@ -1,0 +1,6 @@
+# brandchecker.eu: crawlers are welcome. Only the pages in the sitemap are meant for search; everything else carries noindex,
+# which crawlers can only see if they are allowed to fetch it, so nothing is blocked here.
+User-agent: *
+Allow: /
+
+Sitemap: https://brandchecker.eu/sitemap.xml

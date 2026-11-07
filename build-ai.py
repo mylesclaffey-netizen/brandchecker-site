@@ -10,6 +10,10 @@ import os, re, sys
 
 src = open('index.html', encoding='utf-8').read()
 
+# The homepage is indexable (see sitemap-pages.json) but its copies are not: force noindex and drop the canonical so /ai/ can never open to search by accident.
+src = src.replace('<meta name="robots" content="index, follow">', '<meta name="robots" content="noindex, nofollow">')
+src = re.sub(r'<link rel="canonical"[^>]*>\n?', '', src)
+
 def swap(old, new):
     global src
     if src.count(old) != 1:

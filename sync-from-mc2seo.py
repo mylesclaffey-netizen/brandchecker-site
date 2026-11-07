@@ -10,12 +10,14 @@ What changes on the way: the head (noindex, visitor id, Brand Checker fonts and 
 no fix-it box), mc2seo's palette and fonts → Brand Checker's, mc2seo.com → brandchecker.eu, the access code → the
 visitor id, and the agency-only links (QUOTED guide, contact a consultant) are dropped.
 """
-import os, re, sys
+import json, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, '..', 'deploy')
 
 PAGES = ['tools/lil-rag-chunker/index.html', 'tools/llms-txt/index.html']
+# Pages listed in sitemap-pages.json are meant for search: they keep `index, follow` and a canonical address (build-sitemap.py applies the rest).
+INDEXABLE = {p['path'] for p in json.load(open(os.path.join(HERE, 'sitemap-pages.json'), encoding='utf-8'))['pages']}
 ASSETS = ['assets/llms-draft.js', 'assets/rag-presets.js']
 
 FONTS = '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">'
@@ -54,8 +56,9 @@ def must(s, old, new, rel):
 
 def page(rel):
     s = open(os.path.join(SRC, rel), encoding='utf-8').read()
-    s = must(s, '<meta charset="utf-8">\n', '<meta charset="utf-8">\n<meta name="robots" content="noindex, nofollow">\n<script src="/assets/visitor.js"></script>\n', rel)
-    s = re.sub(r'<link rel="canonical"[^>]*>\n', '', s)
+    robots = 'index, follow' if '/' + os.path.dirname(rel) + '/' in INDEXABLE else 'noindex, nofollow'
+    s = must(s, '<meta charset="utf-8">\n', '<meta charset="utf-8">\n<meta name="robots" content="' + robots + '">\n<script src="/assets/visitor.js"></script>\n', rel)
+    s = re.sub(r'<link rel="canonical"[^>]*>\n', '', s)   # build-sitemap.py puts the brandchecker.eu canonical back for listed pages
     s = re.sub(r'<link rel="icon"[^\n]*\n', ICON + '\n', s, count=1)
     s = re.sub(r'<link rel="preconnect"[^\n]*\n', '', s)
     s = re.sub(r'<link href="https://fonts.googleapis.com/css2[^"]*" rel="stylesheet">', FONTS, s, count=1)
