@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Competitor Publishing Tracker | Brand Checker</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236e7bff'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#fff;--card:#fff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--soft:#e6e6e6;--you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5;padding:22px 16px 70px}
+  .wrap{max-width:980px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Archivo',sans-serif;font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.12;margin:8px 0}
+  h2{font-family:'Archivo',sans-serif;font-size:18px;font-weight:700;margin:30px 0 8px}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.6;max-width:720px}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input,select,textarea{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:7px;padding:10px 12px}
+  textarea{resize:vertical;min-height:70px;line-height:1.6}
+  select{height:42px}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px}
+  .btn{font-family:'Archivo',sans-serif;font-size:14px;font-weight:700;background:var(--you);color:#fff;border:0;border-radius:8px;padding:12px 18px;cursor:pointer}
+  .btn:hover{background:#d92f00} .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)} .btn.ghost:hover{background:#f3f3f3}
+  .btn.small{font-size:12px;padding:7px 11px}
+  .err{color:var(--bad);font-size:13px;padding:12px;border:1px solid var(--bad);border-radius:8px;margin:12px 0}
+  .ok{color:var(--ok);font-size:13px;padding:12px;border:1px solid var(--ok);border-radius:8px;margin:12px 0}
+  .panel{border:1px solid var(--line);border-radius:10px;padding:16px;margin:14px 0;background:var(--card)}
+  .boards{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+  .bchip{font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;border:1px solid var(--line);border-radius:18px;padding:6px 14px;background:#fff;cursor:pointer}
+  .bchip.on{background:var(--ink);color:#fff}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--line)}
+  td{padding:8px;border-bottom:1px solid var(--soft);vertical-align:top}
+  th.r,td.r{text-align:right;white-space:nowrap}
+  .tablewrap{overflow-x:auto}
+  .chip{font-size:10.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;border:1px solid;border-radius:12px;padding:2px 9px;white-space:nowrap}
+  .chip.active{color:var(--ok)} .chip.error{color:var(--bad)}
+  .mini{font-size:11px;font-family:inherit;border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px 8px;cursor:pointer;color:var(--ink)} .mini:hover{background:#f3f3f3}
+  .num{font-family:'Archivo',sans-serif;font-weight:800;font-size:15px}
+  .tag{display:inline-block;font-size:10.5px;padding:1px 7px;border:1px solid var(--you);color:var(--you);border-radius:10px;margin-right:4px}
+  .tag.start{border-color:var(--muted);color:var(--muted)}
+  .feed .row{padding:12px 0;border-bottom:1px solid var(--soft)}
+  .feed .t{font-family:'Archivo',sans-serif;font-weight:700;font-size:15px;text-decoration:none;color:var(--ink)} .feed .t:hover{color:var(--you)}
+  .feed .m{font-size:11.5px;color:var(--muted)}
+  .feed .d{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .empty{border:1px dashed var(--line);border-radius:10px;padding:26px;text-align:center;color:var(--muted);font-size:13px}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .toolbar select{width:auto;height:34px;font-size:12px;padding:4px 8px}
+  .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+  .foot{font-size:10.5px;color:var(--muted);margin-top:30px;line-height:1.6;max-width:800px}
+  .back{font-size:12px;color:var(--muted)} .back:hover{color:var(--ink)}
+  #gate{display:none;max-width:420px}
+  @media (max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gate">
+    <p class="eyebrow">By access link</p>
+    <h1>Sign in to your competitor watch</h1>
+    <p class="lede">The Competitor Publishing Tracker runs on a personal access link. Open the link you were sent, or enter your code below.</p>
+    <div class="field"><label for="manual">Access code</label><input id="manual" type="text" placeholder="acme-7f3d" autocapitalize="off" spellcheck="false"></div>
+    <button class="btn" id="enter" type="button">Continue</button>
+    <p class="hint" style="margin-top:12px">No link yet? <a href="mailto:mylesclaffey@gmail.com?subject=Competitor%20Publishing%20Tracker" style="color:var(--you)">Ask us for one</a>.</p>
+  </div>
+
+  <div id="app" style="display:none">
+    <p class="eyebrow">Competitor publishing tracker · by access link</p>
+    <h1>Competitor Publishing Tracker</h1>
+    <p class="lede">Name the competitors you watch and we read their sitemaps every week. When they publish something new, you get an email with the page's title and address, with the pages about your topics at the top. No more checking their blogs by hand.</p>
+
+    <div id="msg"></div>
+    <div class="boards" id="boards"></div>
+    <div id="watch"></div>
+
+    <p class="foot">New pages are found by comparing a competitor's sitemap with the week before, so the first look only records what is there (and shows the pages the sitemap says changed most recently). A sitemap lists additions, not edits to old pages, and a site without a usable sitemap cannot be watched. Tag, category, author and page-number listings are kept apart from real pages. Each new page is opened once to read its title, description and date; nothing else is stored from it.</p>
+    <p class="foot"><a class="back" href="/">← Back to tools</a></p>
+  </div>
+</div>
+
+<script>
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const qs = new URLSearchParams(location.search);
+let CODE = (qs.get('k') || '').trim();
+try { if (!CODE) CODE = sessionStorage.getItem('cptk') || ''; } catch (e) {}
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let WATCHES = [], CUR = null, LIMITS = { watches: 3, competitors: 10 }, FILTER = { competitor: '', topics: false }, PAGES = [];
+
+if (/^v-[a-f0-9]{24}$/i.test(CODE)) CODE = '';
+if (!CODE) $('gate').style.display = 'block';
+else { try { sessionStorage.setItem('cptk', CODE); } catch (e) {} $('app').style.display = 'block'; init(); }
+$('enter').onclick = () => { const v = $('manual').value.trim(); if (v) location.search = '?k=' + encodeURIComponent(v); };
+
+async function call(path, body) {
+  try { const r = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, ...body }) }); return await r.json(); }
+  catch (e) { return { error: 'Could not reach the service. Try again in a moment.' }; }
+}
+const say = (t, ok) => { $('msg').innerHTML = t ? `<div class="${ok ? 'ok' : 'err'}">${esc(t)}</div>` : ''; if (t && ok) setTimeout(() => { if ($('msg').textContent.includes(t)) $('msg').innerHTML = ''; }, 4000); };
+const ago = iso => { if (!iso) return 'never'; const d = Math.round((Date.now() - Date.parse(iso)) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'; };
+
+async function init() {
+  const d = await call('/cpt/list', {});
+  if (d.error) { say(d.error); return; }
+  WATCHES = d.watches; LIMITS = d.limits;
+  const id = qs.get('id') || CUR || (WATCHES[0] && WATCHES[0].id);
+  drawChips(id);
+  if (id && WATCHES.some(w => w.id === id)) await openWatch(id); else { CUR = null; $('watch').innerHTML = createForm(true); wireCreate(); }
+}
+function drawChips(active) {
+  $('boards').innerHTML = WATCHES.map(w => `<button class="bchip ${w.id === active ? 'on' : ''}" data-id="${esc(w.id)}">${esc(w.name)}</button>`).join('')
+    + (WATCHES.length < LIMITS.watches ? '<button class="bchip" data-new="1">+ New watch</button>' : '');
+  $('boards').querySelectorAll('.bchip').forEach(b => b.onclick = () => { if (b.dataset.new) { CUR = null; drawChips(null); $('watch').innerHTML = createForm(false); wireCreate(); } else openWatch(b.dataset.id); });
+}
+const createForm = first => `<div class="panel"><h2 style="margin-top:0">${first ? 'Create your first watch' : 'New watch'}</h2>
+  <div class="grid2"><div class="field"><label>Watch name</label><input id="cn" maxlength="80" placeholder="Hamburg Mac repair"></div>
+  <div class="field"><label>Send the weekly email to</label><input id="ce" type="email" placeholder="you@company.com"></div></div>
+  <div class="field"><label>Topics you care about (optional, one per line or comma separated)</label><textarea id="ct" placeholder="macbook akku&#10;wasserschaden&#10;display reparatur"></textarea><div class="hint">New pages that mention every word of a topic are flagged and listed first.</div></div>
+  <button class="btn" id="cgo">Create watch</button></div>`;
+function wireCreate() {
+  $('cgo').onclick = async () => {
+    const d = await call('/cpt/create', { name: $('cn').value, email: $('ce').value, topics: $('ct').value });
+    if (d.error) return say(d.error); say('');
+    CUR = d.watch.id; await init();
+  };
+}
+
+async function openWatch(id) {
+  CUR = id; drawChips(id); FILTER = { competitor: '', topics: false };
+  history.replaceState(null, '', '?k=' + encodeURIComponent(CODE) + '&id=' + encodeURIComponent(id));
+  $('watch').innerHTML = '<p class="hint">Loading…</p>';
+  const d = await call('/cpt/get', { id });
+  if (d.error) { $('watch').innerHTML = ''; return say(d.error); }
+  PAGES = d.pages; renderWatch(d);
+}
+
+function renderWatch({ watch, competitors, pages }) {
+  const week = competitors.reduce((a, c) => a + (c.new_this_week || 0), 0);
+  $('watch').innerHTML = `<h2 style="margin-top:6px">Competitors <span class="hint">${week} new page${week === 1 ? '' : 's'} in the last 7 days</span></h2>
+    ${competitors.length ? `<div class="tablewrap"><table><thead><tr><th>Competitor</th><th>Sitemap</th><th class="r">Pages</th><th class="r">New (7 days)</th><th class="r">New (total)</th><th>Last checked</th><th></th></tr></thead><tbody>${competitors.map(c => `<tr>
+      <td><b>${esc(c.label || c.domain)}</b>${c.label ? `<div class="hint" style="margin:0">${esc(c.domain)}</div>` : ''}</td>
+      <td>${c.status === 'error' ? `<span class="chip error">Problem</span><div class="hint" style="margin:2px 0 0">${esc(c.error || '')}</div>` : '<span class="chip active">Reading</span>'}</td>
+      <td class="r">${Number(c.urls_count || 0).toLocaleString('en')}</td><td class="r num">${c.new_this_week}</td><td class="r">${c.new_total}</td><td>${esc(ago(c.last_checked_at))}</td>
+      <td class="r"><button class="mini" data-check="${esc(c.id)}">Check now</button> <button class="mini" data-rm="${esc(c.id)}">Remove</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No competitors yet. Add the first one below.</div>'}
+    <div class="panel"><div class="grid3"><div class="field"><label>Competitor website</label><input id="ad" placeholder="rival.com"></div><div class="field"><label>Label (optional)</label><input id="al" maxlength="60" placeholder="Main rival"></div><div style="align-self:end;padding-bottom:14px"><button class="btn small" id="aadd">Add competitor</button></div></div>
+      <div class="hint">Up to ${LIMITS.competitors} per watch. We look at it straight away, so you will know at once if its sitemap cannot be read.</div><div id="aerr"></div></div>
+
+    <h2>New pages</h2>
+    <div class="toolbar"><select id="fcomp"><option value="">All competitors</option>${competitors.map(c => `<option value="${esc(c.id)}">${esc(c.label || c.domain)}</option>`).join('')}</select>
+      <label style="display:flex;gap:6px;align-items:center;margin:0;font-size:12px"><input type="checkbox" id="ftop" style="width:auto"> Only pages on my topics</label></div>
+    <div class="feed" id="feed"></div><div id="more" style="margin-top:10px"></div>
+
+    <h2>Weekly email and topics</h2>
+    <div class="panel"><div class="grid2"><div class="field"><label>Send to</label><input id="se" type="email" value="${esc(watch.email)}"></div>
+      <div class="field"><label>Status</label><select id="ss"><option value="active">Active: check weekly and email me</option><option value="paused">Paused</option></select></div></div>
+      <div class="field"><label>Topics (one per line or comma separated)</label><textarea id="st">${esc((watch.topics || []).join('\n'))}</textarea></div>
+      <div class="acts"><button class="btn small" id="ssave">Save</button><button class="btn small ghost" id="sdel" style="margin-left:auto;color:var(--bad)">Delete watch</button></div>
+      <div class="hint">Checks run on Mondays; the email arrives when there is something new, at most once a week. Quiet weeks send nothing.</div></div>`;
+  $('ss').value = watch.status;
+  drawFeed();
+  $('fcomp').onchange = async () => { FILTER.competitor = $('fcomp').value; await reloadFeed(watch.id); };
+  $('ftop').onchange = () => { FILTER.topics = $('ftop').checked; drawFeed(); };
+  $('aadd').onclick = async () => {
+    $('aadd').disabled = true; $('aerr').innerHTML = '<p class="hint">Reading the sitemap…</p>';
+    const r = await call('/cpt/add', { watch_id: watch.id, domain: $('ad').value, label: $('al').value });
+    if (r.error) { $('aadd').disabled = false; $('aerr').innerHTML = `<div class="err">${esc(r.error)}</div>`; return; }
+    say(r.check.ok ? `Added ${r.competitor.domain}: ${r.check.total.toLocaleString('en')} pages in its sitemap.${r.check.truncated ? ' (Very large: the first part is watched.)' : ''}` : `Added ${r.competitor.domain}, but: ${r.check.error}`, r.check.ok);
+    openWatch(watch.id);
+  };
+  $('watch').querySelectorAll('[data-check]').forEach(b => b.onclick = async () => { b.disabled = true; b.textContent = 'Checking…'; const r = await call('/cpt/check', { id: b.dataset.check }); if (r.error) { say(r.error); b.disabled = false; b.textContent = 'Check now'; return; } say(r.check.ok ? (r.check.baseline ? 'First look saved.' : `${r.check.new_pages} new page${r.check.new_pages === 1 ? '' : 's'} found.`) : r.check.error, r.check.ok); openWatch(watch.id); });
+  $('watch').querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => { if (!confirm('Stop watching this competitor and delete what we saved about it?')) return; const r = await call('/cpt/remove', { id: b.dataset.rm }); r.error ? say(r.error) : openWatch(watch.id); });
+  $('ssave').onclick = async () => { const r = await call('/cpt/update', { id: watch.id, email: $('se').value, status: $('ss').value, topics: $('st').value }); r.error ? say(r.error) : say('Saved. New topics apply to pages found from now on.', true); };
+  $('sdel').onclick = async () => { if (!confirm('Delete this watch and everything saved for it?')) return; const r = await call('/cpt/delete', { id: watch.id }); if (r.error) return say(r.error); CUR = null; history.replaceState(null, '', '?k=' + encodeURIComponent(CODE)); await init(); };
+}
+async function reloadFeed(id) {
+  const r = await call('/cpt/pages', { id, competitor_id: FILTER.competitor || undefined, limit: 40 });
+  if (r.error) return say(r.error); PAGES = r.pages; drawFeed(r.pages.length >= 40 ? id : null);
+}
+function drawFeed(moreFor) {
+  const list = PAGES.filter(p => !FILTER.topics || p.topics.length);
+  $('feed').innerHTML = list.length ? list.map(p => `<div class="row"><a class="t" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${esc(p.title || p.url)}</a>
+    <div class="m">${p.baseline ? '<span class="tag start">from the first look</span>' : ''}${p.topics.map(t => `<span class="tag">${esc(t)}</span>`).join('')}${esc(p.domain)} · ${esc(p.published || p.first_seen)} · <span style="word-break:break-all">${esc(p.url)}</span></div>
+    ${p.description ? `<div class="d">${esc(p.description.slice(0, 200))}</div>` : ''}</div>`).join('') : '<div class="empty">Nothing here yet. After the first look, new pages show up as they are published.</div>';
+  $('more').innerHTML = moreFor ? '<button class="mini" id="loadmore">Load more</button>' : '';
+  if (moreFor) $('loadmore').onclick = async () => { const r = await call('/cpt/pages', { id: CUR, competitor_id: FILTER.competitor || undefined, limit: 40, offset: PAGES.length }); if (r.error) return say(r.error); PAGES = PAGES.concat(r.pages); drawFeed(r.pages.length >= 40 ? CUR : null); };
+}
+</script>
+</body>
+</html>
