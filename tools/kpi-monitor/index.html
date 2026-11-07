@@ -206,6 +206,12 @@ function renderBoard({ board, kpis }) {
   $('board').innerHTML = `<div id="comm"></div>${summaryHtml(kpis)}
     ${kpis.length ? `<div class="kpis">${kpis.map(kpiCard).join('')}</div>` : '<div class="empty" style="margin:14px 0">No KPIs yet. Add the first one below.</div>'}
     <div><button class="btn" id="addbtn">+ Add a KPI</button></div><div id="addform"></div>
+    <h2>Screaming Frog crawls</h2>
+    <div class="panel"><p class="hint" style="margin:0 0 10px">In Screaming Frog choose <b>Reports → Crawl Overview</b> (or <b>Reports → Issues → Issues Overview</b>) and export it as CSV. Upload one after each crawl: every upload is a data point, so errors, missing titles and the like get a trend, a target and alerts like any other KPI.</p>
+      <div class="grid3"><div class="field"><label>CSV file</label><input type="file" id="sff" accept=".csv,text/csv,.txt"></div>
+      <div class="field"><label>Crawl date (optional)</label><input type="date" id="sfd"><div class="hint">Read from the file when it has one, otherwise today.</div></div>
+      <div style="align-self:start;padding-top:18px"><button class="btn small" id="sfup">Upload</button></div></div>
+      <div id="sfmsg"></div><div id="sflist"></div><div id="sfsug"></div></div>
     <h2>Share a read-only link</h2>
     <div class="panel"><p class="hint" style="margin:0 0 10px">Anyone with the link sees these numbers as they stand, with no sign-in. They cannot change anything and never see your email or account. Revoke a link at any time.</p>
       <button class="btn small" id="shnew">Create a link</button><div class="links" id="shlinks"></div></div>
@@ -216,7 +222,8 @@ function renderBoard({ board, kpis }) {
       <div class="field"><label>Alerts</label><select id="sa"><option value="1">On: tell me when something moves</option><option value="0">Off</option></select></div></div>
       <div class="acts"><button class="btn small" id="ssave">Save</button><button class="btn small ghost" id="stest">Send me a summary now</button><button class="btn small ghost" id="sdel" style="margin-left:auto;color:var(--bad)">Delete board</button></div></div>`;
   $('sd').value = board.digest; $('sa').value = board.alerts ? '1' : '0';
-  loadComment(board.id); loadShares(board.id);
+  loadComment(board.id); loadShares(board.id); loadCrawls(board.id, kpis);
+  $('sfup').onclick = () => uploadCrawl(board.id, kpis);
   $('shnew').onclick = async () => { const d = await call('/kpi/share-create', { id: board.id }); d.error ? say(d.error) : loadShares(board.id); };
   $('addbtn').onclick = () => { ADDING = !ADDING; $('addform').innerHTML = ADDING ? addForm() : ''; if (ADDING) wireAdd(board.id); };
   $('ssave').onclick = async () => { const d = await call('/kpi/update', { id: board.id, email: $('se').value, digest: $('sd').value, alerts: $('sa').value === '1' }); d.error ? say(d.error) : say('Saved.', true); };
@@ -229,6 +236,32 @@ async function loadComment(id) {
   const d = await call('/kpi/commentary', { id });
   if (d && d.text && CUR === id && $('comm')) $('comm').innerHTML = `<div class="note2"><b>What changed.</b> ${esc(d.text)}</div>`;
 }
+async function uploadCrawl(id, kpis) {
+  const f = $('sff').files[0], out = $('sfmsg');
+  if (!f) { out.innerHTML = '<div class="err">Choose the CSV file first.</div>'; return; }
+  if (f.size > 580000) { out.innerHTML = '<div class="err">That file is too large for a summary export. Use Reports → Crawl Overview, not the full crawl.</div>'; return; }
+  out.innerHTML = '<p class="hint">Reading…</p>';
+  let text; try { text = await f.text(); } catch (e) { out.innerHTML = '<div class="err">Could not read that file.</div>'; return; }
+  const d = await call('/kpi/crawl-upload', { board_id: id, csv: text, filename: f.name, date: $('sfd').value });
+  if (d.error) { out.innerHTML = `<div class="err">${esc(d.error)}</div>`; return; }
+  out.innerHTML = `<div class="ok">Read ${d.crawl.figures} figures from a ${d.crawl.kind === 'issues' ? 'Issues Overview' : 'Crawl Overview'} dated ${esc(d.crawl.date)}${d.suggestions.length ? '; recognised ' + d.suggestions.length + ' common ones below' : '. None of the common names were recognised, so pick figures from the list below.'}.</div>`;
+  $('sff').value = ''; loadCrawls(id, kpis);
+}
+async function loadCrawls(id, kpis) {
+  const d = await call('/kpi/crawl-list', { id });
+  if (!$('sflist') || d.error) return;
+  const tracked = new Set((kpis || []).filter(k => k.metric === 'crawl.count').map(k => k.ref));
+  $('sflist').innerHTML = d.crawls.length ? `<table style="margin-top:12px"><thead><tr><th>Crawl date</th><th>Type</th><th>Figures</th><th>File</th><th></th></tr></thead><tbody>${d.crawls.slice(0, 12).map(c => `<tr><td>${esc(c.date)}</td><td>${c.kind === 'issues' ? 'Issues Overview' : 'Crawl Overview'}</td><td>${c.figures}</td><td>${esc(c.filename || '')}</td><td class="r"><button class="mini" data-cdel="${esc(c.id)}">Delete</button></td></tr>`).join('')}</tbody></table>${d.crawls.length > 12 ? `<p class="hint">${d.crawls.length - 12} older uploads kept.</p>` : ''}` : '';
+  $('sflist').querySelectorAll('[data-cdel]').forEach(b => b.onclick = async () => { if (!confirm('Delete this upload? KPIs lose this data point.')) return; const r = await call('/kpi/crawl-delete', { id, crawl_id: b.dataset.cdel }); r.error ? say(r.error) : openBoard(id); });
+  const num = n => (n == null ? '–' : Number(n).toLocaleString('en'));
+  const row = s => `<tr><td>${esc(s.label)}${s.source_label ? `<div class="hint" style="margin:0">${esc(s.source_label)}</div>` : ''}</td><td class="r">${num(s.count)}${s.pct != null ? ` <span class="hint">(${s.pct}%)</span>` : ''}</td><td class="r">${tracked.has(s.key) ? '<span class="hint">Tracking</span>' : `<button class="mini" data-track="${esc(s.key)}" data-dir="${esc(s.direction)}" data-label="${esc(s.label)}">Track</button>`}</td></tr>`;
+  $('sfsug').innerHTML = (d.suggestions.length ? `<h2 style="font-size:15px;margin:18px 0 6px">Common figures in your latest crawl</h2><table><tbody>${d.suggestions.map(row).join('')}</tbody></table>` : '')
+    + (d.figures.length ? `<h2 style="font-size:15px;margin:18px 0 6px">Any other figure</h2><div class="grid3"><div class="field" style="grid-column:span 2"><select id="sfmore">${d.figures.map(f => `<option value="${esc(f.key)}">${esc(f.label)}: ${num(f.count)}</option>`).join('')}</select></div><div class="field"><select id="sfdir"><option value="down">Lower is better</option><option value="up">Higher is better</option></select></div></div><button class="mini" id="sfmoreadd">Track this figure</button>` : '');
+  const track = async (key, dir, label) => { const r = await call('/kpi/add', { board_id: id, metric: 'crawl.count', ref: key, direction: dir, label }); r.error ? say(r.error) : openBoard(id); };
+  $('sfsug').querySelectorAll('[data-track]').forEach(b => b.onclick = () => track(b.dataset.track, b.dataset.dir, b.dataset.label));
+  if ($('sfmoreadd')) $('sfmoreadd').onclick = () => { const sel = $('sfmore'); track(sel.value, $('sfdir').value, sel.selectedOptions[0].textContent.split(': ')[0].slice(0, 80)); };
+}
+
 async function loadShares(id) {
   const d = await call('/kpi/share-list', { id });
   if (!$('shlinks')) return;
