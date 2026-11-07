@@ -63,6 +63,8 @@
   .th{display:inline-block;border:1px solid var(--line);border-radius:14px;padding:3px 10px;margin:0 6px 6px 0;font-size:12px}
   .th i{font-style:normal;color:var(--muted);margin-left:5px}
   .tr{font-size:10px;letter-spacing:.05em;text-transform:uppercase;margin-left:5px} .tr.rising,.tr.new,.tr.growing{color:var(--ok)} .tr.fading{color:var(--bad)}
+  .you{display:inline-block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--you);color:var(--you);border-radius:10px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+  tr.mine td{background:rgba(255,61,0,.06)}
   .foot{font-size:10.5px;color:var(--muted);margin-top:30px;line-height:1.6;max-width:800px}
   .back{font-size:12px;color:var(--muted)} .back:hover{color:var(--ink)}
   #gate{display:none;max-width:420px}
@@ -85,7 +87,7 @@
   <div id="app" style="display:none">
     <p class="eyebrow">Competitor publishing tracker · by access link</p>
     <h1>Competitor Publishing Tracker</h1>
-    <p class="lede">Name the competitors you watch and we read their sitemaps every week. When they publish something new, you get an email with the page's title and address, with the pages about your topics at the top. No more checking their blogs by hand.</p>
+    <p class="lede">Name the competitors you watch, and add your own site beside them. We read their sitemaps every week and email you the pages they publish, with the pages about your topics at the top. The side-by-side view then sets your output against theirs.</p>
 
     <div id="msg"></div>
     <div class="boards" id="boards"></div>
@@ -153,20 +155,21 @@ async function openWatch(id) {
 }
 
 function renderWatch({ watch, competitors, pages }) {
-  const week = competitors.reduce((a, c) => a + (c.new_this_week || 0), 0);
-  $('watch').innerHTML = `<h2 style="margin-top:6px">Competitors <span class="hint">${week} new page${week === 1 ? '' : 's'} in the last 7 days</span></h2>
-    ${competitors.length ? `<div class="tablewrap"><table><thead><tr><th>Competitor</th><th>Sitemap</th><th class="r">Pages</th><th class="r">New (7 days)</th><th class="r">New (total)</th><th>Last checked</th><th></th></tr></thead><tbody>${competitors.map(c => `<tr>
-      <td><b>${esc(c.label || c.domain)}</b>${c.label ? `<div class="hint" style="margin:0">${esc(c.domain)}</div>` : ''}</td>
+  const week = competitors.filter(c => !c.is_own).reduce((a, c) => a + (c.new_this_week || 0), 0), hasOwn = competitors.some(c => c.is_own);
+  $('watch').innerHTML = `<h2 style="margin-top:6px">Competitors <span class="hint">${week} new page${week === 1 ? '' : 's'} in the last 7 days${hasOwn ? ', and your own site below them' : ''}</span></h2>
+    ${competitors.length ? `<div class="tablewrap"><table><thead><tr><th>Site</th><th>Sitemap</th><th class="r">Pages</th><th class="r">New (7 days)</th><th class="r">New (total)</th><th>Last checked</th><th></th></tr></thead><tbody>${competitors.map(c => `<tr class="${c.is_own ? 'mine' : ''}">
+      <td><b>${esc(c.is_own ? 'Your site' : c.label || c.domain)}</b>${c.is_own ? '<span class="you">you</span>' : ''}${c.label || c.is_own ? `<div class="hint" style="margin:0">${esc(c.domain)}</div>` : ''}</td>
       <td>${c.status === 'error' ? `<span class="chip error">Problem</span><div class="hint" style="margin:2px 0 0">${esc(c.error || '')}</div>` : '<span class="chip active">Reading</span>'}</td>
       <td class="r">${Number(c.urls_count || 0).toLocaleString('en')}</td><td class="r num">${c.new_this_week}</td><td class="r">${c.new_total}</td><td>${esc(ago(c.last_checked_at))}</td>
       <td class="r"><button class="mini" data-strat="${esc(c.id)}">Strategy</button> <button class="mini" data-check="${esc(c.id)}">Check now</button> <button class="mini" data-rm="${esc(c.id)}">Remove</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No competitors yet. Add the first one below.</div>'}
     <div id="compare"></div>
     <div id="strategy"></div>
-    <div class="panel"><div class="grid3"><div class="field"><label>Competitor website</label><input id="ad" placeholder="rival.com"></div><div class="field"><label>Label (optional)</label><input id="al" maxlength="60" placeholder="Main rival"></div><div style="align-self:end;padding-bottom:14px"><button class="btn small" id="aadd">Add competitor</button></div></div>
-      <div class="hint">Up to ${LIMITS.competitors} per watch. We look at it straight away, so you will know at once if its sitemap cannot be read.</div><div id="aerr"></div></div>
+    <div class="panel"><div class="grid3"><div class="field"><label>Competitor website</label><input id="ad" placeholder="rival.com"></div><div class="field"><label>Label (optional)</label><input id="al" maxlength="60" placeholder="Main rival"></div><div style="align-self:end;padding-bottom:14px"><button class="btn small" id="aadd">Add</button></div></div>
+      <label style="display:flex;gap:8px;align-items:center;margin:0 0 4px;font-size:12px;color:var(--ink)"><input type="checkbox" id="aown" style="width:auto" ${hasOwn ? 'disabled' : ''}> This is my own site${hasOwn ? ' (already added)' : ''}</label>
+      <div class="hint">Up to ${LIMITS.competitors} competitors per watch, plus your own site. We look at it straight away, so you will know at once if its sitemap cannot be read. Your own pages never appear in the competitor feed or email; they are only compared.</div><div id="aerr"></div></div>
 
     <h2>New pages</h2>
-    <div class="toolbar"><select id="fcomp"><option value="">All competitors</option>${competitors.map(c => `<option value="${esc(c.id)}">${esc(c.label || c.domain)}</option>`).join('')}</select>
+    <div class="toolbar"><select id="fcomp"><option value="">All competitors</option>${competitors.map(c => `<option value="${esc(c.id)}">${esc(c.is_own ? 'Your site (' + c.domain + ')' : c.label || c.domain)}</option>`).join('')}</select>
       <label style="display:flex;gap:6px;align-items:center;margin:0;font-size:12px"><input type="checkbox" id="ftop" style="width:auto"> Only pages on my topics</label></div>
     <div class="feed" id="feed"></div><div id="more" style="margin-top:10px"></div>
 
@@ -182,9 +185,9 @@ function renderWatch({ watch, competitors, pages }) {
   $('ftop').onchange = () => { FILTER.topics = $('ftop').checked; drawFeed(); };
   $('aadd').onclick = async () => {
     $('aadd').disabled = true; $('aerr').innerHTML = '<p class="hint">Reading the sitemap…</p>';
-    const r = await call('/cpt/add', { watch_id: watch.id, domain: $('ad').value, label: $('al').value });
+    const r = await call('/cpt/add', { watch_id: watch.id, domain: $('ad').value, label: $('al').value, own: $('aown').checked });
     if (r.error) { $('aadd').disabled = false; $('aerr').innerHTML = `<div class="err">${esc(r.error)}</div>`; return; }
-    say(r.check.ok ? `Added ${r.competitor.domain}: ${r.check.total.toLocaleString('en')} pages in its sitemap.${r.check.truncated ? ' (Very large: the first part is watched.)' : ''}` : `Added ${r.competitor.domain}, but: ${r.check.error}`, r.check.ok);
+    say(r.check.ok ? `Added ${r.competitor.is_own ? 'your site, ' : ''}${r.competitor.domain}: ${r.check.total.toLocaleString('en')} pages in its sitemap.${r.check.truncated ? ' (Very large: the first part is watched.)' : ''}` : `Added ${r.competitor.domain}, but: ${r.check.error}`, r.check.ok);
     openWatch(watch.id);
   };
   $('watch').querySelectorAll('[data-check]').forEach(b => b.onclick = async () => { b.disabled = true; b.textContent = 'Checking…'; const r = await call('/cpt/check', { id: b.dataset.check }); if (r.error) { say(r.error); b.disabled = false; b.textContent = 'Check now'; return; } say(r.check.ok ? (r.check.baseline ? 'First look saved.' : `${r.check.new_pages} new page${r.check.new_pages === 1 ? '' : 's'} found.`) : r.check.error, r.check.ok); openWatch(watch.id); });
@@ -201,11 +204,11 @@ function mini(months) {
 async function loadCompare(id) {
   const r = await call('/cpt/compare', { id });
   if (!$('compare') || r.error) return;
-  const cs = r.competitors, nm = c => esc(c.label || c.domain), hasT = r.matrix.topics.length;
+  const cs = r.competitors, nm = c => esc(c.is_own ? 'You' : c.label || c.domain), hasT = r.matrix.topics.length;
   const shade = n => (n ? `background:rgba(255,61,0,${Math.min(0.15 + n * 0.08, 0.7)})` : '');
   $('compare').innerHTML = `<h2>Side by side</h2>
     ${r.highlights.length ? `<div class="read" style="border-left-color:var(--ink)"><ul style="margin:0 0 0 18px">${r.highlights.map(h => `<li>${esc(h.text)}</li>`).join('')}</ul></div>` : ''}
-    <div class="tablewrap"><table><thead><tr><th>Competitor</th><th class="r">Pages</th><th class="r">Last 90 days</th><th class="r">vs before</th><th class="r">Touched recently</th><th>Biggest section</th><th class="r">New (7 days)</th>${hasT ? '<th class="r">On your topics</th>' : ''}<th>Per month (12)</th></tr></thead><tbody>${cs.map(c => `<tr>
+    <div class="tablewrap"><table><thead><tr><th>Competitor</th><th class="r">Pages</th><th class="r">Last 90 days</th><th class="r">vs before</th><th class="r">Touched recently</th><th>Biggest section</th><th class="r">New (7 days)</th>${hasT ? '<th class="r">On your topics</th>' : ''}<th>Per month (12)</th></tr></thead><tbody>${cs.map(c => `<tr class="${c.is_own ? 'mine' : ''}">
       <td><a href="#" data-cstrat="${esc(c.id)}" style="color:var(--ink);font-weight:700">${nm(c)}</a>${c.status === 'error' ? ' <span class="chip error">problem</span>' : ''}</td>
       <td class="r">${c.pages == null ? '–' : Number(c.pages).toLocaleString('en')}</td>
       <td class="r">${c.dates_reliable ? c.last90 : '<span class="hint" title="Most pages carry the same date">n/a</span>'}</td><td class="r">${c.dates_reliable ? PCT(c.change_pct) : '–'}</td><td class="r">${c.dates_reliable && c.fresh_pct != null ? c.fresh_pct + '%' : '–'}</td>
@@ -227,7 +230,7 @@ async function openStrategy(id, refresh) {
   const r = await call('/cpt/strategy', { id, refresh });
   if (r.error) { box.innerHTML = `<div class="err">${esc(r.error)}</div>`; return; }
   const f = r.facts, p = f.publishing, o = f.overlap, n = r.narrative;
-  box.innerHTML = `<div class="strat"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><h3>Strategy: ${esc(r.competitor.label || r.competitor.domain)}</h3><div class="hint" style="margin:0">Inferred from their sitemap and the titles, descriptions and headings of ${f.corpus.pages} of their pages.</div></div><div><button class="mini" id="srefresh">Refresh</button> <button class="mini" id="sclose">Close</button></div></div>
+  box.innerHTML = `<div class="strat"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><h3>Strategy: ${esc(f.competitor.own_site ? 'your site (' + r.competitor.domain + ')' : r.competitor.label || r.competitor.domain)}</h3><div class="hint" style="margin:0">Inferred from their sitemap and the titles, descriptions and headings of ${f.corpus.pages} of their pages.</div></div><div><button class="mini" id="srefresh">Refresh</button> <button class="mini" id="sclose">Close</button></div></div>
     ${n ? `<div class="read"><b>Our read</b> <span class="hint">(inference, confidence ${esc(n.confidence)})</span><div>${esc(n.read)}</div>${n.signals.length ? `<ul>${n.signals.map(s => `<li>${esc(s.claim)} <span class="sig">${esc(s.evidence)}</span></li>`).join('')}</ul>` : ''}${n.for_you.length ? `<div class="sig" style="margin-top:8px"><b>For you:</b> ${n.for_you.map(esc).join(' · ')}</div>` : ''}</div>`
       : `<div class="warn" style="color:var(--warn);border:1px solid var(--warn);border-radius:8px;padding:10px 12px;font-size:12.5px;margin:12px 0">The written read-out is not available right now (${esc(r.narrative_reason || 'unknown')}). The measured facts below are.</div>`}
     ${f.corpus.thin ? '<div class="hint">Few pages could be read, so the themes are a rough guide.</div>' : ''}
