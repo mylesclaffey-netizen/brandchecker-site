@@ -160,6 +160,7 @@ function renderWatch({ watch, competitors, pages }) {
       <td>${c.status === 'error' ? `<span class="chip error">Problem</span><div class="hint" style="margin:2px 0 0">${esc(c.error || '')}</div>` : '<span class="chip active">Reading</span>'}</td>
       <td class="r">${Number(c.urls_count || 0).toLocaleString('en')}</td><td class="r num">${c.new_this_week}</td><td class="r">${c.new_total}</td><td>${esc(ago(c.last_checked_at))}</td>
       <td class="r"><button class="mini" data-strat="${esc(c.id)}">Strategy</button> <button class="mini" data-check="${esc(c.id)}">Check now</button> <button class="mini" data-rm="${esc(c.id)}">Remove</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No competitors yet. Add the first one below.</div>'}
+    <div id="compare"></div>
     <div id="strategy"></div>
     <div class="panel"><div class="grid3"><div class="field"><label>Competitor website</label><input id="ad" placeholder="rival.com"></div><div class="field"><label>Label (optional)</label><input id="al" maxlength="60" placeholder="Main rival"></div><div style="align-self:end;padding-bottom:14px"><button class="btn small" id="aadd">Add competitor</button></div></div>
       <div class="hint">Up to ${LIMITS.competitors} per watch. We look at it straight away, so you will know at once if its sitemap cannot be read.</div><div id="aerr"></div></div>
@@ -187,10 +188,34 @@ function renderWatch({ watch, competitors, pages }) {
     openWatch(watch.id);
   };
   $('watch').querySelectorAll('[data-check]').forEach(b => b.onclick = async () => { b.disabled = true; b.textContent = 'Checking…'; const r = await call('/cpt/check', { id: b.dataset.check }); if (r.error) { say(r.error); b.disabled = false; b.textContent = 'Check now'; return; } say(r.check.ok ? (r.check.baseline ? 'First look saved.' : `${r.check.new_pages} new page${r.check.new_pages === 1 ? '' : 's'} found.`) : r.check.error, r.check.ok); openWatch(watch.id); });
+  if (competitors.length >= 2) loadCompare(watch.id); 
   $('watch').querySelectorAll('[data-strat]').forEach(b => b.onclick = () => openStrategy(b.dataset.strat, false));
   $('watch').querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => { if (!confirm('Stop watching this competitor and delete what we saved about it?')) return; const r = await call('/cpt/remove', { id: b.dataset.rm }); r.error ? say(r.error) : openWatch(watch.id); });
   $('ssave').onclick = async () => { const r = await call('/cpt/update', { id: watch.id, email: $('se').value, status: $('ss').value, topics: $('st').value }); r.error ? say(r.error) : say('Saved. New topics apply to pages found from now on.', true); };
   $('sdel').onclick = async () => { if (!confirm('Delete this watch and everything saved for it?')) return; const r = await call('/cpt/delete', { id: watch.id }); if (r.error) return say(r.error); CUR = null; history.replaceState(null, '', '?k=' + encodeURIComponent(CODE)); await init(); };
+}
+function mini(months) {
+  const W = 90, H = 24, max = Math.max(...months, 1), bw = W / (months.length || 1);
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:90px;height:24px;display:block">${months.map((v, i) => `<rect x="${i * bw + 0.5}" y="${H - v / max * (H - 2)}" width="${bw - 1.5}" height="${Math.max(v / max * (H - 2), v ? 1 : 0)}" fill="#0a0a0a"/>`).join('')}</svg>`;
+}
+async function loadCompare(id) {
+  const r = await call('/cpt/compare', { id });
+  if (!$('compare') || r.error) return;
+  const cs = r.competitors, nm = c => esc(c.label || c.domain), hasT = r.matrix.topics.length;
+  const shade = n => (n ? `background:rgba(255,61,0,${Math.min(0.15 + n * 0.08, 0.7)})` : '');
+  $('compare').innerHTML = `<h2>Side by side</h2>
+    ${r.highlights.length ? `<div class="read" style="border-left-color:var(--ink)"><ul style="margin:0 0 0 18px">${r.highlights.map(h => `<li>${esc(h.text)}</li>`).join('')}</ul></div>` : ''}
+    <div class="tablewrap"><table><thead><tr><th>Competitor</th><th class="r">Pages</th><th class="r">Last 90 days</th><th class="r">vs before</th><th class="r">Touched recently</th><th>Biggest section</th><th class="r">New (7 days)</th>${hasT ? '<th class="r">On your topics</th>' : ''}<th>Per month (12)</th></tr></thead><tbody>${cs.map(c => `<tr>
+      <td><a href="#" data-cstrat="${esc(c.id)}" style="color:var(--ink);font-weight:700">${nm(c)}</a>${c.status === 'error' ? ' <span class="chip error">problem</span>' : ''}</td>
+      <td class="r">${c.pages == null ? '–' : Number(c.pages).toLocaleString('en')}</td>
+      <td class="r">${c.dates_reliable ? c.last90 : '<span class="hint" title="Most pages carry the same date">n/a</span>'}</td><td class="r">${c.dates_reliable ? PCT(c.change_pct) : '–'}</td><td class="r">${c.dates_reliable && c.fresh_pct != null ? c.fresh_pct + '%' : '–'}</td>
+      <td>${c.top_section ? esc(c.top_section.section) + ` <span class="hint">${c.top_section.share}%</span>` : '–'}${c.growing.length ? ` <span class="tr growing">${esc(c.growing[0])} growing</span>` : ''}${c.fading.length ? ` <span class="tr fading">${esc(c.fading[0])} fading</span>` : ''}</td>
+      <td class="r"><b>${c.new_7d}</b></td>${hasT ? `<td class="r">${c.on_topics_pct == null ? '–' : c.on_topics_pct + '%'}</td>` : ''}
+      <td>${c.dates_reliable && c.months.length ? mini(c.months) : '<span class="hint">–</span>'}</td></tr>`).join('')}</tbody></table></div>
+    ${hasT ? `<h3 style="font-size:13px;margin:16px 0 6px">Your topics, page by page</h3><div class="tablewrap"><table><thead><tr><th>Topic</th>${cs.map(c => `<th class="r">${nm(c)}</th>`).join('')}</tr></thead><tbody>${r.matrix.topics.map((t, i) => `<tr><td>${esc(t)}</td>${r.matrix.rows.map(row => `<td class="r" style="${shade(row.counts[i])}">${row.counts[i]}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <div class="hint">Pages we have read that mention the whole topic. The more pages, the more they cover it.</div>` : '<div class="hint" style="margin-top:8px">Add topics to this watch (below) to see how each competitor covers them.</div>'}
+    ${r.notes.map(n => `<div class="hint" style="margin-top:6px">${esc(n)}</div>`).join('')}`;
+  $('compare').querySelectorAll('[data-cstrat]').forEach(a => a.onclick = e => { e.preventDefault(); openStrategy(a.dataset.cstrat, false); });
 }
 const PCT = p => (p == null ? '–' : `<span style="color:${p > 0 ? 'var(--ok)' : p < 0 ? 'var(--bad)' : 'inherit'}">${p > 0 ? '+' : ''}${p}%</span>`);
 function bars(months) {
