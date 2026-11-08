@@ -184,7 +184,8 @@ function renderWatch({ watch, competitors, pages }) {
   </div>
   <div id="tab-cloud" hidden>
     <h2 style="margin-top:6px">What they write about, month by month <span class="hint">the words that recur in a site's new pages</span></h2>
-    <div class="toolbar"><select id="cloudsite">${competitors.map(c => `<option value="${esc(c.id)}">${esc(c.is_own ? 'Your site (' + c.domain + ')' : c.label || c.domain)}</option>`).join('')}</select></div>
+    <div class="toolbar"><select id="cloudsite">${competitors.map(c => `<option value="${esc(c.id)}">${esc(c.is_own ? 'Your site (' + c.domain + ')' : c.label || c.domain)}</option>`).join('')}</select>
+      <select id="cloudmode"><option value="recent">Recent pages (page titles)</option><option value="history">Full history (sitemap, words from addresses)</option></select></div>
     <div id="cloudbox">${competitors.length ? '<p class="hint">Loading…</p>' : '<div class="empty">Add a site on the Sites tab first.</div>'}</div>
   </div>
   <div id="tab-topics" hidden>
@@ -213,8 +214,8 @@ function renderWatch({ watch, competitors, pages }) {
   drawFeed(); reloadFeed(watch.id);
   $('fcomp').onchange = async () => { FILTER.competitor = $('fcomp').value; await reloadFeed(watch.id); };
   document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b)); ['weekly', 'cloud', 'topics', 'sites'].forEach(t => { $('tab-' + t).hidden = t !== b.dataset.tab; }); });
-  let cloudFor = null; const showCloud = async () => { const id = $('cloudsite').value; if (!id || cloudFor === id) return; cloudFor = id; await loadCloud(watch.id, id); };
-  if ($('cloudsite')) { $('cloudsite').onchange = () => { cloudFor = null; showCloud(); }; document.querySelector('[data-tab=cloud]').addEventListener('click', showCloud); }
+  let cloudFor = null; const showCloud = async () => { const id = $('cloudsite').value, hist = $('cloudmode').value === 'history', key = id + hist; if (!id || cloudFor === key) return; cloudFor = key; await loadCloud(watch.id, id, hist); };
+  if ($('cloudsite')) { $('cloudsite').onchange = $('cloudmode').onchange = () => { cloudFor = null; showCloud(); }; document.querySelector('[data-tab=cloud]').addEventListener('click', showCloud); }
   if ($('ftopic')) $('ftopic').onchange = () => { FILTER.topic = $('ftopic').value; drawTopicFeed(); };
   $('tsave').onclick = async () => { const r = await call('/cpt/update', { id: watch.id, topics: $('st').value }); if (r.error) return say(r.error); say('Topics saved. They apply to pages found from now on.', true); openWatch(watch.id).then(() => document.querySelector('[data-tab=topics]').click()); };
   $('aadd').onclick = async () => {
@@ -285,13 +286,14 @@ async function openStrategy(id, refresh) {
   $('sclose').onclick = () => { box.innerHTML = ''; };
   $('srefresh').onclick = () => openStrategy(id, true);
 }
-async function loadCloud(watchId, compId) {
-  const box = $('cloudbox'); box.innerHTML = '<p class="hint">Reading their pages…</p>';
-  const r = await call('/cpt/cloud', { id: watchId, competitor_id: compId, months: 6 });
+async function loadCloud(watchId, compId, hist) {
+  const box = $('cloudbox'); box.innerHTML = `<p class="hint">${hist ? 'Reading the whole sitemap, this can take a moment…' : 'Reading their pages…'}</p>`;
+  const r = await call('/cpt/cloud', { id: watchId, competitor_id: compId, months: 6, history: hist });
   if (r.error) { box.innerHTML = `<div class="err">${esc(r.error)}</div>`; return; }
+  if (r.unreliable) { box.innerHTML = `<div class="empty">This site's sitemap does not carry usable dates (${r.dated} of ${r.pages} addresses are dated, or most share one date), so a history cannot be built from it. Use the recent-pages view instead.</div>`; return; }
   if (!r.months.length) { box.innerHTML = '<div class="empty">No dated pages with titles yet. The cloud fills in as pages are found and read.</div>'; return; }
   const cols = ['#555', '#0a0a0a'];
-  box.innerHTML = '<div class="hint" style="margin:0 0 8px">Bigger means more of that month\'s pages use it. <span style="color:var(--you);font-weight:700">Orange</span> = not in the month before. A page counts by the date it was published or last changed.</div>'
+  box.innerHTML = '<div class="hint" style="margin:0 0 8px">Bigger means more of that month\'s pages use it. <span style="color:var(--you);font-weight:700">Orange</span> = not in the month before. '+(r.history ? `Built from the words in ${r.dated.toLocaleString('en')} addresses (${r.pages.toLocaleString('en')} pages in the sitemap${r.truncated ? ', very large, so the first part only' : ''}), by the date the sitemap gives each one, which is when it last changed, not always when it was published. Words come from the address, not the title.` : 'A page counts by the date it was published or last changed.')+'</div>'
     + r.months.map(m => { const max = Math.max(...m.words.map(w => w.count), 1);
       return `<div class="panel cloud"><h3 style="font-size:13px;margin:0 0 8px">${esc(new Date(m.month + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }))} <span class="hint">${m.pages} page${m.pages === 1 ? '' : 's'}</span></h3>`
         + (m.words.length ? m.words.map(w => `<span class="cw" style="font-size:${(12 + 26 * Math.sqrt(w.count / max)).toFixed(1)}px;color:${w.fresh ? 'var(--you)' : cols[w.count / max > 0.4 ? 1 : 0]}" title="${w.count} page${w.count === 1 ? '' : 's'}${w.fresh ? ', new this month' : ''}">${esc(w.term)}</span>`).join(' ') : '<span class="hint">Too few pages to find recurring words.</span>') + '</div>'; }).join('');
