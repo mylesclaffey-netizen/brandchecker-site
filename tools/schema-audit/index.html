@@ -323,6 +323,8 @@ const itemLabel = (it) => (it.types.join(' + ') || 'Untyped item') + (it.name &&
 const codeList = (paths) => paths.map(p => p.split(' / ').map(x => x.split(' or ').map(y => '<code>' + esc(y) + '</code>').join(' or ')).join(' / ')).join(', ');
 
 function renderReport(r, ctx){
+  // Several JSON-LD blocks (three snippets pasted together, say): name the block each item came from.
+  const label = (it) => itemLabel(it) + (r.found.jsonld > 1 && it.block != null ? ' · block ' + (it.block + 1) : '');
   const s = r.summary;
   const items = r.items;
   const headline = !items.length
@@ -347,7 +349,7 @@ function renderReport(r, ctx){
       const it = items[f.item];
       const rec = f.recommendedMissing || [];
       return '<div class="frow ' + f.status + '"><span class="st ' + f.status + '">' + STATUS[f.status] + '</span><div class="body">' +
-        '<b>' + (f.docs ? '<a href="' + esc(f.docs) + '" target="_blank" rel="noopener">' + esc(f.name) + '</a>' : esc(f.name)) + '</b> <span class="on">on ' + esc(itemLabel(it)) + (f.path ? ' (its ' + esc(f.path) + ')' : '') + '</span>' +
+        '<b>' + (f.docs ? '<a href="' + esc(f.docs) + '" target="_blank" rel="noopener">' + esc(f.name) + '</a>' : esc(f.name)) + '</b> <span class="on">on ' + esc(label(it)) + (f.path ? ' (its ' + esc(f.path) + ')' : '') + '</span>' +
         (f.missing.length ? '<div class="miss">Missing (required): ' + codeList(f.missing) + '</div>' : '') +
         (rec.length ? (rec.length > 5
           ? '<details><summary>Google also recommends ' + rec.length + ' more properties</summary><div class="rec">' + codeList(rec) + '</div></details>'
@@ -360,7 +362,7 @@ function renderReport(r, ctx){
   }
 
   // Problems: errors and warnings, page-level first, then per item; notes folded away.
-  const all = [...r.issues.map(i => ({ ...i, where: null })), ...items.flatMap(it => it.issues.map(i => ({ ...i, where: itemLabel(it) })))];
+  const all = [...r.issues.map(i => ({ ...i, where: null })), ...items.flatMap(it => it.issues.map(i => ({ ...i, where: label(it) })))];
   const probs = all.filter(i => i.level !== 'info').sort((a, b) => (a.level === 'error' ? 0 : 1) - (b.level === 'error' ? 0 : 1));
   const notes = all.filter(i => i.level === 'info');
   const row = i => '<div class="findrow ' + LEVEL[i.level][0] + '"><span class="badge">' + LEVEL[i.level][1] + '</span><div class="msg">' +
@@ -374,7 +376,7 @@ function renderReport(r, ctx){
     html += '<h2>What\'s ' + (ctx.pasted ? 'in the code' : 'on the page') + '</h2>' + items.map(it => {
       const e = it.issues.filter(i => i.level === 'error').length + it.features.filter(f => f.status === 'not-eligible').length;
       const w = it.issues.filter(i => i.level === 'warning').length;
-      return '<details class="item"><summary>' + esc(itemLabel(it)) + '<span class="src">' + esc(SOURCE[it.source] || it.source) + '</span>' +
+      return '<details class="item"><summary>' + esc(label(it)) + '<span class="src">' + esc(SOURCE[it.source] || it.source) + '</span>' +
         '<span class="counts">' + (e ? '<span class="e">' + plural(e, 'error') + '</span> ' : '') + (w ? '<span class="w">' + plural(w, 'warning') + '</span>' : '') + '</span></summary>' +
         '<pre>' + esc(JSON.stringify(it.data, null, 2)) + '</pre></details>';
     }).join('');

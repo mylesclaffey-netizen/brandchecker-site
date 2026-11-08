@@ -175,9 +175,9 @@
 
   <div class="card"><h2>Plans</h2><p class="sub">One row per plan on your pricing page. For a plan with no public price, tick “contact sales”.</p><div id="plans"></div><button class="addb" id="addPlan" type="button">+ Add a plan</button></div>
 
-  <div class="card"><h2>Ratings (optional)</h2><p class="sub">Only from reviews your own users left, collected by you or a review tool on your site, and shown on the page this markup goes on. Google shows the Software app rich result only with a rating or reviews, and doesn’t allow a score copied from G2, Capterra or another site.</p>
+  <div class="card"><h2>Ratings (optional)</h2><p class="sub">Only from reviews your own users left, collected by you or a review tool on your site, and shown on the page this markup goes on. Google shows the Software app rich result only with a rating or reviews, and doesn’t allow a score copied from G2, Capterra or another site. If the reviews are on your pricing page, choose it: with its priced plans, that snippet meets everything Google lists for the rich result.</p>
     <div class="row2"><div class="f"><label for="rValue">Average rating</label><input id="rValue" type="text" inputmode="decimal" placeholder="4.6"></div><div class="f"><label for="rCount">Number of ratings</label><input id="rCount" type="text" inputmode="numeric" placeholder="128"></div></div>
-    <div class="row2"><div class="f"><label for="rBest">Out of</label><input id="rBest" type="text" inputmode="numeric" value="5"></div><div class="f"><label for="rPage">The reviews are shown on</label><select id="rPage"><option value="home">the homepage</option><option value="pricing">the pricing page</option></select></div></div>
+    <div class="row2"><div class="f"><label for="rBest">Out of</label><input id="rBest" type="text" inputmode="numeric" value="5"></div><div class="f"><label for="rPage">The reviews are shown on</label><select id="rPage"><option value="pricing" selected>the pricing page</option><option value="home">the homepage</option></select></div></div>
     <label class="own"><input type="checkbox" id="rOwn"> These are my own users’ reviews, and that page shows them (the rating and the reviews behind it).</label></div>
 
   <div class="card"><h2>FAQ</h2><p class="sub">Questions and answers that are written out on your page — the markup must match what visitors can read there.</p><div id="faqs"></div><button class="addb" id="addFaq" type="button">+ Add a question</button></div>
@@ -272,7 +272,10 @@ function build() {
     if (logo) graph[0].logo = logo; if (val('orgDesc')) graph[0].description = val('orgDesc'); if (same.length) graph[0].sameAs = same;
     graph.push({ '@type': 'WebSite', '@id': base + '#website', name: name, url: base, publisher: { '@id': orgId } });
     var a = app({ '@id': base + '#software', url: base, publisher: { '@id': orgId } });
-    if (rating && rPage === 'home') a.aggregateRating = rating;
+    if (rating && rPage === 'home') {
+      a.aggregateRating = rating;
+      if (priced.length && currencies.length === 1) add('i', 'The homepage gives a price range (from–to), and Google’s Software app rules ask for a price without saying whether a range counts. If the reviews are also shown on the pricing page, putting the rating there is the safe choice.');
+    }
     if (priced.length && currencies.length === 1) {
       var prices = priced.map(function (p) { return p.price; });
       a.offers = { '@type': 'AggregateOffer', priceCurrency: currencies[0], lowPrice: Math.min.apply(null, prices), highPrice: Math.max.apply(null, prices), offerCount: plans.length };
@@ -283,7 +286,10 @@ function build() {
   if (!plans.length) add('i', 'No plans yet — add them to get the pricing-page snippet.');
   else if (name && url) {
     if (!pricingUrl) add('w', 'Add your pricing page address so each Offer points at it.'); else if (!https(pricingUrl)) add('w', 'The pricing page address should be a full https:// address.');
-    var offers = plans.map(function (p) {
+    // Google needs a price on every offer, so a plan with no public price (contact sales) stays out of the offers
+    // and is named in the description instead; one price-less offer would cost the whole snippet its rich result.
+    var unpriced = plans.filter(function (p) { return p.price == null; }).map(function (p) { return p.name; }).filter(Boolean);
+    var offers = plans.filter(function (p) { return p.price != null; }).map(function (p) {
       var o = { '@type': 'Offer', name: p.name };
       if (pricingUrl) o.url = pricingUrl;
       if (p.price != null) {
@@ -292,11 +298,17 @@ function build() {
         if (p.period && p.price > 0) ps.billingDuration = p.period;
         if (p.per_seat) ps.referenceQuantity = { '@type': 'QuantitativeValue', value: 1, unitText: 'user' };
         o.priceSpecification = ps;
-      } else o.description = 'Custom pricing — contact sales.';
+      }
       return o;
     });
     if (val('pTrial')) offers.push({ '@type': 'Offer', name: 'Free trial', price: 0, priceCurrency: currencies[0] || 'USD', description: val('pTrial') });
-    var pa = Object.assign(app({ '@id': base + '#software' }), { url: pricingUrl || base, offers: offers });
+    var pa = Object.assign(app({ '@id': base + '#software' }), { url: pricingUrl || base });
+    if (offers.length) pa.offers = offers;
+    if (unpriced.length) {
+      pa.description = (pa.description ? pa.description + ' ' : '') + unpriced.join(', ') + ': custom pricing, contact sales.';
+      add('i', unpriced.join(', ') + (unpriced.length === 1 ? ' has' : ' have') + ' no public price, so ' + (unpriced.length === 1 ? 'it is' : 'they are') + ' named in the pricing-page description rather than listed as an offer: Google needs a price on every offer.');
+    }
+    if (!offers.length) add('w', 'No plan has a public price, so the pricing-page snippet has no offers, and Google shows the Software app rich result only with a price (0 for free).');
     if (rating && rPage === 'pricing') pa.aggregateRating = rating;
     out2 = tag({ '@context': 'https://schema.org', '@graph': [pa] });
   }
