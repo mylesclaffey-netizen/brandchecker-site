@@ -65,6 +65,7 @@
   .tr{font-size:10px;letter-spacing:.05em;text-transform:uppercase;margin-left:5px} .tr.rising,.tr.new,.tr.growing{color:var(--ok)} .tr.fading{color:var(--bad)}
   .you{display:inline-block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--you);color:var(--you);border-radius:10px;padding:1px 7px;margin-left:6px;vertical-align:middle}
   tr.mine td{background:rgba(255,61,0,.06)}
+  .cloud{line-height:1.25} .cw{display:inline-block;font-family:'Archivo',sans-serif;font-weight:800;margin:2px 8px 2px 0}
   .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin:18px 0 6px}
   .tabs button{font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;border:0;background:none;padding:9px 14px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px}
   .tabs button.on{color:var(--ink);border-bottom-color:var(--you)}
@@ -171,7 +172,7 @@ async function openWatch(id) {
 function renderWatch({ watch, competitors, pages }) {
   const week = competitors.filter(c => !c.is_own).reduce((a, c) => a + (c.new_this_week || 0), 0), hasOwn = competitors.some(c => c.is_own);
   const hasT = (watch.topics || []).length;
-  $('watch').innerHTML = `<div class="tabs"><button data-tab="weekly" class="on">Week by week</button><button data-tab="topics">Topics${hasT ? ' (' + watch.topics.length + ')' : ''}</button><button data-tab="sites">Sites &amp; settings</button></div>
+  $('watch').innerHTML = `<div class="tabs"><button data-tab="weekly" class="on">Week by week</button><button data-tab="cloud">Word cloud</button><button data-tab="topics">Topics${hasT ? ' (' + watch.topics.length + ')' : ''}</button><button data-tab="sites">Sites &amp; settings</button></div>
   <div id="tab-weekly">
     <h2 style="margin-top:6px">Everything published, week by week <span class="hint">${week} new page${week === 1 ? '' : 's'} across your competitors in the last 7 days</span></h2>
     <div id="weektable"></div>
@@ -180,6 +181,11 @@ function renderWatch({ watch, competitors, pages }) {
     <h2>New pages</h2>
     <div class="toolbar"><select id="fcomp"><option value="">All sites</option>${competitors.map(c => `<option value="${esc(c.id)}">${esc(c.is_own ? 'Your site (' + c.domain + ')' : c.label || c.domain)}</option>`).join('')}</select></div>
     <div class="feed" id="feed"></div><div id="more" style="margin-top:10px"></div>
+  </div>
+  <div id="tab-cloud" hidden>
+    <h2 style="margin-top:6px">What they write about, month by month <span class="hint">the words that recur in a site's new pages</span></h2>
+    <div class="toolbar"><select id="cloudsite">${competitors.map(c => `<option value="${esc(c.id)}">${esc(c.is_own ? 'Your site (' + c.domain + ')' : c.label || c.domain)}</option>`).join('')}</select></div>
+    <div id="cloudbox">${competitors.length ? '<p class="hint">Loading…</p>' : '<div class="empty">Add a site on the Sites tab first.</div>'}</div>
   </div>
   <div id="tab-topics" hidden>
     <h2 style="margin-top:6px">Track topics <span class="hint">optional: see who covers the subjects you care about</span></h2>
@@ -206,7 +212,9 @@ function renderWatch({ watch, competitors, pages }) {
   $('ss').value = watch.status;
   drawFeed(); reloadFeed(watch.id);
   $('fcomp').onchange = async () => { FILTER.competitor = $('fcomp').value; await reloadFeed(watch.id); };
-  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b)); ['weekly', 'topics', 'sites'].forEach(t => { $('tab-' + t).hidden = t !== b.dataset.tab; }); });
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b)); ['weekly', 'cloud', 'topics', 'sites'].forEach(t => { $('tab-' + t).hidden = t !== b.dataset.tab; }); });
+  let cloudFor = null; const showCloud = async () => { const id = $('cloudsite').value; if (!id || cloudFor === id) return; cloudFor = id; await loadCloud(watch.id, id); };
+  if ($('cloudsite')) { $('cloudsite').onchange = () => { cloudFor = null; showCloud(); }; document.querySelector('[data-tab=cloud]').addEventListener('click', showCloud); }
   if ($('ftopic')) $('ftopic').onchange = () => { FILTER.topic = $('ftopic').value; drawTopicFeed(); };
   $('tsave').onclick = async () => { const r = await call('/cpt/update', { id: watch.id, topics: $('st').value }); if (r.error) return say(r.error); say('Topics saved. They apply to pages found from now on.', true); openWatch(watch.id).then(() => document.querySelector('[data-tab=topics]').click()); };
   $('aadd').onclick = async () => {
@@ -276,6 +284,17 @@ async function openStrategy(id, refresh) {
     <div class="hint" style="margin-top:12px">A sitemap's date is when a page last changed, so "published or updated" mixes new pages with edits. Themes come from titles, descriptions and headings only. The read-out is a hypothesis built from these facts, not knowledge of their plans.</div></div>`;
   $('sclose').onclick = () => { box.innerHTML = ''; };
   $('srefresh').onclick = () => openStrategy(id, true);
+}
+async function loadCloud(watchId, compId) {
+  const box = $('cloudbox'); box.innerHTML = '<p class="hint">Reading their pages…</p>';
+  const r = await call('/cpt/cloud', { id: watchId, competitor_id: compId, months: 6 });
+  if (r.error) { box.innerHTML = `<div class="err">${esc(r.error)}</div>`; return; }
+  if (!r.months.length) { box.innerHTML = '<div class="empty">No dated pages with titles yet. The cloud fills in as pages are found and read.</div>'; return; }
+  const cols = ['#555', '#0a0a0a'];
+  box.innerHTML = '<div class="hint" style="margin:0 0 8px">Bigger means more of that month\'s pages use it. <span style="color:var(--you);font-weight:700">Orange</span> = not in the month before. A page counts by the date it was published or last changed.</div>'
+    + r.months.map(m => { const max = Math.max(...m.words.map(w => w.count), 1);
+      return `<div class="panel cloud"><h3 style="font-size:13px;margin:0 0 8px">${esc(new Date(m.month + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }))} <span class="hint">${m.pages} page${m.pages === 1 ? '' : 's'}</span></h3>`
+        + (m.words.length ? m.words.map(w => `<span class="cw" style="font-size:${(12 + 26 * Math.sqrt(w.count / max)).toFixed(1)}px;color:${w.fresh ? 'var(--you)' : cols[w.count / max > 0.4 ? 1 : 0]}" title="${w.count} page${w.count === 1 ? '' : 's'}${w.fresh ? ', new this month' : ''}">${esc(w.term)}</span>`).join(' ') : '<span class="hint">Too few pages to find recurring words.</span>') + '</div>'; }).join('');
 }
 async function reloadFeed(id) {
   const r = await call('/cpt/pages', { id, competitor_id: FILTER.competitor || undefined, limit: 200 });
