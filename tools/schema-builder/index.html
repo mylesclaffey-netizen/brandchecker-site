@@ -145,7 +145,8 @@
     <p class="outheading">Generated JSON-LD</p>
     <div class="codebox"><pre id="output" class="empty">Add at least an organization name and website URL above to generate your schema.</pre></div>
     <button class="submit" id="copyBtn" type="button" disabled>Copy code</button>
-    <p class="after">Paste this inside a &lt;script type="application/ld+json"&gt; tag in your page's &lt;head&gt;. Validate at <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener">Google's Rich Results Test</a>.</p>
+    <button class="submit" id="checkBtn" type="button" disabled style="background:var(--ink);margin-top:8px">Check this code →</button>
+    <p class="after">Paste this inside a &lt;script type="application/ld+json"&gt; tag in your page's &lt;head&gt;. "Check this code" opens it in the <a href="/tools/schema-audit/">schema validator</a> (schema.org plus Google's rich result rules); Google's <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener">Rich Results Test</a> is the final word on what Google shows.</p>
 
     <div class="sidenav">
       <a href="/" class="sidenav-link">← Back to tools</a>
@@ -416,13 +417,21 @@ function regenerate(){
     $('output').className = 'empty';
     $('output').textContent = 'Add at least an organization name and website URL above to generate your schema.';
     $('copyBtn').disabled = true;
+    $('checkBtn').disabled = true;
     return;
   }
   const doc = { '@context': 'https://schema.org', '@graph': graph };
   $('output').className = '';
   $('output').textContent = JSON.stringify(doc, null, 2);
   $('copyBtn').disabled = false;
+  $('checkBtn').disabled = false;
 }
+
+// Hands the markup to the schema validator's paste mode, through this browser's storage (nothing is sent anywhere).
+$('checkBtn').onclick = () => {
+  try { localStorage.setItem('schema-check-code', $('output').textContent); } catch (e) {}
+  location.href = '/tools/schema-audit/?paste=1' + (CODE ? '&k=' + encodeURIComponent(CODE) : '');
+};
 
 $('copyBtn').onclick = async () => {
   navigator.clipboard?.writeText($('output').textContent);

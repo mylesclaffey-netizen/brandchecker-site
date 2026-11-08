@@ -69,7 +69,7 @@
   },
   {
    "path": "/tools/schema-audit/",
-   "description": "Free structured data audit: what a page carries, what is missing for its type, and where the markup claims something the page does not show."
+   "description": "Free schema validator: checks JSON-LD, Microdata and RDFa against schema.org and Google's rules for every rich result, and flags markup that claims what the page doesn't show."
   },
   {
    "path": "/tools/sitemap-audit/",

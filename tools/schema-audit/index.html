@@ -5,22 +5,22 @@
 <meta name="robots" content="index, follow">
 <script src="/assets/visitor.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Schema analysis</title>
+<title>Schema validator</title>
 <link rel="canonical" href="https://brandchecker.eu/tools/schema-audit/">
-<meta name="description" content="Free structured data audit: what a page carries, what is missing for its type, and where the markup claims something the page does not show.">
+<meta name="description" content="Free schema validator: checks JSON-LD, Microdata and RDFa against schema.org and Google's rules for every rich result, and flags markup that claims what the page doesn't show.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Brand Checker">
 <meta property="og:url" content="https://brandchecker.eu/tools/schema-audit/">
-<meta property="og:title" content="Schema Analysis — Free SEO Tool | Brand Checker">
-<meta property="og:description" content="What structured data a page actually carries, what's missing, and where the markup claims something the page doesn't actually say. Free, no signup.">
+<meta property="og:title" content="Schema Validator — Free SEO Tool | Brand Checker">
+<meta property="og:description" content="Check a page or pasted code against schema.org and Google's rules for all 25 rich results: what's valid, what's eligible, and what the page doesn't actually say. Free, no signup.">
 <meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:type" content="image/jpeg">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
-<meta name="twitter:title" content="Schema Analysis — Free SEO Tool | Brand Checker">
-<meta name="twitter:description" content="What structured data a page actually carries, what's missing, and where the markup claims something the page doesn't actually say. Free, no signup.">
+<meta name="twitter:title" content="Schema Validator — Free SEO Tool | Brand Checker">
+<meta name="twitter:description" content="Check a page or pasted code against schema.org and Google's rules for all 25 rich results: what's valid, what's eligible, and what the page doesn't actually say. Free, no signup.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2335c48d'/%3E%3C/svg%3E" />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -94,6 +94,42 @@
   .sidenav-link.accent:hover{color:#ff3d00}
   body.embed .sidenav{display:none}
   .recheck{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:18px;font-size:11.5px;color:var(--muted)}
+
+  .wrap{max-width:680px}
+  .modes{display:flex;gap:8px;margin-bottom:16px}
+  .mode{font-family:'Archivo',sans-serif;font-size:13px;font-weight:700;background:var(--card);color:var(--ink);
+        border:1px solid var(--line);border-radius:20px;padding:8px 16px;cursor:pointer}
+  .mode[aria-pressed="true"]{background:var(--ink);color:#fff}
+  textarea{width:100%;min-height:220px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.45;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px;resize:vertical}
+  textarea:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  h2{font-family:'Archivo',sans-serif;font-size:16px;font-weight:700;margin:26px 0 10px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .st{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:20px;flex:none;height:fit-content;white-space:nowrap}
+  .st.eligible{color:var(--ok);background:rgba(0,132,74,.1)}
+  .st.not-eligible{color:var(--bad);background:rgba(232,105,95,.12)}
+  .st.limited{color:var(--warn);background:rgba(224,169,58,.12)}
+  .st.retired{color:var(--muted);background:rgba(154,163,186,.15)}
+  .frow{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:12px 14px;display:flex;gap:10px;margin-bottom:8px}
+  .frow.not-eligible{border-color:var(--bad)}
+  .frow .body{font-size:12.5px;line-height:1.5;min-width:0}
+  .frow .body b{font-family:'Archivo',sans-serif}
+  .frow .body a{color:var(--you)}
+  .frow .on{color:var(--muted);font-size:11px}
+  .frow .miss{color:var(--bad);margin-top:4px}
+  .frow .rec,.frow .note{color:var(--muted);margin-top:4px}
+  code{font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:rgba(10,10,10,.06);padding:1px 4px;border-radius:4px;overflow-wrap:anywhere}
+  details{margin-top:6px}
+  summary{cursor:pointer;font-size:12px;color:var(--muted)}
+  .item{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px 14px;margin-bottom:8px}
+  .item>summary{color:var(--ink);font-size:12.5px;list-style-position:outside}
+  .item .src{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;margin-left:6px}
+  .item .counts{font-size:11px;margin-left:6px}
+  .item .counts .e{color:var(--bad)} .item .counts .w{color:var(--warn)}
+  pre{font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.45;background:rgba(10,10,10,.04);border-radius:7px;
+      padding:10px 12px;margin-top:8px;overflow:auto;max-height:340px;white-space:pre}
+  .findrow .msg code{font-size:11px}
+  .paste-note{font-size:11px;color:var(--muted);margin-top:8px}
 </style>
 <link rel="stylesheet" href="/assets/theme.css">
 </head>
@@ -112,12 +148,26 @@
 
   <div id="form">
     <p class="eyebrow">Free tool · no access code needed</p>
-    <h1>Schema analysis</h1>
-    <p class="lede">What structured data a page actually carries, what's missing for the kind of page it is, and — more usefully — where the markup claims something the page doesn't actually say.</p>
+    <h1>Schema validator</h1>
+    <p class="lede">Checks structured data (JSON-LD, Microdata and RDFa) against schema.org and Google's rules for each of its 25 rich results: what's valid, what's eligible, what's missing, and where the markup claims something the page doesn't actually say.</p>
 
-    <div class="field"><label for="url">Page URL</label><input id="url" type="text" placeholder="https://yoursite.com/product-page" value="https://"></div>
-    <button class="submit" id="go" type="button">Analyze page</button>
-    <p class="after">Reads the page directly — nothing is crawled beyond this one URL, nothing changed on your site.</p>
+    <div class="modes" role="group" aria-label="What to check">
+      <button class="mode" type="button" id="modeUrl" aria-pressed="true">Page URL</button>
+      <button class="mode" type="button" id="modePaste" aria-pressed="false">Paste code</button>
+    </div>
+
+    <div id="urlPane">
+      <div class="field"><label for="url">Page URL</label><input id="url" type="text" placeholder="https://yoursite.com/product-page" value="https://"></div>
+      <button class="submit" id="go" type="button">Validate page</button>
+      <p class="after">Reads the page directly, and after its JavaScript runs if the raw HTML has no markup. Nothing beyond this one URL is crawled, nothing on your site is changed.</p>
+    </div>
+
+    <div id="pastePane" style="display:none">
+      <div class="field"><label for="code">JSON-LD, or HTML with structured data in it</label>
+        <textarea id="code" spellcheck="false" placeholder='{"@context": "https://schema.org", "@type": "Product", "name": "…"}'></textarea></div>
+      <button class="submit" id="goPaste" type="button">Validate code</button>
+      <p class="after">Checked in your browser: the code isn't sent anywhere.</p>
+    </div>
 
     <div class="sidenav">
       <a href="/" class="sidenav-link">← Back to tools</a>
@@ -126,8 +176,8 @@
   </div>
 
   <div id="results">
-    <button class="backbtn" id="back">&larr; New page</button>
-    <p class="eyebrow restag">Schema analysis</p>
+    <button class="backbtn" id="back">&larr; Check something else</button>
+    <p class="eyebrow restag">Schema validator</p>
     <h1 id="rTitle" style="font-size:20px">Checking…</h1>
     <p id="rRedirect" class="lede" style="display:none;margin-bottom:16px"></p>
     <div id="out"></div>
@@ -147,17 +197,39 @@ const CODE = new URLSearchParams(location.search).get('k') || window.MC_VISITOR 
 document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
 
 const $ = id => document.getElementById(id);
-const PREFILL_U = new URLSearchParams(location.search).get('u');
+const PARAMS = new URLSearchParams(location.search);
+const PREFILL_U = PARAMS.get('u');
 if (PREFILL_U) { const f = document.getElementById('url'); if (f) f.value = PREFILL_U; }
-function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+const withK = (path) => path + (CODE ? '?k=' + encodeURIComponent(CODE) : '');
 
+// ---------- modes ----------
+function setMode(m){
+  $('modeUrl').setAttribute('aria-pressed', m === 'url');
+  $('modePaste').setAttribute('aria-pressed', m === 'paste');
+  $('urlPane').style.display = m === 'url' ? 'block' : 'none';
+  $('pastePane').style.display = m === 'paste' ? 'block' : 'none';
+}
+$('modeUrl').onclick = () => setMode('url');
+$('modePaste').onclick = () => setMode('paste');
+
+// ---------- the engine, for pasted code (same files the worker runs: /assets/schema-engine/) ----------
+let enginePromise = null;
+function loadEngine(){
+  return enginePromise ||= Promise.all([
+    import('/assets/schema-engine/engine.js'),
+    fetch('/assets/schema-engine/vocab.json').then(r => r.json()),
+    fetch('/assets/schema-engine/google.json').then(r => r.json())
+  ]).then(([m, vocab, google]) => m.createEngine({ vocab, google }));
+}
 
 function renderShare(inputUrl){
   const shareUrl = location.origin + location.pathname + '?url=' + encodeURIComponent(inputUrl);
   const text = encodeURIComponent(shareUrl);
   return '<div class="share"><span class="sharelabel">Share this report:</span>' +
     '<a class="sharebtn" href="https://wa.me/?text=' + text + '" target="_blank" rel="noopener">WhatsApp</a>' +
-    '<a class="sharebtn" href="mailto:?subject=' + encodeURIComponent('SEO report') + '&body=' + text + '">Email</a>' +
+    '<a class="sharebtn" href="mailto:?subject=' + encodeURIComponent('Schema report') + '&body=' + text + '">Email</a>' +
     '<button class="sharebtn" id="copyShare" type="button" onclick="copyShareLink(\'' + shareUrl.replace(/'/g, "\\'") + '\')">Copy link</button></div>';
 }
 function copyShareLink(url){
@@ -170,8 +242,9 @@ function copyShareLink(url){
   });
 }
 
-$('go').onclick = run;
+$('go').onclick = () => run();
 $('url').onkeydown = e => { if (e.key === 'Enter') run(); };
+$('goPaste').onclick = () => runPaste();
 $('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; };
 
 // "Re-check now": these results are saved for a few hours; fresh skips the saved one and checks live.
@@ -182,20 +255,24 @@ function recheckHtml(at){
   return '<div class="recheck"><span>' + when + '</span>' + (mins >= 2 ? '<button type="button" class="sharebtn" onclick="run(true)">Re-check now</button>' : '') + '</div>';
 }
 
+function showResults(title){
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = title;
+  $('rRedirect').style.display = 'none';
+  window.scrollTo(0,0);
+}
+
 async function run(fresh){
   const url = $('url').value.trim();
   if (!url || url === 'https://'){
     $('go').textContent = 'Add a page URL first';
-    setTimeout(() => $('go').textContent = 'Analyze page', 2000);
+    setTimeout(() => $('go').textContent = 'Validate page', 2000);
     return;
   }
-
   $('go').disabled = true;
-  $('form').style.display = 'none';
-  $('results').style.display = 'block';
-  $('rTitle').textContent = 'Checking…';
+  showResults('Checking…');
   $('out').innerHTML = '<p class="empty">Reading the page and checking its structured data…</p>';
-  window.scrollTo(0,0);
 
   let d;
   try {
@@ -205,12 +282,10 @@ async function run(fresh){
     });
     d = await res.json();
   } catch (e) { d = { error: 'could not reach the API' }; }
-
   $('go').disabled = false;
 
   if (d.error){
     $('rTitle').textContent = url;
-    $('rRedirect').style.display = 'none';
     $('out').innerHTML = '<p class="err">' + esc(d.error) + '</p>';
     return;
   }
@@ -218,50 +293,120 @@ async function run(fresh){
   if (d.redirected_from){
     $('rRedirect').textContent = 'Redirected from ' + d.redirected_from + ' to ' + d.url;
     $('rRedirect').style.display = 'block';
-  } else {
-    $('rRedirect').style.display = 'none';
   }
-  $('out').innerHTML = renderResults(d) + recheckHtml(d.checked_at) + renderShare(url);
+  const body = d.report ? renderReport(d.report, { rendered: d.js_rendered, note: (d.findings || []).find(f => f.severity === 'info' && f.type === 'none') }) : renderLegacy(d);
+  $('out').innerHTML = body + recheckHtml(d.checked_at) + renderShare(url);
 }
 
-function renderResults(d){
-  const errors = d.findings.filter(f => f.severity === 'error').length;
-  const warns = d.findings.filter(f => f.severity === 'warn').length;
-  const clean = d.schemas_found.length && !d.findings.length;
+async function runPaste(){
+  const text = $('code').value.trim();
+  if (!text){
+    $('goPaste').textContent = 'Paste some code first';
+    setTimeout(() => $('goPaste').textContent = 'Validate code', 2000);
+    return;
+  }
+  showResults('Pasted code');
+  $('out').innerHTML = '<p class="empty">Checking…</p>';
+  try {
+    const engine = await loadEngine();
+    $('out').innerHTML = renderReport(engine.validateText(text), { pasted: true });
+  } catch (e) {
+    $('out').innerHTML = '<p class="err">The checker couldn\'t load. Reload the page and try again.</p>';
+  }
+}
 
-  const headline = !d.schemas_found.length
-    ? 'No structured data found'
-    : clean
-    ? d.schemas_found.length + ' schema type' + (d.schemas_found.length === 1 ? '' : 's') + ' found — nothing to flag'
-    : errors
-    ? errors + ' likely error' + (errors === 1 ? '' : 's') + (warns ? ', ' + warns + ' warning' + (warns === 1 ? '' : 's') : '')
-    : warns + ' thing' + (warns === 1 ? '' : 's') + ' worth a look';
+// ---------- report ----------
+const STATUS = { 'eligible': 'Eligible', 'not-eligible': 'Not eligible', 'limited': 'Limited', 'retired': 'Retired' };
+const LEVEL = { error: ['error', 'Error'], warning: ['warn', 'Warning'], info: ['info', 'Note'] };
+const SOURCE = { 'json-ld': 'JSON-LD', microdata: 'Microdata', rdfa: 'RDFa' };
+const itemLabel = (it) => (it.types.join(' + ') || 'Untyped item') + (it.name && !/^https?:|^#/.test(it.name) ? ' “' + it.name + '”' : '');
+const codeList = (paths) => paths.map(p => p.split(' / ').map(x => x.split(' or ').map(y => '<code>' + esc(y) + '</code>').join(' or ')).join(' / ')).join(', ');
 
-  const summaryClass = !d.schemas_found.length || warns || errors ? 'issues' : 'clean';
-  const sub = (d.og_type ? 'Page type signal (og:type): ' + d.og_type : 'Checked just now') + (d.js_rendered && d.schemas_found.length ? ' · found after running JavaScript (not in the raw HTML)' : '');
+function renderReport(r, ctx){
+  const s = r.summary;
+  const items = r.items;
+  const headline = !items.length
+    ? (r.issues.some(i => i.code === 'invalid-json') ? 'The code can\'t be read' : 'No structured data found')
+    : s.errors ? plural(s.errors, 'error') + (s.warnings ? ', ' + plural(s.warnings, 'warning') : '')
+    : s.warnings ? 'No errors, ' + plural(s.warnings, 'warning') + ' worth a look'
+    : 'Valid — nothing to fix';
+  const from = [['jsonld', 'JSON-LD block'], ['microdata', 'Microdata item'], ['rdfa', 'RDFa item']].filter(([k]) => r.found[k]).map(([k, w]) => plural(r.found[k], w)).join(', ');
+  const sub = (items.length ? plural(items.length, 'item') + (from ? ' from ' + from : '') : 'Nothing to check') +
+    (ctx.rendered ? ' · found after running JavaScript (not in the raw HTML)' : '') +
+    ' · schema.org ' + esc(r.engine.schemaorg) + ', Google rules checked ' + esc(r.engine.googleRules);
+  const chips = [['eligible', s.eligible], ['not-eligible', s.notEligible], ['limited', s.limited], ['retired', s.retired]]
+    .flatMap(([k, names]) => names.map(n => '<span class="st ' + k + '">' + esc(STATUS[k]) + ': ' + esc(n) + '</span>')).join('');
+  let html = '<div class="summary ' + (!items.length || s.errors || s.warnings ? 'issues' : 'clean') + '"><div class="headline">' + esc(headline) + '</div><div class="sub">' + sub + '</div>' +
+    (chips ? '<div class="chips">' + chips + '</div>' : '') + '</div>';
 
-  let html = '<div class="summary ' + summaryClass + '"><div class="headline">' + esc(headline) + '</div><div class="sub">' + esc(sub) + '</div></div>';
-
-  if (d.schemas_found.length){
-    html += '<div class="typerow">' + d.schemas_found.map(t => '<span class="typechip">' + esc(t) + '</span>').join('') + '</div>';
+  // Rich results, worst first.
+  const order = { 'not-eligible': 0, 'eligible': 1, 'limited': 2, 'retired': 3 };
+  const feats = r.features.slice().sort((a, b) => order[a.status] - order[b.status]);
+  if (feats.length){
+    html += '<h2>Google rich results</h2>' + feats.map(f => {
+      const it = items[f.item];
+      const rec = f.recommendedMissing || [];
+      return '<div class="frow ' + f.status + '"><span class="st ' + f.status + '">' + STATUS[f.status] + '</span><div class="body">' +
+        '<b>' + (f.docs ? '<a href="' + esc(f.docs) + '" target="_blank" rel="noopener">' + esc(f.name) + '</a>' : esc(f.name)) + '</b> <span class="on">on ' + esc(itemLabel(it)) + (f.path ? ' (its ' + esc(f.path) + ')' : '') + '</span>' +
+        (f.missing.length ? '<div class="miss">Missing (required): ' + codeList(f.missing) + '</div>' : '') +
+        (rec.length ? (rec.length > 5
+          ? '<details><summary>Google also recommends ' + rec.length + ' more properties</summary><div class="rec">' + codeList(rec) + '</div></details>'
+          : '<div class="rec">Google also recommends ' + codeList(rec) + '</div>') : '') +
+        (f.note ? '<div class="note">' + esc(f.note) + '</div>' : '') +
+        '</div></div>';
+    }).join('');
+  } else if (items.length) {
+    html += '<h2>Google rich results</h2><p class="empty">None of these types can earn a Google rich result. They still help search engines and AI assistants understand the page.</p>';
   }
 
-  if (d.findings.length){
-    html += '<div class="findlist">' + d.findings.map(f =>
-      '<div class="findrow ' + f.severity + '"><span class="badge">' + (f.severity === 'error' ? 'Error' : f.severity === 'info' ? 'Note' : 'Warning') + '</span>' +
-      '<div class="msg"><span class="type">' + esc(f.type) + '</span>' + esc(f.message) + '</div></div>'
-    ).join('') + '</div>';
-  } else if (d.schemas_found.length) {
-    html += '<p class="empty">No issues found — every schema block has its key fields, and the claims in it (FAQ questions, prices) actually show up on the page.</p>';
+  // Problems: errors and warnings, page-level first, then per item; notes folded away.
+  const all = [...r.issues.map(i => ({ ...i, where: null })), ...items.flatMap(it => it.issues.map(i => ({ ...i, where: itemLabel(it) })))];
+  const probs = all.filter(i => i.level !== 'info').sort((a, b) => (a.level === 'error' ? 0 : 1) - (b.level === 'error' ? 0 : 1));
+  const notes = all.filter(i => i.level === 'info');
+  const row = i => '<div class="findrow ' + LEVEL[i.level][0] + '"><span class="badge">' + LEVEL[i.level][1] + '</span><div class="msg">' +
+    (i.where || i.path ? '<span class="type">' + esc([i.where, i.path].filter(Boolean).join(' · ')) + '</span>' : '') + esc(i.message) + '</div></div>';
+  if (probs.length) html += '<h2>To fix</h2><div class="findlist">' + probs.map(row).join('') + '</div>';
+  if (notes.length) html += '<details><summary>' + plural(notes.length, 'note') + '</summary><div class="findlist" style="margin-top:8px">' + notes.map(row).join('') + '</div></details>';
+  if (!probs.length && items.length) html += '<p class="empty" style="margin-top:16px">No schema.org problems: every type and property exists, sits where schema.org expects it, and holds the right kind of value' + (ctx.pasted ? '' : ', and the claims in it (FAQ questions, prices) show up on the page') + '.</p>';
+
+  // What was found.
+  if (items.length){
+    html += '<h2>What\'s ' + (ctx.pasted ? 'in the code' : 'on the page') + '</h2>' + items.map(it => {
+      const e = it.issues.filter(i => i.level === 'error').length + it.features.filter(f => f.status === 'not-eligible').length;
+      const w = it.issues.filter(i => i.level === 'warning').length;
+      return '<details class="item"><summary>' + esc(itemLabel(it)) + '<span class="src">' + esc(SOURCE[it.source] || it.source) + '</span>' +
+        '<span class="counts">' + (e ? '<span class="e">' + plural(e, 'error') + '</span> ' : '') + (w ? '<span class="w">' + plural(w, 'warning') + '</span>' : '') + '</span></summary>' +
+        '<pre>' + esc(JSON.stringify(it.data, null, 2)) + '</pre></details>';
+    }).join('');
   }
 
-  html += '<p class="foot">Checks JSON-LD structured data specifically — the format Google recommends and by far the most common today. Doesn\'t currently check older microdata or RDFa markup. Need to add schema instead of just checking it? Try the <a href="/tools/schema-builder/?k=' + encodeURIComponent(CODE) + '">schema builder</a> or <a href="/tools/llms-txt/?k=' + encodeURIComponent(CODE) + '">llms.txt generator</a>.</p>';
-
+  if (ctx.note) html += '<p class="empty" style="margin-top:14px">' + esc(ctx.note.message) + '</p>';
+  html += '<p class="foot">Checks JSON-LD, Microdata and RDFa against schema.org ' + esc(r.engine.schemaorg) + ' and Google\'s documented rules for each rich result (checked ' + esc(r.engine.googleRules) + '). Eligible means Google can show the rich result, not that it will. ' +
+    'Need markup instead of a check? Try the <a href="' + withK('/tools/schema-builder/') + '">brand schema builder</a> or the <a href="' + withK('/tools/schema-pack/') + '">B2B SaaS schema pack</a>.</p>';
   return html;
 }
 
+// A worker that predates the full report: its flat list of findings, as before.
+function renderLegacy(d){
+  d = { ...d, findings: d.findings || [], schemas_found: d.schemas_found || [] };
+  const errors = d.findings.filter(f => f.severity === 'error').length;
+  const warns = d.findings.filter(f => f.severity === 'warn').length;
+  const headline = !d.schemas_found.length ? 'No structured data found' : errors ? plural(errors, 'likely error') + (warns ? ', ' + plural(warns, 'warning') : '') : warns ? plural(warns, 'thing') + ' worth a look' : plural(d.schemas_found.length, 'schema type') + ' found — nothing to flag';
+  let html = '<div class="summary ' + (!d.schemas_found.length || warns || errors ? 'issues' : 'clean') + '"><div class="headline">' + esc(headline) + '</div></div>';
+  if (d.schemas_found.length) html += '<div class="typerow">' + d.schemas_found.map(t => '<span class="typechip">' + esc(t) + '</span>').join('') + '</div>';
+  if (d.findings.length) html += '<div class="findlist">' + d.findings.map(f => '<div class="findrow ' + f.severity + '"><span class="badge">' + (f.severity === 'error' ? 'Error' : f.severity === 'info' ? 'Note' : 'Warning') + '</span><div class="msg"><span class="type">' + esc(f.type) + '</span>' + esc(f.message) + '</div></div>').join('') + '</div>';
+  return html;
+}
 
-const SHARED_URL = new URLSearchParams(location.search).get('url') || '';
+// Arriving from a schema tool's "Check this code" button: its markup is waiting in this browser's storage.
+if (PARAMS.get('paste') === '1') {
+  let waiting = '';
+  try { waiting = localStorage.getItem('schema-check-code') || ''; localStorage.removeItem('schema-check-code'); } catch (e) {}
+  setMode('paste');
+  if (waiting) { $('code').value = waiting; runPaste(); }
+}
+
+const SHARED_URL = PARAMS.get('url') || '';
 if (SHARED_URL) { $('url').value = SHARED_URL; run(); }
 </script>
 <script src="/assets/presets.js"></script>

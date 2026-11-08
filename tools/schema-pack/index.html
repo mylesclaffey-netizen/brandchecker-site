@@ -180,9 +180,10 @@
   <div class="out"><div class="hd"><div><b>1 · Homepage</b><small>Organization, WebSite and SoftwareApplication. Paste inside <code>&lt;head&gt;</code> of your homepage.</small></div><button class="btn2 small" data-copy="o1" type="button">Copy</button></div><pre id="o1" class="empty">Add your company name and website to see this.</pre></div>
   <div class="out"><div class="hd"><div><b>2 · Pricing page</b><small>SoftwareApplication with one Offer per plan. Paste inside <code>&lt;head&gt;</code> of your pricing page.</small></div><button class="btn2 small" data-copy="o2" type="button">Copy</button></div><pre id="o2" class="empty">Add at least one plan to see this.</pre></div>
   <div class="out"><div class="hd"><div><b>3 · FAQ</b><small>FAQPage. Paste into the page the questions appear on (often the pricing page).</small></div><button class="btn2 small" data-copy="o3" type="button">Copy</button></div><pre id="o3" class="empty">Add at least one question and answer to see this.</pre></div>
+  <button class="btn2" id="checkAll" type="button" style="margin:0 0 16px">Check all three in the schema validator →</button>
 
-  <div class="note" style="border:3px solid #0a0a0a;background:#f3f3ef;padding:14px 16px;margin:0 0 20px;font-size:14.5px"><b>Check it before you ship it.</b> Paste each snippet into <a href="https://validator.schema.org/" target="_blank" rel="noopener">validator.schema.org</a> and Google’s <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener">Rich Results Test</a>. <b>Two things are left out on purpose:</b> no AggregateRating (ratings must come from real reviews shown on the page, and marking up your own ratings of yourself breaks Google’s guidelines — add one only for genuine third-party reviews you display), and Google no longer shows FAQ rich results for most sites, so the FAQ markup is for machines and AI, not a snippet in search.</div>
-  <div class="share"><a class="btn2" href="/tools/key-pages/">Key-pages audit →</a><a class="btn2" href="/tools/schema-audit/">Schema analysis →</a><a class="btn2" href="/tools/pricing-check/">Does AI know your pricing? →</a></div>
+  <div class="note" style="border:3px solid #0a0a0a;background:#f3f3ef;padding:14px 16px;margin:0 0 20px;font-size:14.5px"><b>Check it before you ship it.</b> The button above opens all three snippets in our <a href="/tools/schema-audit/">schema validator</a> (schema.org plus Google’s rich result rules); Google’s <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener">Rich Results Test</a> is the final word on what Google shows. <b>Two things are left out on purpose:</b> no AggregateRating (ratings must come from real reviews shown on the page, and marking up your own ratings of yourself breaks Google’s guidelines — add one only for genuine third-party reviews you display), and Google no longer shows FAQ rich results for most sites, so the FAQ markup is for machines and AI, not a snippet in search.</div>
+  <div class="share"><a class="btn2" href="/tools/key-pages/">Key-pages audit →</a><a class="btn2" href="/tools/schema-audit/">Schema validator →</a><a class="btn2" href="/tools/pricing-check/">Does AI know your pricing? →</a></div>
   <div class="sidenav"><a href="/" class="sidenav-link">← Back to tools</a></div>
 </div>
 
@@ -288,6 +289,14 @@ function build() {
   $('checks').innerHTML = issues.map(function (i) { return '<div class="iss ' + i.k + '">' + esc(i.m) + '</div>'; }).join('');
   [['o1', out1, 'Add your company name and website to see this.'], ['o2', out2, 'Add at least one plan to see this.'], ['o3', out3, 'Add at least one question and answer to see this.']].forEach(function (o) { var el = $(o[0]); el.textContent = o[1] || o[2]; el.className = o[1] ? '' : 'empty'; });
 }
+// All three snippets to the schema validator's paste mode, through this browser's storage (nothing is sent anywhere).
+$('checkAll').onclick = function () {
+  var code = ['o1', 'o2', 'o3'].map(function (id) { return $(id).className === 'empty' ? '' : $(id).textContent; }).filter(Boolean).join('\n');
+  if (!code) return;
+  try { localStorage.setItem('schema-check-code', code); } catch (e) {}
+  var k = new URLSearchParams(location.search).get('k');
+  location.href = '/tools/schema-audit/?paste=1' + (k ? '&k=' + encodeURIComponent(k) : '');
+};
 document.querySelectorAll('[data-copy]').forEach(function (b) { b.onclick = function () { var el = $(b.dataset.copy); if (el.className === 'empty') return; if (navigator.clipboard) navigator.clipboard.writeText(el.textContent); var t = b.textContent; b.textContent = 'Copied ✓'; setTimeout(function () { b.textContent = t; }, 1400); }; });
 ['orgName', 'orgUrl', 'orgLogo', 'orgDesc', 'orgSame', 'pName', 'pCat', 'pOs', 'pPrice', 'pDesc', 'pFeat', 'pTrial'].forEach(function (id) { $(id).addEventListener('input', build); $(id).addEventListener('change', build); });
 

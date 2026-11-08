@@ -1,0 +1,255 @@
+{
+  "updatedAt": "2026-11-08",
+  "source": "https://developers.google.com/search/docs/appearance/structured-data/search-gallery",
+  "about": "Google's rich result rules, kept by hand from each feature's documentation page (the gallery was last updated by Google on 2026-10-16). Paths are dotted (offers.price = the price of each offer). oneOf: at least one path of each group. Recommended entries that are lists mean any one of them. nested: rules for typed values inside the item, matched by the most specific type. trigger: the feature is only checked when one of these properties is present, for opt-in features. See src/schema-engine/engine.js.",
+  "aliases": {
+    "xPath": "xpath"
+  },
+  "shared": {
+    "ratings": {
+      "AggregateRating": { "required": ["ratingValue"], "oneOf": [["ratingCount", "reviewCount"]], "recommended": ["bestRating", "worstRating"] },
+      "Review": { "required": ["author", "reviewRating", "reviewRating.ratingValue"], "recommended": ["datePublished", "reviewRating.bestRating", "reviewRating.worstRating"] }
+    }
+  },
+  "features": [
+    {
+      "id": "article", "name": "Article", "docs": "https://developers.google.com/search/docs/appearance/structured-data/article",
+      "appliesTo": ["Article"],
+      "recommended": ["headline", "image", "datePublished", "dateModified", "author", "author.name", "author.url"]
+    },
+    {
+      "id": "breadcrumb", "name": "Breadcrumb", "docs": "https://developers.google.com/search/docs/appearance/structured-data/breadcrumb",
+      "appliesTo": ["BreadcrumbList"],
+      "required": ["itemListElement"],
+      "sequence": { "property": "itemListElement", "required": ["position", "name"], "requiredExceptLast": ["item"] }
+    },
+    {
+      "id": "carousel", "name": "Carousel", "docs": "https://developers.google.com/search/docs/appearance/structured-data/carousel",
+      "appliesTo": ["ItemList"], "exact": true,
+      "required": ["itemListElement"],
+      "sequence": { "property": "itemListElement", "required": ["position"], "oneOf": [["url", "item"]] },
+      "note": "Google only shows carousels of recipes, courses, restaurants or movies."
+    },
+    {
+      "id": "course", "name": "Course list", "docs": "https://developers.google.com/search/docs/appearance/structured-data/course",
+      "appliesTo": ["Course"],
+      "required": ["name", "description"],
+      "recommended": ["provider", "provider.name"],
+      "use": ["ratings"],
+      "note": "Courses show as a list (carousel) of one provider's courses."
+    },
+    {
+      "id": "dataset", "name": "Dataset", "docs": "https://developers.google.com/search/docs/appearance/structured-data/dataset",
+      "appliesTo": ["Dataset"],
+      "required": ["name", "description"],
+      "recommended": ["url", "sameAs", "identifier", "keywords", "license", "creator", "citation", "funder", "version", "isAccessibleForFree", "spatialCoverage", "temporalCoverage", "variableMeasured", "measurementTechnique", "alternateName", "hasPart", "includedInDataCatalog", "distribution"],
+      "nested": { "DataDownload": { "required": ["contentUrl"], "recommended": ["encodingFormat"] } },
+      "note": "Shown in Google Dataset Search."
+    },
+    {
+      "id": "discussion-forum", "name": "Discussion forum", "docs": "https://developers.google.com/search/docs/appearance/structured-data/discussion-forum",
+      "appliesTo": ["DiscussionForumPosting", "SocialMediaPosting"], "exact": true,
+      "required": ["author", "author.name", "datePublished"],
+      "oneOf": [["text", "image", "video"]],
+      "recommended": ["headline", "url", "author.url", "dateModified", "comment", "commentCount", "interactionStatistic", "isPartOf", "creativeWorkStatus", "digitalSourceType", "sharedContent"],
+      "nested": {
+        "Comment": { "required": ["author", "datePublished"], "oneOf": [["text", "image", "video"]], "recommended": ["author.url", "url", "dateModified", "comment", "commentCount", "interactionStatistic", "creativeWorkStatus", "digitalSourceType", "sharedContent"] },
+        "InteractionCounter": { "required": ["interactionType", "userInteractionCount"] }
+      }
+    },
+    {
+      "id": "education-qa", "name": "Education Q&A", "docs": "https://developers.google.com/search/docs/appearance/structured-data/education-qa",
+      "appliesTo": ["Quiz"],
+      "required": ["hasPart"],
+      "recommended": ["about", "about.name", "educationalAlignment", "educationalAlignment.alignmentType", "educationalAlignment.targetName"],
+      "nested": { "Question": { "required": ["text", "eduQuestionType", "acceptedAnswer"] } }
+    },
+    {
+      "id": "employer-rating", "name": "Employer aggregate rating", "docs": "https://developers.google.com/search/docs/appearance/structured-data/employer-rating",
+      "appliesTo": ["EmployerAggregateRating"],
+      "required": ["itemReviewed", "ratingValue"],
+      "oneOf": [["ratingCount", "reviewCount"]],
+      "recommended": ["bestRating", "worstRating"]
+    },
+    {
+      "id": "event", "name": "Event", "docs": "https://developers.google.com/search/docs/appearance/structured-data/event",
+      "appliesTo": ["Event"],
+      "required": ["name", "startDate", "location", "location.address"],
+      "exempt": { "location.address": ["VirtualLocation"] },
+      "recommended": ["description", "endDate", "eventStatus", "image", "location.name", "offers", "offers.availability", "offers.price", "offers.priceCurrency", "offers.validFrom", "offers.url", "organizer", "organizer.name", "organizer.url", "performer", "performer.name", "previousStartDate"]
+    },
+    {
+      "id": "image-metadata", "name": "Image metadata", "docs": "https://developers.google.com/search/docs/appearance/structured-data/image-license-metadata",
+      "appliesTo": ["ImageObject"],
+      "trigger": ["license", "acquireLicensePage", "creditText", "copyrightNotice", "creator"],
+      "required": ["contentUrl"],
+      "oneOf": [["creator", "creditText", "copyrightNotice", "license"]],
+      "recommended": ["license", "acquireLicensePage", "creditText", "copyrightNotice", "creator", "creator.name"]
+    },
+    {
+      "id": "job-posting", "name": "Job posting", "docs": "https://developers.google.com/search/docs/appearance/structured-data/job-posting",
+      "appliesTo": ["JobPosting"],
+      "required": ["title", "description", "datePosted", "hiringOrganization", "jobLocation.address"],
+      "oneOf": [["jobLocation", "jobLocationType"]],
+      "recommended": ["validThrough", "employmentType", "baseSalary", "identifier", "directApply", "applicantLocationRequirements", "jobLocationType", "educationRequirements", "experienceRequirements"],
+      "note": "Remote jobs can use jobLocationType TELECOMMUTE with applicantLocationRequirements instead of jobLocation."
+    },
+    {
+      "id": "local-business", "name": "Local business", "docs": "https://developers.google.com/search/docs/appearance/structured-data/local-business",
+      "appliesTo": ["LocalBusiness"],
+      "required": ["name", "address"],
+      "recommended": ["url", "telephone", "geo", "geo.latitude", "geo.longitude", "openingHoursSpecification", "priceRange", "aggregateRating", "review", "department"],
+      "recommendedFor": { "FoodEstablishment": ["menu", "servesCuisine"] },
+      "use": ["ratings"]
+    },
+    {
+      "id": "math-solver", "name": "Math solver", "docs": "https://developers.google.com/search/docs/appearance/structured-data/math-solvers",
+      "appliesTo": ["MathSolver"],
+      "required": ["url", "usageInfo", "learningResourceType", "potentialAction", "potentialAction.target", "potentialAction.mathExpression-input"],
+      "recommended": ["inLanguage", "assesses", "potentialAction.eduQuestionType"]
+    },
+    {
+      "id": "movie", "name": "Movie", "docs": "https://developers.google.com/search/docs/appearance/structured-data/movie",
+      "appliesTo": ["Movie"],
+      "required": ["name", "image"],
+      "recommended": ["aggregateRating", "dateCreated", "director", "review"],
+      "use": ["ratings"],
+      "note": "Movies show as a carousel, from a list (ItemList) of movies on one site."
+    },
+    {
+      "id": "organization", "name": "Organization", "docs": "https://developers.google.com/search/docs/appearance/structured-data/organization",
+      "appliesTo": ["Organization"], "except": ["LocalBusiness"],
+      "recommended": ["name", "url", "logo", "sameAs", "description", "address", "telephone", "email", "contactPoint", "legalName", "alternateName", "foundingDate", ["vatID", "taxID", "iso6523Code", "duns", "leiCode", "naics", "globalLocationNumber"]],
+      "recommendedFor": { "OnlineStore": ["hasMerchantReturnPolicy", "hasShippingService"] },
+      "note": "No property is required; these help Google's knowledge panel and attribution."
+    },
+    {
+      "id": "product-snippet", "name": "Product snippet", "docs": "https://developers.google.com/search/docs/appearance/structured-data/product-snippet",
+      "appliesTo": ["Product"],
+      "required": ["name"],
+      "oneOf": [["review", "aggregateRating", "offers"]],
+      "recommended": ["offers", "aggregateRating", "review"],
+      "use": ["ratings"],
+      "nested": {
+        "Offer": { "oneOf": [["price", "priceSpecification.price"]], "recommended": ["priceCurrency", "availability", "priceValidUntil"] },
+        "AggregateOffer": { "required": ["lowPrice", "priceCurrency"], "recommended": ["highPrice", "offerCount"] },
+        "Review": { "recommended": ["positiveNotes", "negativeNotes"] }
+      }
+    },
+    {
+      "id": "merchant-listing", "name": "Merchant listing", "docs": "https://developers.google.com/search/docs/appearance/structured-data/merchant-listing",
+      "appliesTo": ["Product"],
+      "trigger": ["offers"],
+      "required": ["name", "image", "offers"],
+      "recommended": ["description", "brand.name", ["gtin", "gtin8", "gtin12", "gtin13", "gtin14", "isbn"], "mpn", "sku", "aggregateRating", "review", "category", "color", "size", "material", "pattern", "audience", "hasAdultConsideration", "hasCertification", "inProductGroupWithID", "isVariantOf", "subjectOf"],
+      "use": ["ratings"],
+      "nested": {
+        "Offer": { "oneOf": [["price", "priceSpecification.price"], ["priceCurrency", "priceSpecification.priceCurrency"]], "recommended": ["availability", "itemCondition", "url", "hasMerchantReturnPolicy", "shippingDetails", "priceValidUntil", "validFrom", "validThrough"] },
+        "UnitPriceSpecification": { "required": ["price", "priceCurrency"] },
+        "OfferShippingDetails": { "required": ["shippingDestination", "deliveryTime", "shippingRate", "shippingRate.currency"], "oneOf": [["shippingRate.value", "shippingRate.maxValue"]] },
+        "MerchantReturnPolicy": { "required": ["applicableCountry", "returnPolicyCategory"], "recommended": ["merchantReturnDays", "returnMethod", "returnFees", "returnShippingFeesAmount"] },
+        "Certification": { "required": ["issuedBy", "name"] }
+      },
+      "note": "For pages where the product can be bought. A list of offers (AggregateOffer) isn't enough here: each offer needs its own price."
+    },
+    {
+      "id": "profile-page", "name": "Profile page", "docs": "https://developers.google.com/search/docs/appearance/structured-data/profile-page",
+      "appliesTo": ["ProfilePage"],
+      "required": ["mainEntity", "mainEntity.name"],
+      "recommended": ["dateCreated", "dateModified", "mainEntity.alternateName", "mainEntity.description", "mainEntity.identifier", "mainEntity.image", "mainEntity.sameAs", "mainEntity.interactionStatistic", "mainEntity.agentInteractionStatistic"]
+    },
+    {
+      "id": "qa", "name": "Q&A", "docs": "https://developers.google.com/search/docs/appearance/structured-data/qapage",
+      "appliesTo": ["QAPage"],
+      "required": ["mainEntity"],
+      "nested": {
+        "Question": { "required": ["name", "answerCount"], "oneOf": [["acceptedAnswer", "suggestedAnswer"]], "recommended": ["text", "author", "author.url", "datePublished", "dateModified", "upvoteCount", "comment", "commentCount", "image", "video", "digitalSourceType"] },
+        "Answer": { "required": ["text"], "recommended": ["author", "author.url", "url", "datePublished", "dateModified", "upvoteCount", "comment", "commentCount", "image", "video", "digitalSourceType"] },
+        "Comment": { "required": ["text"], "recommended": ["author", "author.url", "datePublished", "dateModified"] }
+      }
+    },
+    {
+      "id": "recipe", "name": "Recipe", "docs": "https://developers.google.com/search/docs/appearance/structured-data/recipe",
+      "appliesTo": ["Recipe"],
+      "required": ["name", "image"],
+      "recommended": ["author", "datePublished", "description", "keywords", "recipeCategory", "recipeCuisine", "recipeIngredient", "recipeInstructions", "recipeYield", "prepTime", "cookTime", "totalTime", "nutrition.calories", "aggregateRating", "video"],
+      "use": ["ratings"],
+      "nested": {
+        "HowToSection": { "required": ["name", "itemListElement"] },
+        "HowToStep": { "oneOf": [["text", "itemListElement"]], "recommended": ["name", "url", "image", "video"] },
+        "HowToDirection": { "required": ["text"] },
+        "HowToTip": { "required": ["text"] }
+      }
+    },
+    {
+      "id": "review-snippet", "name": "Review snippet", "docs": "https://developers.google.com/search/docs/appearance/structured-data/review-snippet",
+      "appliesTo": ["Review"], "except": ["ClaimReview"],
+      "required": ["author", "reviewRating", "reviewRating.ratingValue", "itemReviewed", "itemReviewed.name"],
+      "recommended": ["datePublished", "reviewRating.bestRating", "reviewRating.worstRating"]
+    },
+    {
+      "id": "review-snippet-aggregate", "name": "Review snippet (aggregate rating)", "docs": "https://developers.google.com/search/docs/appearance/structured-data/review-snippet",
+      "appliesTo": ["AggregateRating"], "except": ["EmployerAggregateRating"],
+      "required": ["ratingValue", "itemReviewed", "itemReviewed.name"],
+      "oneOf": [["ratingCount", "reviewCount"]],
+      "recommended": ["bestRating", "worstRating"]
+    },
+    {
+      "id": "software-app", "name": "Software app", "docs": "https://developers.google.com/search/docs/appearance/structured-data/software-app",
+      "appliesTo": ["SoftwareApplication"],
+      "required": ["name", "offers.price"],
+      "oneOf": [["aggregateRating", "review"]],
+      "recommended": ["applicationCategory", "operatingSystem"],
+      "use": ["ratings"]
+    },
+    {
+      "id": "speakable", "name": "Speakable", "docs": "https://developers.google.com/search/docs/appearance/structured-data/speakable",
+      "appliesTo": ["CreativeWork"],
+      "trigger": ["speakable"],
+      "oneOf": [["speakable.cssSelector", "speakable.xpath", "speakable.xPath"]],
+      "note": "Beta: news articles in English in the US, read aloud by Google Assistant. Use cssSelector or xPath, not both."
+    },
+    {
+      "id": "paywalled-content", "name": "Subscription and paywalled content", "docs": "https://developers.google.com/search/docs/appearance/structured-data/paywalled-content",
+      "appliesTo": ["CreativeWork"],
+      "triggerFalse": "isAccessibleForFree",
+      "required": ["isAccessibleForFree"],
+      "recommended": ["hasPart", "hasPart.cssSelector", "hasPart.isAccessibleForFree"],
+      "note": "Marks paywalled text so Google doesn't mistake it for cloaking."
+    },
+    {
+      "id": "vacation-rental", "name": "Vacation rental", "docs": "https://developers.google.com/search/docs/appearance/structured-data/vacation-rental",
+      "appliesTo": ["VacationRental"],
+      "required": ["name", "identifier", "image", "latitude", "longitude", "containsPlace", "containsPlace.occupancy", "containsPlace.occupancy.value"],
+      "recommended": ["description", "address", "address.streetAddress", "address.addressLocality", "address.addressRegion", "address.postalCode", "address.addressCountry", "aggregateRating", "review", "brand", "checkinTime", "checkoutTime", "knowsLanguage", "additionalType", "containsPlace.additionalType", "containsPlace.amenityFeature", "containsPlace.bed", "containsPlace.floorSize", "containsPlace.numberOfBathroomsTotal", "containsPlace.numberOfBedrooms", "containsPlace.numberOfRooms"],
+      "use": ["ratings"],
+      "note": "Only for Google Hotel Center partners with vacation rental listings."
+    },
+    {
+      "id": "video", "name": "Video", "docs": "https://developers.google.com/search/docs/appearance/structured-data/video",
+      "appliesTo": ["VideoObject"],
+      "required": ["name", "thumbnailUrl", "uploadDate"],
+      "recommended": ["description", "contentUrl", "embedUrl", "duration", "expires", "hasPart", "interactionStatistic", "publication", "regionsAllowed", "ineligibleRegion", "creator", "creator.name"],
+      "nested": {
+        "Clip": { "required": ["name", "startOffset", "url"], "recommended": ["endOffset"] },
+        "BroadcastEvent": { "required": ["isLiveBroadcast", "startDate"], "recommended": ["endDate"] },
+        "SeekToAction": { "required": ["target", "startOffset-input"] }
+      }
+    },
+    {
+      "id": "faq", "name": "FAQ", "docs": "https://developers.google.com/search/docs/appearance/structured-data/faqpage",
+      "appliesTo": ["FAQPage"], "status": "limited",
+      "required": ["mainEntity"],
+      "nested": { "Question": { "required": ["name", "acceptedAnswer", "acceptedAnswer.text"] } },
+      "note": "Not in Google's current list of supported rich results. Since August 2023 FAQ results were shown only for well-known government and health sites; elsewhere the markup is valid but won't show."
+    }
+  ],
+  "retired": [
+    { "id": "howto", "name": "How-to", "appliesTo": ["HowTo"], "since": "September 2023", "message": "Google stopped showing How-to rich results in September 2023. The markup is still valid schema.org; it just earns nothing in Google Search." },
+    { "id": "sitelinks-searchbox", "name": "Sitelinks search box", "appliesTo": ["WebSite"], "triggerType": { "potentialAction": "SearchAction" }, "since": "November 2024", "message": "Google retired the sitelinks search box in November 2024. The SearchAction does no harm and can be removed." },
+    { "id": "fact-check", "name": "Fact check", "appliesTo": ["ClaimReview"], "message": "Fact check (ClaimReview) is no longer in Google's list of supported rich results." },
+    { "id": "estimated-salary", "name": "Estimated salary", "appliesTo": ["Occupation"], "message": "Estimated salary (Occupation) is no longer in Google's list of supported rich results." },
+    { "id": "special-announcement", "name": "Special announcement", "appliesTo": ["SpecialAnnouncement"], "message": "Special announcement is no longer in Google's list of supported rich results." },
+    { "id": "vehicle-listing", "name": "Vehicle listing", "appliesTo": ["Vehicle"], "message": "Vehicle listing is no longer in Google's list of supported rich results; the product rules below still apply to a vehicle with offers." }
+  ]
+}
