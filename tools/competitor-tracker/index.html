@@ -136,12 +136,23 @@ const createForm = first => `<div class="panel"><h2 style="margin-top:0">${first
   <div class="grid2"><div class="field"><label>Watch name</label><input id="cn" maxlength="80" placeholder="Hamburg Mac repair"></div>
   <div class="field"><label>Send the weekly email to</label><input id="ce" type="email" placeholder="you@company.com"></div></div>
   <div class="field"><label>Topics you care about (optional, one per line or comma separated)</label><textarea id="ct" placeholder="macbook akku&#10;wasserschaden&#10;display reparatur"></textarea><div class="hint">New pages that mention every word of a topic are flagged and listed first.</div></div>
-  <button class="btn" id="cgo">Create watch</button></div>`;
+  <div class="field"><label>Competitors to track (one website per line, up to ${LIMITS.competitors})</label><textarea id="cc" placeholder="rival.com&#10;another-rival.de"></textarea><div class="hint">We read each sitemap straight away. You can add or remove competitors later.</div></div>
+  <div class="field"><label>Your own site (optional)</label><input id="co" placeholder="yoursite.com"><div class="hint">Added beside them so the side-by-side view can compare your output. It never appears in the competitor feed or email.</div></div>
+  <button class="btn" id="cgo">Create watch</button><div id="cerr"></div></div>`;
 function wireCreate() {
   $('cgo').onclick = async () => {
+    const comps = $('cc').value.split(/[\n,;]+/).map(x => x.trim()).filter(Boolean).slice(0, LIMITS.competitors), own = $('co').value.trim();
+    $('cgo').disabled = true;
     const d = await call('/cpt/create', { name: $('cn').value, email: $('ce').value, topics: $('ct').value });
-    if (d.error) return say(d.error); say('');
+    if (d.error) { $('cgo').disabled = false; return say(d.error); } say('');
+    const notes = [], jobs = comps.map(x => ({ domain: x, own: false })).concat(own ? [{ domain: own, own: true }] : []);
+    for (let i = 0; i < jobs.length; i++) {
+      $('cerr').innerHTML = `<p class="hint">Reading sitemap ${i + 1} of ${jobs.length}: ${esc(jobs[i].domain)}…</p>`;
+      const r = await call('/cpt/add', { watch_id: d.watch.id, domain: jobs[i].domain, label: '', own: jobs[i].own });
+      if (r.error) notes.push(`${jobs[i].domain}: ${r.error}`); else if (!r.check.ok) notes.push(`${r.competitor.domain}: ${r.check.error}`);
+    }
     CUR = d.watch.id; await init();
+    if (notes.length) say('Watch created. Some sites need attention: ' + notes.join(' · '));
   };
 }
 
