@@ -65,6 +65,10 @@
   .tr{font-size:10px;letter-spacing:.05em;text-transform:uppercase;margin-left:5px} .tr.rising,.tr.new,.tr.growing{color:var(--ok)} .tr.fading{color:var(--bad)}
   .you{display:inline-block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--you);color:var(--you);border-radius:10px;padding:1px 7px;margin-left:6px;vertical-align:middle}
   tr.mine td{background:rgba(255,61,0,.06)}
+  .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin:18px 0 6px}
+  .tabs button{font-family:'Archivo',sans-serif;font-weight:700;font-size:13px;border:0;background:none;padding:9px 14px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px}
+  .tabs button.on{color:var(--ink);border-bottom-color:var(--you)}
+  [hidden]{display:none!important}
   .foot{font-size:10.5px;color:var(--muted);margin-top:30px;line-height:1.6;max-width:800px}
   .back{font-size:12px;color:var(--muted)} .back:hover{color:var(--ink)}
   #gate{display:none;max-width:420px}
@@ -87,7 +91,7 @@
   <div id="app" style="display:none">
     <p class="eyebrow">Competitor publishing tracker · by access link</p>
     <h1>Competitor Publishing Tracker</h1>
-    <p class="lede">Name the competitors you watch, and add your own site beside them. We read their sitemaps every week and email you the pages they publish, with the pages about your topics at the top. The side-by-side view then sets your output against theirs.</p>
+    <p class="lede">Name the competitors you watch, and add your own site beside them. We read their sitemaps every week and show you everything they publish, week by week. Add topics if you also want to see who covers the subjects you care about.</p>
 
     <div id="msg"></div>
     <div class="boards" id="boards"></div>
@@ -105,7 +109,7 @@ let CODE = (qs.get('k') || '').trim();
 try { if (!CODE) CODE = sessionStorage.getItem('cptk') || ''; } catch (e) {}
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-let WATCHES = [], CUR = null, LIMITS = { watches: 3, competitors: 10 }, FILTER = { competitor: '', topics: false }, PAGES = [];
+let WATCHES = [], CUR = null, LIMITS = { watches: 3, competitors: 10 }, FILTER = { competitor: '', topic: '' }, PAGES = [];
 
 if (/^v-[a-f0-9]{24}$/i.test(CODE)) CODE = '';
 if (!CODE) $('gate').style.display = 'block';
@@ -135,7 +139,6 @@ function drawChips(active) {
 const createForm = first => `<div class="panel"><h2 style="margin-top:0">${first ? 'Create your first watch' : 'New watch'}</h2>
   <div class="grid2"><div class="field"><label>Watch name</label><input id="cn" maxlength="80" placeholder="Hamburg Mac repair"></div>
   <div class="field"><label>Send the weekly email to</label><input id="ce" type="email" placeholder="you@company.com"></div></div>
-  <div class="field"><label>Topics you care about (optional, one per line or comma separated)</label><textarea id="ct" placeholder="macbook akku&#10;wasserschaden&#10;display reparatur"></textarea><div class="hint">New pages that mention every word of a topic are flagged and listed first.</div></div>
   <div class="field"><label>Competitors to track (one website per line, up to ${LIMITS.competitors})</label><textarea id="cc" placeholder="rival.com&#10;another-rival.de"></textarea><div class="hint">We read each sitemap straight away. You can add or remove competitors later.</div></div>
   <div class="field"><label>Your own site (optional)</label><input id="co" placeholder="yoursite.com"><div class="hint">Added beside them so the side-by-side view can compare your output. It never appears in the competitor feed or email.</div></div>
   <button class="btn" id="cgo">Create watch</button><div id="cerr"></div></div>`;
@@ -143,7 +146,7 @@ function wireCreate() {
   $('cgo').onclick = async () => {
     const comps = $('cc').value.split(/[\n,;]+/).map(x => x.trim()).filter(Boolean).slice(0, LIMITS.competitors), own = $('co').value.trim();
     $('cgo').disabled = true;
-    const d = await call('/cpt/create', { name: $('cn').value, email: $('ce').value, topics: $('ct').value });
+    const d = await call('/cpt/create', { name: $('cn').value, email: $('ce').value });
     if (d.error) { $('cgo').disabled = false; return say(d.error); } say('');
     const notes = [], jobs = comps.map(x => ({ domain: x, own: false })).concat(own ? [{ domain: own, own: true }] : []);
     for (let i = 0; i < jobs.length; i++) {
@@ -157,7 +160,7 @@ function wireCreate() {
 }
 
 async function openWatch(id) {
-  CUR = id; drawChips(id); FILTER = { competitor: '', topics: false };
+  CUR = id; drawChips(id); FILTER = { competitor: '', topic: '' };
   history.replaceState(null, '', '?k=' + encodeURIComponent(CODE) + '&id=' + encodeURIComponent(id));
   $('watch').innerHTML = '<p class="hint">Loading…</p>';
   const d = await call('/cpt/get', { id });
@@ -167,33 +170,45 @@ async function openWatch(id) {
 
 function renderWatch({ watch, competitors, pages }) {
   const week = competitors.filter(c => !c.is_own).reduce((a, c) => a + (c.new_this_week || 0), 0), hasOwn = competitors.some(c => c.is_own);
-  $('watch').innerHTML = `<h2 style="margin-top:6px">Competitors <span class="hint">${week} new page${week === 1 ? '' : 's'} in the last 7 days${hasOwn ? ', and your own site below them' : ''}</span></h2>
+  const hasT = (watch.topics || []).length;
+  $('watch').innerHTML = `<div class="tabs"><button data-tab="weekly" class="on">Week by week</button><button data-tab="topics">Topics${hasT ? ' (' + watch.topics.length + ')' : ''}</button><button data-tab="sites">Sites &amp; settings</button></div>
+  <div id="tab-weekly">
+    <h2 style="margin-top:6px">Everything published, week by week <span class="hint">${week} new page${week === 1 ? '' : 's'} across your competitors in the last 7 days</span></h2>
+    <div id="weektable"></div>
+    <div id="compare"></div>
+    <div id="strategy"></div>
+    <h2>New pages</h2>
+    <div class="toolbar"><select id="fcomp"><option value="">All sites</option>${competitors.map(c => `<option value="${esc(c.id)}">${esc(c.is_own ? 'Your site (' + c.domain + ')' : c.label || c.domain)}</option>`).join('')}</select></div>
+    <div class="feed" id="feed"></div><div id="more" style="margin-top:10px"></div>
+  </div>
+  <div id="tab-topics" hidden>
+    <h2 style="margin-top:6px">Track topics <span class="hint">optional: see who covers the subjects you care about</span></h2>
+    <div class="panel"><div class="field"><label>Topics (one per line or comma separated)</label><textarea id="st" placeholder="macbook akku&#10;wasserschaden&#10;display reparatur">${esc((watch.topics || []).join('\n'))}</textarea><div class="hint">A page counts when it mentions every word of a topic. New topics apply to pages found from now on.</div></div>
+      <div class="acts"><button class="btn small" id="tsave">Save topics</button></div></div>
+    ${hasT ? `<div id="tmatrix"></div><h2>Pages on your topics</h2><div class="toolbar"><select id="ftopic"><option value="">All topics</option>${watch.topics.map(t => `<option>${esc(t)}</option>`).join('')}</select></div><div class="feed" id="tfeed"></div>` : '<div class="empty">No topics yet. Add some above to get a topic-by-topic comparison and a feed of pages on those subjects.</div>'}
+  </div>
+  <div id="tab-sites" hidden>
+    <h2 style="margin-top:6px">Sites</h2>
     ${competitors.length ? `<div class="tablewrap"><table><thead><tr><th>Site</th><th>Sitemap</th><th class="r">Pages</th><th class="r">New (7 days)</th><th class="r">New (total)</th><th>Last checked</th><th></th></tr></thead><tbody>${competitors.map(c => `<tr class="${c.is_own ? 'mine' : ''}">
       <td><b>${esc(c.is_own ? 'Your site' : c.label || c.domain)}</b>${c.is_own ? '<span class="you">you</span>' : ''}${c.label || c.is_own ? `<div class="hint" style="margin:0">${esc(c.domain)}</div>` : ''}</td>
       <td>${c.status === 'error' ? `<span class="chip error">Problem</span><div class="hint" style="margin:2px 0 0">${esc(c.error || '')}</div>` : '<span class="chip active">Reading</span>'}</td>
       <td class="r">${Number(c.urls_count || 0).toLocaleString('en')}</td><td class="r num">${c.new_this_week}</td><td class="r">${c.new_total}</td><td>${esc(ago(c.last_checked_at))}</td>
       <td class="r"><button class="mini" data-strat="${esc(c.id)}">Strategy</button> <button class="mini" data-check="${esc(c.id)}">Check now</button> <button class="mini" data-rm="${esc(c.id)}">Remove</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No competitors yet. Add the first one below.</div>'}
-    <div id="compare"></div>
-    <div id="strategy"></div>
     <div class="panel"><div class="grid3"><div class="field"><label>Competitor website</label><input id="ad" placeholder="rival.com"></div><div class="field"><label>Label (optional)</label><input id="al" maxlength="60" placeholder="Main rival"></div><div style="align-self:end;padding-bottom:14px"><button class="btn small" id="aadd">Add</button></div></div>
       <label style="display:flex;gap:8px;align-items:center;margin:0 0 4px;font-size:12px;color:var(--ink)"><input type="checkbox" id="aown" style="width:auto" ${hasOwn ? 'disabled' : ''}> This is my own site${hasOwn ? ' (already added)' : ''}</label>
       <div class="hint">Up to ${LIMITS.competitors} competitors per watch, plus your own site. We look at it straight away, so you will know at once if its sitemap cannot be read. Your own pages never appear in the competitor feed or email; they are only compared.</div><div id="aerr"></div></div>
-
-    <h2>New pages</h2>
-    <div class="toolbar"><select id="fcomp"><option value="">All competitors</option>${competitors.map(c => `<option value="${esc(c.id)}">${esc(c.is_own ? 'Your site (' + c.domain + ')' : c.label || c.domain)}</option>`).join('')}</select>
-      <label style="display:flex;gap:6px;align-items:center;margin:0;font-size:12px"><input type="checkbox" id="ftop" style="width:auto"> Only pages on my topics</label></div>
-    <div class="feed" id="feed"></div><div id="more" style="margin-top:10px"></div>
-
-    <h2>Weekly email and topics</h2>
+    <h2>Weekly email</h2>
     <div class="panel"><div class="grid2"><div class="field"><label>Send to</label><input id="se" type="email" value="${esc(watch.email)}"></div>
       <div class="field"><label>Status</label><select id="ss"><option value="active">Active: check weekly and email me</option><option value="paused">Paused</option></select></div></div>
-      <div class="field"><label>Topics (one per line or comma separated)</label><textarea id="st">${esc((watch.topics || []).join('\n'))}</textarea></div>
       <div class="acts"><button class="btn small" id="ssave">Save</button><button class="btn small ghost" id="sdel" style="margin-left:auto;color:var(--bad)">Delete watch</button></div>
-      <div class="hint">Checks run on Mondays; the email arrives when there is something new, at most once a week. Quiet weeks send nothing.</div></div>`;
+      <div class="hint">Checks run on Mondays; the email arrives when there is something new, at most once a week. Quiet weeks send nothing.</div></div>
+  </div>`;
   $('ss').value = watch.status;
-  drawFeed();
+  drawFeed(); reloadFeed(watch.id);
   $('fcomp').onchange = async () => { FILTER.competitor = $('fcomp').value; await reloadFeed(watch.id); };
-  $('ftop').onchange = () => { FILTER.topics = $('ftop').checked; drawFeed(); };
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b)); ['weekly', 'topics', 'sites'].forEach(t => { $('tab-' + t).hidden = t !== b.dataset.tab; }); });
+  if ($('ftopic')) $('ftopic').onchange = () => { FILTER.topic = $('ftopic').value; drawTopicFeed(); };
+  $('tsave').onclick = async () => { const r = await call('/cpt/update', { id: watch.id, topics: $('st').value }); if (r.error) return say(r.error); say('Topics saved. They apply to pages found from now on.', true); openWatch(watch.id).then(() => document.querySelector('[data-tab=topics]').click()); };
   $('aadd').onclick = async () => {
     $('aadd').disabled = true; $('aerr').innerHTML = '<p class="hint">Reading the sitemap…</p>';
     const r = await call('/cpt/add', { watch_id: watch.id, domain: $('ad').value, label: $('al').value, own: $('aown').checked });
@@ -205,7 +220,7 @@ function renderWatch({ watch, competitors, pages }) {
   if (competitors.length >= 2) loadCompare(watch.id); 
   $('watch').querySelectorAll('[data-strat]').forEach(b => b.onclick = () => openStrategy(b.dataset.strat, false));
   $('watch').querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => { if (!confirm('Stop watching this competitor and delete what we saved about it?')) return; const r = await call('/cpt/remove', { id: b.dataset.rm }); r.error ? say(r.error) : openWatch(watch.id); });
-  $('ssave').onclick = async () => { const r = await call('/cpt/update', { id: watch.id, email: $('se').value, status: $('ss').value, topics: $('st').value }); r.error ? say(r.error) : say('Saved. New topics apply to pages found from now on.', true); };
+  $('ssave').onclick = async () => { const r = await call('/cpt/update', { id: watch.id, email: $('se').value, status: $('ss').value }); r.error ? say(r.error) : say('Saved.', true); };
   $('sdel').onclick = async () => { if (!confirm('Delete this watch and everything saved for it?')) return; const r = await call('/cpt/delete', { id: watch.id }); if (r.error) return say(r.error); CUR = null; history.replaceState(null, '', '?k=' + encodeURIComponent(CODE)); await init(); };
 }
 function mini(months) {
@@ -219,16 +234,15 @@ async function loadCompare(id) {
   const shade = n => (n ? `background:rgba(255,61,0,${Math.min(0.15 + n * 0.08, 0.7)})` : '');
   $('compare').innerHTML = `<h2>Side by side</h2>
     ${r.highlights.length ? `<div class="read" style="border-left-color:var(--ink)"><ul style="margin:0 0 0 18px">${r.highlights.map(h => `<li>${esc(h.text)}</li>`).join('')}</ul></div>` : ''}
-    <div class="tablewrap"><table><thead><tr><th>Competitor</th><th class="r">Pages</th><th class="r">Last 90 days</th><th class="r">vs before</th><th class="r">Touched recently</th><th>Biggest section</th><th class="r">New (7 days)</th>${hasT ? '<th class="r">On your topics</th>' : ''}<th>Per month (12)</th></tr></thead><tbody>${cs.map(c => `<tr class="${c.is_own ? 'mine' : ''}">
+    <div class="tablewrap"><table><thead><tr><th>Competitor</th><th class="r">Pages</th><th class="r">Last 90 days</th><th class="r">vs before</th><th class="r">Touched recently</th><th>Biggest section</th><th class="r">New (7 days)</th><th>Per month (12)</th></tr></thead><tbody>${cs.map(c => `<tr class="${c.is_own ? 'mine' : ''}">
       <td><a href="#" data-cstrat="${esc(c.id)}" style="color:var(--ink);font-weight:700">${nm(c)}</a>${c.status === 'error' ? ' <span class="chip error">problem</span>' : ''}</td>
       <td class="r">${c.pages == null ? '–' : Number(c.pages).toLocaleString('en')}</td>
       <td class="r">${c.dates_reliable ? c.last90 : '<span class="hint" title="Most pages carry the same date">n/a</span>'}</td><td class="r">${c.dates_reliable ? PCT(c.change_pct) : '–'}</td><td class="r">${c.dates_reliable && c.fresh_pct != null ? c.fresh_pct + '%' : '–'}</td>
       <td>${c.top_section ? esc(c.top_section.section) + ` <span class="hint">${c.top_section.share}%</span>` : '–'}${c.growing.length ? ` <span class="tr growing">${esc(c.growing[0])} growing</span>` : ''}${c.fading.length ? ` <span class="tr fading">${esc(c.fading[0])} fading</span>` : ''}</td>
-      <td class="r"><b>${c.new_7d}</b></td>${hasT ? `<td class="r">${c.on_topics_pct == null ? '–' : c.on_topics_pct + '%'}</td>` : ''}
+      <td class="r"><b>${c.new_7d}</b></td>
       <td>${c.dates_reliable && c.months.length ? mini(c.months) : '<span class="hint">–</span>'}</td></tr>`).join('')}</tbody></table></div>
-    ${hasT ? `<h3 style="font-size:13px;margin:16px 0 6px">Your topics, page by page</h3><div class="tablewrap"><table><thead><tr><th>Topic</th>${cs.map(c => `<th class="r">${nm(c)}</th>`).join('')}</tr></thead><tbody>${r.matrix.topics.map((t, i) => `<tr><td>${esc(t)}</td>${r.matrix.rows.map(row => `<td class="r" style="${shade(row.counts[i])}">${row.counts[i]}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
-      <div class="hint">Pages we have read that mention the whole topic. The more pages, the more they cover it.</div>` : '<div class="hint" style="margin-top:8px">Add topics to this watch (below) to see how each competitor covers them.</div>'}
     ${r.notes.map(n => `<div class="hint" style="margin-top:6px">${esc(n)}</div>`).join('')}`;
+  if ($('tmatrix') && hasT) $('tmatrix').innerHTML = `<h2>Coverage, topic by topic</h2><div class="tablewrap"><table><thead><tr><th>Topic</th>${cs.map(c => `<th class="r">${nm(c)}</th>`).join('')}</tr></thead><tbody>${r.matrix.topics.map((t, i) => `<tr><td>${esc(t)}</td>${r.matrix.rows.map(row => `<td class="r" style="${shade(row.counts[i])}">${row.counts[i]}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div class="hint">Pages we have read that mention the whole topic. The more pages, the more they cover it.</div>`;
   $('compare').querySelectorAll('[data-cstrat]').forEach(a => a.onclick = e => { e.preventDefault(); openStrategy(a.dataset.cstrat, false); });
 }
 const PCT = p => (p == null ? '–' : `<span style="color:${p > 0 ? 'var(--ok)' : p < 0 ? 'var(--bad)' : 'inherit'}">${p > 0 ? '+' : ''}${p}%</span>`);
@@ -264,16 +278,29 @@ async function openStrategy(id, refresh) {
   $('srefresh').onclick = () => openStrategy(id, true);
 }
 async function reloadFeed(id) {
-  const r = await call('/cpt/pages', { id, competitor_id: FILTER.competitor || undefined, limit: 40 });
-  if (r.error) return say(r.error); PAGES = r.pages; drawFeed(r.pages.length >= 40 ? id : null);
+  const r = await call('/cpt/pages', { id, competitor_id: FILTER.competitor || undefined, limit: 200 });
+  if (r.error) return say(r.error); PAGES = r.pages; drawFeed(r.pages.length >= 200 ? id : null); drawTopicFeed();
 }
+const monday = d => { const x = new Date(String(d).slice(0, 10) + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7)); return x.toISOString().slice(0, 10); };
+const wk = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+const rowHtml = p => `<div class="row"><a class="t" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${esc(p.title || p.url)}</a>
+    <div class="m">${p.topics.map(t => `<span class="tag">${esc(t)}</span>`).join('')}${esc(p.domain)}${p.is_own ? '<span class="you">you</span>' : ''} · ${esc(p.published || p.first_seen)} · <span style="word-break:break-all">${esc(p.url)}</span></div>
+    ${p.description ? `<div class="d">${esc(p.description.slice(0, 200))}</div>` : ''}</div>`;
 function drawFeed(moreFor) {
-  const list = PAGES.filter(p => !FILTER.topics || p.topics.length);
-  $('feed').innerHTML = list.length ? list.map(p => `<div class="row"><a class="t" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${esc(p.title || p.url)}</a>
-    <div class="m">${p.baseline ? '<span class="tag start">from the first look</span>' : ''}${p.topics.map(t => `<span class="tag">${esc(t)}</span>`).join('')}${esc(p.domain)} · ${esc(p.published || p.first_seen)} · <span style="word-break:break-all">${esc(p.url)}</span></div>
-    ${p.description ? `<div class="d">${esc(p.description.slice(0, 200))}</div>` : ''}</div>`).join('') : '<div class="empty">Nothing here yet. After the first look, new pages show up as they are published.</div>';
+  const fresh = PAGES.filter(p => !p.baseline), first = PAGES.filter(p => p.baseline);
+  const weeks = {}; fresh.forEach(p => { (weeks[monday(p.published || p.first_seen)] ||= []).push(p); });
+  const keys = Object.keys(weeks).sort().reverse();
+  const doms = [...new Set(fresh.map(p => p.domain))];
+  $('weektable').innerHTML = keys.length ? `<div class="tablewrap"><table><thead><tr><th>Week of</th>${doms.map(d => `<th class="r">${esc(d)}</th>`).join('')}<th class="r">Total</th></tr></thead><tbody>${keys.slice(0, 12).map(k => `<tr><td>${wk(k)}</td>${doms.map(d => { const n = weeks[k].filter(p => p.domain === d).length; return `<td class="r">${n || '<span class="hint">0</span>'}</td>`; }).join('')}<td class="r"><b>${weeks[k].length}</b></td></tr>`).join('')}</tbody></table></div><div class="hint">New pages we found each week, all topics. Pages from the first look are not counted as new.</div>` : '<div class="empty">Nothing yet. The first look records what is there; from the next weekly check, new pages are counted here.</div>';
+  $('feed').innerHTML = keys.length || first.length ? keys.map(k => `<h3 style="font-size:13px;margin:18px 0 0;padding-bottom:4px;border-bottom:2px solid var(--ink)">Week of ${wk(k)} <span class="hint">${weeks[k].length} new page${weeks[k].length === 1 ? '' : 's'}</span></h3>${weeks[k].map(rowHtml).join('')}`).join('')
+    + (first.length ? `<details style="margin-top:18px"><summary class="hint" style="cursor:pointer">From the first look: ${first.length} recently changed page${first.length === 1 ? '' : 's'}</summary>${first.map(rowHtml).join('')}</details>` : '') : '<div class="empty">Nothing here yet.</div>';
   $('more').innerHTML = moreFor ? '<button class="mini" id="loadmore">Load more</button>' : '';
-  if (moreFor) $('loadmore').onclick = async () => { const r = await call('/cpt/pages', { id: CUR, competitor_id: FILTER.competitor || undefined, limit: 40, offset: PAGES.length }); if (r.error) return say(r.error); PAGES = PAGES.concat(r.pages); drawFeed(r.pages.length >= 40 ? CUR : null); };
+  if (moreFor) $('loadmore').onclick = async () => { const r = await call('/cpt/pages', { id: CUR, competitor_id: FILTER.competitor || undefined, limit: 200, offset: PAGES.length }); if (r.error) return say(r.error); PAGES = PAGES.concat(r.pages); drawFeed(r.pages.length >= 200 ? CUR : null); drawTopicFeed(); };
+}
+function drawTopicFeed() {
+  const el = $('tfeed'); if (!el) return;
+  const list = PAGES.filter(p => p.topics.length && (!FILTER.topic || p.topics.includes(FILTER.topic)));
+  el.innerHTML = list.length ? list.map(rowHtml).join('') : '<div class="empty">No pages on these topics yet.</div>';
 }
 </script>
 </body>
