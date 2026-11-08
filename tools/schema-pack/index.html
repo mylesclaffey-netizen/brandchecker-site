@@ -121,6 +121,8 @@
   .card{border:3px solid #0a0a0a;padding:16px 18px;margin:0 0 20px;background:#fff}
   .card h2{font-weight:900;font-size:19px;text-transform:uppercase;letter-spacing:-.01em;margin:0 0 4px}
   .card .sub{margin:0 0 12px}
+  .card .own{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;line-height:1.45}
+  .card .own input{width:auto;margin-top:3px;flex:none}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   @media(max-width:620px){.row2{grid-template-columns:1fr}}
   .f{margin:0 0 12px}
@@ -173,6 +175,11 @@
 
   <div class="card"><h2>Plans</h2><p class="sub">One row per plan on your pricing page. For a plan with no public price, tick “contact sales”.</p><div id="plans"></div><button class="addb" id="addPlan" type="button">+ Add a plan</button></div>
 
+  <div class="card"><h2>Ratings (optional)</h2><p class="sub">Only from reviews your own users left, collected by you or a review tool on your site, and shown on the page this markup goes on. Google shows the Software app rich result only with a rating or reviews, and doesn’t allow a score copied from G2, Capterra or another site.</p>
+    <div class="row2"><div class="f"><label for="rValue">Average rating</label><input id="rValue" type="text" inputmode="decimal" placeholder="4.6"></div><div class="f"><label for="rCount">Number of ratings</label><input id="rCount" type="text" inputmode="numeric" placeholder="128"></div></div>
+    <div class="row2"><div class="f"><label for="rBest">Out of</label><input id="rBest" type="text" inputmode="numeric" value="5"></div><div class="f"><label for="rPage">The reviews are shown on</label><select id="rPage"><option value="home">the homepage</option><option value="pricing">the pricing page</option></select></div></div>
+    <label class="own"><input type="checkbox" id="rOwn"> These are my own users’ reviews, and that page shows them (the rating and the reviews behind it).</label></div>
+
   <div class="card"><h2>FAQ</h2><p class="sub">Questions and answers that are written out on your page — the markup must match what visitors can read there.</p><div id="faqs"></div><button class="addb" id="addFaq" type="button">+ Add a question</button></div>
 
   <h2 style="font-weight:900;font-size:24px;text-transform:uppercase;margin:26px 0 8px">Your pack</h2>
@@ -182,7 +189,7 @@
   <div class="out"><div class="hd"><div><b>3 · FAQ</b><small>FAQPage. Paste into the page the questions appear on (often the pricing page).</small></div><button class="btn2 small" data-copy="o3" type="button">Copy</button></div><pre id="o3" class="empty">Add at least one question and answer to see this.</pre></div>
   <button class="btn2" id="checkAll" type="button" style="margin:0 0 16px">Check all three in the schema validator →</button>
 
-  <div class="note" style="border:3px solid #0a0a0a;background:#f3f3ef;padding:14px 16px;margin:0 0 20px;font-size:14.5px"><b>Check it before you ship it.</b> The button above opens all three snippets in our <a href="/tools/schema-audit/">schema validator</a> (schema.org plus Google’s rich result rules); Google’s <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener">Rich Results Test</a> is the final word on what Google shows. <b>Two things are left out on purpose:</b> no AggregateRating (ratings must come from real reviews shown on the page, and marking up your own ratings of yourself breaks Google’s guidelines — add one only for genuine third-party reviews you display), and Google no longer shows FAQ rich results for most sites, so the FAQ markup is for machines and AI, not a snippet in search.</div>
+  <div class="note" style="border:3px solid #0a0a0a;background:#f3f3ef;padding:14px 16px;margin:0 0 20px;font-size:14.5px"><b>Check it before you ship it.</b> The button above opens all three snippets in our <a href="/tools/schema-audit/">schema validator</a> (schema.org plus Google’s rich result rules); Google’s <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener">Rich Results Test</a> is the final word on what Google shows. <b>Ratings:</b> added only when you confirm they come from your own users’ reviews and the page shows them. Google doesn’t allow a score copied from G2, Capterra or another site (“don’t aggregate reviews or ratings from other websites”) and treats it as spammy markup. <b>FAQ:</b> Google no longer shows FAQ rich results for most sites, so that markup is for machines and AI, not a snippet in search.</div>
   <div class="share"><a class="btn2" href="/tools/key-pages/">Key-pages audit →</a><a class="btn2" href="/tools/schema-audit/">Schema validator →</a><a class="btn2" href="/tools/pricing-check/">Does AI know your pricing? →</a></div>
   <div class="sidenav"><a href="/" class="sidenav-link">← Back to tools</a></div>
 </div>
@@ -248,12 +255,24 @@ function build() {
   priced.forEach(function (p) { if (!(p.price >= 0)) add('e', 'Plan “' + p.name + '” needs a price of 0 or more.'); });
   var names = plans.map(function (p) { return p.name.toLowerCase(); }); names.filter(function (n, i) { return names.indexOf(n) !== i; }).forEach(function (n) { add('w', 'Two plans are called “' + n + '”.'); });
   var currencies = priced.map(function (p) { return p.currency; }).filter(function (c, i, a) { return a.indexOf(c) === i; });
+  // Ratings: only the site's own users' reviews, shown on the page (Google's review snippet guidelines).
+  var rating = null, rv = val('rValue'), rc = val('rCount');
+  if (rv || rc) {
+    var rVal = Number(String(rv).replace(',', '.')), rCount = Number(rc), rBest = Number(val('rBest') || 5);
+    if (!(rBest > 1)) add('e', 'The rating scale (“out of”) must be a number above 1, usually 5.');
+    else if (!(rVal >= 1 && rVal <= rBest)) add('e', 'The average rating must be a number from 1 to ' + rBest + '.');
+    else if (!(rCount >= 1) || Math.floor(rCount) !== rCount) add('e', 'Add how many ratings the average is based on, as a whole number.');
+    else if (!$('rOwn').checked) add('w', 'Ratings left out: tick the box once they are your own users’ reviews and that page shows them. A score copied from G2, Capterra or another site breaks Google’s review guidelines.');
+    else rating = { '@type': 'AggregateRating', ratingValue: rVal, ratingCount: rCount, bestRating: rBest, worstRating: 1 };
+  } else add('i', 'No ratings: Google shows the Software app rich result only with a rating or reviews. Add yours under Ratings if your site collects reviews from users.');
+  var rPage = $('rPage').value;
 
   if (name && url) {
     var graph = [{ '@type': 'Organization', '@id': orgId, name: name, url: base }];
     if (logo) graph[0].logo = logo; if (val('orgDesc')) graph[0].description = val('orgDesc'); if (same.length) graph[0].sameAs = same;
     graph.push({ '@type': 'WebSite', '@id': base + '#website', name: name, url: base, publisher: { '@id': orgId } });
     var a = app({ '@id': base + '#software', url: base, publisher: { '@id': orgId } });
+    if (rating && rPage === 'home') a.aggregateRating = rating;
     if (priced.length && currencies.length === 1) {
       var prices = priced.map(function (p) { return p.price; });
       a.offers = { '@type': 'AggregateOffer', priceCurrency: currencies[0], lowPrice: Math.min.apply(null, prices), highPrice: Math.max.apply(null, prices), offerCount: plans.length };
@@ -277,7 +296,9 @@ function build() {
       return o;
     });
     if (val('pTrial')) offers.push({ '@type': 'Offer', name: 'Free trial', price: 0, priceCurrency: currencies[0] || 'USD', description: val('pTrial') });
-    out2 = tag({ '@context': 'https://schema.org', '@graph': [Object.assign(app({ '@id': base + '#software' }), { url: pricingUrl || base, offers: offers })] });
+    var pa = Object.assign(app({ '@id': base + '#software' }), { url: pricingUrl || base, offers: offers });
+    if (rating && rPage === 'pricing') pa.aggregateRating = rating;
+    out2 = tag({ '@context': 'https://schema.org', '@graph': [pa] });
   }
   var okFaqs = faqs.filter(function (f) { return f.q && f.a; });
   faqs.filter(function (f) { return !(f.q && f.a); }).forEach(function () { add('w', 'A FAQ has a question without an answer, or the reverse — it is left out.'); });
@@ -298,7 +319,7 @@ $('checkAll').onclick = function () {
   location.href = '/tools/schema-audit/?paste=1' + (k ? '&k=' + encodeURIComponent(k) : '');
 };
 document.querySelectorAll('[data-copy]').forEach(function (b) { b.onclick = function () { var el = $(b.dataset.copy); if (el.className === 'empty') return; if (navigator.clipboard) navigator.clipboard.writeText(el.textContent); var t = b.textContent; b.textContent = 'Copied ✓'; setTimeout(function () { b.textContent = t; }, 1400); }; });
-['orgName', 'orgUrl', 'orgLogo', 'orgDesc', 'orgSame', 'pName', 'pCat', 'pOs', 'pPrice', 'pDesc', 'pFeat', 'pTrial'].forEach(function (id) { $(id).addEventListener('input', build); $(id).addEventListener('change', build); });
+['orgName', 'orgUrl', 'orgLogo', 'orgDesc', 'orgSame', 'pName', 'pCat', 'pOs', 'pPrice', 'pDesc', 'pFeat', 'pTrial', 'rValue', 'rCount', 'rBest', 'rPage', 'rOwn'].forEach(function (id) { $(id).addEventListener('input', build); $(id).addEventListener('change', build); });
 
 /* ---- prefill ---- */
 $('pfBtn').onclick = function () {
