@@ -610,6 +610,8 @@ async function importFrom(raw) {
     d = await (await fetch(API + '/schema-audit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, url }) })).json();
   } catch (e) { d = { error: 'could not reach the checker' }; }
   if (d.error) { msg.className = 'msg bad'; msg.textContent = `Couldn't read it: ${d.error}.`; return; }
+  // A page checker without the full report (an older worker) can't say what the markup holds: say so plainly.
+  if (!d.report) { msg.className = 'msg bad'; msg.textContent = 'Reading a page\'s markup isn\'t available right now. Fill in the form instead, or try again later.'; return; }
   const items = d.report?.items || [];
   const pick = items.find((i) => i.types.some((t) => engine.isA(t, 'LocalBusiness'))) || items.find((i) => i.types.some((t) => engine.isA(t, 'Organization')));
   if (!pick) { msg.className = 'msg bad'; msg.textContent = items.length || d.schemas_found?.length ? `That page has structured data (${(d.schemas_found || []).join(', ')}) but no business in it. Fill in the form instead.` : 'That page has no structured data to start from. Fill in the form instead.'; return; }
