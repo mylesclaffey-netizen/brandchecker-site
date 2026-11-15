@@ -20,8 +20,8 @@ def swap(old, new):
         sys.exit('build-ai.py: expected exactly one match for: ' + old[:70])
     src = src.replace(old, new)
 
-swap('<title>SEO Tools for Brand Managers — Brand Checker</title>', '<title>AI Visibility Tools — Brand Checker</title>')
-swap('<p class="eyebrow">Free tools</p>\n  <h1>SEO Tools for Brand Managers</h1>', '<p class="eyebrow">AI tools</p>\n  <h1>How AI answers talk about your brand</h1>')
+swap('<title>Free and Low-Cost GEO + SEO Tools — Brand Checker</title>', '<title>AI Visibility Tools — Brand Checker</title>')
+swap('<p class="eyebrow">Free and low-cost tools</p>\n  <h1>Free GEO and SEO Tools</h1>', '<p class="eyebrow">AI tools</p>\n  <h1>How AI answers talk about your brand</h1>')
 
 # The lede under the h1 (its wording may change; replace whatever is there).
 start = src.index('<p class="lede">')

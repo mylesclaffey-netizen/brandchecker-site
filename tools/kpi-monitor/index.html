@@ -85,6 +85,7 @@
     <p class="lede">The handful of numbers that matter, checked every day against the targets you set. You get a weekly or monthly summary by email, and an alert when a number leaves its expected range or slips off its target. Numbers come from Search Console, your rank and AI-answer trackers, the results of other tools you have run (PageSpeed, backlinks, schema, sitemap, local grid), a PageSpeed check we run every week, or figures you type in.</p>
 
     <div id="msg"></div>
+    <div id="gscbox"></div>
     <div class="boards" id="boards"></div>
     <div id="board"></div>
 
@@ -136,7 +137,24 @@ const say = (t, ok) => { $('msg').innerHTML = t ? `<div class="${ok ? 'ok' : 'er
 const fmt = (v, u) => v == null ? '–' : Number(v).toLocaleString('en', { maximumFractionDigits: Math.abs(v) >= 100 ? 0 : 1 }) + (u === '%' ? '%' : '');
 const unitTxt = u => (u && u !== '%' ? `<small>${esc(u)}</small>` : '');
 
+
+// Search Console connection, so it can be started from this page
+async function gscBox(page) {
+  const box = $('gscbox'); if (!box) return;
+  const g = qs.get('gsc');
+  if (g) { const u = new URL(location.href); u.searchParams.delete('gsc'); history.replaceState(null, '', u.pathname + u.search); say(g === 'connected' ? 'Search Console connected.' : g === 'cancelled' ? 'The Search Console connection was cancelled.' : 'The Search Console connection did not complete. Please try again.', g === 'connected'); }
+  const st = await call('/gsc/status', {});
+  const here = page + '?k=' + encodeURIComponent(CODE);
+  const go = async () => { const r = await call('/gsc/start', { return_url: location.origin + here }); if (r.signin_required) { location.href = '/account/?return=' + encodeURIComponent(here); return; } if (r.error || !r.url) { say(r.error || 'Could not start the Search Console connection.'); return; } location.href = r.url; };
+  if (st.error && !st.signin_required) { box.innerHTML = ''; return; }
+  if (st.connected) { box.innerHTML = '<div class="hint" style="margin:6px 0">Search Console is connected. <a href="/tools/gsc-suite/?k=' + encodeURIComponent(CODE) + '" style="color:var(--ink)">Manage properties in the GSC Suite</a></div>'; return; }
+  if (st.configured === false) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="panel" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:220px"><b>Connect Search Console</b><div class="hint">Read-only. Gives this tool your clicks and impressions' + (st.signin_required ? '. You will be asked to sign in to your Brand Checker account first.' : '.') + '</div></div><button class="btn small" id="gscgo">' + (st.signin_required ? 'Sign in to connect' : 'Connect Search Console') + '</button></div>';
+  $('gscgo').onclick = go;
+}
+
 async function init() {
+  gscBox('/tools/kpi-monitor/');
   OPTS = await call('/kpi/options', {});
   if (OPTS.signin_required || OPTS.error) { say(OPTS.error || 'Could not load your account.'); return; }
   await loadBoards(qs.get('id'));

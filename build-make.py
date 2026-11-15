@@ -14,9 +14,9 @@ src = src.replace('<meta name="robots" content="index, follow">', '<meta name="r
 src = re.sub(r'<link rel="canonical"[^>]*>\n?', '', src)
 
 swaps = [
-    ('<title>SEO Tools for Brand Managers — Brand Checker</title>',
+    ('<title>Free and Low-Cost GEO + SEO Tools — Brand Checker</title>',
      '<title>Brand Checker for Make</title>'),
-    ('<p class="eyebrow">Free tools</p>\n  <h1>SEO Tools for Brand Managers</h1>',
+    ('<p class="eyebrow">Free and low-cost tools</p>\n  <h1>Free GEO and SEO Tools</h1>',
      '<p class="eyebrow">Prepared for Make</p>\n  <h1>Brand Checker for Make</h1>'),
     ('<a class="home" href="/">Brand Checker</a>',
      '<a class="home" href="/make/">Brand Checker</a>'),

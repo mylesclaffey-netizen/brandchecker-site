@@ -80,6 +80,7 @@
     <p class="lede">Follow a group of keywords week by week and see what happened around each move: the changes you made, Google updates, new AI models, and pages your competitors published on the same topic.</p>
 
     <div id="msg"></div>
+    <div id="gscbox"></div>
     <div class="boards" id="boards"></div>
     <div id="cluster"></div>
 
@@ -111,7 +112,24 @@ const say = (t, ok) => { $('msg').innerHTML = t ? `<div class="${ok ? 'ok' : 'er
 const fmtDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 const pctTxt = p => (p == null ? '–' : `<span class="${p > 0 ? 'up' : p < 0 ? 'down' : ''}">${p > 0 ? '+' : ''}${p}%</span>`);
 
+
+// Search Console connection, so it can be started from this page
+async function gscBox(page) {
+  const box = $('gscbox'); if (!box) return;
+  const g = qs.get('gsc');
+  if (g) { const u = new URL(location.href); u.searchParams.delete('gsc'); history.replaceState(null, '', u.pathname + u.search); say(g === 'connected' ? 'Search Console connected.' : g === 'cancelled' ? 'The Search Console connection was cancelled.' : 'The Search Console connection did not complete. Please try again.', g === 'connected'); }
+  const st = await call('/gsc/status', {});
+  const here = page + '?k=' + encodeURIComponent(CODE);
+  const go = async () => { const r = await call('/gsc/start', { return_url: location.origin + here }); if (r.signin_required) { location.href = '/account/?return=' + encodeURIComponent(here); return; } if (r.error || !r.url) { say(r.error || 'Could not start the Search Console connection.'); return; } location.href = r.url; };
+  if (st.error && !st.signin_required) { box.innerHTML = ''; return; }
+  if (st.connected) { box.innerHTML = '<div class="hint" style="margin:6px 0">Search Console is connected. <a href="/tools/gsc-suite/?k=' + encodeURIComponent(CODE) + '" style="color:var(--ink)">Manage properties in the GSC Suite</a></div>'; return; }
+  if (st.configured === false) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="panel" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:220px"><b>Connect Search Console</b><div class="hint">Read-only. Gives this tool your clicks and impressions' + (st.signin_required ? '. You will be asked to sign in to your Brand Checker account first.' : '.') + '</div></div><button class="btn small" id="gscgo">' + (st.signin_required ? 'Sign in to connect' : 'Connect Search Console') + '</button></div>';
+  $('gscgo').onclick = go;
+}
+
 async function init() {
+  gscBox('/tools/cluster-tracker/');
   OPTS = await call('/clt/options', {});
   if (OPTS.error) { say(OPTS.error); return; }
   const d = await call('/clt/list', {});
@@ -129,7 +147,7 @@ function drawChips(active) {
 function createForm(first) {
   const hasG = OPTS.properties.length, hasR = OPTS.rank_watches.length;
   return `<div class="panel"><h2 style="margin-top:0">${first ? 'Create your first cluster' : 'New cluster'}</h2>
-    ${hasG || hasR ? '' : '<div class="warn">No data source yet. Connect Search Console and add a property in the GSC Suite, or set up a rank watch in the Rank Scheduler, then come back.</div>'}
+    ${hasG || hasR ? '' : '<div class="warn">No data source yet. Connect Search Console above and add a property in the GSC Suite, or set up a rank watch in the Rank Scheduler, then come back.</div>'}
     <div class="grid2"><div class="field"><label>Cluster name</label><input id="cn" maxlength="80" placeholder="Battery and water damage"></div>
     <div class="field"><label>Data from</label><select id="cs">${OPTS.properties.map(p => `<option value="gsc|${esc(p.id)}">Search Console: ${esc(p.label)}</option>`).join('')}${OPTS.rank_watches.map(w => `<option value="rank|${esc(w.id)}">Rank checks: ${esc(w.label)}</option>`).join('')}</select></div></div>
     <div class="field"><label>Keywords (one per line, up to ${OPTS.limits.keywords})</label><textarea id="ck" placeholder="macbook akku wechseln&#10;macbook wasserschaden"></textarea>
