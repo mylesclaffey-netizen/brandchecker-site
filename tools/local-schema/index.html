@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="index, follow">
+<script src="/assets/visitor.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local business schema generator</title>
+<link rel="canonical" href="https://brandchecker.eu/tools/local-schema/">
+<meta name="description" content="Free local business schema generator: JSON-LD for any of schema.org's 150 local business types, with opening hours, holiday hours, service area, services and one block per location, checked live against Google's rules.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brand Checker">
+<meta property="og:url" content="https://brandchecker.eu/tools/local-schema/">
+<meta property="og:title" content="Local Business Schema Generator — Free SEO Tool | Brand Checker">
+<meta property="og:description" content="LocalBusiness JSON-LD for any business type: opening and holiday hours, service area, services, profiles, and one linked block per location, checked live against Google's rules. Free, no signup.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta name="twitter:title" content="Local Business Schema Generator — Free SEO Tool | Brand Checker">
+<meta name="twitter:description" content="LocalBusiness JSON-LD for any business type: opening and holiday hours, service area, services, profiles, and one linked block per location, checked live against Google's rules. Free, no signup.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;
+        --you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000;--gold:#0a0a0a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:720px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Archivo',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.14;margin:8px 0;color:var(--gold)}
+  h2{font-family:'Archivo',sans-serif;font-size:16px;font-weight:700;margin:0}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.6}
+  .hint{font-size:11.5px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+  .hint a,.after a,.foot a{color:var(--you)}
+  label{display:block;font-size:11px;color:var(--muted);margin:12px 0 5px}
+  input,textarea,select{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);background:var(--card);
+        border:1px solid var(--line);border-radius:7px;padding:10px 11px}
+  input[type=checkbox],input[type=radio]{width:auto;margin-right:6px;vertical-align:-1px}
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  textarea{resize:vertical;min-height:64px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
+  @media(max-width:560px){.row2,.row3{grid-template-columns:1fr}}
+  details.sec{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;background:var(--card)}
+  details.sec>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  details.sec>summary::-webkit-details-marker{display:none}
+  details.sec>summary::after{content:'+';font-family:'Archivo',sans-serif;font-weight:700;font-size:18px;line-height:1}
+  details.sec[open]>summary::after{content:'–'}
+  details.sec>summary .sub{font-size:11px;color:var(--muted);flex:1}
+  details.sec[open]>summary{margin-bottom:10px}
+  .lrow{display:flex;gap:6px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap}
+  .lrow>*{flex:1;min-width:110px}
+  .lrow>.rm{flex:none;min-width:0;width:38px;height:40px;background:none;border:1px solid var(--line);border-radius:7px;cursor:pointer;color:var(--muted);font-size:16px}
+  .addbtn{font-size:12px;color:var(--you);background:none;border:1px dashed var(--line);border-radius:7px;padding:8px 13px;cursor:pointer;font-family:'IBM Plex Mono',monospace;margin-top:2px}
+  .chkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px 12px;font-size:12.5px}
+  .chkgrid label{margin:0;font-size:12.5px;color:var(--ink);display:flex;align-items:center}
+  .day{display:grid;grid-template-columns:92px 150px 1fr;gap:8px;align-items:start;padding:6px 0;border-bottom:1px dashed rgba(10,10,10,.15)}
+  .day:last-of-type{border-bottom:0}
+  .day b{font-family:'Archivo',sans-serif;font-size:13px;padding-top:10px}
+  .slots{display:flex;flex-direction:column;gap:6px}
+  .slot{display:flex;gap:6px;align-items:center}
+  .slot input{padding:8px 8px;min-width:0}
+  .slot span{font-size:12px;color:var(--muted)}
+  .tiny{font-size:11px;color:var(--you);background:none;border:0;cursor:pointer;font-family:'IBM Plex Mono',monospace;padding:2px 0;text-align:left}
+  @media(max-width:560px){.day{grid-template-columns:1fr}.day b{padding-top:0}}
+  .typedesc{font-size:11.5px;color:var(--muted);margin-top:6px}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .btn2{font-family:'Archivo',sans-serif;font-size:13px;font-weight:700;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 14px;cursor:pointer}
+  .btn2:hover{border-color:var(--you);color:var(--you)}
+  .submit{font-family:'Archivo',sans-serif;font-size:15px;font-weight:700;background:var(--you);color:#fff;border:0;border-radius:8px;padding:13px 18px;cursor:pointer}
+  .submit:hover{background:#d92f00}
+  .out{margin-top:26px}
+  .status{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;background:var(--card)}
+  .status .head{font-family:'Archivo',sans-serif;font-weight:700;font-size:15px}
+  .status ul{margin:8px 0 0 18px;font-size:12px}
+  .status li{margin-bottom:3px}
+  .status .e{color:var(--bad)} .status .w{color:var(--warn)} .status .ok{color:var(--ok)}
+  .status .rec{font-size:11.5px;color:var(--muted);margin-top:8px}
+  .st{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:20px;white-space:nowrap}
+  .st.eligible{color:var(--ok);background:rgba(0,132,74,.1)} .st.not-eligible{color:var(--bad);background:rgba(232,105,95,.12)}
+  pre.code{font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.45;background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:14px;max-height:460px;overflow:auto;white-space:pre-wrap;word-break:break-word;color:var(--ok)}
+  .msg{font-size:12px;margin-top:8px}
+  .msg.bad{color:var(--bad)} .msg.good{color:var(--ok)}
+  .loc{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:8px}
+  .loc>summary{cursor:pointer;font-size:12.5px}
+  .loc .e{color:var(--bad)} .loc .ok{color:var(--ok)}
+  .foot{font-size:10.5px;color:var(--muted);margin-top:22px;line-height:1.6}
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted)}
+  .sidenav-link:hover{color:var(--ink)}
+  body.embed .sidenav{display:none}
+  .loading{font-size:12.5px;color:var(--muted);padding:20px 0}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Free tool · no access code needed</p>
+  <h1>Local business schema generator</h1>
+  <p class="lede">LocalBusiness structured data (JSON-LD) for any of schema.org's 150 local business types: address, map position, opening and holiday hours, service area, services, profiles, and one linked block per location if you have several. Checked live against schema.org and Google's rules as you type. <a href="#out" style="color:var(--you)">Jump to the code ↓</a></p>
+
+  <div id="app"><p class="loading">Loading the schema.org vocabulary…</p></div>
+
+  <div class="sidenav">
+    <a href="/" class="sidenav-link">← Back to tools</a>
+    <a href="/tools/schema-audit/" class="sidenav-link toolLink">Schema validator →</a>
+    <a href="/tools/schema-builder/" class="sidenav-link toolLink">Brand schema builder (Organization, products, FAQ) →</a>
+    <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+  </div>
+</div>
+
+<script type="module">
+// Local business schema generator. Builds LocalBusiness JSON-LD from a form, and checks it as you type with the
+// shared schema engine (/assets/schema-engine/, copied from seo-tools-api): the same schema.org vocabulary and Google
+// rules as the schema validator. The form's choices of type and of "more properties" come from that vocabulary.
+import { createEngine } from '/assets/schema-engine/engine.js';
+
+if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || window.MC_VISITOR || '';
+document.querySelectorAll('.historyLink').forEach((a) => { a.href = '/tools/history/?k=' + encodeURIComponent(CODE); });
+document.querySelectorAll('.toolLink').forEach((a) => { if (CODE) a.href += '?k=' + encodeURIComponent(CODE); });
+
+const app = document.getElementById('app');
+let engine, DOCS;
+try {
+  const [vocab, google, docs] = await Promise.all(['vocab', 'google', 'docs'].map((f) => fetch(`/assets/schema-engine/${f}.json`).then((r) => r.json())));
+  engine = createEngine({ vocab, google });
+  DOCS = docs.terms || {};
+} catch (e) {
+  app.innerHTML = '<p class="msg bad">The schema.org vocabulary couldn\'t load. Reload the page to try again.</p>';
+  throw e;
+}
+
+// ---------- helpers ----------
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const s = (v) => String(v ?? '').trim();
+const isUrl = (u) => /^https?:\/\/[^\s/]+\.[^\s]+$/i.test(s(u));
+const humanize = (t) => {
+  const words = t.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2').split(' ');
+  const out = words.map((w) => (/^[A-Z]{2,}$/.test(w) ? w : w.toLowerCase())).join(' ');
+  return out.charAt(0).toUpperCase() + out.slice(1);
+};
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const pad = (n) => String(n).padStart(2, '0');
+
+// ---------- the types: every kind of LocalBusiness, grouped under its branch (food, stores, health…) ----------
+const TYPES = Object.keys(engine.types).filter((t) => engine.isA(t, 'LocalBusiness') && !engine.types[t].supersededBy && !engine.types[t].deprecated);
+const BRANCHES = TYPES.filter((t) => engine.types[t].parents.includes('LocalBusiness')).sort();
+const branchOf = (t) => (t === 'LocalBusiness' ? null : BRANCHES.find((b) => b === t || engine.isA(t, b)));
+const GROUPS = BRANCHES.map((b) => ({ branch: b, types: TYPES.filter((t) => branchOf(t) === b).sort((a, c) => (a === b ? -1 : c === b ? 1 : humanize(a).localeCompare(humanize(c)))) }));
+const MULTI = GROUPS.filter((g) => g.types.length > 1), SINGLE = GROUPS.filter((g) => g.types.length === 1).map((g) => g.branch);
+
+// ---------- state, kept as a draft in this browser ----------
+const DRAFT = 'bc-local-schema-draft';
+const blank = () => ({
+  type: 'LocalBusiness', name: '', url: '', telephone: '', email: '', description: '', priceRange: '', logo: '', images: [''],
+  street: '', locality: '', region: '', postcode: '', country: '', serviceArea: false, lat: '', lng: '', hasMap: '',
+  hours: Object.fromEntries(DAYS.map((d) => [d, { mode: '', slots: [['09:00', '17:00']] }])), special: [],
+  areaMode: 'none', places: [], radiusKm: '', services: [], sameAs: [''], languages: [], languagesOther: '',
+  payment: [], currencies: '', amenities: [], amenitiesOther: '', reserveUrl: '', orderUrl: '', acceptsReservations: false,
+  cuisine: '', menuUrl: '', checkin: '', checkout: '', rooms: '', pets: '', specialties: [],
+  brandName: '', brandUrl: '', branchCode: '', departments: [],
+  legalName: '', foundingDate: '', vatID: '', taxID: '', leiCode: '', iso6523Code: '', duns: '', slogan: '',
+  extras: [], csv: ''
+});
+let state = (() => { try { const d = JSON.parse(localStorage.getItem(DRAFT) || 'null'); return d ? { ...blank(), ...d } : blank(); } catch (e) { return blank(); } })();
+const save = () => { try { localStorage.setItem(DRAFT, JSON.stringify(state)); } catch (e) { /* drafts are a convenience */ } };
+
+const LANGS = ['English', 'German', 'French', 'Spanish', 'Italian', 'Czech', 'Polish', 'Dutch', 'Portuguese', 'Russian', 'Ukrainian', 'Chinese', 'Arabic'];
+const PAYMENTS = ['Cash', 'Credit card', 'Debit card', 'Contactless', 'Apple Pay', 'Google Pay', 'Invoice', 'Bank transfer', 'Cryptocurrency'];
+const AMENITIES = ['Wheelchair-accessible entrance', 'Wheelchair-accessible toilet', 'Free Wi-Fi', 'Free parking', 'Paid parking', 'Air conditioning', 'Outdoor seating', 'Dogs allowed', 'Toilets', 'Changing table', 'EV charging'];
+const PLACE_TYPES = [['City', 'City or town'], ['AdministrativeArea', 'Region or county'], ['Country', 'Country'], ['Place', 'Other place']];
+
+// Which form sections and fields a type can use: only what schema.org allows on it, so switching type never
+// leaves behind properties the new type can't have.
+const can = (p) => engine.propertiesOf(state.type).includes(p);
+const HANDLED = new Set(['name', 'url', 'telephone', 'email', 'description', 'priceRange', 'logo', 'image', 'address', 'geo', 'hasMap', 'openingHoursSpecification',
+  'specialOpeningHoursSpecification', 'areaServed', 'hasOfferCatalog', 'sameAs', 'knowsLanguage', 'paymentAccepted', 'currenciesAccepted', 'amenityFeature',
+  'potentialAction', 'acceptsReservations', 'servesCuisine', 'hasMenu', 'checkinTime', 'checkoutTime', 'numberOfRooms', 'petsAllowed', 'medicalSpecialty',
+  'parentOrganization', 'branchCode', 'department', 'legalName', 'foundingDate', 'vatID', 'taxID', 'leiCode', 'iso6523Code', 'duns', 'slogan', 'openingHours', 'serviceArea']);
+
+// ---------- opening hours as text: "Mo-Fr 09:00-17:00; Sa 10-14; Su closed", "Monday–Friday 9 AM–5 PM", "24/7" ----------
+function dayIndex(tok) {
+  const t = tok.toLowerCase().replace(/[.:']/g, '').trim();
+  if (t.length < 2) return -1;
+  return DAYS.findIndex((d) => d.toLowerCase().startsWith(t) || (t === 'weds' && d === 'Wednesday'));
+}
+function parseDays(part) {
+  const p = part.toLowerCase().trim().replace(/[:,]+$/, '');
+  if (!p) return [];
+  if (/^(daily|every ?day|all week|7 days( a week)?|mon(day)?\s*[-–—]\s*sun(day)?)$/.test(p)) return [0, 1, 2, 3, 4, 5, 6];
+  if (/^(weekdays?|business days)$/.test(p)) return [0, 1, 2, 3, 4];
+  if (/^(weekends?|sat(urday)?\s*(&|and)\s*sun(day)?)$/.test(p) && /end/.test(p)) return [5, 6];
+  const out = [];
+  for (const piece of p.split(/\s*(?:,|&|\band\b|\/)\s*/)) {
+    const r = piece.split(/\s*(?:-|–|—|\bto\b|\bthrough\b|\bthru\b)\s*/);
+    if (r.length === 2) {
+      let a = dayIndex(r[0]), b = dayIndex(r[1]);
+      if (a < 0 || b < 0) return [];
+      for (let i = a; ; i = (i + 1) % 7) { out.push(i); if (i === b) break; }
+    } else {
+      const i = dayIndex(piece);
+      if (i < 0) return [];
+      out.push(i);
+    }
+  }
+  return [...new Set(out)];
+}
+function parseTime(raw) {
+  let t = raw.toLowerCase().replace(/\s+/g, '').replace(/\./g, ':').replace(/:(am|pm)/, '$1').replace(/a:?m:?$/, 'am').replace(/p:?m:?$/, 'pm');
+  if (t === 'noon') return [12, 0, true];
+  if (t === 'midnight') return [0, 0, true];
+  const m = t.match(/^(\d{1,2})(?::?(\d{2}))?(am|pm)?$/);
+  if (!m) return null;
+  let h = +m[1], mi = +(m[2] || 0);
+  if (m[3]) { if (h === 12) h = 0; if (m[3] === 'pm') h += 12; }
+  if (h > 24 || mi > 59) return null;
+  return [h, mi, !!m[3] || !!m[2] || h > 12];
+}
+const fmt = ([h, mi]) => (h === 24 ? '23:59' : `${pad(h)}:${pad(mi)}`);
+function parseIntervals(part) {
+  const out = [];
+  const re = /(\d{1,2}(?:[:.]\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?|noon|midnight)\s*(?:-|–|—|\bto\b|\buntil\b|\btill\b)\s*(\d{1,2}(?:[:.]\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?|noon|midnight)/gi;
+  for (const m of part.matchAll(re)) {
+    const a = parseTime(m[1]), b = parseTime(m[2]);
+    if (!a || !b) continue;
+    // "9-5": a closing hour before the opening hour, both written as bare hours, is the afternoon.
+    if (!b[2] && b[0] < a[0] && b[0] <= 12) b[0] += 12;
+    out.push([fmt(a), fmt(b)]);
+  }
+  return out;
+}
+function parseHours(text) {
+  const hours = Object.fromEntries(DAYS.map((d) => [d, { mode: 'closed', slots: [['09:00', '17:00']] }]));
+  const unread = [];
+  const t = s(text);
+  if (/^(24\s*\/\s*7|open 24 hours|always open|nonstop|non-stop)$/i.test(t)) { DAYS.forEach((d) => { hours[d].mode = '24h'; }); return { hours, unread }; }
+  let any = false;
+  for (const seg of t.split(/\n|;|\|/).map(s).filter(Boolean)) {
+    const at = seg.search(/\d|closed|open 24|24 ?h|24 hours|noon|midnight/i);
+    const days = at > 0 ? parseDays(seg.slice(0, at)) : [];
+    const rest = at >= 0 ? seg.slice(at) : '';
+    if (!days.length) { unread.push(seg); continue; }
+    let mode, slots;
+    if (/closed/i.test(rest)) mode = 'closed';
+    else if (/open 24|24 ?h|24 hours|0?0[:.]00\s*[-–]\s*24[:.]00/i.test(rest)) mode = '24h';
+    else { slots = parseIntervals(rest); mode = slots.length ? 'open' : null; }
+    if (!mode) { unread.push(seg); continue; }
+    any = true;
+    for (const i of days) hours[DAYS[i]] = { mode, slots: slots && slots.length ? slots : [['09:00', '17:00']] };
+  }
+  return { hours: any ? hours : null, unread };
+}
+
+// ---------- building the JSON-LD ----------
+const prune = (v) => {
+  if (Array.isArray(v)) { const a = v.map(prune).filter((x) => x !== undefined); return a.length ? a : undefined; }
+  if (v && typeof v === 'object') {
+    const o = {};
+    for (const [k, x] of Object.entries(v)) { const p = prune(x); if (p !== undefined) o[k] = p; }
+    return Object.keys(o).filter((k) => k !== '@type').length ? o : undefined;
+  }
+  return v === '' || v == null || (typeof v === 'number' && !Number.isFinite(v)) ? undefined : v;
+};
+const one = (a) => (a.length === 1 ? a[0] : a);
+function hoursSpec(hours) {
+  const sig = (d) => (hours[d]?.mode === '24h' ? '00:00-23:59' : hours[d]?.mode === 'open' ? (hours[d].slots || []).filter(([o, c]) => o && c).map((x) => x.join('-')).join(',') : '');
+  const groups = new Map();
+  for (const d of DAYS) { const k = sig(d); if (k) (groups.get(k) || groups.set(k, []).get(k)).push(d); }
+  const out = [];
+  for (const [k, days] of groups) for (const slot of k.split(',')) {
+    const [opens, closes] = slot.split('-');
+    out.push({ '@type': 'OpeningHoursSpecification', dayOfWeek: days, opens, closes });
+  }
+  return out;
+}
+const timeOf = (v) => (/^\d{2}:\d{2}$/.test(s(v)) ? `${s(v)}:00` : undefined);
+const idOf = (u) => (isUrl(u) ? s(u).replace(/#.*$/, '') : '');
+function build(st) {
+  const canP = (p) => engine.propertiesOf(st.type).includes(p);
+  const lat = Number(s(st.lat).replace(',', '.')), lng = Number(s(st.lng).replace(',', '.'));
+  const hasGeo = s(st.lat) !== '' && s(st.lng) !== '' && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+  const brandId = idOf(st.brandUrl);
+  const actions = [];
+  if (isUrl(st.reserveUrl)) actions.push({ '@type': 'ReserveAction', target: { '@type': 'EntryPoint', urlTemplate: s(st.reserveUrl) } });
+  if (isUrl(st.orderUrl)) actions.push({ '@type': 'OrderAction', target: { '@type': 'EntryPoint', urlTemplate: s(st.orderUrl) } });
+  const langs = [...st.languages, ...s(st.languagesOther).split(',').map(s).filter(Boolean)];
+  const amen = [...st.amenities, ...s(st.amenitiesOther).split('\n').map(s).filter(Boolean)];
+  const area = st.areaMode === 'places'
+    ? st.places.filter((p) => s(p.name)).map((p) => ({ '@type': p.type || 'City', name: s(p.name) }))
+    : st.areaMode === 'radius' && hasGeo && Number(st.radiusKm) > 0
+      ? [{ '@type': 'GeoCircle', geoMidpoint: { '@type': 'GeoCoordinates', latitude: lat, longitude: lng }, geoRadius: Math.round(Number(st.radiusKm) * 1000) }] : [];
+  const services = st.services.filter((x) => s(x.name)).map((x) => ({
+    '@type': 'Offer',
+    itemOffered: { '@type': 'Service', name: s(x.name), description: s(x.description) },
+    price: s(x.price) !== '' && Number.isFinite(Number(s(x.price).replace(',', '.'))) ? Number(s(x.price).replace(',', '.')) : undefined,
+    priceCurrency: s(x.price) !== '' ? s(x.currency).toUpperCase() || undefined : undefined
+  }));
+  const extras = {};
+  for (const x of st.extras) {
+    if (!x.prop || s(x.value) === '' || !canP(x.prop)) continue;
+    const k = engine.inputKind(x.prop);
+    const v = k.kind === 'number' ? Number(s(x.value).replace(',', '.'))
+      : k.kind === 'boolean' ? s(x.value) === 'true'
+      : k.kind === 'enum' ? `https://schema.org/${s(x.value)}`
+      : k.kind === 'thing' ? { '@type': k.types[0], name: s(x.value) }
+      : s(x.value);
+    (extras[x.prop] ||= []).push(v);
+  }
+  const ld = {
+    '@context': 'https://schema.org',
+    '@type': st.type || 'LocalBusiness',
+    '@id': idOf(st.url) ? `${idOf(st.url)}#localbusiness` : undefined,
+    name: s(st.name),
+    description: s(st.description),
+    url: isUrl(st.url) ? s(st.url) : undefined,
+    telephone: s(st.telephone),
+    email: s(st.email),
+    logo: isUrl(st.logo) ? s(st.logo) : undefined,
+    image: st.images.filter(isUrl).map(s),
+    priceRange: canP('priceRange') ? s(st.priceRange) : undefined,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: st.serviceArea ? undefined : s(st.street),
+      addressLocality: s(st.locality), addressRegion: s(st.region), postalCode: st.serviceArea ? undefined : s(st.postcode),
+      addressCountry: s(st.country).toUpperCase()
+    },
+    geo: hasGeo && !st.serviceArea ? { '@type': 'GeoCoordinates', latitude: lat, longitude: lng } : undefined,
+    hasMap: isUrl(st.hasMap) && canP('hasMap') ? s(st.hasMap) : undefined,
+    openingHoursSpecification: canP('openingHoursSpecification') ? hoursSpec(st.hours) : undefined,
+    specialOpeningHoursSpecification: canP('specialOpeningHoursSpecification') ? st.special.filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(s(x.from))).map((x) => ({
+      '@type': 'OpeningHoursSpecification', validFrom: s(x.from), validThrough: /^\d{4}-\d{2}-\d{2}$/.test(s(x.to)) ? s(x.to) : s(x.from),
+      opens: x.closed ? '00:00' : s(x.opens), closes: x.closed ? '00:00' : s(x.closes)
+    })) : undefined,
+    areaServed: area.length ? one(area) : undefined,
+    hasOfferCatalog: services.length ? { '@type': 'OfferCatalog', name: 'Services', itemListElement: services } : undefined,
+    sameAs: st.sameAs.filter(isUrl).map(s),
+    knowsLanguage: langs.length ? langs : undefined,
+    paymentAccepted: canP('paymentAccepted') && st.payment.length ? st.payment.join(', ') : undefined,
+    currenciesAccepted: canP('currenciesAccepted') ? s(st.currencies).toUpperCase() : undefined,
+    amenityFeature: canP('amenityFeature') ? amen.map((n) => ({ '@type': 'LocationFeatureSpecification', name: n, value: true })) : undefined,
+    potentialAction: actions.length ? one(actions) : undefined,
+    acceptsReservations: canP('acceptsReservations') && st.acceptsReservations ? (isUrl(st.reserveUrl) ? s(st.reserveUrl) : true) : undefined,
+    servesCuisine: canP('servesCuisine') && s(st.cuisine) ? one(s(st.cuisine).split(',').map(s).filter(Boolean)) : undefined,
+    hasMenu: canP('hasMenu') && isUrl(st.menuUrl) ? s(st.menuUrl) : undefined,
+    checkinTime: canP('checkinTime') ? timeOf(st.checkin) : undefined,
+    checkoutTime: canP('checkoutTime') ? timeOf(st.checkout) : undefined,
+    numberOfRooms: canP('numberOfRooms') && Number(st.rooms) > 0 ? Number(st.rooms) : undefined,
+    petsAllowed: canP('petsAllowed') && st.pets ? st.pets === 'yes' : undefined,
+    medicalSpecialty: canP('medicalSpecialty') && st.specialties.length ? one(st.specialties.map((x) => `https://schema.org/${x}`)) : undefined,
+    parentOrganization: s(st.brandName) || brandId ? { '@type': 'Organization', '@id': brandId ? `${brandId}#organization` : undefined, name: s(st.brandName), url: brandId || undefined } : undefined,
+    branchCode: s(st.branchCode),
+    department: st.departments.filter((d) => s(d.name)).map((d) => ({ '@type': d.type || 'LocalBusiness', name: s(d.name), telephone: s(d.telephone) })),
+    legalName: s(st.legalName), foundingDate: /^\d{4}(-\d{2}(-\d{2})?)?$/.test(s(st.foundingDate)) ? s(st.foundingDate) : undefined,
+    vatID: s(st.vatID), taxID: s(st.taxID), leiCode: s(st.leiCode), iso6523Code: s(st.iso6523Code), duns: s(st.duns), slogan: s(st.slogan),
+    ...Object.fromEntries(Object.entries(extras).map(([k, v]) => [k, one(v)]))
+  };
+  return prune(ld) || { '@context': 'https://schema.org', '@type': st.type };
+}
+
+// ---------- the form ----------
+const field = (key, label, attrs = {}) => `<label for="f-${key}">${label}</label><input id="f-${key}" data-k="${key}" value="${esc(state[key])}" ${Object.entries(attrs).map(([a, v]) => `${a}="${esc(v)}"`).join(' ')}>`;
+const area = (key, label, ph = '') => `<label for="f-${key}">${label}</label><textarea id="f-${key}" data-k="${key}" placeholder="${esc(ph)}">${esc(state[key])}</textarea>`;
+const checks = (key, options) => `<div class="chkgrid">${options.map((o) => `<label><input type="checkbox" data-set="${key}" value="${esc(o)}"${state[key].includes(o) ? ' checked' : ''}>${esc(o)}</label>`).join('')}</div>`;
+const sec = (id, title, sub, body, open = false) => `<details class="sec" id="sec-${id}"${open ? ' open' : ''}><summary><h2>${title}</h2><span class="sub">${sub}</span></summary>${body}</details>`;
+const typeOptions = () => `<option value="LocalBusiness">Local business (general)</option>` +
+  `<optgroup label="Other kinds">${SINGLE.map((t) => `<option value="${t}">${esc(humanize(t))}</option>`).join('')}</optgroup>` +
+  MULTI.map((g) => `<optgroup label="${esc(humanize(g.branch))}">${g.types.map((t) => `<option value="${t}">${esc(humanize(t))}${t === g.branch ? ' (general)' : ''}</option>`).join('')}</optgroup>`).join('');
+
+function render() {
+  app.innerHTML =
+    `<div class="status" style="margin-bottom:14px"><div class="row2" style="align-items:end">
+      <div><label for="importUrl" style="margin-top:0">Start from a page that already has markup (optional)</label><input id="importUrl" placeholder="https://yourbusiness.com/" value="https://"></div>
+      <div><button class="btn2" id="importBtn" type="button" style="width:100%">Read its markup</button></div></div><div id="importMsg" class="msg"></div></div>` +
+    sec('essentials', 'Business', 'Type, name and contact', `
+      <label for="f-typeFilter">Type of business — the most specific one that fits</label>
+      <input id="f-typeFilter" placeholder="Search ${TYPES.length} types: dentist, bakery, plumber…" autocomplete="off">
+      <select id="f-type" data-k="type" size="1" style="margin-top:6px">${typeOptions()}</select>
+      <p class="typedesc" id="typeDesc"></p>
+      <div class="row2"><div>${field('name', 'Business name, as on your sign and Google Business Profile *')}</div><div>${field('url', 'Page for this business *', { placeholder: 'https://', inputmode: 'url' })}</div></div>
+      <div class="row2"><div>${field('telephone', 'Phone *', { placeholder: '+44 20 …', inputmode: 'tel' })}</div><div>${field('email', 'Email', { inputmode: 'email' })}</div></div>
+      ${area('description', 'Short description', 'What you do and for whom, in a sentence or two.')}
+      <div class="row2"><div>${field('logo', 'Logo address', { placeholder: 'https://…/logo.png' })}</div><div id="w-priceRange">${field('priceRange', 'Price range', { placeholder: '$$ or €10–30' })}</div></div>
+      <label>Photos of the business (addresses)</label><div id="list-images"></div>`, true) +
+    sec('address', 'Address and map', 'Where customers find you', `
+      <label style="margin-top:0"><input type="checkbox" data-k="serviceArea"${state.serviceArea ? ' checked' : ''}>We go to customers and don't show a street address (a service-area business)</label>
+      <div id="w-street">${field('street', 'Street and number *')}</div>
+      <div class="row3"><div>${field('locality', 'City or town *')}</div><div>${field('region', 'Region')}</div><div id="w-postcode">${field('postcode', 'Postcode')}</div></div>
+      ${field('country', 'Country (two-letter code)', { placeholder: 'GB, CZ, US…', maxlength: '2' })}
+      ${field('mapsLink', 'Paste a Google Maps link to fill in the position (optional)', { placeholder: 'https://www.google.com/maps/place/…/@50.08,14.42,17z' })}
+      <div class="row2"><div>${field('lat', 'Latitude', { inputmode: 'decimal', placeholder: '50.0755' })}</div><div>${field('lng', 'Longitude', { inputmode: 'decimal', placeholder: '14.4378' })}</div></div>
+      ${field('hasMap', 'Map link (your Google Maps listing)', { placeholder: 'https://maps.google.com/?cid=…' })}`, true) +
+    sec('hours', 'Opening hours', 'Regular and holiday hours', `
+      <p class="hint">Days left as "not set" or "closed" are left out, which is how Google reads a closed day. Past midnight? Put the closing time after midnight, e.g. 18:00 to 02:00.</p>
+      <div id="hoursGrid"></div>
+      <div class="bar"><button class="tiny" type="button" id="copyMon">Copy Monday to Tuesday–Friday</button><button class="tiny" type="button" id="showPaste">Paste hours as text instead</button></div>
+      <div id="pasteBox" style="display:none"><textarea id="hoursText" placeholder="Mo-Fr 09:00-17:00&#10;Sa 10:00-14:00&#10;Su closed"></textarea><button class="btn2" type="button" id="readHours" style="margin-top:6px">Use these hours</button><div id="hoursMsg" class="msg"></div></div>
+      <label>Holiday and special hours</label><p class="hint">Dates the hours differ: holidays, closures, seasonal hours.</p><div id="list-special"></div>`) +
+    sec('area', 'Service area', 'Where you serve customers', `
+      <div class="chkgrid" style="grid-template-columns:1fr">${[['none', 'Only at our address'], ['places', 'In named places (cities, regions, countries)'], ['radius', 'Within a distance of our location']].map(([v, t]) => `<label><input type="radio" name="areaMode" data-k="areaMode" value="${v}"${state.areaMode === v ? ' checked' : ''}>${t}</label>`).join('')}</div>
+      <div id="w-places" style="margin-top:8px"><div id="list-places"></div></div>
+      <div id="w-radius">${field('radiusKm', 'Distance in kilometres (measured from the latitude and longitude above)', { inputmode: 'decimal', placeholder: '25' })}</div>`) +
+    sec('services', 'Services', 'What you offer', `<p class="hint">Each service you'd want a customer to find you for. Prices are optional; leave them out if they vary.</p><div id="list-services"></div>`) +
+    sec('profiles', 'Profiles, languages and payment', 'Links that confirm who you are', `
+      <label style="margin-top:0">Profile links: Google Business Profile, Facebook, Instagram, Yelp, Tripadvisor, LinkedIn…</label><div id="list-sameAs"></div>
+      <label>Languages your staff speak</label>${checks('languages', LANGS)}${field('languagesOther', 'Other languages (comma-separated)')}
+      <div id="w-payment"><label>Payment accepted</label>${checks('payment', PAYMENTS)}${field('currencies', 'Currencies accepted', { placeholder: 'EUR, GBP' })}</div>`) +
+    sec('amenities', 'Amenities and accessibility', 'What every visitor can use', `<div id="w-amenities">${checks('amenities', AMENITIES)}${area('amenitiesOther', 'Others, one per line')}</div><p class="hint" id="noAmenities" style="display:none">This type of business can't list amenities in schema.org.</p>`) +
+    sec('booking', 'Booking and ordering', 'Links that let customers act', `
+      ${field('reserveUrl', 'Booking or reservation page', { placeholder: 'https://' })}${field('orderUrl', 'Online ordering page', { placeholder: 'https://' })}
+      <div id="w-reservations"><label><input type="checkbox" data-k="acceptsReservations"${state.acceptsReservations ? ' checked' : ''}>We take reservations</label></div>`) +
+    sec('specific', 'For this type of business', 'Fields that only some types have', `<div id="w-food">${field('cuisine', 'Cuisine (comma-separated)', { placeholder: 'Czech, Italian' })}${field('menuUrl', 'Menu page', { placeholder: 'https://' })}</div>
+      <div id="w-lodging"><div class="row2"><div>${field('checkin', 'Check-in from', { type: 'time' })}</div><div>${field('checkout', 'Check-out by', { type: 'time' })}</div></div>
+        <div class="row2"><div>${field('rooms', 'Number of rooms', { inputmode: 'numeric' })}</div><div><label for="f-pets">Pets</label><select id="f-pets" data-k="pets"><option value="">Not stated</option><option value="yes"${state.pets === 'yes' ? ' selected' : ''}>Allowed</option><option value="no"${state.pets === 'no' ? ' selected' : ''}>Not allowed</option></select></div></div></div>
+      <div id="w-medical"><label>Medical specialties</label>${checks('specialties', engine.enumValues('MedicalSpecialty').sort())}</div>
+      <p class="hint" id="noSpecific">Nothing extra for this type. Choose a restaurant, hotel or clinic type to see its fields.</p>`) +
+    sec('brand', 'Brand, branches and departments', 'For chains and multi-location businesses', `
+      <div class="row2"><div>${field('brandName', 'Brand or parent company')}</div><div>${field('brandUrl', 'Its website', { placeholder: 'https://' })}</div></div>
+      ${field('branchCode', 'Branch or store code (as in your Google Business Profile)')}
+      <label>Departments with their own type or phone (a pharmacy inside a supermarket, a service desk at a car dealer)</label><div id="list-departments"></div>`) +
+    sec('company', 'Company details', 'Legal name and identifiers', `
+      <div class="row2"><div>${field('legalName', 'Legal name')}</div><div>${field('foundingDate', 'Founded', { placeholder: '2012 or 2012-05-01' })}</div></div>
+      <div class="row2"><div>${field('vatID', 'VAT number')}</div><div>${field('taxID', 'Tax or company number')}</div></div>
+      <div class="row3"><div>${field('leiCode', 'LEI')}</div><div>${field('duns', 'D-U-N-S')}</div><div>${field('iso6523Code', 'ISO 6523')}</div></div>
+      ${field('slogan', 'Slogan')}`) +
+    sec('more', 'More properties', 'Anything else schema.org allows on this type', `<p class="hint">Every other property this type can take. Use them only for facts that are on the page.</p><div id="list-extras"></div><datalist id="propList"></datalist>`) +
+    `<p class="hint" style="margin-top:14px">Leaving out reviews and star ratings on purpose: Google doesn't show stars for a business reviewing itself on its own site ("self-serving reviews").</p>
+    <div class="out" id="out">
+      <div id="statusBox" class="status"></div>
+      <pre class="code" id="code"></pre>
+      <div class="bar"><button class="submit" type="button" id="copyBtn">Copy code</button><button class="btn2" type="button" id="checkBtn">Check in the validator →</button><button class="btn2" type="button" id="dlBtn">Download .json</button><button class="btn2" type="button" id="resetBtn">Start again</button></div>
+      <p class="hint">Paste it into the page's &lt;head&gt;, or anywhere in its HTML. On a site with several locations, put each location's block on that location's own page; the next section makes them all at once.</p>
+    </div>` +
+    sec('locations', 'Many locations', 'One block per location page, from a spreadsheet', `
+      <p class="hint">Paste rows from a spreadsheet, first row as headings. Columns: <b>name, url, street, city, region, postcode, country, phone, lat, lng, hours, branch_code</b> (only <b>url</b> and <b>city</b> needed). Everything else (type, brand, services, profiles…) comes from the form above. Hours as text, e.g. "Mo-Fr 09:00-17:00; Sa 10:00-14:00".</p>
+      ${area('csv', 'Locations', 'name,url,street,city,postcode,country,phone,hours\nAcme Soho,https://acme.com/soho/,12 Dean St,London,W1D 3RR,GB,+44 20 7946 0000,Mo-Fr 08:00-18:00; Sa 09:00-13:00')}
+      <div class="bar"><button class="btn2" type="button" id="locBtn">Make the location blocks</button><button class="btn2" type="button" id="locTpl">Download a template</button></div>
+      <div id="locOut"></div>`, !!state.csv);
+  drawLists(); drawHours(); syncType(); refresh();
+}
+
+// Repeating rows: images, profiles, special hours, places, services, departments, extra properties.
+const LISTS = {
+  images: { blank: () => '', row: (v, i) => `<input data-list="images" data-i="${i}" value="${esc(v)}" placeholder="https://…/photo.jpg">`, add: '+ Add a photo' },
+  sameAs: { blank: () => '', row: (v, i) => `<input data-list="sameAs" data-i="${i}" value="${esc(v)}" placeholder="https://www.facebook.com/…">`, add: '+ Add a profile' },
+  special: { blank: () => ({ from: '', to: '', closed: true, opens: '10:00', closes: '14:00' }), add: '+ Add special hours',
+    row: (v, i) => `<input type="date" data-list="special" data-i="${i}" data-f="from" value="${esc(v.from)}" aria-label="From"><input type="date" data-list="special" data-i="${i}" data-f="to" value="${esc(v.to)}" aria-label="To (same day if blank)">
+      <label style="margin:10px 0 0;flex:none;min-width:0"><input type="checkbox" data-list="special" data-i="${i}" data-f="closed"${v.closed ? ' checked' : ''}>Closed</label>
+      ${v.closed ? '' : `<input type="time" data-list="special" data-i="${i}" data-f="opens" value="${esc(v.opens)}" aria-label="Opens"><input type="time" data-list="special" data-i="${i}" data-f="closes" value="${esc(v.closes)}" aria-label="Closes">`}` },
+  places: { blank: () => ({ type: 'City', name: '' }), add: '+ Add a place',
+    row: (v, i) => `<select data-list="places" data-i="${i}" data-f="type">${PLACE_TYPES.map(([t, l]) => `<option value="${t}"${v.type === t ? ' selected' : ''}>${l}</option>`).join('')}</select><input data-list="places" data-i="${i}" data-f="name" value="${esc(v.name)}" placeholder="Manchester">` },
+  services: { blank: () => ({ name: '', description: '', price: '', currency: '' }), add: '+ Add a service',
+    row: (v, i) => `<input data-list="services" data-i="${i}" data-f="name" value="${esc(v.name)}" placeholder="Boiler repair" style="flex:2"><input data-list="services" data-i="${i}" data-f="description" value="${esc(v.description)}" placeholder="Short description (optional)" style="flex:3"><input data-list="services" data-i="${i}" data-f="price" value="${esc(v.price)}" placeholder="Price" inputmode="decimal" style="flex:none;width:90px;min-width:0"><input data-list="services" data-i="${i}" data-f="currency" value="${esc(v.currency)}" placeholder="EUR" maxlength="3" style="flex:none;width:64px;min-width:0">` },
+  departments: { blank: () => ({ type: 'LocalBusiness', name: '', telephone: '' }), add: '+ Add a department',
+    row: (v, i) => `<select data-list="departments" data-i="${i}" data-f="type">${TYPES.slice().sort((a, b) => humanize(a).localeCompare(humanize(b))).map((t) => `<option value="${t}"${v.type === t ? ' selected' : ''}>${esc(humanize(t))}</option>`).join('')}</select><input data-list="departments" data-i="${i}" data-f="name" value="${esc(v.name)}" placeholder="Pharmacy"><input data-list="departments" data-i="${i}" data-f="telephone" value="${esc(v.telephone)}" placeholder="Phone (optional)">` },
+  extras: { blank: () => ({ prop: '', value: '' }), add: '+ Add a property',
+    row: (v, i) => {
+      const k = v.prop ? engine.inputKind(v.prop) : { kind: 'text' };
+      const input = k.kind === 'enum' ? `<select data-list="extras" data-i="${i}" data-f="value"><option value="">Choose…</option>${k.values.map((x) => `<option${v.value === x ? ' selected' : ''}>${x}</option>`).join('')}</select>`
+        : k.kind === 'boolean' ? `<select data-list="extras" data-i="${i}" data-f="value"><option value="">Choose…</option><option value="true"${v.value === 'true' ? ' selected' : ''}>Yes</option><option value="false"${v.value === 'false' ? ' selected' : ''}>No</option></select>`
+        : `<input data-list="extras" data-i="${i}" data-f="value" value="${esc(v.value)}" type="${{ date: 'date', time: 'time', url: 'url', number: 'number' }[k.kind] || 'text'}" placeholder="${k.kind === 'thing' ? `Name of the ${humanize(k.types[0]).toLowerCase()}` : k.kind === 'datetime' ? '2026-05-21T19:00' : k.kind === 'duration' ? 'PT1H30M' : 'Value'}">`;
+      return `<input data-list="extras" data-i="${i}" data-f="prop" value="${esc(v.prop)}" list="propList" placeholder="Property, e.g. keywords" style="flex:1">${input}${v.prop && DOCS[v.prop] ? `<p class="hint" style="flex-basis:100%;margin:0">${esc(DOCS[v.prop])}</p>` : ''}`;
+    } }
+};
+function drawList(key) {
+  const box = $(`list-${key}`);
+  if (!box) return;
+  const L = LISTS[key];
+  if (key === 'images' || key === 'sameAs') { if (!state[key].length) state[key].push(''); }
+  box.innerHTML = state[key].map((v, i) => `<div class="lrow">${L.row(v, i)}<button type="button" class="rm" data-rm="${key}" data-i="${i}" aria-label="Remove">×</button></div>`).join('') + `<button type="button" class="addbtn" data-add="${key}">${L.add}</button>`;
+}
+const drawLists = () => Object.keys(LISTS).forEach(drawList);
+function drawHours() {
+  $('hoursGrid').innerHTML = DAYS.map((d) => {
+    const h = state.hours[d];
+    return `<div class="day"><b>${d}</b><select data-day="${d}" data-hf="mode" aria-label="${d}"><option value="">Not set</option><option value="open"${h.mode === 'open' ? ' selected' : ''}>Open</option><option value="24h"${h.mode === '24h' ? ' selected' : ''}>Open 24 hours</option><option value="closed"${h.mode === 'closed' ? ' selected' : ''}>Closed</option></select>
+      <div class="slots">${h.mode === 'open' ? h.slots.map((sl, j) => `<div class="slot"><input type="time" data-day="${d}" data-slot="${j}" data-se="0" value="${esc(sl[0])}" aria-label="${d} opens"><span>to</span><input type="time" data-day="${d}" data-slot="${j}" data-se="1" value="${esc(sl[1])}" aria-label="${d} closes">${j ? `<button type="button" class="tiny" data-rmslot="${d}" data-slot="${j}">remove</button>` : ''}</div>`).join('') + (h.slots.length < 3 ? `<button type="button" class="tiny" data-addslot="${d}">+ second opening (e.g. after lunch)</button>` : '') : ''}</div></div>`;
+  }).join('');
+}
+
+// Show only what the chosen type can have.
+function syncType() {
+  const sel = $('f-type');
+  if (![...sel.options].some((o) => o.value === state.type)) state.type = 'LocalBusiness';
+  sel.value = state.type;
+  $('typeDesc').textContent = (DOCS[state.type] || '') + (state.type !== 'LocalBusiness' ? ` (schema.org: ${state.type})` : '');
+  const show = (id, on) => { const e = $(id); if (e) e.style.display = on ? '' : 'none'; };
+  show('w-priceRange', can('priceRange'));
+  show('w-payment', can('paymentAccepted'));
+  show('w-amenities', can('amenityFeature')); show('noAmenities', !can('amenityFeature'));
+  show('w-reservations', can('acceptsReservations'));
+  show('w-food', can('servesCuisine')); show('w-lodging', can('checkinTime')); show('w-medical', can('medicalSpecialty'));
+  show('noSpecific', !can('servesCuisine') && !can('checkinTime') && !can('medicalSpecialty'));
+  show('w-street', !state.serviceArea); show('w-postcode', !state.serviceArea);
+  show('w-places', state.areaMode === 'places'); show('w-radius', state.areaMode === 'radius');
+  $('propList').innerHTML = engine.propertiesOf(state.type).filter((p) => !HANDLED.has(p) && !engine.properties[p].deprecated && engine.properties[p].status !== 'pending')
+    .map((p) => `<option value="${p}">${esc((DOCS[p] || '').slice(0, 90))}</option>`).join('');
+}
+
+// ---------- the output, checked live ----------
+let current = null;
+function refresh() {
+  save();
+  current = build(state);
+  $('code').textContent = `<script type="application/ld+json">\n${JSON.stringify(current, null, 2)}\n<\/script>`;
+  const r = engine.validateExtracted({ jsonld: [JSON.stringify(current)] });
+  const it = r.items[0] || { issues: [], features: [] };
+  const lb = it.features.find((f) => f.id === 'local-business');
+  const issues = [...r.issues, ...it.issues].filter((i) => i.level !== 'info');
+  const missing = lb ? lb.missing : [];
+  const fixes = [
+    ...missing.map((m) => ({ c: 'e', t: `Google needs ${m === 'address' ? 'the address' : m === 'name' ? 'the business name' : m} for the Local business result.` })),
+    ...(!s(state.telephone) ? [{ c: 'w', t: 'Add a phone number: it is how Google and customers match this markup to your Business Profile.' }] : []),
+    ...(!isUrl(state.url) ? [{ c: 'w', t: 'Add the full https:// address of the page this markup goes on.' }] : []),
+    ...issues.map((i) => ({ c: i.level === 'error' ? 'e' : 'w', t: `${i.path ? i.path + ': ' : ''}${i.message}` }))
+  ];
+  const recs = lb ? lb.recommendedMissing.filter((x) => !['aggregateRating', 'review', 'department'].includes(x)) : [];
+  $('statusBox').innerHTML = `<div class="head">${lb ? `<span class="st ${lb.status}">${lb.status === 'eligible' ? 'Eligible' : 'Not eligible yet'}</span> Google Local business result` : 'Checking…'}</div>` +
+    (fixes.length ? `<ul>${fixes.map((f) => `<li class="${f.c}">${esc(f.t)}</li>`).join('')}</ul>` : '<ul><li class="ok">No problems: every type and property is valid schema.org, and Google has what it needs.</li></ul>') +
+    (recs.length ? `<p class="rec">Google also recommends: ${recs.map(esc).join(', ')}.</p>` : '') +
+    `<p class="rec">Checked with schema.org ${esc(r.engine.schemaorg)} and Google's rules as of ${esc(r.engine.googleRules)}.</p>`;
+}
+
+// ---------- events ----------
+app.addEventListener('input', onChange);
+app.addEventListener('change', onChange);
+function onChange(e) {
+  const t = e.target;
+  if (t.id === 'f-typeFilter') { filterTypes(t.value); return; }
+  if (t.id === 'importUrl' || t.id === 'hoursText') return;
+  if (t.dataset.k) {
+    const k = t.dataset.k;
+    state[k] = t.type === 'checkbox' ? t.checked : t.value;
+    if (k === 'mapsLink') readMapsLink(t.value);
+    if (k === 'type' || k === 'serviceArea' || k === 'areaMode') syncType();
+  } else if (t.dataset.set) {
+    const set = new Set(state[t.dataset.set]); t.checked ? set.add(t.value) : set.delete(t.value); state[t.dataset.set] = [...set];
+  } else if (t.dataset.list) {
+    const list = state[t.dataset.list], i = +t.dataset.i, f = t.dataset.f;
+    if (f) list[i][f] = t.type === 'checkbox' ? t.checked : t.value; else list[i] = t.value;
+    if ((t.dataset.list === 'special' && f === 'closed') || (t.dataset.list === 'extras' && f === 'prop' && e.type === 'change')) drawList(t.dataset.list);
+  } else if (t.dataset.day) {
+    const h = state.hours[t.dataset.day];
+    if (t.dataset.hf === 'mode') { h.mode = t.value; drawHours(); } else h.slots[+t.dataset.slot][+t.dataset.se] = t.value;
+  } else return;
+  refresh();
+}
+app.addEventListener('click', (e) => {
+  const t = e.target.closest('button');
+  if (!t) return;
+  if (t.dataset.add) { state[t.dataset.add].push(LISTS[t.dataset.add].blank()); drawList(t.dataset.add); refresh(); }
+  else if (t.dataset.rm) { state[t.dataset.rm].splice(+t.dataset.i, 1); drawList(t.dataset.rm); refresh(); }
+  else if (t.dataset.addslot) { state.hours[t.dataset.addslot].slots.push(['13:00', '17:00']); drawHours(); refresh(); }
+  else if (t.dataset.rmslot) { state.hours[t.dataset.rmslot].slots.splice(+t.dataset.slot, 1); drawHours(); refresh(); }
+  else if (t.id === 'copyMon') { for (const d of DAYS.slice(1, 5)) state.hours[d] = JSON.parse(JSON.stringify(state.hours.Monday)); drawHours(); refresh(); }
+  else if (t.id === 'showPaste') { const b = $('pasteBox'); b.style.display = b.style.display === 'none' ? '' : 'none'; }
+  else if (t.id === 'readHours') {
+    const { hours, unread } = parseHours($('hoursText').value);
+    if (hours) { state.hours = hours; drawHours(); refresh(); }
+    $('hoursMsg').className = 'msg ' + (hours && !unread.length ? 'good' : 'bad');
+    $('hoursMsg').textContent = !hours ? 'Couldn\'t read those hours. Try one line per day or range, e.g. "Mo-Fr 09:00-17:00".' : unread.length ? `Read the rest, but not: ${unread.join(' · ')}` : 'Done: check the days above.';
+  }
+  else if (t.id === 'copyBtn') { navigator.clipboard?.writeText($('code').textContent); flash(t, 'Copied ✓'); logCopy(1); }
+  else if (t.id === 'checkBtn') { try { localStorage.setItem('schema-check-code', $('code').textContent); } catch (err) { /* nothing kept */ } location.href = '/tools/schema-audit/?paste=1' + (CODE ? '&k=' + encodeURIComponent(CODE) : ''); }
+  else if (t.id === 'dlBtn') download(`${(s(state.name) || 'local-business').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.json`, JSON.stringify(current, null, 2), 'application/json');
+  else if (t.id === 'resetBtn') { if (confirm('Clear the whole form?')) { state = blank(); save(); render(); } }
+  else if (t.id === 'importBtn') importFrom($('importUrl').value);
+  else if (t.id === 'locBtn') makeLocations();
+  else if (t.id === 'locTpl') download('locations.csv', 'name,url,street,city,region,postcode,country,phone,lat,lng,hours,branch_code\n', 'text/csv');
+});
+function filterTypes(q) {
+  const sel = $('f-type'), needle = q.toLowerCase().trim();
+  for (const o of sel.querySelectorAll('option')) o.hidden = !!needle && !(o.textContent.toLowerCase().includes(needle) || o.value.toLowerCase().includes(needle));
+  for (const g of sel.querySelectorAll('optgroup')) g.hidden = ![...g.children].some((o) => !o.hidden);
+  const first = [...sel.options].find((o) => !o.hidden);
+  if (needle && first && sel.selectedOptions[0]?.hidden) { sel.value = first.value; state.type = first.value; syncType(); refresh(); }
+}
+function readMapsLink(u) {
+  const m = String(u).match(/@(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/) || String(u).match(/!3d(-?\d{1,2}\.\d+)!4d(-?\d{1,3}\.\d+)/) || String(u).match(/[?&](?:q|ll|query)=(-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/);
+  if (!m) return;
+  state.lat = m[1]; state.lng = m[2];
+  $('f-lat').value = m[1]; $('f-lng').value = m[2];
+  if (!isUrl(state.hasMap) && isUrl(u)) { state.hasMap = s(u); $('f-hasMap').value = s(u); }
+}
+const flash = (b, text) => { const o = b.textContent; b.textContent = text; setTimeout(() => { b.textContent = o; }, 1500); };
+function download(name, body, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([body], { type }));
+  a.download = name; document.body.append(a); a.click(); a.remove();
+}
+// History, as the other schema tools do: one event per copy, never per keystroke.
+function logCopy(locations) {
+  fetch(API + '/schema-builder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, org_name: s(state.name) || 'Local business', counts: { locations } }) }).catch(() => {});
+}
+
+// ---------- start from a page's existing markup (the validator's worker reads it) ----------
+async function importFrom(raw) {
+  const msg = $('importMsg');
+  const url = s(raw);
+  if (!url || url === 'https://') { msg.className = 'msg bad'; msg.textContent = 'Add the page address first.'; return; }
+  msg.className = 'msg'; msg.textContent = 'Reading the page…';
+  let d;
+  try {
+    d = await (await fetch(API + '/schema-audit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, url }) })).json();
+  } catch (e) { d = { error: 'could not reach the checker' }; }
+  if (d.error) { msg.className = 'msg bad'; msg.textContent = `Couldn't read it: ${d.error}.`; return; }
+  // A page checker without the full report (an older worker) can't say what the markup holds: say so plainly.
+  if (!d.report) { msg.className = 'msg bad'; msg.textContent = 'Reading a page\'s markup isn\'t available right now. Fill in the form instead, or try again later.'; return; }
+  const items = d.report?.items || [];
+  const pick = items.find((i) => i.types.some((t) => engine.isA(t, 'LocalBusiness'))) || items.find((i) => i.types.some((t) => engine.isA(t, 'Organization')));
+  if (!pick) { msg.className = 'msg bad'; msg.textContent = items.length || d.schemas_found?.length ? `That page has structured data (${(d.schemas_found || []).join(', ')}) but no business in it. Fill in the form instead.` : 'That page has no structured data to start from. Fill in the form instead.'; return; }
+  state = { ...blank(), ...fromLd(pick.data), csv: state.csv };
+  render(); // redraws the form, so the message goes in the new one
+  $('importUrl').value = url;
+  $('importMsg').className = 'msg good';
+  $('importMsg').textContent = `Filled in from the ${pick.types.join(' + ')} on that page. Check every field: the markup may be out of date.`;
+}
+const first = (v) => (Array.isArray(v) ? v[0] : v);
+const str = (v) => { const x = first(v); return typeof x === 'string' || typeof x === 'number' ? String(x) : x && typeof x === 'object' ? String(x.url || x.contentUrl || x.name || x['@id'] || '') : ''; };
+const strs = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]).map(str).filter(Boolean);
+const local = (v) => String(v || '').replace(/^https?:\/\/schema\.org\//, '').replace(/^schema:/, '');
+function fromLd(n) {
+  const st = blank();
+  const t = (Array.isArray(n['@type']) ? n['@type'] : [n['@type']]).map(local).find((x) => TYPES.includes(x));
+  st.type = t || 'LocalBusiness';
+  for (const k of ['name', 'telephone', 'email', 'description', 'priceRange', 'branchCode', 'legalName', 'foundingDate', 'vatID', 'taxID', 'leiCode', 'iso6523Code', 'duns', 'slogan']) st[k] = str(n[k]);
+  st.url = str(n.url); st.logo = str(n.logo); st.hasMap = str(n.hasMap);
+  st.images = strs(n.image).length ? strs(n.image) : [''];
+  st.sameAs = strs(n.sameAs).length ? strs(n.sameAs) : [''];
+  const a = first(n.address);
+  if (a && typeof a === 'object') Object.assign(st, { street: str(a.streetAddress), locality: str(a.addressLocality), region: str(a.addressRegion), postcode: str(a.postalCode), country: str(a.addressCountry).slice(0, 2) });
+  else if (typeof a === 'string') st.street = a;
+  const g = first(n.geo);
+  if (g && typeof g === 'object') { st.lat = str(g.latitude); st.lng = str(g.longitude); }
+  const specs = (Array.isArray(n.openingHoursSpecification) ? n.openingHoursSpecification : n.openingHoursSpecification ? [n.openingHoursSpecification] : []);
+  if (specs.length) {
+    st.hours = Object.fromEntries(DAYS.map((d) => [d, { mode: 'closed', slots: [] }]));
+    for (const sp of specs) for (const day of (Array.isArray(sp.dayOfWeek) ? sp.dayOfWeek : [sp.dayOfWeek]).map(local)) {
+      if (!st.hours[day]) continue;
+      const o = str(sp.opens).slice(0, 5), c = str(sp.closes).slice(0, 5);
+      if (o === '00:00' && (c === '23:59' || c === '24:00')) st.hours[day] = { mode: '24h', slots: [['09:00', '17:00']] };
+      else if (o && c) { st.hours[day].mode = 'open'; st.hours[day].slots.push([o, c]); }
+    }
+    for (const d of DAYS) if (!st.hours[d].slots.length) st.hours[d].slots = [['09:00', '17:00']];
+  } else if (n.openingHours) {
+    const { hours } = parseHours(strs(n.openingHours).join('\n'));
+    if (hours) st.hours = hours;
+  }
+  st.special = (Array.isArray(n.specialOpeningHoursSpecification) ? n.specialOpeningHoursSpecification : n.specialOpeningHoursSpecification ? [n.specialOpeningHoursSpecification] : [])
+    .map((sp) => ({ from: str(sp.validFrom).slice(0, 10), to: str(sp.validThrough).slice(0, 10), closed: str(sp.opens).slice(0, 5) === '00:00' && str(sp.closes).slice(0, 5) === '00:00', opens: str(sp.opens).slice(0, 5), closes: str(sp.closes).slice(0, 5) }));
+  const places = (Array.isArray(n.areaServed) ? n.areaServed : n.areaServed ? [n.areaServed] : []);
+  const circle = places.find((p) => p && typeof p === 'object' && local(p['@type']) === 'GeoCircle');
+  if (circle) { st.areaMode = 'radius'; st.radiusKm = String(Math.round(Number(circle.geoRadius) / 100) / 10 || ''); }
+  else if (places.length) { st.areaMode = 'places'; st.places = places.map((p) => ({ type: p && typeof p === 'object' && PLACE_TYPES.some(([x]) => x === local(p['@type'])) ? local(p['@type']) : 'City', name: str(p) })).filter((p) => p.name); }
+  st.cuisine = strs(n.servesCuisine).join(', '); st.menuUrl = str(n.hasMenu) || str(n.menu);
+  st.acceptsReservations = !!n.acceptsReservations && String(n.acceptsReservations) !== 'false';
+  st.checkin = str(n.checkinTime).slice(0, 5); st.checkout = str(n.checkoutTime).slice(0, 5); st.rooms = str(n.numberOfRooms);
+  st.pets = n.petsAllowed === true || n.petsAllowed === 'true' ? 'yes' : n.petsAllowed === false || n.petsAllowed === 'false' ? 'no' : '';
+  st.specialties = strs(n.medicalSpecialty).map(local);
+  const langs = strs(n.knowsLanguage);
+  st.languages = langs.filter((l) => LANGS.includes(l)); st.languagesOther = langs.filter((l) => !LANGS.includes(l)).join(', ');
+  const pays = String(str(n.paymentAccepted)).split(/\s*,\s*/).filter(Boolean);
+  st.payment = pays.filter((p) => PAYMENTS.includes(p)); st.currencies = str(n.currenciesAccepted);
+  const am = (Array.isArray(n.amenityFeature) ? n.amenityFeature : n.amenityFeature ? [n.amenityFeature] : []).map(str).filter(Boolean);
+  st.amenities = am.filter((x) => AMENITIES.includes(x)); st.amenitiesOther = am.filter((x) => !AMENITIES.includes(x)).join('\n');
+  for (const act of (Array.isArray(n.potentialAction) ? n.potentialAction : n.potentialAction ? [n.potentialAction] : [])) {
+    const target = act && typeof act === 'object' ? (typeof act.target === 'string' ? act.target : str(act.target?.urlTemplate)) : '';
+    if (local(act?.['@type']) === 'ReserveAction') st.reserveUrl = target;
+    if (local(act?.['@type']) === 'OrderAction') st.orderUrl = target;
+  }
+  const po = first(n.parentOrganization);
+  if (po) { st.brandName = str(po.name || po); st.brandUrl = typeof po === 'object' ? str(po.url) : ''; }
+  const offers = first(n.hasOfferCatalog)?.itemListElement;
+  st.services = (Array.isArray(offers) ? offers : offers ? [offers] : []).map((o) => ({ name: str(o?.itemOffered?.name || o?.name), description: str(o?.itemOffered?.description || o?.description), price: str(o?.price), currency: str(o?.priceCurrency) })).filter((x) => x.name);
+  st.departments = (Array.isArray(n.department) ? n.department : n.department ? [n.department] : []).map((d) => ({ type: TYPES.includes(local(d?.['@type'])) ? local(d['@type']) : 'LocalBusiness', name: str(d?.name), telephone: str(d?.telephone) })).filter((d) => d.name);
+  // Anything else the page had that this type can take, as "more properties" (text values only).
+  const known = new Set([...HANDLED, 'menu', 'image']);
+  st.extras = Object.entries(n).filter(([k, v]) => !k.startsWith('@') && !known.has(k) && engine.propertiesOf(st.type).includes(k) && ['string', 'number', 'boolean'].includes(typeof first(v)))
+    .flatMap(([k, v]) => (Array.isArray(v) ? v : [v]).map((x) => ({ prop: k, value: local(String(x)) })));
+  return st;
+}
+
+// ---------- many locations: one block per row, linked to the brand ----------
+function parseCsv(text) {
+  const firstLine = text.split('\n')[0] || '';
+  const sep = ['\t', ';', ','].map((c) => [c, firstLine.split(c).length]).sort((a, b) => b[1] - a[1])[0][0];
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; continue; }
+    if (c === '"') q = true; else if (c === sep) { row.push(cell); cell = ''; } else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; } else if (c !== '\r') cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter((r) => r.some((x) => s(x)));
+}
+const COLS = { name: ['name', 'business name', 'location name'], url: ['url', 'page', 'location page', 'website'], street: ['street', 'address', 'street address', 'address line 1'],
+  city: ['city', 'town', 'locality'], region: ['region', 'state', 'county', 'province'], postcode: ['postcode', 'postal code', 'zip', 'zip code'], country: ['country', 'country code'],
+  phone: ['phone', 'telephone', 'tel'], lat: ['lat', 'latitude'], lng: ['lng', 'lon', 'long', 'longitude'], hours: ['hours', 'opening hours'], branch_code: ['branch_code', 'branch code', 'store code', 'store_code'], email: ['email'] };
+function makeLocations() {
+  const out = $('locOut');
+  const rows = parseCsv(state.csv || '');
+  if (rows.length < 2) { out.innerHTML = '<p class="msg bad">Paste a heading row and at least one location.</p>'; return; }
+  const head = rows[0].map((h) => s(h).toLowerCase());
+  const col = Object.fromEntries(Object.entries(COLS).map(([k, names]) => [k, head.findIndex((h) => names.includes(h))]));
+  if (col.url < 0 || col.city < 0) { out.innerHTML = '<p class="msg bad">The heading row needs at least a "url" and a "city" column.</p>'; return; }
+  const brandName = s(state.brandName) || s(state.name), brandUrl = isUrl(state.brandUrl) ? state.brandUrl : (isUrl(state.url) ? new URL(state.url).origin + '/' : '');
+  const results = rows.slice(1).map((r, i) => {
+    const get = (k) => (col[k] >= 0 ? s(r[col[k]]) : '');
+    const st = JSON.parse(JSON.stringify(state));
+    const city = get('city');
+    Object.assign(st, { name: get('name') || `${brandName} ${city}`.trim(), url: get('url'), telephone: get('phone') || st.telephone, email: get('email') || st.email,
+      street: get('street'), locality: city, region: get('region'), postcode: get('postcode'), country: get('country') || st.country, lat: get('lat'), lng: get('lng'),
+      branchCode: get('branch_code'), brandName, brandUrl, hasMap: '', mapsLink: '', serviceArea: false });
+    let note = '';
+    if (get('hours')) { const { hours, unread } = parseHours(get('hours')); if (hours) st.hours = hours; if (!hours || unread.length) note = `Hours not fully read: ${unread.join(' · ') || get('hours')}`; }
+    const ld = build(st);
+    const rep = engine.validateExtracted({ jsonld: [JSON.stringify(ld)] });
+    const lb = rep.items[0]?.features.find((f) => f.id === 'local-business');
+    const errs = rep.summary.errors;
+    // Each row is its own page: it needs its own address and city, whatever the form above has.
+    const own = [...(isUrl(get('url')) ? [] : ['no page address (url): each location block belongs on its own page']), ...(city ? [] : ['no city'])];
+    return { row: i + 2, name: st.name, url: st.url, ld, ok: lb?.status === 'eligible' && !errs && !own.length, problems: [...own, ...(lb?.missing || []).map((m) => `missing ${m}`), ...rep.items.flatMap((x) => x.issues).filter((x) => x.level === 'error').map((x) => x.message), ...(note ? [note] : [])] };
+  });
+  const good = results.filter((x) => x.ok).length;
+  window.__locations = results;
+  out.innerHTML = `<p class="msg ${good === results.length ? 'good' : 'bad'}">${results.length} location${results.length === 1 ? '' : 's'}: ${good} ready${good < results.length ? `, ${results.length - good} to fix` : ''}. Each block links to ${esc(brandName || 'the brand')} as its parent organization.</p>
+    <div class="bar"><button class="btn2" type="button" id="locJson">Download all (.json)</button><button class="btn2" type="button" id="locHtml">Download all as snippets (.txt)</button></div>` +
+    results.map((x, i) => `<details class="loc"><summary><span class="${x.ok ? 'ok' : 'e'}">${x.ok ? '✓' : '✗'}</span> Row ${x.row}: ${esc(x.name)} <span style="color:var(--muted)">${esc(x.url)}</span></summary>
+      ${x.problems.length ? `<ul style="margin:6px 0 0 18px;font-size:12px">${x.problems.map((p) => `<li class="e">${esc(p)}</li>`).join('')}</ul>` : ''}
+      <pre class="code" style="margin-top:8px;max-height:260px">${esc(JSON.stringify(x.ld, null, 2))}</pre><button class="btn2" type="button" data-copyloc="${i}">Copy this block</button></details>`).join('');
+  $('locJson').onclick = () => { download('locations-schema.json', JSON.stringify(results.map((x) => ({ url: x.url, name: x.name, jsonld: x.ld })), null, 2), 'application/json'); logCopy(results.length); };
+  $('locHtml').onclick = () => { download('locations-schema.txt', results.map((x) => `<!-- ${x.name}: ${x.url} -->\n<script type="application/ld+json">\n${JSON.stringify(x.ld, null, 2)}\n<\/script>\n`).join('\n'), 'text/plain'); logCopy(results.length); };
+  out.querySelectorAll('[data-copyloc]').forEach((b) => { b.onclick = () => { const x = results[+b.dataset.copyloc]; navigator.clipboard?.writeText(`<script type="application/ld+json">\n${JSON.stringify(x.ld, null, 2)}\n<\/script>`); flash(b, 'Copied ✓'); }; });
+}
+
+render();
+const pre = new URLSearchParams(location.search).get('u');
+if (pre) { $('importUrl').value = pre; }
+</script>
+<script src="/assets/presets.js"></script>
+</body>
+</html>
