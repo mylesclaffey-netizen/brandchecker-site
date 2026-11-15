@@ -8,13 +8,15 @@
 //   const engine = createEngine({ vocab, google });
 //   engine.validateHtml(html)        // a whole page: every format, plus the content checks
 //   engine.validateText(text)        // pasted code: JSON-LD on its own, or HTML
+//   engine.propertiesOf(type)        // for builders: every current property a type can take
+//   engine.inputKind(property)       // for builders: what kind of value to ask for
 //
 // The report: { engine, found, items: [{ source, types, name, data, issues, features }], issues, features, summary }.
 // Issue levels: error (invalid, or blocks a rich result), warning (works, but likely wrong or soon to break), info.
 
 import { extract } from './extract.js';
 
-export const ENGINE_VERSION = '1.0.0';
+export const ENGINE_VERSION = '1.1.0';
 
 const list = (v) => (v == null ? [] : Array.isArray(v) ? v : [v]);
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -47,6 +49,7 @@ export function createEngine({ vocab, google }) {
   const { types, properties, enumerations = {} } = vocab;
   const rules = google || { features: [], retired: [], shared: {}, aliases: {} };
   const aliases = rules.aliases || {};
+  const googleReads = new Set(rules.googleStillReads || []);
   const memo = new Map();
   function ancestors(t) {
     if (memo.has(t)) return memo.get(t);
@@ -84,6 +87,7 @@ export function createEngine({ vocab, google }) {
   }
 
   function retiredIssue(kind, name, term) {
+    if (term.supersededBy && googleReads.has(name)) return { level: 'warning', code: 'retired-google-reads', message: `${kind} "${name}" was retired by schema.org in favour of ${term.supersededBy.join(' or ')}. Google's documentation still uses it, so Google reads it, but ${term.supersededBy[0]} is the current name.` };
     if (term.supersededBy) return { level: 'error', code: 'retired', message: `${kind} "${name}" was retired by schema.org; use ${term.supersededBy.join(' or ')} instead.` };
     if (term.deprecated) return { level: 'warning', code: 'deprecated', message: `${kind} "${name}" is described as deprecated by schema.org.` };
     if (term.status === 'pending') return { level: 'info', code: 'pending', message: `${kind} "${name}" is still pending at schema.org, so it may change and most search engines ignore it.` };
@@ -317,6 +321,19 @@ export function createEngine({ vocab, google }) {
         if (f && !lower.includes(f)) add({ level: 'error', code: 'not-on-page', path: 'mainEntity', message: `The question "${name}" doesn't appear on the page. Google treats question markup that isn't visible as spam.` });
       }
     }
+    // A business's phone number and street address should be on the page as text: the markup describes what
+    // visitors see, and the same name, address and phone everywhere is what local search relies on.
+    if (ts.some((t) => isA(t, 'LocalBusiness'))) {
+      const digits = String(text).replace(/\D/g, '');
+      for (const tel of valuesAt(node, 'telephone', resolve).filter((v) => typeof v === 'string')) {
+        const d = tel.replace(/\D/g, '');
+        if (d.length >= 6 && !digits.includes(d.slice(-Math.min(9, d.length)))) add({ level: 'warning', code: 'phone-not-on-page', path: 'telephone', message: `The phone number ${tel} doesn't appear in the page's text. Show it on the page, written the same way, so the markup matches what visitors see.` });
+      }
+      for (const st of valuesAt(node, 'address.streetAddress', resolve).filter((v) => typeof v === 'string')) {
+        const f = fragment(st, 24);
+        if (f.length >= 6 && !lower.includes(f)) add({ level: 'warning', code: 'address-not-on-page', path: 'address.streetAddress', message: `The street address "${st}" doesn't appear in the page's text. Show the address on the page, written the same way as in the markup and your Google Business Profile.` });
+      }
+    }
     let nums = null;
     for (const offer of valuesAt(node, 'offers', resolve)) {
       for (const price of [...valuesAt(offer, 'price', resolve), ...valuesAt(offer, 'lowPrice', resolve)]) {
@@ -436,5 +453,30 @@ export function createEngine({ vocab, google }) {
     return validateHtml(s, { checkContent: /<(body|p|h1|h2|div)\b/i.test(s) });
   }
 
-  return { validateHtml, validateText, validateExtracted, extract, isA, ancestors, types, properties, release: vocab.release, googleRulesUpdated: rules.updatedAt };
+  // ---------- for builders ----------
+  // Every current (not retired) property a type can take: its own and those of every type above it.
+  function propertiesOf(type) {
+    const anc = ancestors(type);
+    return Object.keys(properties).filter((p) => !properties[p].supersededBy && properties[p].domain.some((d) => anc.has(d))).sort();
+  }
+  // What kind of value a property takes, for choosing a form input: enum (with its values), boolean, text, url,
+  // date, datetime, time, duration, number, or thing (only typed values; types lists them).
+  function inputKind(name) {
+    const p = properties[name];
+    if (!p) return { kind: 'text', range: [] };
+    const r = p.range;
+    const enums = r.filter((x) => isA(x, 'Enumeration'));
+    if (enums.length) return { kind: 'enum', values: [...new Set(enums.flatMap((e) => [...valuesOf(e)]))].sort(), range: r };
+    if (r.includes('Boolean')) return { kind: 'boolean', range: r };
+    if (r.some((x) => x !== 'URL' && isA(x, 'Text'))) return { kind: 'text', range: r };
+    if (r.includes('URL')) return { kind: 'url', range: r };
+    if (r.includes('DateTime')) return { kind: 'datetime', range: r };
+    if (r.includes('Date')) return { kind: 'date', range: r };
+    if (r.includes('Time')) return { kind: 'time', range: r };
+    if (r.includes('Duration')) return { kind: 'duration', range: r };
+    if (r.some((x) => ['Number', 'Integer', 'Float'].includes(x))) return { kind: 'number', range: r };
+    return { kind: 'thing', types: r, range: r };
+  }
+
+  return { validateHtml, validateText, validateExtracted, extract, isA, ancestors, propertiesOf, inputKind, enumValues: (e) => [...valuesOf(e)], types, properties, release: vocab.release, googleRulesUpdated: rules.updatedAt };
 }

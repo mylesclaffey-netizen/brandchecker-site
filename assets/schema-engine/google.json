@@ -1,10 +1,11 @@
 {
   "updatedAt": "2026-11-08",
   "source": "https://developers.google.com/search/docs/appearance/structured-data/search-gallery",
-  "about": "Google's rich result rules, kept by hand from each feature's documentation page (the gallery was last updated by Google on 2026-10-16). Paths are dotted (offers.price = the price of each offer). oneOf: at least one path of each group. Recommended entries that are lists mean any one of them. nested: rules for typed values inside the item, matched by the most specific type. trigger: the feature is only checked when one of these properties is present, for opt-in features. See src/schema-engine/engine.js.",
+  "about": "Google's rich result rules, kept by hand from each feature's documentation page (the gallery was last updated by Google on 2026-10-16). Paths are dotted (offers.price = the price of each offer). oneOf: at least one path of each group. Recommended entries that are lists mean any one of them. nested: rules for typed values inside the item, matched by the most specific type. trigger: the feature is only checked when one of these properties is present, for opt-in features. googleStillReads: terms schema.org has retired that Google's docs still use (a warning, not an error). See src/schema-engine/engine.js.",
   "aliases": {
     "xPath": "xpath"
   },
+  "googleStillReads": ["menu"],
   "shared": {
     "ratings": {
       "AggregateRating": { "required": ["ratingValue"], "oneOf": [["ratingCount", "reviewCount"]], "recommended": ["bestRating", "worstRating"] },
@@ -99,7 +100,7 @@
       "appliesTo": ["LocalBusiness"],
       "required": ["name", "address"],
       "recommended": ["url", "telephone", "geo", "geo.latitude", "geo.longitude", "openingHoursSpecification", "priceRange", "aggregateRating", "review", "department"],
-      "recommendedFor": { "FoodEstablishment": ["menu", "servesCuisine"] },
+      "recommendedFor": { "FoodEstablishment": [["hasMenu", "menu"], "servesCuisine"] },
       "use": ["ratings"]
     },
     {

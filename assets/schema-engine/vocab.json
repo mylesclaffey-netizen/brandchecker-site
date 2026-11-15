@@ -2,7 +2,7 @@
   "release": "30.1",
   "source": "https://raw.githubusercontent.com/schemaorg/schemaorg/main/data/releases/30.1/schemaorg-current-https.jsonld",
   "licence": "CC BY-SA 3.0, schema.org",
-  "updatedAt": "2026-11-08",
+  "updatedAt": "2026-11-15",
   "types": {
     "3DModel": {"parents":["MediaObject"]},
     "AMRadioChannel": {"parents":["RadioChannel"]},

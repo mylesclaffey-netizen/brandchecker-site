@@ -384,7 +384,7 @@ function renderReport(r, ctx){
 
   if (ctx.note) html += '<p class="empty" style="margin-top:14px">' + esc(ctx.note.message) + '</p>';
   html += '<p class="foot">Checks JSON-LD, Microdata and RDFa against schema.org ' + esc(r.engine.schemaorg) + ' and Google\'s documented rules for each rich result (checked ' + esc(r.engine.googleRules) + '). Eligible means Google can show the rich result, not that it will. ' +
-    'Need markup instead of a check? Try the <a href="' + withK('/tools/schema-builder/') + '">brand schema builder</a> or the <a href="' + withK('/tools/schema-pack/') + '">B2B SaaS schema pack</a>.</p>';
+    'Need markup instead of a check? Try the <a href="' + withK('/tools/local-schema/') + '">local business schema generator</a>, the <a href="' + withK('/tools/schema-builder/') + '">brand schema builder</a> or the <a href="' + withK('/tools/schema-pack/') + '">B2B SaaS schema pack</a>.</p>';
   return html;
 }
 
