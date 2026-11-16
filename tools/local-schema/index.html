@@ -41,8 +41,9 @@
   input[type=checkbox],input[type=radio]{width:auto;margin-right:6px;vertical-align:-1px}
   input:focus,textarea:focus,select:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
   textarea{resize:vertical;min-height:64px}
-  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
+  /* Fields side by side line up on their boxes, even when one label wraps onto two lines. */
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end}
+  .row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;align-items:end}
   @media(max-width:560px){.row2,.row3{grid-template-columns:1fr}}
   details.sec{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;background:var(--card)}
   details.sec>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:baseline}
