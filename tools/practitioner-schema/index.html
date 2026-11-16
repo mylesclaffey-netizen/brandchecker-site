@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="index, follow">
+<script src="/assets/visitor.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Practitioner schema generator</title>
+<link rel="canonical" href="https://brandchecker.eu/tools/practitioner-schema/">
+<meta name="description" content="Free practitioner schema generator: Person and ProfilePage JSON-LD for doctors, dentists, therapists and other professionals at a clinic or practice, with credentials, registration numbers and a medically-reviewed-by snippet, checked live.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brand Checker">
+<meta property="og:url" content="https://brandchecker.eu/tools/practitioner-schema/">
+<meta property="og:title" content="Practitioner Schema Generator — Free SEO Tool | Brand Checker">
+<meta property="og:description" content="Profile markup for doctors, dentists, therapists and other professionals: who they are, where they practise, the credentials behind them, and the articles they review. Free, no signup.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta name="twitter:title" content="Practitioner Schema Generator — Free SEO Tool | Brand Checker">
+<meta name="twitter:description" content="Profile markup for doctors, dentists, therapists and other professionals: who they are, where they practise, the credentials behind them, and the articles they review. Free, no signup.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;
+        --you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000;--gold:#0a0a0a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:720px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Archivo',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.14;margin:8px 0;color:var(--gold)}
+  h2{font-family:'Archivo',sans-serif;font-size:16px;font-weight:700;margin:0}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.6}
+  .hint{font-size:11.5px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+  .hint a,.lede a{color:var(--you)}
+  label{display:block;font-size:11px;color:var(--muted);margin:12px 0 5px}
+  input,textarea,select{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);background:var(--card);
+        border:1px solid var(--line);border-radius:7px;padding:10px 11px}
+  input[type=checkbox],input[type=radio]{width:auto;margin-right:6px;vertical-align:-1px}
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  textarea{resize:vertical;min-height:64px}
+  /* Fields side by side line up on their boxes, even when one label wraps onto two lines. */
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end}
+  .row3{display:grid;grid-template-columns:1fr 2fr 1fr;gap:8px;align-items:end}
+  @media(max-width:560px){.row2,.row3{grid-template-columns:1fr}}
+  /* An address box and its button: one line, the same height. */
+  .inrow{display:flex;gap:8px;align-items:stretch}
+  .inrow>input{flex:1;min-width:0}
+  .inrow>.btn2{flex:none}
+  details.sec{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;background:var(--card)}
+  details.sec>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  details.sec>summary::-webkit-details-marker{display:none}
+  details.sec>summary::after{content:'+';font-family:'Archivo',sans-serif;font-weight:700;font-size:18px;line-height:1}
+  details.sec[open]>summary::after{content:'–'}
+  details.sec>summary .sub{font-size:11px;color:var(--muted);flex:1}
+  details.sec[open]>summary{margin-bottom:10px}
+  /* On a phone a section's subtitle goes under its heading instead of squeezing beside it. */
+  @media(max-width:560px){details.sec>summary{flex-wrap:wrap}details.sec>summary .sub{order:3;flex-basis:100%}}
+  .lrow{display:flex;gap:6px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap}
+  .lrow>*{flex:1;min-width:110px}
+  .lrow>.rm{flex:none;min-width:0;width:38px;height:40px;background:none;border:1px solid var(--line);border-radius:7px;cursor:pointer;color:var(--muted);font-size:16px}
+  .addbtn{font-size:12px;color:var(--you);background:none;border:1px dashed var(--line);border-radius:7px;padding:8px 13px;cursor:pointer;font-family:'IBM Plex Mono',monospace;margin-top:2px}
+  .chkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 12px;font-size:12.5px}
+  .chkgrid label,label.inline{margin:0;font-size:12.5px;color:var(--ink);display:flex;align-items:center}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .btn2{font-family:'Archivo',sans-serif;font-size:13px;font-weight:700;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 14px;cursor:pointer}
+  .btn2:hover{border-color:var(--you);color:var(--you)}
+  .submit{font-family:'Archivo',sans-serif;font-size:15px;font-weight:700;background:var(--you);color:#fff;border:0;border-radius:8px;padding:13px 18px;cursor:pointer}
+  .submit:hover{background:#d92f00}
+  .out{margin-top:26px}
+  .status{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;background:var(--card)}
+  .status .head{font-family:'Archivo',sans-serif;font-weight:700;font-size:15px}
+  .status ul{margin:8px 0 0 18px;font-size:12px}
+  .status li{margin-bottom:3px}
+  .status .e{color:var(--bad)} .status .w{color:var(--warn)} .status .ok{color:var(--ok)}
+  .status .rec{font-size:11.5px;color:var(--muted);margin-top:8px}
+  .st{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:20px;white-space:nowrap}
+  .st.eligible{color:var(--ok);background:rgba(0,132,74,.1)} .st.not-eligible{color:var(--bad);background:rgba(232,105,95,.12)}
+  pre.code{font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.45;background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:14px;max-height:460px;overflow:auto;white-space:pre-wrap;word-break:break-word;color:var(--ok)}
+  .msg{font-size:12px;margin-top:8px}
+  .msg.bad{color:var(--bad)} .msg.good{color:var(--ok)}
+  .loc{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:8px}
+  .loc>summary{cursor:pointer;font-size:12.5px}
+  .loc .e{color:var(--bad)} .loc .ok{color:var(--ok)}
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted)}
+  .sidenav-link:hover{color:var(--ink)}
+  body.embed .sidenav{display:none}
+  .loading{font-size:12.5px;color:var(--muted);padding:20px 0}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Free tool · no access code needed</p>
+  <h1>Practitioner schema generator</h1>
+  <p class="lede">Profile markup (JSON-LD) for doctors, dentists, therapists and other professionals who work at a clinic or practice: who they are, where they practise, the qualifications and registrations behind them, and the health articles they review. It's what lets search engines and AI assistants tell this practitioner apart from others with the same name. Checked live as you type. <a href="#out">Jump to the code ↓</a></p>
+
+  <div id="app"><p class="loading">Loading the schema.org vocabulary…</p></div>
+
+  <div class="sidenav">
+    <a href="/" class="sidenav-link">← Back to tools</a>
+    <a href="/tools/local-schema/" class="sidenav-link toolLink">Local business schema generator (for the clinic itself) →</a>
+    <a href="/tools/schema-audit/" class="sidenav-link toolLink">Schema validator →</a>
+    <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+  </div>
+</div>
+
+<script type="module">
+// Practitioner schema generator. Builds a Person (wrapped in a ProfilePage) for a professional at a clinic or practice,
+// checked as you type with the shared schema engine (/assets/schema-engine/, copied from seo-tools-api): the same
+// schema.org vocabulary and Google rules as the schema validator. A solo practice that is itself the business is a
+// LocalBusiness (IndividualPhysician, Dentist…): that's the local business schema generator's job, not this one.
+import { createEngine } from '/assets/schema-engine/engine.js';
+
+if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || window.MC_VISITOR || '';
+document.querySelectorAll('.historyLink').forEach((a) => { a.href = '/tools/history/?k=' + encodeURIComponent(CODE); });
+document.querySelectorAll('.toolLink').forEach((a) => { if (CODE) a.href += '?k=' + encodeURIComponent(CODE); });
+
+const app = document.getElementById('app');
+let engine;
+try {
+  const [vocab, google] = await Promise.all(['vocab', 'google'].map((f) => fetch(`/assets/schema-engine/${f}.json`).then((r) => r.json())));
+  engine = createEngine({ vocab, google });
+} catch (e) {
+  app.innerHTML = '<p class="msg bad">The schema.org vocabulary couldn\'t load. Reload the page to try again.</p>';
+  throw e;
+}
+
+// ---------- helpers ----------
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const s = (v) => String(v ?? '').trim();
+const isUrl = (u) => /^https?:\/\/[^\s/]+\.[^\s]+$/i.test(s(u));
+const idOf = (u) => (isUrl(u) ? s(u).replace(/#.*$/, '') : '');
+const lines = (v) => s(v).split(/\n|;/).map(s).filter(Boolean);
+const one = (a) => (a.length === 1 ? a[0] : a);
+const humanize = (t) => {
+  const out = t.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2').split(' ').map((w) => (/^[A-Z]{2,}$/.test(w) ? w : w.toLowerCase())).join(' ');
+  return out.charAt(0).toUpperCase() + out.slice(1);
+};
+const today = new Date().toISOString().slice(0, 10);
+
+// Where they practise: any kind of local business (clinic, dental practice, law firm…), or a plain organization.
+const CLINIC_TYPES = ['MedicalClinic', 'Dentist', 'Physician', 'Hospital', 'MedicalBusiness', 'Optician', 'Pharmacy', 'VeterinaryCare', 'HealthAndBeautyBusiness', 'DaySpa',
+  'LegalService', 'AccountingService', 'FinancialService', 'LocalBusiness', 'Organization'].filter((t) => engine.types[t] && !engine.types[t].deprecated);
+const CRED_KINDS = ['Degree', 'Specialist certification', 'Licence to practise', 'Certificate', 'Diploma', 'Fellowship'];
+const LANGS = ['English', 'German', 'French', 'Spanish', 'Italian', 'Czech', 'Slovak', 'Polish', 'Russian', 'Ukrainian', 'Arabic', 'Chinese'];
+
+// ---------- state, kept as a draft in this browser ----------
+const DRAFT = 'bc-practitioner-schema-draft';
+const blank = () => ({
+  prefix: '', name: '', suffix: '', alternateName: '', jobTitle: '', description: '', image: '', url: '', email: '', telephone: '',
+  clinics: [{ type: 'MedicalClinic', name: '', url: '' }],
+  occupation: '', occupationCode: '', knowsAbout: '', languages: [], languagesOther: '',
+  credentials: [], registrations: [], education: [], memberships: [], awards: '', sameAs: [''],
+  profilePage: true, updated: today, reviewer: false, reviewPageType: 'MedicalWebPage', reviewed: today, csv: ''
+});
+let state = (() => { try { const d = JSON.parse(localStorage.getItem(DRAFT) || 'null'); return d ? { ...blank(), ...d } : blank(); } catch (e) { return blank(); } })();
+const save = () => { try { localStorage.setItem(DRAFT, JSON.stringify(state)); } catch (e) { /* drafts are a convenience */ } };
+
+// ---------- building the JSON-LD ----------
+const prune = (v) => {
+  if (Array.isArray(v)) { const a = v.map(prune).filter((x) => x !== undefined); return a.length ? a : undefined; }
+  if (v && typeof v === 'object') {
+    const o = {};
+    for (const [k, x] of Object.entries(v)) { const p = prune(x); if (p !== undefined) o[k] = p; }
+    return Object.keys(o).filter((k) => k !== '@type').length ? o : undefined;
+  }
+  return v === '' || v == null ? undefined : v;
+};
+const personId = (st) => (idOf(st.url) ? `${idOf(st.url)}#person` : undefined);
+function person(st) {
+  const langs = [...st.languages, ...s(st.languagesOther).split(',').map(s).filter(Boolean)];
+  return {
+    '@type': 'Person',
+    '@id': personId(st),
+    name: s(st.name), alternateName: s(st.alternateName), honorificPrefix: s(st.prefix), honorificSuffix: s(st.suffix), jobTitle: s(st.jobTitle),
+    description: s(st.description), image: isUrl(st.image) ? s(st.image) : undefined, url: isUrl(st.url) ? s(st.url) : undefined,
+    email: s(st.email), telephone: s(st.telephone),
+    // The clinic links by @id to its own markup, as the local business schema generator writes it (its page + #localbusiness).
+    worksFor: st.clinics.filter((c) => s(c.name) || isUrl(c.url)).map((c) => ({
+      '@type': c.type || 'Organization', '@id': idOf(c.url) ? `${idOf(c.url)}#${c.type === 'Organization' ? 'organization' : 'localbusiness'}` : undefined,
+      name: s(c.name), url: isUrl(c.url) ? s(c.url) : undefined
+    })),
+    hasOccupation: s(st.occupation) ? { '@type': 'Occupation', name: s(st.occupation), occupationalCategory: s(st.occupationCode) } : undefined,
+    knowsAbout: lines(st.knowsAbout),
+    knowsLanguage: langs.length ? langs : undefined,
+    hasCredential: st.credentials.filter((c) => s(c.name)).map((c) => ({
+      '@type': 'EducationalOccupationalCredential', name: s(c.name), credentialCategory: s(c.kind),
+      recognizedBy: s(c.by) ? { '@type': 'Organization', name: s(c.by) } : undefined,
+      dateCreated: /^\d{4}(-\d{2}(-\d{2})?)?$/.test(s(c.year)) ? s(c.year) : undefined
+    })),
+    identifier: st.registrations.filter((r) => s(r.number)).map((r) => ({ '@type': 'PropertyValue', propertyID: s(r.register), value: s(r.number), url: isUrl(r.url) ? s(r.url) : undefined })),
+    alumniOf: st.education.filter((e) => s(e.name)).map((e) => ({ '@type': 'EducationalOrganization', name: s(e.name), url: isUrl(e.url) ? s(e.url) : undefined })),
+    memberOf: st.memberships.filter((m) => s(m.name)).map((m) => ({ '@type': 'Organization', name: s(m.name), url: isUrl(m.url) ? s(m.url) : undefined })),
+    award: lines(st.awards),
+    sameAs: st.sameAs.filter(isUrl).map(s)
+  };
+}
+function build(st) {
+  const p = person(st);
+  const ld = st.profilePage
+    ? { '@context': 'https://schema.org', '@type': 'ProfilePage', '@id': idOf(st.url) || undefined, url: isUrl(st.url) ? s(st.url) : undefined,
+        dateModified: /^\d{4}-\d{2}-\d{2}$/.test(s(st.updated)) ? s(st.updated) : undefined, mainEntity: p }
+    : { '@context': 'https://schema.org', ...p };
+  return prune(ld) || { '@context': 'https://schema.org', '@type': 'Person' };
+}
+// For the clinic's health articles: this practitioner as reviewer, by @id (so it points at the profile above).
+function reviewSnippet(st) {
+  return prune({
+    '@context': 'https://schema.org', '@type': st.reviewPageType || 'MedicalWebPage',
+    reviewedBy: { '@type': 'Person', '@id': personId(st), name: [s(st.prefix), s(st.name)].filter(Boolean).join(' ') || undefined, url: isUrl(st.url) ? s(st.url) : undefined },
+    lastReviewed: /^\d{4}-\d{2}-\d{2}$/.test(s(st.reviewed)) ? s(st.reviewed) : undefined
+  });
+}
+
+// ---------- the form ----------
+const field = (key, label, attrs = {}) => `<label for="f-${key}">${label}</label><input id="f-${key}" data-k="${key}" value="${esc(state[key])}" ${Object.entries(attrs).map(([a, v]) => `${a}="${esc(v)}"`).join(' ')}>`;
+const area = (key, label, ph = '') => `<label for="f-${key}">${label}</label><textarea id="f-${key}" data-k="${key}" placeholder="${esc(ph)}">${esc(state[key])}</textarea>`;
+const sec = (id, title, sub, body, open = false) => `<details class="sec" id="sec-${id}"${open ? ' open' : ''}><summary><h2>${title}</h2><span class="sub">${sub}</span></summary>${body}</details>`;
+const LISTS = {
+  clinics: { blank: () => ({ type: 'MedicalClinic', name: '', url: '' }), add: '+ Add another clinic or practice',
+    row: (v, i) => `<select data-list="clinics" data-i="${i}" data-f="type" aria-label="Kind of place">${CLINIC_TYPES.map((t) => `<option value="${t}"${v.type === t ? ' selected' : ''}>${esc(t === 'Physician' ? 'Doctor\'s practice' : t === 'Dentist' ? 'Dental practice' : humanize(t))}</option>`).join('')}</select><input data-list="clinics" data-i="${i}" data-f="name" value="${esc(v.name)}" placeholder="Clinic name"><input data-list="clinics" data-i="${i}" data-f="url" value="${esc(v.url)}" placeholder="https://clinic.com/">` },
+  credentials: { blank: () => ({ name: '', kind: 'Degree', by: '', year: '' }), add: '+ Add a qualification',
+    row: (v, i) => `<input data-list="credentials" data-i="${i}" data-f="name" value="${esc(v.name)}" placeholder="MUDr. (Doctor of Medicine)" style="flex:2"><select data-list="credentials" data-i="${i}" data-f="kind" aria-label="Kind">${CRED_KINDS.map((k) => `<option${v.kind === k ? ' selected' : ''}>${k}</option>`).join('')}</select><input data-list="credentials" data-i="${i}" data-f="by" value="${esc(v.by)}" placeholder="Awarded by" style="flex:2"><input data-list="credentials" data-i="${i}" data-f="year" value="${esc(v.year)}" placeholder="Year" inputmode="numeric" style="flex:none;width:80px;min-width:0">` },
+  registrations: { blank: () => ({ register: '', number: '', url: '' }), add: '+ Add a registration',
+    row: (v, i) => `<input data-list="registrations" data-i="${i}" data-f="register" value="${esc(v.register)}" placeholder="GMC number, NPI, ČLK…"><input data-list="registrations" data-i="${i}" data-f="number" value="${esc(v.number)}" placeholder="Number"><input data-list="registrations" data-i="${i}" data-f="url" value="${esc(v.url)}" placeholder="Link to the public register entry" style="flex:2">` },
+  education: { blank: () => ({ name: '', url: '' }), add: '+ Add a school',
+    row: (v, i) => `<input data-list="education" data-i="${i}" data-f="name" value="${esc(v.name)}" placeholder="Charles University, First Faculty of Medicine"><input data-list="education" data-i="${i}" data-f="url" value="${esc(v.url)}" placeholder="https://">` },
+  memberships: { blank: () => ({ name: '', url: '' }), add: '+ Add a membership',
+    row: (v, i) => `<input data-list="memberships" data-i="${i}" data-f="name" value="${esc(v.name)}" placeholder="Czech Dermatovenerological Society"><input data-list="memberships" data-i="${i}" data-f="url" value="${esc(v.url)}" placeholder="https://">` },
+  sameAs: { blank: () => '', add: '+ Add a profile', row: (v, i) => `<input data-list="sameAs" data-i="${i}" value="${esc(v)}" placeholder="https://www.linkedin.com/in/…">` }
+};
+function drawList(key) {
+  const box = $(`list-${key}`);
+  if (!box) return;
+  if (key === 'sameAs' && !state.sameAs.length) state.sameAs.push('');
+  box.innerHTML = state[key].map((v, i) => `<div class="lrow">${LISTS[key].row(v, i)}<button type="button" class="rm" data-rm="${key}" data-i="${i}" aria-label="Remove">×</button></div>`).join('') + `<button type="button" class="addbtn" data-add="${key}">${LISTS[key].add}</button>`;
+}
+
+function render() {
+  app.innerHTML =
+    `<div class="status" style="margin-bottom:14px"><label for="importUrl" style="margin-top:0">Start from a profile page that already has markup (optional)</label>
+      <div class="inrow"><input id="importUrl" placeholder="https://clinic.com/team/dr-novak/" value="https://"><button class="btn2" id="importBtn" type="button">Read its markup</button></div><div id="importMsg" class="msg"></div></div>` +
+    sec('who', 'Who they are', 'Name, role and profile page', `
+      <div class="row3"><div>${field('prefix', 'Title before', { placeholder: 'Dr., MUDr.' })}</div><div>${field('name', 'Full name *', { placeholder: 'Jana Nováková' })}</div><div>${field('suffix', 'Letters after', { placeholder: 'MD, PhD' })}</div></div>
+      ${field('alternateName', 'Also known as (a maiden name, the name written without accents…)', { placeholder: 'Jana Novakova' })}
+      <div class="row2"><div>${field('jobTitle', 'Job title', { placeholder: 'Consultant dermatologist' })}</div><div>${field('url', 'Their profile page on your site *', { placeholder: 'https://', inputmode: 'url' })}</div></div>
+      ${area('description', 'Short bio, as on the profile page', 'Experience, focus, who they see.')}
+      <div class="row2"><div>${field('image', 'Photo address', { placeholder: 'https://…/jana.jpg' })}</div><div>${field('telephone', 'Work phone', { inputmode: 'tel' })}</div></div>
+      ${field('email', 'Work email', { inputmode: 'email' })}`, true) +
+    sec('where', 'Where they practise', 'The clinic, linked to its own markup', `
+      <p class="hint">If you made the clinic's markup with the <a href="/tools/local-schema/">local business schema generator</a> using the same address here, the two link up automatically.</p><div id="list-clinics"></div>`, true) +
+    sec('expertise', 'Expertise and languages', 'What they treat, the languages they speak', `
+      <div class="row2"><div>${field('occupation', 'Profession', { placeholder: 'Dermatologist' })}</div><div>${field('occupationCode', 'Occupation code (optional)', { placeholder: 'ISCO-08 2212' })}</div></div>
+      ${area('knowsAbout', 'Specialties and treatments, one per line', 'Dermatology\nMole checks\nPsoriasis')}
+      <label>Languages they see patients in</label><div class="chkgrid">${LANGS.map((l) => `<label><input type="checkbox" data-set="languages" value="${l}"${state.languages.includes(l) ? ' checked' : ''}>${l}</label>`).join('')}</div>
+      ${field('languagesOther', 'Other languages (comma-separated)')}`) +
+    sec('credentials', 'Qualifications and registration', 'The credentials behind them', `
+      <p class="hint">Mark up only what the profile page itself shows. schema.org still lists qualifications as "pending", so the validator shows a note about them: they are valid and widely used.</p>
+      <label style="margin-top:0">Qualifications</label><div id="list-credentials"></div>
+      <label>Professional registration (the public register entry that proves they may practise)</label><div id="list-registrations"></div>
+      <label>Education</label><div id="list-education"></div>`) +
+    sec('standing', 'Memberships, awards and profiles', 'Links that confirm who they are', `
+      <label style="margin-top:0">Professional bodies they belong to</label><div id="list-memberships"></div>
+      ${area('awards', 'Awards, one per line')}
+      <label>Profiles elsewhere: the register, booking sites, LinkedIn, ORCID, Google Scholar, hospital pages…</label><div id="list-sameAs"></div>`) +
+    sec('page', 'The page and reviewed articles', 'Profile page wrapper, medically-reviewed-by snippet', `
+      <label class="inline" style="margin-top:0"><input type="checkbox" data-k="profilePage"${state.profilePage ? ' checked' : ''}>The page is this person's profile page (wraps the markup in a ProfilePage, Google's type for it)</label>
+      <div id="w-updated">${field('updated', 'Profile last updated', { type: 'date' })}</div>
+      <label class="inline" style="margin-top:14px"><input type="checkbox" data-k="reviewer"${state.reviewer ? ' checked' : ''}>They review our health articles: also make the "reviewed by" snippet for those pages</label>
+      <div id="w-reviewer" class="row2"><div><label for="f-reviewPageType">The articles are</label><select id="f-reviewPageType" data-k="reviewPageType"><option value="MedicalWebPage"${state.reviewPageType === 'MedicalWebPage' ? ' selected' : ''}>Health or medical information</option><option value="WebPage"${state.reviewPageType === 'WebPage' ? ' selected' : ''}>Other professional advice</option></select></div><div>${field('reviewed', 'Last reviewed', { type: 'date' })}</div></div>`) +
+    `<div class="out" id="out">
+      <div id="statusBox" class="status"></div>
+      <pre class="code" id="code"></pre>
+      <div class="bar"><button class="submit" type="button" id="copyBtn">Copy code</button><button class="btn2" type="button" id="checkBtn">Check in the validator →</button><button class="btn2" type="button" id="dlBtn">Download .json</button><button class="btn2" type="button" id="resetBtn">Start again</button></div>
+      <p class="hint">Paste it into the profile page's &lt;head&gt;, or anywhere in its HTML. Everything in it should also be on that page for visitors to read.</p>
+      <div id="reviewOut" style="display:none"><label style="margin-top:18px">"Reviewed by" snippet: paste into each article this person has reviewed, and change the date to that article's review date</label><pre class="code" id="reviewCode"></pre><div class="bar"><button class="btn2" type="button" id="copyReview">Copy the snippet</button></div></div>
+    </div>` +
+    sec('team', 'The whole team', 'One block per profile page, from a spreadsheet', `
+      <p class="hint">Paste rows from a spreadsheet, first row as headings. Columns: <b>name, url, title_before, letters_after, job_title, image, specialties, languages, phone, email, profiles</b> (only <b>name</b> and <b>url</b> needed; separate several specialties, languages or profiles with ";"). The clinic, profession and page settings come from the form above.</p>
+      ${area('csv', 'Team', 'name,url,title_before,job_title,specialties,languages\nJana Nováková,https://clinic.com/team/novakova/,MUDr.,Dermatologist,Mole checks;Psoriasis,Czech;English')}
+      <div class="bar"><button class="btn2" type="button" id="teamBtn">Make the profile blocks</button><button class="btn2" type="button" id="teamTpl">Download a template</button></div>
+      <div id="teamOut"></div>`, !!state.csv);
+  Object.keys(LISTS).forEach(drawList);
+  sync(); refresh();
+}
+function sync() {
+  $('w-updated').style.display = state.profilePage ? '' : 'none';
+  $('w-reviewer').style.display = state.reviewer ? '' : 'none';
+}
+
+// ---------- the output, checked live ----------
+let current = null;
+function refresh() {
+  save();
+  current = build(state);
+  $('code').textContent = `<script type="application/ld+json">\n${JSON.stringify(current, null, 2)}\n<\/script>`;
+  $('reviewOut').style.display = state.reviewer ? '' : 'none';
+  if (state.reviewer) $('reviewCode').textContent = `<script type="application/ld+json">\n${JSON.stringify(reviewSnippet(state), null, 2)}\n<\/script>`;
+  const r = engine.validateExtracted({ jsonld: [JSON.stringify(current)] });
+  const it = r.items[0] || { issues: [], features: [] };
+  const pp = it.features.find((f) => f.id === 'profile-page');
+  const issues = [...r.issues, ...it.issues].filter((i) => i.level !== 'info');
+  const fixes = [
+    ...(!s(state.name) ? [{ c: 'e', t: 'Add their name.' }] : []),
+    ...(!isUrl(state.url) ? [{ c: 'w', t: 'Add the full https:// address of their profile page: it identifies them, and links the reviewed-by snippet to them.' }] : []),
+    ...(!state.clinics.some((c) => s(c.name)) ? [{ c: 'w', t: 'Add where they practise: it ties them to the clinic search engines already know.' }] : []),
+    ...(!state.sameAs.some(isUrl) && !state.registrations.some((x) => s(x.number)) ? [{ c: 'w', t: 'Add a registration number or a profile elsewhere (the public register is best): they are what confirms who this person is.' }] : []),
+    ...issues.map((i) => ({ c: i.level === 'error' ? 'e' : 'w', t: `${i.path ? i.path + ': ' : ''}${i.message}` }))
+  ];
+  const recs = pp ? pp.recommendedMissing.filter((x) => !/interactionStatistic|agentInteractionStatistic|dateCreated|identifier/.test(x)) : [];
+  $('statusBox').innerHTML = `<div class="head">${pp ? `<span class="st ${pp.status}">${pp.status === 'eligible' ? 'Eligible' : 'Not eligible yet'}</span> Google Profile page` : 'Person markup (no Google rich result without the profile page wrapper)'}</div>` +
+    (fixes.length ? `<ul>${fixes.map((f) => `<li class="${f.c}">${esc(f.t)}</li>`).join('')}</ul>` : '<ul><li class="ok">No problems: valid schema.org, and Google has what it needs.</li></ul>') +
+    (recs.length ? `<p class="rec">Google also recommends: ${recs.map(esc).join(', ')}.</p>` : '') +
+    `<p class="rec">Google shows profile pages mostly for people who post or are discussed on a site; the main value here is that search engines and AI assistants can tell exactly who this practitioner is. Checked with schema.org ${esc(r.engine.schemaorg)} and Google's rules as of ${esc(r.engine.googleRules)}.</p>`;
+}
+
+// ---------- events ----------
+app.addEventListener('input', onChange);
+app.addEventListener('change', onChange);
+function onChange(e) {
+  const t = e.target;
+  if (t.id === 'importUrl') return;
+  if (t.dataset.k) { state[t.dataset.k] = t.type === 'checkbox' ? t.checked : t.value; sync(); }
+  else if (t.dataset.set) { const set = new Set(state[t.dataset.set]); t.checked ? set.add(t.value) : set.delete(t.value); state[t.dataset.set] = [...set]; }
+  else if (t.dataset.list) { const list = state[t.dataset.list], i = +t.dataset.i, f = t.dataset.f; if (f) list[i][f] = t.value; else list[i] = t.value; }
+  else return;
+  refresh();
+}
+const flash = (b, text) => { const o = b.textContent; b.textContent = text; setTimeout(() => { b.textContent = o; }, 1500); };
+function download(name, body, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([body], { type }));
+  a.download = name; document.body.append(a); a.click(); a.remove();
+}
+// History, as the other schema tools do: one event per copy, never per keystroke.
+const logCopy = (n) => fetch(API + '/schema-builder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, org_name: s(state.name) || 'Practitioner', counts: { locations: n } }) }).catch(() => {});
+app.addEventListener('click', (e) => {
+  const t = e.target.closest('button');
+  if (!t) return;
+  if (t.dataset.add) { state[t.dataset.add].push(LISTS[t.dataset.add].blank()); drawList(t.dataset.add); refresh(); }
+  else if (t.dataset.rm) { state[t.dataset.rm].splice(+t.dataset.i, 1); drawList(t.dataset.rm); refresh(); }
+  else if (t.id === 'copyBtn') { navigator.clipboard?.writeText($('code').textContent); flash(t, 'Copied ✓'); logCopy(1); }
+  else if (t.id === 'copyReview') { navigator.clipboard?.writeText($('reviewCode').textContent); flash(t, 'Copied ✓'); }
+  else if (t.id === 'checkBtn') { try { localStorage.setItem('schema-check-code', $('code').textContent); } catch (err) { /* nothing kept */ } location.href = '/tools/schema-audit/?paste=1' + (CODE ? '&k=' + encodeURIComponent(CODE) : ''); }
+  else if (t.id === 'dlBtn') download(`${(s(state.name) || 'practitioner').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-')}.json`, JSON.stringify(current, null, 2), 'application/json');
+  else if (t.id === 'resetBtn') { if (confirm('Clear the whole form?')) { state = blank(); save(); render(); } }
+  else if (t.id === 'importBtn') importFrom($('importUrl').value);
+  else if (t.id === 'teamBtn') makeTeam();
+  else if (t.id === 'teamTpl') download('team.csv', 'name,url,title_before,letters_after,job_title,image,specialties,languages,phone,email,profiles\n', 'text/csv');
+});
+
+// ---------- start from a page's existing markup (the validator's worker reads it) ----------
+const first = (v) => (Array.isArray(v) ? v[0] : v);
+const str = (v) => { const x = first(v); return typeof x === 'string' || typeof x === 'number' ? String(x) : x && typeof x === 'object' ? String(x.url || x.contentUrl || x.name || x['@id'] || '') : ''; };
+const all = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
+const local = (v) => String(v || '').replace(/^https?:\/\/schema\.org\//, '').replace(/^schema:/, '');
+async function importFrom(raw) {
+  const msg = $('importMsg'), url = s(raw);
+  if (!url || url === 'https://') { msg.className = 'msg bad'; msg.textContent = 'Add the page address first.'; return; }
+  msg.className = 'msg'; msg.textContent = 'Reading the page…';
+  let d;
+  try { d = await (await fetch(API + '/schema-audit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, url }) })).json(); } catch (e) { d = { error: 'could not reach the checker' }; }
+  if (d.error) { msg.className = 'msg bad'; msg.textContent = `Couldn't read it: ${d.error}.`; return; }
+  if (!d.report) { msg.className = 'msg bad'; msg.textContent = 'Reading a page\'s markup isn\'t available right now. Fill in the form instead, or try again later.'; return; }
+  const isPerson = (n) => n && typeof n === 'object' && all(n['@type']).map(local).includes('Person');
+  let pick = null;
+  for (const it of d.report.items) {
+    if (isPerson(it.data)) { pick = it.data; break; }
+    const me = all(it.data.mainEntity).find(isPerson);
+    if (me) { pick = me; break; }
+  }
+  if (!pick) { msg.className = 'msg bad'; msg.textContent = (d.schemas_found || []).length ? `That page has structured data (${d.schemas_found.join(', ')}) but no person in it. Fill in the form instead.` : 'That page has no structured data to start from. Fill in the form instead.'; return; }
+  state = { ...blank(), ...fromLd(pick, url), csv: state.csv };
+  render();
+  $('importUrl').value = url;
+  $('importMsg').className = 'msg good';
+  $('importMsg').textContent = `Filled in from the person on that page${pick.name ? ` (${str(pick.name)})` : ''}. Check every field: the markup may be out of date.`;
+}
+function fromLd(n, pageUrl) {
+  const st = blank();
+  Object.assign(st, { name: str(n.name), alternateName: str(n.alternateName), prefix: str(n.honorificPrefix), suffix: str(n.honorificSuffix), jobTitle: str(n.jobTitle), description: str(n.description),
+    image: str(n.image), url: str(n.url) || pageUrl, email: str(n.email), telephone: str(n.telephone), awards: all(n.award).map(str).join('\n'), knowsAbout: all(n.knowsAbout).map(str).join('\n') });
+  const langs = all(n.knowsLanguage).map(str).filter(Boolean);
+  st.languages = langs.filter((l) => LANGS.includes(l)); st.languagesOther = langs.filter((l) => !LANGS.includes(l)).join(', ');
+  const clinics = all(n.worksFor).filter((c) => c && typeof c === 'object').map((c) => ({ type: CLINIC_TYPES.includes(local(first(all(c['@type'])))) ? local(first(all(c['@type']))) : 'Organization', name: str(c.name), url: str(c.url) || String(c['@id'] || '').replace(/#.*$/, '') }));
+  if (clinics.length) st.clinics = clinics;
+  const occ = first(n.hasOccupation);
+  if (occ) { st.occupation = str(occ.name || occ); st.occupationCode = typeof occ === 'object' ? str(occ.occupationalCategory) : ''; }
+  st.credentials = all(n.hasCredential).filter((c) => c && typeof c === 'object').map((c) => ({ name: str(c.name), kind: CRED_KINDS.includes(str(c.credentialCategory)) ? str(c.credentialCategory) : 'Certificate', by: str(c.recognizedBy), year: str(c.dateCreated).slice(0, 10) })).filter((c) => c.name);
+  st.registrations = all(n.identifier).filter((x) => x && typeof x === 'object').map((x) => ({ register: str(x.propertyID), number: str(x.value), url: str(x.url) })).filter((x) => x.number);
+  st.education = all(n.alumniOf).map((e) => ({ name: str(e), url: e && typeof e === 'object' ? str(e.url) : '' })).filter((e) => e.name);
+  st.memberships = all(n.memberOf).map((m) => ({ name: str(m), url: m && typeof m === 'object' ? str(m.url) : '' })).filter((m) => m.name);
+  const same = all(n.sameAs).map(str).filter(Boolean);
+  st.sameAs = same.length ? same : [''];
+  return st;
+}
+
+// ---------- the whole team: one block per profile page ----------
+function parseCsv(text) {
+  const firstLine = text.split('\n')[0] || '';
+  const sep = ['\t', ';', ','].map((c) => [c, firstLine.split(c).length]).sort((a, b) => b[1] - a[1])[0][0];
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; continue; }
+    if (c === '"') q = true; else if (c === sep) { row.push(cell); cell = ''; } else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; } else if (c !== '\r') cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return { rows: rows.filter((r) => r.some((x) => s(x))), sep };
+}
+const COLS = { name: ['name', 'full name'], url: ['url', 'profile', 'profile page', 'page'], prefix: ['title_before', 'title', 'prefix', 'honorific'], suffix: ['letters_after', 'suffix', 'post-nominals'],
+  jobTitle: ['job_title', 'job title', 'role', 'position'], image: ['image', 'photo'], specialties: ['specialties', 'specialisms', 'expertise'], languages: ['languages'],
+  telephone: ['phone', 'telephone'], email: ['email'], profiles: ['profiles', 'sameas', 'links'] };
+function makeTeam() {
+  const out = $('teamOut');
+  const { rows, sep } = parseCsv(state.csv || '');
+  if (rows.length < 2) { out.innerHTML = '<p class="msg bad">Paste a heading row and at least one person.</p>'; return; }
+  const head = rows[0].map((h) => s(h).toLowerCase());
+  const col = Object.fromEntries(Object.entries(COLS).map(([k, names]) => [k, head.findIndex((h) => names.includes(h))]));
+  if (col.name < 0 || col.url < 0) { out.innerHTML = '<p class="msg bad">The heading row needs at least a "name" and a "url" column.</p>'; return; }
+  // Lists inside a cell: ";" separates them, unless ";" already separates the columns, then "|".
+  const split = (v) => s(v).split(sep === ';' ? '|' : ';').map(s).filter(Boolean);
+  const results = rows.slice(1).map((r, i) => {
+    const get = (k) => (col[k] >= 0 ? s(r[col[k]]) : '');
+    const st = JSON.parse(JSON.stringify(state));
+    const langs = split(get('languages'));
+    Object.assign(st, { name: get('name'), alternateName: '', url: get('url'), prefix: get('prefix'), suffix: get('suffix'), jobTitle: get('jobTitle'), image: get('image'), telephone: get('telephone'), email: get('email'),
+      description: '', knowsAbout: split(get('specialties')).join('\n'), languages: langs.filter((l) => LANGS.includes(l)), languagesOther: langs.filter((l) => !LANGS.includes(l)).join(', '),
+      sameAs: split(get('profiles')), credentials: [], registrations: [], education: [], memberships: [], awards: '' });
+    const ld = build(st);
+    const rep = engine.validateExtracted({ jsonld: [JSON.stringify(ld)] });
+    const pp = rep.items[0]?.features.find((f) => f.id === 'profile-page');
+    const own = [...(st.name ? [] : ['no name']), ...(isUrl(st.url) ? [] : ['no profile page address (url): each block belongs on that person\'s own page'])];
+    const errs = rep.items.flatMap((x) => x.issues).filter((x) => x.level === 'error').map((x) => x.message);
+    return { row: i + 2, name: st.name, url: st.url, ld, ok: !own.length && !errs.length && (!pp || pp.status === 'eligible'), problems: [...own, ...(pp?.missing || []).map((m) => `missing ${m}`), ...errs] };
+  });
+  const good = results.filter((x) => x.ok).length;
+  window.__team = results;
+  out.innerHTML = `<p class="msg ${good === results.length ? 'good' : 'bad'}">${results.length} ${results.length === 1 ? 'person' : 'people'}: ${good} ready${good < results.length ? `, ${results.length - good} to fix` : ''}. Add each person's qualifications and registration on their own block, or fill them in above one person at a time.</p>
+    <div class="bar"><button class="btn2" type="button" id="teamJson">Download all (.json)</button><button class="btn2" type="button" id="teamTxt">Download all as snippets (.txt)</button></div>` +
+    results.map((x, i) => `<details class="loc"><summary><span class="${x.ok ? 'ok' : 'e'}">${x.ok ? '✓' : '✗'}</span> Row ${x.row}: ${esc(x.name || '(no name)')} <span style="color:var(--muted)">${esc(x.url)}</span></summary>
+      ${x.problems.length ? `<ul style="margin:6px 0 0 18px;font-size:12px">${x.problems.map((p) => `<li class="e">${esc(p)}</li>`).join('')}</ul>` : ''}
+      <pre class="code" style="margin-top:8px;max-height:260px">${esc(JSON.stringify(x.ld, null, 2))}</pre><button class="btn2" type="button" data-copyteam="${i}">Copy this block</button></details>`).join('');
+  $('teamJson').onclick = () => { download('team-schema.json', JSON.stringify(results.map((x) => ({ url: x.url, name: x.name, jsonld: x.ld })), null, 2), 'application/json'); logCopy(results.length); };
+  $('teamTxt').onclick = () => { download('team-schema.txt', results.map((x) => `<!-- ${x.name}: ${x.url} -->\n<script type="application/ld+json">\n${JSON.stringify(x.ld, null, 2)}\n<\/script>\n`).join('\n'), 'text/plain'); logCopy(results.length); };
+  out.querySelectorAll('[data-copyteam]').forEach((b) => { b.onclick = () => { navigator.clipboard?.writeText(`<script type="application/ld+json">\n${JSON.stringify(results[+b.dataset.copyteam].ld, null, 2)}\n<\/script>`); flash(b, 'Copied ✓'); }; });
+}
+
+render();
+const pre = new URLSearchParams(location.search).get('u');
+if (pre) $('importUrl').value = pre;
+</script>
+<script src="/assets/presets.js"></script>
+</body>
+</html>
