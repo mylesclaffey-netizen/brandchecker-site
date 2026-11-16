@@ -50,7 +50,11 @@
   </url>
   <url>
     <loc>https://brandchecker.eu/tools/local-schema/</loc>
-    <lastmod>2026-11-15</lastmod>
+    <lastmod>2026-11-16</lastmod>
+  </url>
+  <url>
+    <loc>https://brandchecker.eu/tools/practitioner-schema/</loc>
+    <lastmod>2026-11-16</lastmod>
   </url>
   <url>
     <loc>https://brandchecker.eu/tools/schema-builder/</loc>

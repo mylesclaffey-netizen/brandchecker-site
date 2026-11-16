@@ -45,6 +45,10 @@
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end}
   .row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;align-items:end}
   @media(max-width:560px){.row2,.row3{grid-template-columns:1fr}}
+  /* An address box and its button: one line, the same height. */
+  .inrow{display:flex;gap:8px;align-items:stretch}
+  .inrow>input{flex:1;min-width:0}
+  .inrow>.btn2{flex:none}
   details.sec{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;background:var(--card)}
   details.sec>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:baseline}
   details.sec>summary::-webkit-details-marker{display:none}
@@ -52,6 +56,8 @@
   details.sec[open]>summary::after{content:'–'}
   details.sec>summary .sub{font-size:11px;color:var(--muted);flex:1}
   details.sec[open]>summary{margin-bottom:10px}
+  /* On a phone a section's subtitle goes under its heading instead of squeezing beside it. */
+  @media(max-width:560px){details.sec>summary{flex-wrap:wrap}details.sec>summary .sub{order:3;flex-basis:100%}}
   .lrow{display:flex;gap:6px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap}
   .lrow>*{flex:1;min-width:110px}
   .lrow>.rm{flex:none;min-width:0;width:38px;height:40px;background:none;border:1px solid var(--line);border-radius:7px;cursor:pointer;color:var(--muted);font-size:16px}
@@ -110,6 +116,7 @@
     <a href="/" class="sidenav-link">← Back to tools</a>
     <a href="/tools/schema-audit/" class="sidenav-link toolLink">Schema validator →</a>
     <a href="/tools/schema-builder/" class="sidenav-link toolLink">Brand schema builder (Organization, products, FAQ) →</a>
+    <a href="/tools/practitioner-schema/" class="sidenav-link toolLink">Practitioner schema generator (the doctors, dentists and staff) →</a>
     <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
   </div>
 </div>
@@ -376,9 +383,8 @@ const typeOptions = () => `<option value="LocalBusiness">Local business (general
 
 function render() {
   app.innerHTML =
-    `<div class="status" style="margin-bottom:14px"><div class="row2" style="align-items:end">
-      <div><label for="importUrl" style="margin-top:0">Start from a page that already has markup (optional)</label><input id="importUrl" placeholder="https://yourbusiness.com/" value="https://"></div>
-      <div><button class="btn2" id="importBtn" type="button" style="width:100%">Read its markup</button></div></div><div id="importMsg" class="msg"></div></div>` +
+    `<div class="status" style="margin-bottom:14px"><label for="importUrl" style="margin-top:0">Start from a page that already has markup (optional)</label>
+      <div class="inrow"><input id="importUrl" placeholder="https://yourbusiness.com/" value="https://"><button class="btn2" id="importBtn" type="button">Read its markup</button></div><div id="importMsg" class="msg"></div></div>` +
     sec('essentials', 'Business', 'Type, name and contact', `
       <label for="f-typeFilter">Type of business — the most specific one that fits</label>
       <input id="f-typeFilter" placeholder="Search ${TYPES.length} types: dentist, bakery, plumber…" autocomplete="off">

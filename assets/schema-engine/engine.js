@@ -16,7 +16,7 @@
 
 import { extract } from './extract.js';
 
-export const ENGINE_VERSION = '1.1.0';
+export const ENGINE_VERSION = '1.1.1';
 
 const list = (v) => (v == null ? [] : Array.isArray(v) ? v : [v]);
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -25,6 +25,10 @@ const SCHEMA = /^https?:\/\/schema\.org\/?/i;
 const localName = (s) => (typeof s !== 'string' ? s : SCHEMA.test(s) ? s.replace(SCHEMA, '') : /^schema:/i.test(s) ? s.slice(7) : s);
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ISO_DATETIME = /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/;
+// A year, or a year and month, is a valid ISO 8601 date with reduced precision ("2009", "2009-05"): fine for when a
+// degree was awarded or a book came out. On these properties a search engine needs the day, so a partial date warns.
+const ISO_PARTIAL_DATE = /^\d{4}(-(0[1-9]|1[0-2]))?$/;
+const NEEDS_FULL_DATE = new Set(['startDate', 'endDate', 'doorTime', 'validFrom', 'validThrough', 'priceValidUntil', 'uploadDate', 'expires', 'datePosted', 'applicationDeadline']);
 const ISO_TIME = /^\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/;
 const ISO_DURATION = /^P(?!$)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+(\.\d+)?S)?)?$/;
 const MAX_ISSUES_PER_ITEM = 200;
@@ -173,6 +177,10 @@ export function createEngine({ vocab, google }) {
     const allows = (...kinds) => range.some((r) => kinds.includes(r));
     if (typeof s === 'string') {
       if (allows('Date', 'DateTime') && (ISO_DATETIME.test(s))) return;
+      if (allows('Date', 'DateTime') && ISO_PARTIAL_DATE.test(s)) {
+        if (NEEDS_FULL_DATE.has(name)) add({ level: 'warning', code: 'partial-date', path: at, message: `"${name}" is "${s}", a year${s.length > 4 ? ' and month' : ''} only. It's valid ISO 8601, but search engines need the full date here (for example ${s.length > 4 ? s : s + '-05'}-21).` });
+        return;
+      }
       if (allows('Time') && ISO_TIME.test(s)) return;
       if (allows('Duration') && ISO_DURATION.test(s)) return;
       if (allows('URL') && /^(https?:)?\/\/\S+$/i.test(s)) return;
