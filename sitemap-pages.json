@@ -56,6 +56,10 @@
    "description": "Free practitioner schema generator: Person and ProfilePage JSON-LD for doctors, dentists, therapists and other professionals at a clinic or practice, with credentials, registration numbers and a medically-reviewed-by snippet, checked live."
   },
   {
+   "path": "/tools/gbp-manager/",
+   "description": "Google Business Profile manager for agencies: analyse every client's profile against the businesses Google Maps shows above it, check each website agrees with its profile, and keep a list of changes, confirmed when Google shows them."
+  },
+  {
    "path": "/tools/schema-builder/",
    "description": "Free JSON-LD generator for your brand: the structured data Google uses for rich results and AI answer engines use to get your facts right."
   },

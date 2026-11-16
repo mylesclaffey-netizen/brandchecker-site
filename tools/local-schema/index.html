@@ -116,6 +116,7 @@
     <a href="/" class="sidenav-link">← Back to tools</a>
     <a href="/tools/schema-audit/" class="sidenav-link toolLink">Schema validator →</a>
     <a href="/tools/schema-builder/" class="sidenav-link toolLink">Brand schema builder (Organization, products, FAQ) →</a>
+    <a href="/tools/gbp-manager/" class="sidenav-link toolLink">Business Profile manager (your clients' Google profiles) →</a>
     <a href="/tools/practitioner-schema/" class="sidenav-link toolLink">Practitioner schema generator (the doctors, dentists and staff) →</a>
     <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
   </div>
@@ -746,7 +747,27 @@ function makeLocations() {
   out.querySelectorAll('[data-copyloc]').forEach((b) => { b.onclick = () => { const x = results[+b.dataset.copyloc]; navigator.clipboard?.writeText(`<script type="application/ld+json">\n${JSON.stringify(x.ld, null, 2)}\n<\/script>`); flash(b, 'Copied ✓'); }; });
 }
 
+// Filled in from a Business Profile: the Business Profile manager hands the profile over in this browser's storage, once.
+let prefillNote = '';
+if (new URLSearchParams(location.search).get('prefill') === '1') {
+  try {
+    const filled = JSON.parse(localStorage.getItem('bc-local-schema-prefill') || 'null');
+    localStorage.removeItem('bc-local-schema-prefill');
+    if (filled) {
+      // Google's category ("Medical clinic", "Italian restaurant") to the nearest schema.org type, else LocalBusiness.
+      const camel = (x) => String(x || '').split(/[^A-Za-z0-9]+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase()).join('');
+      const words = String(filled.gbpCategory || '').trim().split(/\s+/);
+      const guesses = [camel(filled.gbpCategory), camel(words[words.length - 1]), /ologist$|doctor|physician/i.test(filled.gbpCategory || '') ? 'Physician' : ''];
+      const type = guesses.find((t) => t && engine.types[t] && !engine.types[t].deprecated && engine.isA(t, 'LocalBusiness')) || 'LocalBusiness';
+      const { gbpCategory, ...fields } = filled;
+      state = { ...blank(), ...fields, type, csv: state.csv };
+      save();
+      prefillNote = `Filled in from the Business Profile of ${filled.name || 'the business'}${gbpCategory ? ` (Google category "${gbpCategory}", here as ${humanize(type)})` : ''}. Check every field, and set the page address to the page this markup goes on.`;
+    }
+  } catch (e) { /* nothing to fill in */ }
+}
 render();
+if (prefillNote) { $('importMsg').className = 'msg good'; $('importMsg').textContent = prefillNote; }
 const pre = new URLSearchParams(location.search).get('u');
 if (pre) { $('importUrl').value = pre; }
 </script>

@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="index, follow">
+<script src="/assets/visitor.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Business Profile manager</title>
+<link rel="canonical" href="https://brandchecker.eu/tools/gbp-manager/">
+<meta name="description" content="Google Business Profile manager for agencies: analyse every client's profile against the businesses Google Maps shows above it, check each website agrees with its profile, and keep a list of changes, confirmed when Google shows them.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brand Checker">
+<meta property="og:url" content="https://brandchecker.eu/tools/gbp-manager/">
+<meta property="og:title" content="Business Profile Manager for Agencies | Brand Checker">
+<meta property="og:description" content="All your clients' Google Business Profiles in one workspace: categories against the competitors above them, reviews, website match, and a change list confirmed when Google shows each edit.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta name="twitter:title" content="Business Profile Manager for Agencies | Brand Checker">
+<meta name="twitter:description" content="All your clients' Google Business Profiles in one workspace: categories against the competitors above them, reviews, website match, and a change list confirmed when Google shows each edit.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%2334517A'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;
+        --you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000;--gold:#0a0a0a;--soft:#f3f3f3}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:920px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Archivo',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.14;margin:8px 0;color:var(--gold)}
+  h2{font-family:'Archivo',sans-serif;font-size:16px;font-weight:700;margin:0}
+  h3{font-family:'Archivo',sans-serif;font-size:14px;font-weight:700;margin:16px 0 6px}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.6}
+  .hint{font-size:11.5px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+  .hint a,.lede a,.sub a,.where a{color:var(--you)}
+  label{display:block;font-size:11px;color:var(--muted);margin:12px 0 5px}
+  input,textarea,select{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);background:var(--card);
+        border:1px solid var(--line);border-radius:7px;padding:10px 11px}
+  input[type=checkbox]{width:auto;margin-right:6px;vertical-align:-1px}
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  textarea{resize:vertical;min-height:80px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end}
+  @media(max-width:600px){.row2,.row3{grid-template-columns:1fr}}
+  .card{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px;background:var(--card)}
+  details.sec{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;background:var(--card)}
+  details.sec>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  details.sec>summary::-webkit-details-marker{display:none}
+  details.sec>summary::after{content:'+';font-family:'Archivo',sans-serif;font-weight:700;font-size:18px;line-height:1}
+  details.sec[open]>summary::after{content:'–'}
+  details.sec>summary .sub{font-size:11px;color:var(--muted);flex:1}
+  details.sec[open]>summary{margin-bottom:10px}
+  @media(max-width:600px){details.sec>summary{flex-wrap:wrap}details.sec>summary .sub{order:3;flex-basis:100%}}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;align-items:center}
+  .bar.small{margin:8px 0 0}
+  .btn2{font-family:'Archivo',sans-serif;font-size:13px;font-weight:700;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 13px;cursor:pointer}
+  .btn2:hover{border-color:var(--you);color:var(--you)}
+  .btn2.mini{font-size:12px;padding:6px 10px}
+  .btn2[disabled]{opacity:.45;cursor:default}
+  .submit{font-family:'Archivo',sans-serif;font-size:15px;font-weight:700;background:var(--you);color:#fff;border:0;border-radius:8px;padding:12px 18px;cursor:pointer}
+  .submit:hover{background:#d92f00}
+  .submit[disabled]{opacity:.5;cursor:default}
+  .msg{font-size:12px;margin-top:8px}
+  .msg.bad{color:var(--bad)} .msg.good{color:var(--ok)}
+  .loading{font-size:12.5px;color:var(--muted);padding:20px 0}
+  .back{font-size:12.5px;color:var(--you);text-decoration:none}
+  .tablewrap{overflow-x:auto;margin:8px 0;border:1px solid var(--line);border-radius:8px}
+  table{border-collapse:collapse;width:100%;font-size:12px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #ddd;vertical-align:top}
+  th{font-family:'Archivo',sans-serif;font-size:11.5px;background:var(--soft);white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  tr.click{cursor:pointer} tr.click:hover td{background:#fff6f2}
+  tr.you td{background:#fff1ea;font-weight:500}
+  td.num,th.num{text-align:right;white-space:nowrap}
+  .small{font-size:11px;color:var(--muted)}
+  .pill{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:20px;white-space:nowrap}
+  .pill.ok,.st.confirmed{color:var(--ok);background:rgba(0,132,74,.1)} .pill.warn,.st.applied,.st.not_seen{color:var(--warn);background:rgba(180,95,0,.12)}
+  .pill.bad,.st.reverted{color:var(--bad);background:rgba(212,0,0,.1)} .pill.info,.st.draft,.st.skipped{color:var(--muted);background:var(--soft)}
+  .st{display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap}
+  .check{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;padding:8px 0;border-bottom:1px solid #e6e6e6;font-size:12.5px}
+  .check:last-child{border-bottom:0}
+  .check b{font-family:'Archivo',sans-serif}
+  .check .d{grid-column:2;color:var(--muted);font-size:12px}
+  .check .act{grid-column:2}
+  .since{border:1px dashed var(--line);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px}
+  .since ul{margin:6px 0 0 18px}
+  .chg{border:1px solid var(--line);border-radius:9px;padding:12px;margin-bottom:10px}
+  .chg.st-confirmed{border-color:var(--ok)} .chg.st-reverted,.chg.st-not_seen{border-color:var(--warn)} .chg.st-skipped{opacity:.6}
+  .chghead{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .chghead b{font-family:'Archivo',sans-serif;font-size:14px}
+  .where{font-size:11.5px;color:var(--muted);margin:4px 0}
+  .risk{font-size:11.5px;color:var(--bad);margin:4px 0}
+  .cnote{font-size:11.5px;color:var(--muted);margin:4px 0;font-style:italic}
+  .lint{font-size:11.5px;color:var(--bad);margin-top:4px}
+  label.inline{display:flex;align-items:center;font-size:12.5px;color:var(--ink)}
+  .lint:empty{display:none}
+  .cmeta{font-size:11px;color:var(--muted);margin-top:4px}
+  .cmeta:empty{display:none}
+  .count{font-size:11px;color:var(--muted);text-align:right;margin-top:2px}
+  blockquote{font-size:12px;border-left:3px solid var(--line);padding:4px 10px;margin:6px 0;color:var(--muted)}
+  .hours{display:grid;grid-template-columns:92px 120px 1fr;gap:6px 8px;align-items:center;font-size:12px;margin-top:8px}
+  .hours .times{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .hours .times input{width:auto;min-width:0;padding:7px 8px;font-size:13px}
+  .hours select{padding:7px 8px;font-size:13px}
+  @media(max-width:600px){.hours{grid-template-columns:80px 1fr}.hours .times{grid-column:1/-1;padding-bottom:6px}}
+  .sug{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:8px 0;border-bottom:1px solid #e6e6e6;font-size:12.5px}
+  .sug:last-child{border-bottom:0}
+  .sug .d{color:var(--muted);font-size:11.5px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:8px 0}
+  .stat{border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+  .stat b{display:block;font-family:'Archivo',sans-serif;font-size:20px}
+  .stat span{font-size:11px;color:var(--muted)}
+  .bars{display:flex;gap:4px;align-items:flex-end;height:70px;margin:8px 0 2px}
+  .bars div{flex:1;background:var(--ink);min-height:2px;border-radius:2px 2px 0 0}
+  .bars div.unknown{background:repeating-linear-gradient(45deg,#ccc 0 3px,#fff 3px 6px);height:100%!important}
+  .barlabels{display:flex;gap:4px;font-size:9.5px;color:var(--muted)}
+  .barlabels span{flex:1;text-align:center}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  .chip{font-size:11.5px;border:1px solid var(--line);border-radius:20px;padding:3px 9px}
+  .rev{border-bottom:1px solid #e6e6e6;padding:8px 0;font-size:12.5px}
+  .rev:last-child{border-bottom:0}
+  .stars{color:var(--warn);letter-spacing:1px}
+  .lochead h2{font-size:22px}
+  .lochead .sub{font-size:12px;color:var(--muted);margin-top:3px}
+  .gap{background:#fff1ea}
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted)}
+  .sidenav-link:hover{color:var(--ink)}
+  body.embed .sidenav{display:none}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">For agencies and consultants</p>
+  <h1>Business Profile manager</h1>
+  <p class="lede">All your clients' Google Business Profiles in one workspace. Each analysis compares a profile with the businesses Google Maps shows for its main search: their categories, reviews and photos. It checks the client's website says the same as the profile, reads the latest reviews, and keeps a list of the changes to make. The next analysis confirms each change once Google shows it.</p>
+  <p class="hint">You make the changes in Google's own dashboard for now: each one comes with the text to paste and where the setting is. Sending changes straight to Google needs Google to approve API access, and comes later.</p>
+
+  <div id="app"><p class="loading">Loading…</p></div>
+
+  <div class="sidenav">
+    <a href="/" class="sidenav-link">← Back to tools</a>
+    <a href="/tools/local-schema/" class="sidenav-link toolLink">Local business schema generator →</a>
+    <a href="/tools/pin-check/" class="sidenav-link toolLink">Map pin check (the local pack anywhere) →</a>
+    <a href="/tools/review-link/" class="sidenav-link toolLink">Google review link generator →</a>
+    <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+  </div>
+</div>
+
+<script>
+(function () {
+'use strict';
+if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
+var API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+var CODE = new URLSearchParams(location.search).get('k') || window.MC_VISITOR || '';
+document.querySelectorAll('.historyLink').forEach(function (a) { a.href = '/tools/history/?k=' + encodeURIComponent(CODE); });
+document.querySelectorAll('.toolLink').forEach(function (a) { if (new URLSearchParams(location.search).get('k')) a.href += '?k=' + encodeURIComponent(CODE); });
+
+var app = document.getElementById('app');
+var $ = function (id) { return document.getElementById(id); };
+var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+var DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+var DAY_LABEL = { monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday', thursday: 'Thursday', friday: 'Friday', saturday: 'Saturday', sunday: 'Sunday' };
+var LANGS = [['en', 'English'], ['cs', 'Czech'], ['de', 'German'], ['sk', 'Slovak'], ['pl', 'Polish'], ['fr', 'French'], ['es', 'Spanish'], ['it', 'Italian'], ['nl', 'Dutch'], ['pt', 'Portuguese']];
+var STATUS = { draft: 'To do', applied: 'Done in Google: waiting to see it', confirmed: 'Live on Google', not_seen: 'Not showing on Google', reverted: 'Changed back on Google', skipped: 'Skipped' };
+var TEXT_FIELDS = ['phone', 'website', 'booking_link', 'name', 'address', 'primary_category', 'add_category', 'remove_category', 'service', 'attribute'];
+var MANUAL_FIELDS = ['description', 'hours', 'special_hours', 'add_category', 'remove_category', 'primary_category', 'phone', 'website', 'booking_link', 'service', 'attribute', 'post', 'photos', 'name', 'address', 'other'];
+var FIELD_LABELS = { description: 'Description', hours: 'Opening hours', special_hours: 'Holiday hours', add_category: 'Add a category', remove_category: 'Remove a category', primary_category: 'Primary category', phone: 'Phone number', website: 'Website', booking_link: 'Booking link', service: 'Add a service', attribute: 'Attribute', post: 'Publish a post', photos: 'Add photos', name: 'Business name', address: 'Address', other: 'Other change', review_reply: 'Reply to a review' };
+
+function api(path, body) {
+  return fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ code: CODE }, body || {})) })
+    .then(function (r) { return r.json(); })
+    .catch(function () { return { error: 'Couldn\'t reach the server. Check your connection and try again.' }; });
+}
+var when = function (iso) {
+  if (!iso) return 'never';
+  var d = new Date(iso), days = Math.floor((Date.now() - d) / 864e5);
+  var t = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return days < 1 && new Date().getDate() === d.getDate() ? 'today ' + t : days < 2 ? 'yesterday ' + t : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+var stars = function (n) { return n == null ? '' : '<span class="stars">' + '★'.repeat(Math.round(n)) + '</span>'; };
+var newId = function () { return Array.prototype.map.call(crypto.getRandomValues(new Uint8Array(6)), function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); };
+var clone = function (v) { return v == null ? v : JSON.parse(JSON.stringify(v)); };
+function flash(btn, text) { var o = btn.textContent; btn.textContent = text; setTimeout(function () { btn.textContent = o; }, 1500); }
+function copy(text, btn) { if (navigator.clipboard) navigator.clipboard.writeText(text); if (btn) flash(btn, 'Copied ✓'); }
+function download(name, body, type) { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([body], { type: type })); a.download = name; document.body.append(a); a.click(); a.remove(); }
+var csvCell = function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+function hoursText(h) {
+  if (!h) return 'Not set';
+  return DAYS.map(function (d) { var s = h[d] || []; return DAY_LABEL[d] + ': ' + (s.length ? s.map(function (x) { return x[0] === '00:00' && /^(00:00|23:59|24:00)$/.test(x[1]) ? 'open 24 hours' : x[0] + '–' + x[1]; }).join(', ') : 'closed'); }).join('\n');
+}
+
+/* ======================= the workspace ======================= */
+var ws = [], cur = null, view = { client: '', q: '' }, running = false, pollTimer = null;
+
+function showWorkspace(msg) {
+  cur = null; clearTimeout(pollTimer);
+  if (!CODE) { app.innerHTML = '<p class="msg bad">The workspace belongs to an access code, and this browser has none. Open the tool from your access link.</p>'; return; }
+  app.innerHTML = '<p class="loading">Loading your workspace…</p>';
+  api('/gbp/list').then(function (d) {
+    if (d.error) { app.innerHTML = '<p class="msg bad">' + esc(d.error) + '</p>'; return; }
+    ws = d.locations || [];
+    renderWorkspace(msg);
+  });
+}
+
+function renderWorkspace(msg) {
+  var clients = Array.from(new Set(ws.map(function (l) { return l.client || ''; }))).sort();
+  var shown = ws.filter(function (l) {
+    return (!view.client || (l.client || '') === view.client) && (!view.q || (l.name + ' ' + l.address + ' ' + l.client).toLowerCase().indexOf(view.q.toLowerCase()) >= 0);
+  });
+  var groups = {};
+  shown.forEach(function (l) { (groups[l.client || ''] = groups[l.client || ''] || []).push(l); });
+  var row = function (l) {
+    return '<tr class="click" data-open="' + l.id + '"><td><b>' + esc(l.name || '(unnamed)') + '</b><div class="small">' + esc(l.address || '') + '</div></td>' +
+      '<td class="num">' + (l.rating != null ? l.rating + '★' : '–') + '<div class="small">' + (l.votes != null ? l.votes + ' reviews' : '') + '</div></td>' +
+      '<td class="num">' + (l.rank != null ? '#' + l.rank : '<span class="small">not top 20</span>') + '<div class="small">' + esc(l.keyword || '') + '</div></td>' +
+      '<td class="num">' + (l.flags ? '<span class="pill warn">' + l.flags + '</span>' : '<span class="pill ok">0</span>') + '</td>' +
+      '<td class="num">' + (l.open_changes || 0) + '</td>' +
+      '<td class="num">' + (l.unanswered != null ? l.unanswered : '–') + '</td>' +
+      '<td class="small" data-runstate="' + l.id + '">' + esc(when(l.analysed_at)) + '</td></tr>';
+  };
+  var table = Object.keys(groups).sort().map(function (c) {
+    return '<h3>' + esc(c || 'No client set') + ' <span class="small">(' + groups[c].length + ')</span></h3>' +
+      '<div class="tablewrap"><table><thead><tr><th>Location</th><th class="num">Rating</th><th class="num">Position</th><th class="num">Needs attention</th><th class="num">Open changes</th><th class="num">Unanswered reviews</th><th>Analysed</th></tr></thead><tbody>' +
+      groups[c].map(row).join('') + '</tbody></table></div>';
+  }).join('');
+  app.innerHTML =
+    '<section class="card"><h2>Add a location</h2>' +
+    '<p class="hint" style="margin-top:6px">Paste the profile\'s Google Maps link (in Maps: Share → Copy link), or give the business name and city.</p>' +
+    '<label for="aLink">Google Maps link</label><input id="aLink" placeholder="https://maps.app.goo.gl/…" inputmode="url">' +
+    '<div class="row2"><div><label for="aName">Or the business name</label><input id="aName"></div><div><label for="aCity">City (with the country if it\'s ambiguous)</label><input id="aCity" placeholder="Prague, Czechia"></div></div>' +
+    '<div class="row3"><div><label for="aClient">Client, to group locations</label><input id="aClient" list="clientList"><datalist id="clientList">' + clients.filter(Boolean).map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist></div>' +
+    '<div><label for="aKeyword">Main search to compare against</label><input id="aKeyword" placeholder="Its primary category, e.g. dentist"></div>' +
+    '<div><label for="aLang">Language people search in</label><select id="aLang">' + LANGS.map(function (l) { return '<option value="' + l[0] + '">' + l[1] + '</option>'; }).join('') + '</select></div></div>' +
+    '<div class="bar"><button class="submit" id="addBtn" type="button">Add and analyse</button></div><div id="addMsg" class="msg">' + (msg ? esc(msg) : '') + '</div></section>' +
+    '<section class="card"><div class="bar" style="margin-top:0;justify-content:space-between"><h2>Locations <span class="small">(' + ws.length + ')</span></h2>' +
+    (ws.length ? '<div class="bar" style="margin:0"><button class="btn2 mini" id="runAll" type="button">' + (running ? 'Stop' : 'Re-analyse all') + '</button><button class="btn2 mini" id="wsCsv" type="button">Download CSV</button></div>' : '') + '</div>' +
+    (ws.length > 1 ? '<div class="row2"><div><label for="fClient">Client</label><select id="fClient"><option value="">All clients</option>' + clients.map(function (c) { return '<option value="' + esc(c) + '"' + (view.client === c ? ' selected' : '') + '>' + esc(c || 'No client set') + '</option>'; }).join('') + '</select></div><div><label for="fQ">Find</label><input id="fQ" value="' + esc(view.q) + '" placeholder="Name or address"></div></div>' : '') +
+    (ws.length ? table || '<p class="hint" style="margin-top:10px">Nothing matches.</p>' : '<p class="hint" style="margin-top:10px">No locations yet. Add your first client\'s profile above.</p>') +
+    '<div id="runMsg" class="msg"></div></section>';
+}
+
+function addLocation() {
+  var body = { maps_url: $('aLink').value.trim(), name: $('aName').value.trim(), city: $('aCity').value.trim(), client: $('aClient').value.trim(), keyword: $('aKeyword').value.trim(), language: $('aLang').value };
+  var msg = $('addMsg');
+  if (!body.maps_url && !body.name) { msg.className = 'msg bad'; msg.textContent = 'Paste the Google Maps link, or give the business name and city.'; return; }
+  $('addBtn').disabled = true;
+  msg.className = 'msg'; msg.textContent = 'Finding the profile and the businesses Google shows for its search, and checking its website. This takes 10–30 seconds…';
+  api('/gbp/add', body).then(function (d) {
+    $('addBtn').disabled = false;
+    if (d.error) {
+      msg.className = 'msg bad'; msg.innerHTML = esc(d.error) + (d.id ? ' <a href="#/loc/' + d.id + '" style="color:var(--you)">Open it</a>' : '');
+      return;
+    }
+    cur = d;
+    location.hash = '#/loc/' + d.location.id;
+  });
+}
+
+function runAll() {
+  if (running) { running = false; $('runAll').textContent = 'Re-analyse all'; return; }
+  var ids = ws.filter(function (l) { return (!view.client || (l.client || '') === view.client); }).map(function (l) { return l.id; });
+  if (!ids.length || !confirm('Re-analyse ' + ids.length + ' location' + (ids.length === 1 ? '' : 's') + '? Each one is a fresh lookup.')) return;
+  running = true; $('runAll').textContent = 'Stop';
+  var i = 0, failed = 0;
+  (function next() {
+    if (!running || i >= ids.length || cur) {
+      running = false;
+      if (!cur) showWorkspace(failed ? failed + ' of ' + ids.length + ' couldn\'t be analysed. Open them to see why.' : '');
+      return;
+    }
+    var id = ids[i++], cell = document.querySelector('[data-runstate="' + id + '"]');
+    if (cell) cell.textContent = 'analysing…';
+    if ($('runMsg')) $('runMsg').textContent = 'Analysing ' + i + ' of ' + ids.length + '…';
+    api('/gbp/run', { id: id }).then(function (d) {
+      if (d.error) failed++;
+      if (cell) cell.textContent = d.error ? 'failed' : 'just now';
+      next();
+    });
+  })();
+}
+
+function workspaceCsv() {
+  var head = ['Client', 'Location', 'Address', 'Category', 'Rating', 'Reviews', 'Search', 'Position', 'Needs attention', 'Open changes', 'Unanswered reviews', 'Analysed'];
+  var rows = ws.map(function (l) { return [l.client, l.name, l.address, l.category, l.rating, l.votes, l.keyword, l.rank, l.flags, l.open_changes, l.unanswered, l.analysed_at].map(csvCell).join(','); });
+  download('business-profiles.csv', head.join(',') + '\n' + rows.join('\n') + '\n', 'text/csv');
+}
+
+/* ======================= one location ======================= */
+function openLoc(id) {
+  clearTimeout(pollTimer);
+  if (cur && cur.location && cur.location.id === id) { renderLoc(); schedulePoll(); return; }
+  app.innerHTML = '<p class="loading">Loading the location…</p>';
+  api('/gbp/get', { id: id }).then(function (d) {
+    if (d.error) { app.innerHTML = '<p><a href="#/" class="back">← All locations</a></p><p class="msg bad">' + esc(d.error) + '</p>'; return; }
+    cur = d; renderLoc(); schedulePoll();
+  });
+}
+
+var mapsLink = function (p) { return p.cid ? 'https://www.google.com/maps?cid=' + encodeURIComponent(p.cid) : p.check_url || ''; };
+var sec = function (id, title, sub, open) { return '<details class="sec" id="sec-' + id + '"' + (open ? ' open' : '') + '><summary><h2>' + title + '</h2><span class="sub">' + sub + '</span></summary><div id="body-' + id + '"></div></details>'; };
+
+function renderLoc(msg) {
+  var L = cur.location, p = L.profile || {};
+  var link = mapsLink(p);
+  app.innerHTML =
+    '<p style="margin-bottom:10px"><a href="#/" class="back">← All locations</a></p>' +
+    '<div class="card lochead"><h2>' + esc(p.name || 'Location') + '</h2>' +
+    '<p class="sub">' + esc([p.category].concat(p.additional_categories || []).filter(Boolean).join(' · ')) + '</p>' +
+    '<p class="sub">' + esc(p.address || '') + (link ? ' · <a href="' + esc(link) + '" target="_blank" rel="noopener">Open on Google Maps</a>' : '') + '</p>' +
+    '<p class="sub">Analysed ' + esc(when(L.analysed_at)) + (p.position_from === 'search' ? ' · Google gave no map position; the search area was used instead' : '') + '</p>' +
+    '<div class="row3"><div><label for="lClient">Client</label><input id="lClient" value="' + esc(L.client || '') + '"></div>' +
+    '<div><label for="lKeyword">Main search to compare against</label><input id="lKeyword" value="' + esc(L.keyword || '') + '"></div>' +
+    '<div><label for="lLang">Language</label><select id="lLang">' + LANGS.map(function (l) { return '<option value="' + l[0] + '"' + (L.language === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('') + '</select></div></div>' +
+    '<div class="bar"><button class="submit" id="rerun" type="button">Re-analyse</button><button class="btn2" id="revBtn" type="button">Fetch latest reviews</button><button class="btn2" id="schemaBtn" type="button">Make matching website markup</button><button class="btn2" id="rmBtn" type="button">Remove</button></div>' +
+    '<div id="locMsg" class="msg">' + (msg ? esc(msg) : '') + '</div></div>' +
+    '<div id="since"></div>' +
+    sec('attention', 'What needs attention', 'Most important first', true) +
+    sec('changes', 'Changes to make', 'Suggested from this analysis, and your own', true) +
+    sec('market', 'Competitors and categories', 'What Google Maps shows for the main search', false) +
+    sec('reviews', 'Reviews', 'Pace, replies and what customers mention', false) +
+    sec('website', 'Website', 'Does it say the same as the profile?', false) +
+    sec('profile', 'Profile details', 'Description, hours, attributes, services', false);
+  fillSince(); fillAttention(); fillChanges(); fillMarket(); fillReviews(); fillWebsite(); fillProfile();
+}
+
+function fillSince() {
+  var s = cur.location.since_last || [];
+  $('since').innerHTML = s.length ? '<div class="since"><b>Since the analysis before</b><ul>' + s.map(function (d) {
+    return '<li>' + esc(d.label) + ': ' + (d.from != null && d.to != null ? esc(d.from) + ' → ' + esc(d.to) : esc(d.to != null ? d.to : d.from)) + '</li>';
+  }).join('') + '</ul></div>' : '';
+}
+
+function fillAttention() {
+  var order = { bad: 0, warn: 1, info: 2, ok: 3 }, weight = { high: 0, medium: 1, low: 2 };
+  var list = (cur.location.checklist || []).slice().sort(function (a, b) { return order[a.status] - order[b.status] || weight[a.weight] - weight[b.weight]; });
+  var todo = list.filter(function (c) { return c.status === 'bad' || c.status === 'warn'; });
+  var rest = list.filter(function (c) { return c.status !== 'bad' && c.status !== 'warn'; });
+  var row = function (c) { return '<div class="check"><span class="pill ' + c.status + '">' + (c.status === 'bad' ? 'Fix' : c.status === 'warn' ? 'Improve' : c.status === 'ok' ? 'Fine' : 'Note') + '</span><b>' + esc(c.label) + '</b><span class="d">' + esc(c.detail) + '</span></div>'; };
+  $('body-attention').innerHTML = (todo.length ? todo.map(row).join('') : '<p class="hint">Nothing important to fix.</p>') +
+    (rest.length ? '<details style="margin-top:8px"><summary class="small" style="cursor:pointer">Fine or for information (' + rest.length + ')</summary>' + rest.map(row).join('') + '</details>' : '');
+}
+
+/* ---- the change list ---- */
+function defaultValue(field) {
+  var p = cur.location.profile || {};
+  if (field === 'hours') return clone(p.hours) || { monday: [['09:00', '17:00']], tuesday: [['09:00', '17:00']], wednesday: [['09:00', '17:00']], thursday: [['09:00', '17:00']], friday: [['09:00', '17:00']], saturday: [], sunday: [] };
+  if (field === 'special_hours') return { date: '', closed: true, slots: [] };
+  if (field === 'post') return { text: '', url: '' };
+  if (field === 'description') return p.description || '';
+  if (field === 'phone') return p.phone || '';
+  if (field === 'website') return p.url || '';
+  if (field === 'name') return p.name || '';
+  if (field === 'address') return p.address || '';
+  return '';
+}
+function copyText(c) {
+  var v = c.value;
+  if (c.field === 'hours') return hoursText(v);
+  if (c.field === 'special_hours') return v ? v.date + ': ' + (v.closed ? 'closed' : (v.slots || []).map(function (x) { return x.join('–'); }).join(', ')) : '';
+  if (c.field === 'post') return v ? v.text + (v.url ? '\n' + v.url : '') : '';
+  if (c.field === 'review_reply') return v ? v.text : '';
+  return String(v == null ? '' : v);
+}
+function hoursEditor(c) {
+  var h = c.value || {};
+  return '<div class="hours">' + DAYS.map(function (d) {
+    var s = h[d] || [], mode = !s.length ? 'closed' : s[0][0] === '00:00' && /^(00:00|23:59|24:00)$/.test(s[0][1]) ? '24h' : 'open';
+    var t = function (i, j, dflt) { return '<input type="time" data-h="' + c.id + '" data-day="' + d + '" data-slot="' + i + '" data-end="' + j + '" value="' + esc((s[i] && s[i][j]) || dflt) + '" aria-label="' + DAY_LABEL[d] + (j ? ' closes' : ' opens') + '">'; };
+    return '<b>' + DAY_LABEL[d] + '</b><select data-hmode="' + c.id + '" data-day="' + d + '" aria-label="' + DAY_LABEL[d] + '"><option value="open"' + (mode === 'open' ? ' selected' : '') + '>Open</option><option value="24h"' + (mode === '24h' ? ' selected' : '') + '>24 hours</option><option value="closed"' + (mode === 'closed' ? ' selected' : '') + '>Closed</option></select>' +
+      '<div class="times">' + (mode === 'open' ? t(0, 0, '09:00') + '–' + t(0, 1, '17:00') + (s[1] ? ', ' + t(1, 0, '') + '–' + t(1, 1, '') + ' <button type="button" class="btn2 mini" data-hsplit="' + c.id + '" data-day="' + d + '" data-on="0">×</button>' : ' <button type="button" class="btn2 mini" data-hsplit="' + c.id + '" data-day="' + d + '" data-on="1">+ break</button>') : '') + '</div>';
+  }).join('') + '</div>';
+}
+function editor(c) {
+  var v = c.value, id = c.id;
+  if (TEXT_FIELDS.indexOf(c.field) >= 0) return '<input data-cv="' + id + '" value="' + esc(v || '') + '"' + (c.field === 'website' || c.field === 'booking_link' ? ' inputmode="url" placeholder="https://"' : '') + '>';
+  if (c.field === 'description') return '<textarea data-cv="' + id + '" maxlength="750" rows="5">' + esc(v || '') + '</textarea><div class="count" data-count="' + id + '">' + (v || '').length + ' / 750</div>';
+  if (c.field === 'hours') return hoursEditor(c);
+  if (c.field === 'special_hours') return '<div class="row3"><div><label>Date</label><input type="date" data-sp="' + id + '" data-k="date" value="' + esc((v && v.date) || '') + '"></div><div><label class="inline" style="margin-bottom:12px"><input type="checkbox" data-sp="' + id + '" data-k="closed"' + (v && v.closed ? ' checked' : '') + '>Closed all day</label></div><div>' + (v && !v.closed ? '<label>Open</label><div class="bar" style="margin:0"><input type="time" data-sp="' + id + '" data-k="o" value="' + esc((v.slots && v.slots[0] && v.slots[0][0]) || '10:00') + '" style="width:auto"><input type="time" data-sp="' + id + '" data-k="c" value="' + esc((v.slots && v.slots[0] && v.slots[0][1]) || '14:00') + '" style="width:auto"></div>' : '') + '</div></div>';
+  if (c.field === 'post') return '<textarea data-cpost="' + id + '" data-k="text" rows="4" placeholder="What\'s new: an offer, an event, news…">' + esc((v && v.text) || '') + '</textarea><input data-cpost="' + id + '" data-k="url" value="' + esc((v && v.url) || '') + '" placeholder="Link for the button (optional)" style="margin-top:6px">';
+  if (c.field === 'review_reply') return '<blockquote>' + stars(v && v.rating) + ' ' + esc((v && v.excerpt) || '') + '</blockquote><textarea data-creply="' + id + '" rows="4" placeholder="Your reply: thank them, address the problem, invite them to get in touch. No personal or medical details.">' + esc((v && v.text) || '') + '</textarea>';
+  return '<textarea data-cv="' + id + '" rows="3">' + esc(v || '') + '</textarea>';
+}
+function statusDetail(c) {
+  if (c.status === 'confirmed') return 'Seen on Google ' + when(c.confirmed_at) + '.';
+  if (c.status === 'applied') return 'Marked done ' + when(c.applied_at) + '. The next analysis checks Google shows it' + (['special_hours', 'post', 'photos', 'other'].indexOf(c.field) >= 0 ? ' (this kind of change can\'t be checked from public data).' : '.');
+  if (c.status === 'not_seen') return 'Marked done ' + when(c.applied_at) + ', still not on Google at the last analysis. Google may have rejected it or still be reviewing it: check the profile\'s dashboard.';
+  if (c.status === 'reverted') return 'It was live, but the last analysis found the old value. Google or someone with access changed it back.';
+  return '';
+}
+function changeCard(c) {
+  var f = (cur.fields || {})[c.field] || { label: FIELD_LABELS[c.field] || c.field };
+  var btn = function (act, label) { return '<button type="button" class="btn2 mini" data-act="' + act + '" data-id="' + c.id + '">' + label + '</button>'; };
+  var buttons = btn('copy', 'Copy') +
+    (c.status === 'draft' ? btn('applied', 'Mark done in Google') + btn('skipped', 'Skip') : '') +
+    (['applied', 'not_seen', 'reverted', 'skipped', 'confirmed'].indexOf(c.status) >= 0 ? btn('draft', 'Back to to-do') : '') +
+    btn('delete', 'Delete');
+  return '<div class="chg st-' + c.status + '" data-card="' + c.id + '"><div class="chghead"><b>' + esc(f.label) + '</b><span class="st ' + c.status + '" data-stat="' + c.id + '">' + esc(STATUS[c.status] || c.status) + '</span></div>' +
+    (f.where ? '<p class="where">In Google: ' + esc(f.where) + '</p>' : '') +
+    (f.risk ? '<p class="risk">' + esc(f.risk) + '</p>' : '') +
+    (c.note ? '<p class="cnote">' + esc(c.note) + '</p>' : '') +
+    editor(c) +
+    '<p class="lint" data-lint="' + c.id + '">' + esc((c.lint || []).join(' ')) + '</p>' +
+    '<p class="cmeta">' + esc(statusDetail(c)) + '</p>' +
+    '<div class="bar small">' + buttons + '</div></div>';
+}
+function fillChanges() {
+  var sugs = cur.suggestions || [], ch = cur.changes || [];
+  var open = ch.filter(function (c) { return ['draft', 'applied', 'not_seen', 'reverted'].indexOf(c.status) >= 0; });
+  var done = ch.filter(function (c) { return open.indexOf(c) < 0; });
+  $('body-changes').innerHTML =
+    (sugs.length ? '<h3 style="margin-top:0">Suggested</h3>' + sugs.map(function (s, i) {
+      var v = s.field === 'review_reply' ? '' : typeof s.value === 'string' && s.value ? ': ' + s.value : '';
+      return '<div class="sug"><div><b>' + esc(FIELD_LABELS[s.field] || s.field) + esc(v) + '</b><div class="d">' + esc(s.reason) + '</div></div><button type="button" class="btn2 mini" data-sug="' + i + '">Add</button></div>';
+    }).join('') : '') +
+    '<h3>Your change list</h3>' +
+    (open.length ? open.map(changeCard).join('') : '<p class="hint">Nothing to do yet. Add a suggestion above, or a change of your own below.</p>') +
+    (done.length ? '<details' + (done.some(function (c) { return c.status === 'confirmed'; }) ? ' open' : '') + '><summary class="small" style="cursor:pointer;margin:6px 0">Live or skipped (' + done.length + ')</summary>' + done.map(changeCard).join('') + '</details>' : '') +
+    '<div class="row2" style="margin-top:6px"><div><label for="newField">Add a change</label><select id="newField">' + MANUAL_FIELDS.map(function (f) { return '<option value="' + f + '">' + esc(FIELD_LABELS[f]) + '</option>'; }).join('') + '</select></div><div><button type="button" class="btn2" id="addChange" style="width:100%">Add</button></div></div>' +
+    '<div class="bar"><button type="button" class="btn2 mini" id="copyTasks"' + (open.length ? '' : ' disabled') + '>Copy the to-do list</button><button type="button" class="btn2 mini" id="csvChanges"' + (ch.length ? '' : ' disabled') + '>Download changes (CSV)</button><span class="small" id="saveState"></span></div>';
+}
+
+var saving = Promise.resolve(), saveTimer = null;
+function saveChanges(rerender) {
+  clearTimeout(saveTimer);
+  var L = cur.location, list = cur.changes;
+  $('saveState') && ($('saveState').textContent = 'Saving…');
+  saving = saving.then(function () {
+    return api('/gbp/changes/save', { id: L.id, changes: list }).then(function (d) {
+      if (!cur || cur.location.id !== L.id) return;
+      if (d.error) { $('saveState') && ($('saveState').textContent = 'Not saved: ' + d.error); return; }
+      // Keep what is being typed; take the server's view of everything else (status, warnings, dates).
+      var byId = {}; d.changes.forEach(function (c) { byId[c.id] = c; });
+      cur.changes.forEach(function (c) { var s = byId[c.id]; if (!s) return; ['status', 'lint', 'applied_at', 'confirmed_at', 'checked_at', 'created_at', 'updated_at', 'source'].forEach(function (k) { c[k] = s[k]; }); });
+      cur.suggestions = d.suggestions;
+      // Redraw the list only when nobody is typing in it; otherwise refresh statuses and warnings in place.
+      var a = document.activeElement, typing = a && a.closest && a.closest('#body-changes') && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
+      if (rerender && !typing) fillChanges();
+      else refreshChangeMeta();
+      $('saveState') && ($('saveState').textContent = 'Saved');
+      refreshWsEntry(L.id, d.location);
+    });
+  });
+  return saving;
+}
+function refreshChangeMeta() {
+  cur.changes.forEach(function (c) {
+    var lint = document.querySelector('[data-lint="' + c.id + '"]'); if (lint) lint.textContent = (c.lint || []).join(' ');
+    var st = document.querySelector('[data-stat="' + c.id + '"]'); if (st) { st.textContent = STATUS[c.status] || c.status; st.className = 'st ' + c.status; }
+    var card = document.querySelector('[data-card="' + c.id + '"]'); if (card) { card.className = 'chg st-' + c.status; var meta = card.querySelector('.cmeta'); if (meta) meta.textContent = statusDetail(c); }
+  });
+}
+function scheduleSave() { clearTimeout(saveTimer); $('saveState') && ($('saveState').textContent = ''); saveTimer = setTimeout(function () { saveChanges(false); }, 700); }
+function refreshWsEntry() { /* the workspace list is reloaded when it is next shown */ }
+var findChange = function (id) { return (cur.changes || []).filter(function (c) { return c.id === id; })[0]; };
+function readHours(id) {
+  var c = findChange(id), h = {};
+  DAYS.forEach(function (d) {
+    var mode = document.querySelector('[data-hmode="' + id + '"][data-day="' + d + '"]').value;
+    if (mode === 'closed') { h[d] = []; return; }
+    if (mode === '24h') { h[d] = [['00:00', '24:00']]; return; }
+    var slots = [];
+    [0, 1].forEach(function (i) {
+      var o = document.querySelector('[data-h="' + id + '"][data-day="' + d + '"][data-slot="' + i + '"][data-end="0"]');
+      var e = document.querySelector('[data-h="' + id + '"][data-day="' + d + '"][data-slot="' + i + '"][data-end="1"]');
+      if (o && e && o.value && e.value) slots.push([o.value, e.value]);
+    });
+    h[d] = slots.length ? slots : [['09:00', '17:00']];
+  });
+  c.value = h;
+}
+
+/* ---- competitors, reviews, website, profile ---- */
+function fillMarket() {
+  var m = cur.location.market, el = $('body-market');
+  if (!m) { el.innerHTML = '<p class="hint">Not analysed yet.</p>'; return; }
+  if (m.error) { el.innerHTML = '<p class="msg bad">' + esc(m.error) + '</p>'; return; }
+  var mine = cur.location.profile || {};
+  el.innerHTML = '<p class="hint">Google Maps results for "' + esc(m.keyword) + '", searched from the business\'s own address, ' + esc(when(m.checked_at)) + '. ' +
+    (m.your_rank != null ? 'This profile is <b>#' + m.your_rank + '</b>.' : 'This profile isn\'t in the top 20.') + ' People searching from elsewhere see a different order: use the <a href="/tools/pin-check/">map pin check</a> for other spots.</p>' +
+    (m.gaps && m.gaps.length ? '<p class="hint"><b>Categories the top competitors use and this profile doesn\'t:</b> ' + m.gaps.map(function (g) { return esc(g.category) + ' (' + g.count + ' of ' + g.of + ')'; }).join(', ') + '.</p>' : '') +
+    '<div class="tablewrap"><table><thead><tr><th class="num">#</th><th>Business</th><th>Primary category</th><th>Other categories</th><th class="num">Rating</th><th class="num">Reviews</th><th class="num">Photos</th></tr></thead><tbody>' +
+    m.results.map(function (r) {
+      return '<tr' + (r.you ? ' class="you"' : '') + '><td class="num">' + (r.rank != null ? r.rank : '') + '</td><td>' + esc(r.title) + (r.you ? ' <span class="pill info">this profile</span>' : '') + (r.claimed === false ? ' <span class="small">unclaimed</span>' : '') + '</td><td>' + esc(r.category || '') + '</td><td class="small">' + esc((r.additional_categories || []).join(', ')) + '</td><td class="num">' + (r.rating != null ? r.rating : '–') + '</td><td class="num">' + (r.votes != null ? r.votes : '–') + '</td><td class="num">' + (r.photos != null ? r.photos : '–') + '</td></tr>';
+    }).join('') + '</tbody></table></div>' +
+    '<h3>Categories among the top 10</h3><div class="tablewrap"><table><thead><tr><th>Category</th><th class="num">As primary</th><th class="num">As additional</th><th class="num">In the top 3</th><th>This profile</th></tr></thead><tbody>' +
+    m.categories.map(function (c) {
+      var gap = (m.gaps || []).some(function (g) { return g.category.toLowerCase() === c.category.toLowerCase(); });
+      return '<tr' + (gap ? ' class="gap"' : '') + '><td>' + esc(c.category) + '</td><td class="num">' + c.primary + '</td><td class="num">' + c.additional + '</td><td class="num">' + c.top3 + '</td><td>' + (c.yours ? '<span class="pill ok">' + c.yours + '</span>' : gap ? '<button type="button" class="btn2 mini" data-addcat="' + esc(c.category) + '">Add to changes</button>' : '') + '</td></tr>';
+    }).join('') + '</tbody></table></div>' +
+    (m.medians ? '<p class="small">The top 5 competitors\' medians: ' + [m.medians.votes != null ? Math.round(m.medians.votes) + ' reviews' : '', m.medians.rating != null ? m.medians.rating + '★' : '', m.medians.photos != null ? Math.round(m.medians.photos) + ' photos' : ''].filter(Boolean).join(', ') + '. This profile: ' + [mine.votes != null ? mine.votes + ' reviews' : '', mine.rating != null ? mine.rating + '★' : '', mine.photos != null ? mine.photos + ' photos' : ''].filter(Boolean).join(', ') + '.</p>' : '');
+}
+
+function fillReviews() {
+  var rv = cur.location.reviews, p = cur.location.profile || {}, el = $('body-reviews');
+  var topics = (p.topics || []).length ? '<h3>What reviewers mention</h3><div class="chips">' + p.topics.map(function (t) { return '<span class="chip">' + esc(t[0]) + ' · ' + t[1] + '</span>'; }).join('') + '</div>' : '';
+  var dist = p.rating_distribution ? '<p class="small">Ratings: ' + [5, 4, 3, 2, 1].map(function (n) { return n + '★ ' + (p.rating_distribution[n] || 0); }).join(' · ') + '</p>' : '';
+  if (!rv) { el.innerHTML = '<p class="hint">Reviews haven\'t been fetched. Use "Fetch latest reviews" above.</p>' + dist + topics; return; }
+  if (rv.status === 'pending') { el.innerHTML = '<p class="hint">Reading the 50 newest reviews. This usually takes one to five minutes; the page updates by itself.</p>' + dist + topics; return; }
+  if (rv.status === 'failed') { el.innerHTML = '<p class="msg bad">' + esc(rv.error || 'Couldn\'t read the reviews.') + ' Try "Fetch latest reviews" again.</p>' + dist + topics; return; }
+  var s = rv.summary, max = Math.max.apply(null, s.per_month.map(function (m) { return m.n; }).concat([1]));
+  var ago = s.median_reply_hours == null ? '–' : s.median_reply_hours < 48 ? s.median_reply_hours + ' h' : Math.round(s.median_reply_hours / 24) + ' days';
+  el.innerHTML = '<p class="hint">The ' + s.fetched + ' newest of ' + (s.total != null ? s.total : '?') + ' reviews, read ' + esc(when(rv.ready_at)) + '.</p>' +
+    '<div class="stats"><div class="stat"><b>' + (s.reply_rate != null ? s.reply_rate + '%' : '–') + '</b><span>answered by the owner</span></div>' +
+    '<div class="stat"><b>' + ago + '</b><span>typical time to reply</span></div>' +
+    '<div class="stat"><b>' + (s.last_90_days != null ? s.last_90_days : s.at_least_last_90_days + '+') + '</b><span>reviews in the last 90 days</span></div>' +
+    '<div class="stat"><b>' + (s.recent_rating != null ? s.recent_rating + '★' : '–') + '</b><span>average in the last 90 days</span></div></div>' +
+    '<div class="bars" aria-label="Reviews per month">' + s.per_month.map(function (m) { return '<div' + (m.known ? ' style="height:' + Math.round(m.n / max * 100) + '%"' : ' class="unknown"') + ' title="' + m.month + ': ' + (m.known ? m.n : 'not read') + '"></div>'; }).join('') + '</div>' +
+    '<div class="barlabels">' + s.per_month.map(function (m) { return '<span>' + m.month.slice(5) + '</span>'; }).join('') + '</div>' +
+    '<p class="small">Reviews per month over the last 12 months' + (s.per_month.some(function (m) { return !m.known; }) ? '; striped months are older than the reviews read' : '') + '.</p>' +
+    dist + topics +
+    '<h3>Waiting for a reply (' + s.unanswered_count + ')</h3>' +
+    (s.unanswered.length ? s.unanswered.map(function (u) {
+      var drafted = (cur.changes || []).some(function (c) { return c.field === 'review_reply' && c.value && c.value.review_id === u.review_id; });
+      return '<div class="rev">' + stars(u.rating) + ' <span class="small">' + esc(u.name || '') + ' · ' + esc(when(u.at && u.at.replace(' +00:00', 'Z').replace(' ', 'T'))) + '</span><div>' + esc(u.text || '(no text, rating only)') + '</div>' +
+        (u.review_id ? '<div class="bar small">' + (drafted ? '<span class="small">Reply drafted in the change list</span>' : '<button type="button" class="btn2 mini" data-reply="' + esc(u.review_id) + '">Draft a reply</button>') + (u.url ? ' <a class="small" href="' + esc(u.url) + '" target="_blank" rel="noopener">Open on Google</a>' : '') + '</div>' : '') + '</div>';
+    }).join('') : '<p class="hint">Every review read has a reply.</p>');
+}
+
+function fillWebsite() {
+  var s = cur.location.site, el = $('body-website');
+  if (!s || s.status === 'none') { el.innerHTML = '<p class="hint">The profile has no website.</p>'; return; }
+  if (s.error) { el.innerHTML = '<p class="msg bad">' + esc(s.error) + '</p><p class="small">' + esc(s.url || '') + '</p>'; return; }
+  el.innerHTML = '<p class="hint">Checked <a href="' + esc(s.final_url || s.url) + '" target="_blank" rel="noopener">' + esc(s.final_url || s.url) + '</a> ' + esc(when(s.checked_at)) + '. Search engines match a profile to its website partly by the name, address and phone they share.</p>' +
+    s.checks.map(function (c) { return '<div class="check"><span class="pill ' + c.status + '">' + (c.status === 'ok' ? 'Fine' : c.status === 'bad' ? 'Fix' : 'Improve') + '</span><b>' + esc(c.label) + '</b><span class="d">' + esc(c.detail) + '</span></div>'; }).join('') +
+    '<p class="small" style="margin-top:8px">Structured data on the page: ' + esc((s.schema_types || []).join(', ') || 'none') + '. <a href="/tools/schema-audit/?u=' + encodeURIComponent(s.final_url || s.url) + '" style="color:var(--you)">Check it in the schema validator</a>.</p>';
+}
+
+function fillProfile() {
+  var p = cur.location.profile || {}, el = $('body-profile');
+  var attrs = Object.keys(p.attributes && p.attributes.available || {}).map(function (g) { return '<p class="small"><b>' + esc(g.replace(/_/g, ' ')) + ':</b> ' + esc(p.attributes.available[g].map(function (a) { return a.replace(/^(has|is|offers|accepts|serves|welcomes)_/, '').replace(/_/g, ' '); }).join(', ')) + '</p>'; }).join('');
+  el.innerHTML = '<h3 style="margin-top:0">Description</h3><p style="font-size:12.5px;white-space:pre-wrap">' + esc(p.description || 'None.') + '</p>' +
+    '<h3>Opening hours</h3><pre style="font-family:inherit;font-size:12.5px">' + esc(hoursText(p.hours)) + '</pre>' +
+    '<h3>Contact and links</h3><p class="small">Phone: ' + esc(p.phone || 'none') + '<br>Website: ' + esc(p.url || 'none') + '<br>Booking: ' + esc((p.links && p.links.booking) || 'none') + (p.links && p.links.menu ? '<br>Menu: ' + esc(p.links.menu) : '') + '</p>' +
+    '<h3>Attributes</h3>' + (attrs || '<p class="small">None shown.</p>') +
+    '<h3>Services</h3>' + ((p.services || []).length ? '<div class="chips">' + p.services.map(function (s) { return '<span class="chip">' + esc(s.title) + (s.price ? ' · ' + esc(s.price) : '') + '</span>'; }).join('') + '</div>' : '<p class="small">None listed.</p>') +
+    ((p.related || []).length ? '<h3>"People also search for"</h3><p class="small">' + p.related.map(function (r) { return esc(r.title) + (r.rating != null ? ' (' + r.rating + '★, ' + (r.votes || 0) + ')' : ''); }).join(' · ') + '</p>' : '') +
+    '<p class="small" style="margin-top:10px">Photos: ' + (p.photos != null ? p.photos : '–') + ' · ' + (p.is_claimed === true ? 'claimed' : p.is_claimed === false ? 'unclaimed' : 'claim status unknown') + (p.last_updated ? ' · data from ' + esc(when(p.last_updated.replace(' +00:00', 'Z').replace(' ', 'T'))) : '') + '</p>';
+}
+
+/* ---- the website markup hand-off: the local business generator, filled in from the profile ---- */
+function toLocalSchema() {
+  var p = cur.location.profile || {}, a = p.address_info || {};
+  var hours = {};
+  DAYS.forEach(function (d) {
+    var s = p.hours ? p.hours[d] || [] : null, key = DAY_LABEL[d];
+    if (!s) hours[key] = { mode: '', slots: [['09:00', '17:00']] };
+    else if (!s.length) hours[key] = { mode: 'closed', slots: [] };
+    else if (s[0][0] === '00:00' && /^(00:00|23:59|24:00)$/.test(s[0][1])) hours[key] = { mode: '24h', slots: [['00:00', '23:59']] };
+    else hours[key] = { mode: 'open', slots: s.map(function (x) { return [x[0], x[1] === '24:00' ? '23:59' : x[1]]; }) };
+  });
+  var prefill = { gbpCategory: p.category || '', name: p.name || '', url: p.url || '', telephone: p.phone || '', description: p.description || '',
+    street: a.address || '', locality: a.city || '', postcode: a.zip || '', country: a.country_code || '', lat: p.lat != null ? String(p.lat) : '', lng: p.lng != null ? String(p.lng) : '',
+    hasMap: mapsLink(p), hours: hours, reserveUrl: (p.links && p.links.booking) || '', menuUrl: (p.links && p.links.menu) || '' };
+  try { localStorage.setItem('bc-local-schema-prefill', JSON.stringify(prefill)); } catch (e) { /* the generator still opens, empty */ }
+  location.href = '/tools/local-schema/?prefill=1' + (new URLSearchParams(location.search).get('k') ? '&k=' + encodeURIComponent(CODE) : '');
+}
+
+/* ---- the reviews job: check back while it runs ---- */
+var polls = 0;
+function schedulePoll() {
+  clearTimeout(pollTimer);
+  if (!cur || !cur.location.reviews || cur.location.reviews.status !== 'pending' || polls > 40) return;
+  pollTimer = setTimeout(function () {
+    polls++;
+    var id = cur && cur.location.id;
+    api('/gbp/get', { id: id }).then(function (d) {
+      if (d.error || !cur || cur.location.id !== id) return;
+      cur.location.reviews = d.location.reviews;
+      cur.suggestions = d.suggestions;
+      d.changes.forEach(function (s) { var c = findChange(s.id); if (c) c.status = s.status; });
+      fillReviews();
+      if (!document.activeElement || !document.activeElement.closest || !document.activeElement.closest('#body-changes')) fillChanges();
+      schedulePoll();
+    });
+  }, 20000);
+}
+
+/* ---- events ---- */
+app.addEventListener('click', function (e) {
+  var t = e.target.closest('button, tr[data-open]');
+  if (!t) return;
+  if (t.dataset.open) { location.hash = '#/loc/' + t.dataset.open; return; }
+  if (t.id === 'addBtn') return addLocation();
+  if (t.id === 'runAll') return runAll();
+  if (t.id === 'wsCsv') return workspaceCsv();
+  if (!cur) return;
+  var L = cur.location, msg = $('locMsg');
+  if (t.id === 'rerun') {
+    t.disabled = true; msg.className = 'msg'; msg.textContent = 'Re-analysing: 10–30 seconds…';
+    api('/gbp/run', { id: L.id, keyword: $('lKeyword').value.trim(), language: $('lLang').value, client: $('lClient').value.trim() }).then(function (d) {
+      if (d.error) { t.disabled = false; msg.className = 'msg bad'; msg.textContent = d.error; return; }
+      cur = d; renderLoc('Analysed. ' + ((d.location.since_last || []).length ? 'See what changed below.' : 'Nothing changed since the analysis before.')); schedulePoll();
+    });
+    return;
+  }
+  if (t.id === 'revBtn') {
+    t.disabled = true;
+    api('/gbp/reviews', { id: L.id }).then(function (d) {
+      t.disabled = false;
+      if (d.error) { msg.className = 'msg bad'; msg.textContent = d.error; return; }
+      cur.location.reviews = d.location.reviews; polls = 0; fillReviews(); schedulePoll();
+      $('sec-reviews').open = true;
+    });
+    return;
+  }
+  if (t.id === 'schemaBtn') return toLocalSchema();
+  if (t.id === 'rmBtn') {
+    if (!confirm('Remove ' + (L.profile && L.profile.name || 'this location') + ' and its change list from the workspace?')) return;
+    api('/gbp/delete', { id: L.id }).then(function (d) { if (d.error) { msg.className = 'msg bad'; msg.textContent = d.error; return; } cur = null; location.hash = '#/'; });
+    return;
+  }
+  if (t.dataset.sug != null) {
+    var s = cur.suggestions[+t.dataset.sug];
+    var v = s.field === 'review_reply' ? clone(s.value) : s.value == null || s.value === '' ? defaultValue(s.field) : clone(s.value);
+    cur.changes.push({ id: newId(), field: s.field, value: v, status: 'draft', source: 'finding', note: s.reason });
+    cur.suggestions.splice(+t.dataset.sug, 1);
+    fillChanges(); saveChanges(true); return;
+  }
+  if (t.dataset.addcat) {
+    cur.changes.push({ id: newId(), field: 'add_category', value: t.dataset.addcat, status: 'draft', source: 'finding', note: 'Used by the competitors above this profile.' });
+    fillChanges(); saveChanges(true); t.replaceWith(Object.assign(document.createElement('span'), { className: 'small', textContent: 'In the change list' })); $('sec-changes').open = true; return;
+  }
+  if (t.dataset.reply) {
+    var u = cur.location.reviews.summary.unanswered.filter(function (x) { return x.review_id === t.dataset.reply; })[0];
+    cur.changes.push({ id: newId(), field: 'review_reply', value: { review_id: u.review_id, rating: u.rating, excerpt: (u.text || '').slice(0, 300), text: '' }, status: 'draft', source: 'finding', note: 'Reply to ' + (u.name || 'a reviewer') + '.' });
+    fillChanges(); fillReviews(); saveChanges(true); $('sec-changes').open = true;
+    var last = cur.changes[cur.changes.length - 1], box = document.querySelector('[data-creply="' + last.id + '"]');
+    if (box) { box.scrollIntoView({ block: 'center' }); box.focus(); }
+    return;
+  }
+  if (t.id === 'addChange') {
+    var f = $('newField').value;
+    cur.changes.push({ id: newId(), field: f, value: defaultValue(f), status: 'draft', source: 'manual' });
+    fillChanges(); saveChanges(true); return;
+  }
+  if (t.id === 'copyTasks') {
+    var p = L.profile || {};
+    var lines = cur.changes.filter(function (c) { return ['draft', 'not_seen', 'reverted'].indexOf(c.status) >= 0; }).map(function (c, i) {
+      var f = cur.fields[c.field] || {}, text = copyText(c);
+      return (i + 1) + '. ' + (f.label || c.field) + (f.where ? ' (' + f.where + ')' : '') + (text ? '\n   ' + text.replace(/\n/g, '\n   ') : '');
+    });
+    copy((L.client ? L.client + ': ' : '') + (p.name || '') + ', ' + (p.address || '') + '\n\n' + lines.join('\n\n'), t); return;
+  }
+  if (t.id === 'csvChanges') {
+    var rows = cur.changes.map(function (c) { var f = cur.fields[c.field] || {}; return [f.label || c.field, copyText(c), f.where, STATUS[c.status] || c.status, c.applied_at, c.confirmed_at, c.note].map(csvCell).join(','); });
+    download('changes-' + ((L.profile && L.profile.name) || 'location').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.csv', 'Change,Value,Where in Google,Status,Marked done,Seen on Google,Note\n' + rows.join('\n') + '\n', 'text/csv'); return;
+  }
+  if (t.dataset.hsplit) {
+    var c = findChange(t.dataset.hsplit), d = t.dataset.day;
+    readHours(c.id);
+    if (t.dataset.on === '1') { c.value[d] = [c.value[d][0] || ['09:00', '12:00'], ['13:00', '17:00']]; c.value[d][0] = [c.value[d][0][0], '12:00']; }
+    else c.value[d] = [c.value[d][0]];
+    fillChanges(); scheduleSave(); return;
+  }
+  if (t.dataset.act) {
+    var ch = findChange(t.dataset.id);
+    if (!ch) return;
+    if (t.dataset.act === 'copy') return copy(copyText(ch), t);
+    if (t.dataset.act === 'delete') { if (!confirm('Delete this change?')) return; cur.changes = cur.changes.filter(function (x) { return x !== ch; }); }
+    else ch.status = t.dataset.act;
+    fillChanges(); saveChanges(true);
+  }
+});
+
+app.addEventListener('input', function (e) {
+  var t = e.target;
+  if (t.id === 'fQ') { view.q = t.value; var pos = t.selectionStart; renderWorkspace(); var q = $('fQ'); q.focus(); q.setSelectionRange(pos, pos); return; }
+  if (!cur) return;
+  var c;
+  if (t.dataset.cv) { c = findChange(t.dataset.cv); c.value = t.value; var cnt = document.querySelector('[data-count="' + c.id + '"]'); if (cnt) cnt.textContent = t.value.length + ' / 750'; }
+  else if (t.dataset.creply) { c = findChange(t.dataset.creply); c.value = Object.assign({}, c.value, { text: t.value }); }
+  else if (t.dataset.cpost) { c = findChange(t.dataset.cpost); c.value = Object.assign({ text: '', url: '' }, c.value); c.value[t.dataset.k] = t.value; }
+  else if (t.dataset.h) { readHours(t.dataset.h); }
+  else if (t.dataset.sp && t.type !== 'checkbox') {
+    c = findChange(t.dataset.sp);
+    c.value = Object.assign({ date: '', closed: false, slots: [] }, c.value);
+    if (t.dataset.k === 'date') c.value.date = t.value;
+    else { var o = document.querySelector('[data-sp="' + c.id + '"][data-k="o"]'), cl = document.querySelector('[data-sp="' + c.id + '"][data-k="c"]'); c.value.slots = o && cl && o.value && cl.value ? [[o.value, cl.value]] : []; }
+  }
+  else return;
+  scheduleSave();
+});
+app.addEventListener('change', function (e) {
+  var t = e.target;
+  if (t.id === 'fClient') { view.client = t.value; renderWorkspace(); return; }
+  if (!cur) return;
+  if (t.dataset.hmode) { readHours(t.dataset.hmode); fillChanges(); scheduleSave(); return; }
+  if (t.dataset.sp && t.type === 'checkbox') { var c = findChange(t.dataset.sp); c.value = Object.assign({ date: '', slots: [] }, c.value, { closed: t.checked }); if (!t.checked && !c.value.slots.length) c.value.slots = [['10:00', '14:00']]; fillChanges(); scheduleSave(); return; }
+  if (t.id === 'lClient' || t.id === 'lKeyword') {
+    var L = cur.location, kwChanged = t.id === 'lKeyword' && t.value.trim().toLowerCase() !== (L.keyword || '');
+    api('/gbp/label', { id: L.id, client: $('lClient').value.trim(), keyword: $('lKeyword').value.trim() }).then(function (d) {
+      if (d.error) return;
+      L.client = d.location.client; L.keyword = d.location.keyword;
+      var m = $('locMsg'); m.className = 'msg'; m.textContent = kwChanged ? 'Saved. Re-analyse to compare against "' + L.keyword + '".' : 'Saved.';
+    });
+  }
+});
+app.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id && /^a(Link|Name|City|Client|Keyword)$/.test(e.target.id)) addLocation(); });
+
+function route() { var m = location.hash.match(/^#\/loc\/([a-f0-9]{12})$/); if (m) { polls = 0; openLoc(m[1]); } else showWorkspace(); }
+window.addEventListener('hashchange', route);
+route();
+})();
+</script>
+<script src="/assets/presets.js"></script>
+</body>
+</html>
