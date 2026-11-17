@@ -126,6 +126,17 @@
   .lochead h2{font-size:22px}
   .lochead .sub{font-size:12px;color:var(--muted);margin-top:3px}
   .gap{background:#fff1ea}
+  .ac-wrap{position:relative}
+  .ac-list{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow-y:auto;z-index:20;max-height:260px;display:none;box-shadow:0 10px 24px rgba(0,0,0,.18)}
+  .ac-list.show{display:block}
+  .ac-item{padding:9px 11px;font-size:12.5px;cursor:pointer;border-top:1px solid #e6e6e6}
+  .ac-item:first-child{border-top:none}
+  .ac-item:hover,.ac-item.active{background:var(--you);color:#fff}
+  .ac-item .sub{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+  .ac-item:hover .sub,.ac-item.active .sub{color:rgba(255,255,255,.85)}
+  .ac-foot{padding:6px 11px;font-size:10.5px;color:var(--muted);border-top:1px solid #e6e6e6;text-align:right}
+  .picked{font-size:12px;color:var(--ok);margin-top:6px}
+  .picked:empty{display:none}
   .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:11px}
   .sidenav-link{font-size:12px;color:var(--muted)}
   .sidenav-link:hover{color:var(--ink)}
@@ -196,6 +207,7 @@ function hoursText(h) {
 
 /* ======================= the workspace ======================= */
 var ws = [], cur = null, view = { client: '', q: '' }, running = false, pollTimer = null;
+var addDraft = { link: '', name: '', city: '', client: '', keyword: '', lang: 'en', placeId: '', where: '' };
 
 function showWorkspace(msg) {
   cur = null; clearTimeout(pollTimer);
@@ -231,12 +243,14 @@ function renderWorkspace(msg) {
   }).join('');
   app.innerHTML =
     '<section class="card"><h2>Add a location</h2>' +
-    '<p class="hint" style="margin-top:6px">Paste the profile\'s Google Maps link (in Maps: Share → Copy link), or give the business name and city.</p>' +
-    '<label for="aLink">Google Maps link</label><input id="aLink" placeholder="https://maps.app.goo.gl/…" inputmode="url">' +
-    '<div class="row2"><div><label for="aName">Or the business name</label><input id="aName"></div><div><label for="aCity">City (with the country if it\'s ambiguous)</label><input id="aCity" placeholder="Prague, Czechia"></div></div>' +
-    '<div class="row3"><div><label for="aClient">Client, to group locations</label><input id="aClient" list="clientList"><datalist id="clientList">' + clients.filter(Boolean).map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist></div>' +
-    '<div><label for="aKeyword">Main search to compare against</label><input id="aKeyword" placeholder="Its primary category, e.g. dentist"></div>' +
-    '<div><label for="aLang">Language people search in</label><select id="aLang">' + LANGS.map(function (l) { return '<option value="' + l[0] + '">' + l[1] + '</option>'; }).join('') + '</select></div></div>' +
+    '<p class="hint" style="margin-top:6px">Start typing the business name and pick it from Google\'s suggestions, or paste its Google Maps link (in Maps: Share → Copy link).</p>' +
+    '<div class="row2"><div class="ac-wrap"><label for="aName">Business name</label><input id="aName" autocomplete="off" placeholder="Start typing to find it on Google" value="' + esc(addDraft.name) + '"><div class="ac-list" id="acList"></div></div>' +
+    '<div><label for="aCity">City (with the country if it\'s ambiguous)</label><input id="aCity" placeholder="Prague, Czechia" value="' + esc(addDraft.city) + '"></div></div>' +
+    '<div class="picked" id="aPicked">' + (addDraft.placeId ? '✓ Matched to its Google listing' + (addDraft.where ? ': ' + esc(addDraft.where) : '') + '.' : '') + '</div>' +
+    '<label for="aLink">Or its Google Maps link</label><input id="aLink" placeholder="https://maps.app.goo.gl/…" inputmode="url" value="' + esc(addDraft.link) + '">' +
+    '<div class="row3"><div><label for="aClient">Client, to group locations</label><input id="aClient" list="clientList" value="' + esc(addDraft.client) + '"><datalist id="clientList">' + clients.filter(Boolean).map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist></div>' +
+    '<div><label for="aKeyword">Main search to compare against</label><input id="aKeyword" placeholder="Its primary category, e.g. dentist" value="' + esc(addDraft.keyword) + '"></div>' +
+    '<div><label for="aLang">Language people search in</label><select id="aLang">' + LANGS.map(function (l) { return '<option value="' + l[0] + '"' + (addDraft.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('') + '</select></div></div>' +
     '<div class="bar"><button class="submit" id="addBtn" type="button">Add and analyse</button></div><div id="addMsg" class="msg">' + (msg ? esc(msg) : '') + '</div></section>' +
     '<section class="card"><div class="bar" style="margin-top:0;justify-content:space-between"><h2>Locations <span class="small">(' + ws.length + ')</span></h2>' +
     (ws.length ? '<div class="bar" style="margin:0"><button class="btn2 mini" id="runAll" type="button">' + (running ? 'Stop' : 'Re-analyse all') + '</button><button class="btn2 mini" id="wsCsv" type="button">Download CSV</button></div>' : '') + '</div>' +
@@ -246,9 +260,12 @@ function renderWorkspace(msg) {
 }
 
 function addLocation() {
-  var body = { maps_url: $('aLink').value.trim(), name: $('aName').value.trim(), city: $('aCity').value.trim(), client: $('aClient').value.trim(), keyword: $('aKeyword').value.trim(), language: $('aLang').value };
+  var body = { maps_url: addDraft.link.trim(), name: addDraft.name.trim(), city: addDraft.city.trim(), client: addDraft.client.trim(), keyword: addDraft.keyword.trim(), language: addDraft.lang };
+  // A pick from Google's suggestions is that exact listing: its place ID, searched around the city it's in.
+  if (addDraft.placeId) body.place_id = addDraft.placeId;
   var msg = $('addMsg');
-  if (!body.maps_url && !body.name) { msg.className = 'msg bad'; msg.textContent = 'Paste the Google Maps link, or give the business name and city.'; return; }
+  if (!body.maps_url && !body.name) { msg.className = 'msg bad'; msg.textContent = 'Start typing the business name and pick it from the suggestions, or paste its Google Maps link.'; return; }
+  if (!body.maps_url && !body.city) { msg.className = 'msg bad'; msg.textContent = 'Add the city the business is in.'; return; }
   $('addBtn').disabled = true;
   msg.className = 'msg'; msg.textContent = 'Finding the profile and the businesses Google shows for its search, and checking its website. This takes 10–30 seconds…';
   api('/gbp/add', body).then(function (d) {
@@ -258,8 +275,73 @@ function addLocation() {
       return;
     }
     cur = d;
+    addDraft = { link: '', name: '', city: '', client: addDraft.client, keyword: '', lang: addDraft.lang, placeId: '', where: '' };
     location.hash = '#/loc/' + d.location.id;
   });
+}
+
+// Google's place suggestions (Places API "Autocomplete Data"), the same key and pricing as the grid check, review link
+// and local business schema generator: a flat rate per suggestion request, no Place Details call. A pick sends the
+// place ID to /gbp/add, which looks up that exact listing, and fills in the city from the suggestion's address line.
+var GOOGLE_PLACES_KEY = 'AIzaSyBgbllzncdzD9xG3ZhJMnyQtWxb5hKp440';
+var placesLib = null, sessionToken = null, acItems = [], acActive = -1, acDebounce = null;
+function loadGoogleMaps() {
+  if (!GOOGLE_PLACES_KEY || window.__gmapsLoading) return;
+  window.__gmapsLoading = true;
+  var sc = document.createElement('script');
+  sc.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_PLACES_KEY + '&libraries=places&loading=async&v=weekly';
+  sc.async = true;
+  document.head.appendChild(sc);
+}
+function placesReady() {
+  if (placesLib) return Promise.resolve(placesLib);
+  if (!window.google || !google.maps || !google.maps.importLibrary) return Promise.resolve(null);
+  return google.maps.importLibrary('places').then(function (lib) { placesLib = lib; return lib; });
+}
+function closeSuggestions() { var l = $('acList'); if (l) { l.classList.remove('show'); l.innerHTML = ''; } acItems = []; acActive = -1; }
+function showSuggestions(list) {
+  var box = $('acList');
+  acItems = list; acActive = -1;
+  if (!box || !list.length) { closeSuggestions(); return; }
+  box.innerHTML = list.map(function (x, i) {
+    var p = x.placePrediction;
+    return '<div class="ac-item" data-ac="' + i + '"><span>' + esc(p.mainText ? p.mainText.text : p.text.text) + '</span>' + (p.secondaryText && p.secondaryText.text ? '<span class="sub">' + esc(p.secondaryText.text) + '</span>' : '') + '</div>';
+  }).join('') + '<div class="ac-foot">Suggestions from Google Maps</div>';
+  box.classList.add('show');
+}
+function onNameTyped(value) {
+  // Typing again means the earlier pick no longer applies.
+  if (addDraft.placeId) { addDraft.placeId = ''; addDraft.where = ''; var pk = $('aPicked'); if (pk) pk.textContent = ''; }
+  clearTimeout(acDebounce);
+  var q = String(value || '').trim();
+  if (q.length < 2) { closeSuggestions(); return; }
+  loadGoogleMaps();
+  acDebounce = setTimeout(function () {
+    placesReady().then(function (lib) {
+      if (!lib) return; // Google's script hasn't loaded (blocked, or no key): the field stays a plain text field
+      if (!sessionToken) sessionToken = new lib.AutocompleteSessionToken();
+      return lib.AutocompleteSuggestion.fetchAutocompleteSuggestions({ input: q, sessionToken: sessionToken, includedPrimaryTypes: ['establishment'] })
+        .then(function (r) { if ($('aName') && $('aName').value.trim() === q) showSuggestions((r && r.suggestions) || []); })
+        .catch(function () { closeSuggestions(); });
+    });
+  }, 300);
+}
+// "Vinohradská 12, Praha 2, Czechia" → "Praha 2, Czechia": the street is dropped, so the city places the search.
+function cityFrom(where) {
+  var parts = String(where || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+  return parts.length > 2 ? parts.slice(1).join(', ') : parts.join(', ');
+}
+function pickSuggestion(i) {
+  var p = acItems[i] && acItems[i].placePrediction;
+  if (!p) return;
+  addDraft.name = p.mainText ? p.mainText.text : p.text.text;
+  addDraft.placeId = p.placeId;
+  addDraft.where = (p.secondaryText && p.secondaryText.text) || '';
+  if (addDraft.where) addDraft.city = cityFrom(addDraft.where);
+  $('aName').value = addDraft.name; $('aCity').value = addDraft.city;
+  $('aPicked').textContent = '✓ Matched to its Google listing' + (addDraft.where ? ': ' + addDraft.where : '') + '.';
+  closeSuggestions();
+  sessionToken = null; // a pick ends Google's billing session
 }
 
 function runAll() {
@@ -668,8 +750,15 @@ app.addEventListener('click', function (e) {
   }
 });
 
+var ADD_FIELDS = { aLink: 'link', aName: 'name', aCity: 'city', aClient: 'client', aKeyword: 'keyword' };
+app.addEventListener('mousedown', function (e) {
+  var item = e.target.closest('[data-ac]');
+  if (item) { e.preventDefault(); pickSuggestion(+item.dataset.ac); }
+});
+document.addEventListener('click', function (e) { if (!e.target.closest('.ac-wrap')) closeSuggestions(); });
 app.addEventListener('input', function (e) {
   var t = e.target;
+  if (ADD_FIELDS[t.id]) { addDraft[ADD_FIELDS[t.id]] = t.value; if (t.id === 'aName') onNameTyped(t.value); return; }
   if (t.id === 'fQ') { view.q = t.value; var pos = t.selectionStart; renderWorkspace(); var q = $('fQ'); q.focus(); q.setSelectionRange(pos, pos); return; }
   if (!cur) return;
   var c;
@@ -688,6 +777,7 @@ app.addEventListener('input', function (e) {
 });
 app.addEventListener('change', function (e) {
   var t = e.target;
+  if (t.id === 'aLang') { addDraft.lang = t.value; return; }
   if (t.id === 'fClient') { view.client = t.value; renderWorkspace(); return; }
   if (!cur) return;
   if (t.dataset.hmode) { readHours(t.dataset.hmode); fillChanges(); scheduleSave(); return; }
@@ -701,7 +791,16 @@ app.addEventListener('change', function (e) {
     });
   }
 });
-app.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id && /^a(Link|Name|City|Client|Keyword)$/.test(e.target.id)) addLocation(); });
+app.addEventListener('keydown', function (e) {
+  if (e.target.id === 'aName' && acItems.length) {
+    var mark = function () { Array.prototype.forEach.call($('acList').querySelectorAll('.ac-item'), function (el, i) { el.classList.toggle('active', i === acActive); }); };
+    if (e.key === 'ArrowDown') { e.preventDefault(); acActive = Math.min(acActive + 1, acItems.length - 1); mark(); return; }
+    if (e.key === 'ArrowUp') { e.preventDefault(); acActive = Math.max(acActive - 1, 0); mark(); return; }
+    if (e.key === 'Enter' && acActive >= 0) { e.preventDefault(); pickSuggestion(acActive); return; }
+    if (e.key === 'Escape') { closeSuggestions(); return; }
+  }
+  if (e.key === 'Enter' && e.target.id && /^a(Link|Name|City|Client|Keyword)$/.test(e.target.id)) addLocation();
+});
 
 function route() { var m = location.hash.match(/^#\/loc\/([a-f0-9]{12})$/); if (m) { polls = 0; openLoc(m[1]); } else showWorkspace(); }
 window.addEventListener('hashchange', route);
