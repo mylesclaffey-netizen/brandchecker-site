@@ -65,6 +65,18 @@
   .chkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px 12px;font-size:12.5px}
   .chkgrid label{margin:0;font-size:12.5px;color:var(--ink);display:flex;align-items:center}
   .kind{font-size:10.5px;color:var(--muted);margin-left:6px}
+  .ac-wrap{position:relative}
+  .ac-list{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow-y:auto;z-index:20;max-height:260px;display:none;box-shadow:0 10px 24px rgba(0,0,0,.18)}
+  .ac-list.show{display:block}
+  .ac-item{padding:9px 11px;font-size:12.5px;cursor:pointer;border-top:1px solid #e6e6e6}
+  .ac-item:first-child{border-top:none}
+  .ac-item:hover,.ac-item.active{background:var(--you);color:#fff}
+  .ac-item .sub{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+  .ac-item:hover .sub,.ac-item.active .sub{color:rgba(255,255,255,.85)}
+  .ac-foot{padding:6px 11px;font-size:10.5px;color:var(--muted);border-top:1px solid #e6e6e6;text-align:right}
+  .acpick{font-size:12px;margin-top:8px}
+  .acpick:empty{display:none}
+  .acpick .btn2{margin-top:6px}
   .practices{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin-top:8px;font-size:12px;color:var(--muted)}
   .medwarn{font-size:11.5px;color:var(--warn);margin:6px 0 0}
   .medopt{margin:10px 0 0;font-size:12.5px;color:var(--ink);display:flex;align-items:flex-start;gap:6px}
@@ -179,7 +191,7 @@ const blank = () => ({
   areaMode: 'none', places: [], radiusKm: '', services: [], sameAs: [''], languages: [], languagesOther: '',
   payment: [], currencies: '', amenities: [], amenitiesOther: '', reserveUrl: '', orderUrl: '', acceptsReservations: false,
   cuisine: '', menuUrl: '', checkin: '', checkout: '', rooms: '', pets: '', specialties: [],
-  practice: '', clinicKind: '', alsoClinic: true, doctorKind: 'practice', therapyClinical: true, newPatients: '', insurers: '', hospitalName: '', hospitalUrl: '',
+  placeId: '', placeWhere: '', practice: '', clinicKind: '', alsoClinic: true, doctorKind: 'practice', therapyClinical: true, newPatients: '', insurers: '', hospitalName: '', hospitalUrl: '',
   brandName: '', brandUrl: '', branchCode: '', departments: [],
   legalName: '', foundingDate: '', vatID: '', taxID: '', leiCode: '', iso6523Code: '', duns: '', slogan: '',
   extras: [], csv: ''
@@ -501,7 +513,8 @@ function render() {
       <select id="f-type" data-k="type" size="1" style="margin-top:6px">${typeOptions()}</select>
       <p class="typedesc" id="typeDesc"></p>
       <div class="practices">Healthcare practice?${Object.entries(PRACTICES).map(([k, p]) => `<button type="button" class="tiny" data-practice="${k}">${esc(p.label)}</button>`).join('')}</div>
-      <div class="row2"><div>${field('name', 'Business name, as on your sign and Google Business Profile *')}</div><div>${field('url', 'Page for this business *', { placeholder: 'https://', inputmode: 'url' })}</div></div>
+      <div class="row2"><div class="ac-wrap">${field('name', 'Business name, as on your sign and Google Business Profile *', { autocomplete: 'off', placeholder: 'Start typing to find it on Google' })}<div class="ac-list" id="acList"></div></div><div>${field('url', 'Page for this business *', { placeholder: 'https://', inputmode: 'url' })}</div></div>
+      <div class="acpick" id="acPicked"></div>
       <div class="row2"><div>${field('telephone', 'Phone *', { placeholder: '+44 20 …', inputmode: 'tel' })}</div><div>${field('email', 'Email', { inputmode: 'email' })}</div></div>
       ${area('description', 'Short description', 'What you do and for whom, in a sentence or two.')}
       <div class="row2"><div>${field('logo', 'Logo address', { placeholder: 'https://…/logo.png' })}</div><div id="w-priceRange">${field('priceRange', 'Price range', { placeholder: '$$ or €10–30' })}</div></div>
@@ -560,7 +573,7 @@ function render() {
       ${area('csv', 'Locations', 'name,url,street,city,postcode,country,phone,hours\nAcme Soho,https://acme.com/soho/,12 Dean St,London,W1D 3RR,GB,+44 20 7946 0000,Mo-Fr 08:00-18:00; Sa 09:00-13:00')}
       <div class="bar"><button class="btn2" type="button" id="locBtn">Make the location blocks</button><button class="btn2" type="button" id="locTpl">Download a template</button></div>
       <div id="locOut"></div>`, !!state.csv);
-  drawLists(); drawHours(); syncType(); refresh();
+  drawLists(); drawHours(); syncType(); drawPicked(); refresh();
 }
 
 // Repeating rows: images, profiles, special hours, places, services, departments, extra properties.
@@ -742,6 +755,7 @@ function onChange(e) {
     const k = t.dataset.k;
     state[k] = t.type === 'checkbox' ? t.checked : t.value;
     if (k === 'mapsLink') readMapsLink(t.value);
+    if (k === 'name' && e.type === 'input') onNameTyped(t.value);
     if (['practice', 'clinicKind', 'doctorKind', 'therapyClinical', 'alsoClinic'].includes(k)) applyPractice(k === 'practice' || k === 'clinicKind');
     else if (k === 'type' || k === 'serviceArea' || k === 'areaMode') syncType();
   } else if (t.dataset.set) {
@@ -764,9 +778,23 @@ function onChange(e) {
   } else return;
   refresh();
 }
+app.addEventListener('mousedown', (e) => {
+  const item = e.target.closest('[data-ac]');
+  if (item) { e.preventDefault(); pickSuggestion(+item.dataset.ac); }
+});
+app.addEventListener('keydown', (e) => {
+  if (e.target.id !== 'f-name' || !acItems.length) return;
+  const mark = () => [...$('acList').querySelectorAll('.ac-item')].forEach((el, i) => el.classList.toggle('active', i === acActive));
+  if (e.key === 'ArrowDown') { e.preventDefault(); acActive = Math.min(acActive + 1, acItems.length - 1); mark(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); acActive = Math.max(acActive - 1, 0); mark(); }
+  else if (e.key === 'Enter' && acActive >= 0) { e.preventDefault(); pickSuggestion(acActive); }
+  else if (e.key === 'Escape') closeSuggestions();
+});
+document.addEventListener('click', (e) => { if (!e.target.closest('.ac-wrap')) closeSuggestions(); });
 app.addEventListener('click', (e) => {
   const t = e.target.closest('button');
   if (!t) return;
+  if (t.id === 'fillProfile') { fillFromProfile(t); return; }
   if (t.dataset.add) { state[t.dataset.add].push(LISTS[t.dataset.add].blank()); drawList(t.dataset.add); refresh(); }
   else if (t.dataset.rm && t.dataset.rm !== 'services') { state[t.dataset.rm].splice(+t.dataset.i, 1); drawList(t.dataset.rm); refresh(); }
   else if (t.dataset.addslot) { state.hours[t.dataset.addslot].slots.push(['13:00', '17:00']); drawHours(); refresh(); }
@@ -965,6 +993,131 @@ function makeLocations() {
   out.querySelectorAll('[data-copyloc]').forEach((b) => { b.onclick = () => { const x = results[+b.dataset.copyloc]; navigator.clipboard?.writeText(`<script type="application/ld+json">\n${JSON.stringify(x.ld, null, 2)}\n<\/script>`); flash(b, 'Copied ✓'); }; });
 }
 
+// ---------- finding the business on Google, and filling the form from its Business Profile ----------
+// Google's place suggestions (Places API "Autocomplete Data"), the same key and pricing as the grid check and the review
+// link: a flat rate per suggestion request, with no Place Details call, so no Google place data goes into the markup.
+// A pick fills in the name and the Google Maps link. "Fill in the rest" then looks the place up through the worker
+// (/gbp/lookup: DataForSEO's Business Profile data, a cent or two, cached for a day per place).
+const GOOGLE_PLACES_KEY = 'AIzaSyBgbllzncdzD9xG3ZhJMnyQtWxb5hKp440';
+let placesLib = null, sessionToken = null, acItems = [], acActive = -1, acDebounce = null, pickedNote = null;
+function loadGoogleMaps() {
+  if (!GOOGLE_PLACES_KEY || window.__gmapsLoading) return;
+  window.__gmapsLoading = true;
+  const sc = document.createElement('script');
+  sc.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_PLACES_KEY + '&libraries=places&loading=async&v=weekly';
+  sc.async = true;
+  document.head.appendChild(sc);
+}
+async function placesReady() {
+  if (placesLib) return placesLib;
+  if (!window.google?.maps?.importLibrary) return null;
+  placesLib = await google.maps.importLibrary('places');
+  return placesLib;
+}
+function closeSuggestions() { const l = $('acList'); if (l) { l.classList.remove('show'); l.innerHTML = ''; } acItems = []; acActive = -1; }
+function showSuggestions(list) {
+  const box = $('acList');
+  acItems = list; acActive = -1;
+  if (!box || !list.length) { closeSuggestions(); return; }
+  box.innerHTML = list.map((x, i) => {
+    const p = x.placePrediction;
+    return `<div class="ac-item" data-ac="${i}"><span>${esc(p.mainText?.text ?? p.text.text)}</span>${p.secondaryText?.text ? `<span class="sub">${esc(p.secondaryText.text)}</span>` : ''}</div>`;
+  }).join('') + '<div class="ac-foot">Suggestions from Google Maps</div>';
+  box.classList.add('show');
+}
+function onNameTyped(value) {
+  // Typing again means the earlier pick no longer applies.
+  if (state.placeId) { state.placeId = ''; state.placeWhere = ''; pickedNote = null; drawPicked(); }
+  clearTimeout(acDebounce);
+  const q = s(value);
+  if (q.length < 2) { closeSuggestions(); return; }
+  loadGoogleMaps();
+  acDebounce = setTimeout(async () => {
+    const lib = await placesReady();
+    if (!lib) return; // Google's script hasn't loaded (blocked, or no key): the field stays a plain text field
+    if (!sessionToken) sessionToken = new lib.AutocompleteSessionToken();
+    try {
+      const { suggestions } = await lib.AutocompleteSuggestion.fetchAutocompleteSuggestions({ input: q, sessionToken, includedPrimaryTypes: ['establishment'] });
+      if (s($('f-name')?.value) === q) showSuggestions(suggestions || []);
+    } catch (e) { closeSuggestions(); }
+  }, 300);
+}
+function pickSuggestion(i) {
+  const p = acItems[i]?.placePrediction;
+  if (!p) return;
+  state.name = p.mainText?.text ?? p.text.text;
+  state.placeId = p.placeId;
+  state.placeWhere = p.secondaryText?.text || '';
+  state.hasMap = `https://www.google.com/maps/place/?q=place_id:${p.placeId}`;
+  if ($('f-name')) $('f-name').value = state.name;
+  if ($('f-hasMap')) $('f-hasMap').value = state.hasMap;
+  closeSuggestions();
+  sessionToken = null; // a pick ends Google's billing session
+  pickedNote = null;
+  drawPicked(); refresh();
+}
+function drawPicked() {
+  const box = $('acPicked');
+  if (!box) return;
+  box.innerHTML = state.placeId
+    ? `<span class="ok" style="color:var(--ok)">✓ Matched to its Google listing${state.placeWhere ? `: ${esc(state.placeWhere)}` : ''}.</span><br>` +
+      `<button type="button" class="btn2" id="fillProfile">Fill in the rest from its Business Profile</button>` +
+      (pickedNote ? `<div class="msg ${pickedNote.ok ? 'good' : 'bad'}">${esc(pickedNote.text)}</div>` : '<div class="hint" style="margin:4px 0 0">Address, phone, website, opening hours, map position and type. It replaces what\'s in those fields now.</div>')
+    : '';
+}
+// The worker's profile shape to this form's fields. Empty values never clear what's already filled in.
+function fieldsFromProfile(p) {
+  const a = p.address_info || {}, out = {};
+  const put = (k, v) => { if (v != null && String(v).trim() !== '') out[k] = String(v).trim(); };
+  put('name', p.name); put('telephone', p.phone); put('url', p.url); put('description', p.description);
+  put('street', a.address); put('locality', a.city); put('postcode', a.zip); put('country', String(a.country_code || '').slice(0, 2).toUpperCase());
+  if (p.lat != null && p.lng != null) { out.lat = String(p.lat); out.lng = String(p.lng); }
+  put('reserveUrl', p.links?.booking); put('menuUrl', p.links?.menu);
+  if (p.hours) {
+    out.hours = Object.fromEntries(DAYS.map((d) => {
+      const sl = p.hours[d.toLowerCase()] || [];
+      if (!sl.length) return [d, { mode: 'closed', slots: [['09:00', '17:00']] }];
+      if (sl[0][0] === '00:00' && /^(00:00|23:59|24:00)$/.test(sl[0][1])) return [d, { mode: '24h', slots: [['09:00', '17:00']] }];
+      return [d, { mode: 'open', slots: sl.slice(0, 3).map(([o, c]) => [o, c === '24:00' ? '23:59' : c]) }];
+    }));
+  }
+  return out;
+}
+async function fillFromProfile(btn) {
+  btn.disabled = true; btn.textContent = 'Looking it up…';
+  let d;
+  try { d = await (await fetch(API + '/gbp/lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, place_id: state.placeId, where: state.placeWhere, language: 'en' }) })).json(); }
+  catch (e) { d = { error: 'Couldn\'t reach the server. Try again in a moment.' }; }
+  if (!d.profile) {
+    pickedNote = { ok: false, text: d.error === 'not found' ? 'Filling in from the Business Profile isn\'t switched on yet. Fill in the form by hand for now.' : (d.error || 'Couldn\'t look it up.') };
+    drawPicked(); return;
+  }
+  const guess = d.profile.category ? fromCategory(d.profile.category) : {};
+  const keep = { placeId: state.placeId, placeWhere: state.placeWhere, hasMap: state.hasMap };
+  state = { ...state, ...fieldsFromProfile(d.profile), ...guess, ...keep };
+  pickedNote = { ok: true, text: `Filled in from its Business Profile${d.profile.category ? ` (Google category "${d.profile.category}", here as ${humanize(state.type)})` : ''}. Check every field, and set the page address to the page this markup goes on.` };
+  render();
+}
+
+// Google's category ("Medical clinic", "Italian restaurant", "Cardiologist") to the nearest schema.org type, and for
+// healthcare the practice or specialist clinic it is. Else LocalBusiness.
+function fromCategory(cat) {
+  cat = String(cat || '');
+  const out = {};
+  const camel = (x) => String(x || '').split(/[^A-Za-z0-9]+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase()).join('');
+  const words = cat.trim().split(/\s+/);
+  const guesses = [/physio/i.test(cat) ? 'Physiotherapy' : '', /psycholog|psychotherap|counsel/i.test(cat) ? 'MedicalClinic' : '', camel(cat), camel(words[words.length - 1]),
+    /ologist$|doctor|physician|general practitioner|medical practice/i.test(cat) ? 'PhysiciansOffice' : ''];
+  if (/psycholog|psychotherap|counsel/i.test(cat)) out.practice = 'therapy';
+  // Clinic professions: "Dermatologist", "Eye care center", "Cardiologist"… are that specialist clinic.
+  const prof = [[/dermatolog|skin care clinic/i, 'dermatology'], [/ophthalmolog|eye care|eye clinic/i, 'eye'], [/otolaryngolog|ear, nose|\bent\b/i, 'ent'],
+    [/gyn(a)?ecolog|obstetric/i, 'gynaecology'], [/p(a)?ediatric/i, 'paediatrics'], [/orthop(a)?edic|sports medicine/i, 'orthopaedics'], [/cardiolog/i, 'cardiology'],
+    [/plastic surg|cosmetic surg|aesthetic/i, 'plastic'], [/psychiatr/i, 'psychiatry'], [/urolog/i, 'urology'], [/neurolog/i, 'neurology'], [/gastroenterolog/i, 'gastro']].find(([re]) => re.test(cat));
+  if (prof) { out.practice = 'clinic'; out.clinicKind = prof[1]; out.specialties = [CLINICS[prof[1]].main]; guesses.unshift(CLINICS[prof[1]].type || 'MedicalClinic'); }
+  out.type = guesses.find((t) => t && engine.types[t] && !engine.types[t].deprecated && engine.isA(t, 'LocalBusiness')) || 'LocalBusiness';
+  return out;
+}
+
 // Filled in from a Business Profile: the Business Profile manager hands the profile over in this browser's storage, once.
 let prefillNote = '';
 if (new URLSearchParams(location.search).get('prefill') === '1') {
@@ -972,21 +1125,9 @@ if (new URLSearchParams(location.search).get('prefill') === '1') {
     const filled = JSON.parse(localStorage.getItem('bc-local-schema-prefill') || 'null');
     localStorage.removeItem('bc-local-schema-prefill');
     if (filled) {
-      // Google's category ("Medical clinic", "Italian restaurant") to the nearest schema.org type, else LocalBusiness.
-      const camel = (x) => String(x || '').split(/[^A-Za-z0-9]+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase()).join('');
-      const words = String(filled.gbpCategory || '').trim().split(/\s+/);
-      const cat = filled.gbpCategory || '';
-      const guesses = [/physio/i.test(cat) ? 'Physiotherapy' : '', /psycholog|psychotherap|counsel/i.test(cat) ? 'MedicalClinic' : '', camel(cat), camel(words[words.length - 1]),
-        /ologist$|doctor|physician|general practitioner|medical practice/i.test(cat) ? 'PhysiciansOffice' : ''];
-      if (/psycholog|psychotherap|counsel/i.test(cat)) filled.practice = 'therapy';
-      // Clinic professions: "Dermatologist", "Eye care center", "Cardiologist"… are that specialist clinic.
-      const prof = [[/dermatolog|skin care clinic/i, 'dermatology'], [/ophthalmolog|eye care|eye clinic/i, 'eye'], [/otolaryngolog|ear, nose|\bent\b/i, 'ent'],
-        [/gyn(a)?ecolog|obstetric/i, 'gynaecology'], [/p(a)?ediatric/i, 'paediatrics'], [/orthop(a)?edic|sports medicine/i, 'orthopaedics'], [/cardiolog/i, 'cardiology'],
-        [/plastic surg|cosmetic surg|aesthetic/i, 'plastic'], [/psychiatr/i, 'psychiatry'], [/urolog/i, 'urology'], [/neurolog/i, 'neurology'], [/gastroenterolog/i, 'gastro']].find(([re]) => re.test(cat));
-      if (prof) { filled.practice = 'clinic'; filled.clinicKind = prof[1]; filled.specialties = [CLINICS[prof[1]].main]; guesses.unshift(CLINICS[prof[1]].type || 'MedicalClinic'); }
-      const type = guesses.find((t) => t && engine.types[t] && !engine.types[t].deprecated && engine.isA(t, 'LocalBusiness')) || 'LocalBusiness';
       const { gbpCategory, ...fields } = filled;
-      state = { ...blank(), ...fields, type, csv: state.csv };
+      const guess = fromCategory(gbpCategory), type = guess.type;
+      state = { ...blank(), ...fields, ...guess, csv: state.csv };
       save();
       prefillNote = `Filled in from the Business Profile of ${filled.name || 'the business'}${gbpCategory ? ` (Google category "${gbpCategory}", here as ${humanize(type)})` : ''}. Check every field, and set the page address to the page this markup goes on.`;
     }
