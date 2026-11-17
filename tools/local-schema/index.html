@@ -780,6 +780,7 @@ function onChange(e) {
   } else return;
   refresh();
 }
+app.addEventListener('focusin', (e) => { if (e.target.id === 'f-name') loadGoogleMaps(); });
 app.addEventListener('mousedown', (e) => {
   const item = e.target.closest('[data-ac]');
   if (item) { e.preventDefault(); pickSuggestion(+item.dataset.ac); }
@@ -1002,18 +1003,26 @@ function makeLocations() {
 // (/gbp/lookup: DataForSEO's Business Profile data, a cent or two, cached for a day per place).
 const GOOGLE_PLACES_KEY = 'AIzaSyBgbllzncdzD9xG3ZhJMnyQtWxb5hKp440';
 let placesLib = null, sessionToken = null, acItems = [], acActive = -1, acDebounce = null, pickedNote = null;
+// Google's script loads once, from the first click into the name field. A suggestion request waits for it, so letters
+// typed while it is still loading aren't lost; if it fails to load, the field stays a plain text field.
+let mapsReady = null;
 function loadGoogleMaps() {
-  if (!GOOGLE_PLACES_KEY || window.__gmapsLoading) return;
-  window.__gmapsLoading = true;
-  const sc = document.createElement('script');
-  sc.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_PLACES_KEY + '&libraries=places&loading=async&v=weekly';
-  sc.async = true;
-  document.head.appendChild(sc);
+  if (mapsReady) return mapsReady;
+  if (!GOOGLE_PLACES_KEY) return (mapsReady = Promise.resolve(false));
+  mapsReady = new Promise((resolve) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_PLACES_KEY + '&libraries=places&loading=async&v=weekly';
+    sc.async = true;
+    sc.onload = () => resolve(true);
+    sc.onerror = () => resolve(false);
+    document.head.appendChild(sc);
+  });
+  return mapsReady;
 }
 async function placesReady() {
   if (placesLib) return placesLib;
-  if (!window.google?.maps?.importLibrary) return null;
-  placesLib = await google.maps.importLibrary('places');
+  if (!(await loadGoogleMaps()) || !window.google?.maps?.importLibrary) return null;
+  try { placesLib = await google.maps.importLibrary('places'); } catch (e) { return null; }
   return placesLib;
 }
 function closeSuggestions() { const l = $('acList'); if (l) { l.classList.remove('show'); l.innerHTML = ''; } acItems = []; acActive = -1; }
