@@ -64,6 +64,11 @@
   .addbtn{font-size:12px;color:var(--you);background:none;border:1px dashed var(--line);border-radius:7px;padding:8px 13px;cursor:pointer;font-family:'IBM Plex Mono',monospace;margin-top:2px}
   .chkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px 12px;font-size:12.5px}
   .chkgrid label{margin:0;font-size:12.5px;color:var(--ink);display:flex;align-items:center}
+  .kind{font-size:10.5px;color:var(--muted);margin-left:6px}
+  .practices{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin-top:8px;font-size:12px;color:var(--muted)}
+  .medwarn{font-size:11.5px;color:var(--warn);margin:6px 0 0}
+  .medopt{margin:10px 0 0;font-size:12.5px;color:var(--ink);display:flex;align-items:flex-start;gap:6px}
+  .medopt input{margin-top:3px}
   .day{display:grid;grid-template-columns:92px 150px 1fr;gap:8px;align-items:start;padding:6px 0;border-bottom:1px dashed rgba(10,10,10,.15)}
   .day:last-of-type{border-bottom:0}
   .day b{font-family:'Archivo',sans-serif;font-size:13px;padding-top:10px}
@@ -174,6 +179,7 @@ const blank = () => ({
   areaMode: 'none', places: [], radiusKm: '', services: [], sameAs: [''], languages: [], languagesOther: '',
   payment: [], currencies: '', amenities: [], amenitiesOther: '', reserveUrl: '', orderUrl: '', acceptsReservations: false,
   cuisine: '', menuUrl: '', checkin: '', checkout: '', rooms: '', pets: '', specialties: [],
+  practice: '', clinicKind: '', alsoClinic: true, doctorKind: 'practice', therapyClinical: true, newPatients: '', insurers: '', hospitalName: '', hospitalUrl: '',
   brandName: '', brandUrl: '', branchCode: '', departments: [],
   legalName: '', foundingDate: '', vatID: '', taxID: '', leiCode: '', iso6523Code: '', duns: '', slogan: '',
   extras: [], csv: ''
@@ -186,13 +192,109 @@ const PAYMENTS = ['Cash', 'Credit card', 'Debit card', 'Contactless', 'Apple Pay
 const AMENITIES = ['Wheelchair-accessible entrance', 'Wheelchair-accessible toilet', 'Free Wi-Fi', 'Free parking', 'Paid parking', 'Air conditioning', 'Outdoor seating', 'Dogs allowed', 'Toilets', 'Changing table', 'EV charging'];
 const PLACE_TYPES = [['City', 'City or town'], ['AdministrativeArea', 'Region or county'], ['Country', 'Country'], ['Place', 'Other place']];
 
+// ---------- healthcare practices: the type, specialties, treatments and fields that suit each one ----------
+// The treatment lists are suggestions (what such a practice usually offers), not schema.org facts. Each treatment has the
+// schema.org type it takes as a medical service (availableService). Types that can't list medical services (a dentist, a
+// physio that isn't also marked a clinic, counselling that isn't healthcare) get them as ordinary services instead.
+const PRACTICES = {
+  dental: {
+    label: 'Dental practice', types: ['Dentist'], type: () => 'Dentist',
+    specialties: [['Dentistry', 'Dentistry'], ['Pediatric', 'Children\'s dentistry'], ['Surgical', 'Oral surgery']],
+    treatments: [['checkup', 'Check-up and examination'], ['hygiene', 'Dental hygiene (scale and polish)'], ['fillings', 'Fillings'], ['rootcanal', 'Root canal treatment'],
+      ['crowns', 'Crowns and bridges'], ['implants', 'Dental implants'], ['dentures', 'Dentures'], ['whitening', 'Teeth whitening'],
+      ['ortho', 'Orthodontics (braces and clear aligners)'], ['extraction', 'Tooth extraction'], ['children', 'Children\'s dentistry'], ['emergency', 'Emergency dental appointments']].map(([id, name]) => [id, name, ''])
+  },
+  doctor: {
+    label: 'Doctor\'s practice', types: ['PhysiciansOffice', 'IndividualPhysician', 'Physician'], type: (st) => (st.doctorKind === 'individual' ? 'IndividualPhysician' : 'PhysiciansOffice'),
+    specialties: [['PrimaryCare', 'General practice (primary care)'], ['Pediatric', 'Paediatrics'], ['Gynecologic', 'Gynaecology'], ['Dermatology', 'Dermatology'],
+      ['Cardiovascular', 'Cardiology'], ['Psychiatric', 'Psychiatry'], ['Musculoskeletal', 'Orthopaedics']], more: true,
+    treatments: [['healthcheck', 'Health check', 'PhysicalExam'], ['vaccinations', 'Vaccinations', 'MedicalProcedure'], ['blood', 'Blood tests', 'BloodTest'], ['ecg', 'ECG', 'DiagnosticProcedure'],
+      ['ultrasound', 'Ultrasound', 'ImagingTest'], ['minorsurgery', 'Minor surgery', 'SurgicalProcedure'], ['travel', 'Travel medicine', 'MedicalProcedure'], ['homevisits', 'Home visits', 'MedicalProcedure']]
+  },
+  clinic: {
+    label: 'Specialist clinic', types: ['MedicalClinic'], type: (st) => CLINICS[st.clinicKind]?.type || 'MedicalClinic', specialties: [], treatments: []
+  },
+  physio: {
+    label: 'Physiotherapy', types: ['Physiotherapy'], type: () => 'Physiotherapy',
+    specialties: [['Physiotherapy', 'Physiotherapy'], ['Musculoskeletal', 'Musculoskeletal'], ['Neurologic', 'Neurological rehabilitation'], ['Pediatric', 'Children']],
+    treatments: [['back', 'Back and neck pain'], ['sports', 'Sports injury rehabilitation'], ['postop', 'Post-operative rehabilitation'], ['manual', 'Manual therapy'], ['needling', 'Dry needling'],
+      ['shockwave', 'Shockwave therapy'], ['massage', 'Sports massage'], ['exercise', 'Exercise therapy and Pilates'], ['pelvic', 'Pelvic floor physiotherapy'], ['home', 'Home visits']].map(([id, name]) => [id, name, 'PhysicalTherapy'])
+  },
+  therapy: {
+    label: 'Therapy and counselling', types: ['MedicalClinic', 'LocalBusiness'], type: (st) => (st.therapyClinical ? 'MedicalClinic' : 'LocalBusiness'),
+    specialties: [['Psychiatric', 'Psychiatry']], psychiatryWarning: true,
+    treatments: [['individual', 'Individual therapy', 'PsychologicalTreatment'], ['couples', 'Couples therapy', 'PsychologicalTreatment'], ['family', 'Family therapy', 'PsychologicalTreatment'],
+      ['cbt', 'Cognitive behavioural therapy (CBT)', 'PsychologicalTreatment'], ['emdr', 'EMDR and trauma therapy', 'PsychologicalTreatment'], ['anxiety', 'Anxiety and depression', 'PsychologicalTreatment'],
+      ['young', 'Children and adolescents', 'PsychologicalTreatment'], ['assessment', 'Psychological assessment', 'DiagnosticProcedure'], ['online', 'Online sessions', 'PsychologicalTreatment']]
+  }
+};
+// Specialist clinics, by profession. Where schema.org has a type for the profession (Dermatology, Ophthalmology…) the
+// clinic is marked as that type and as a MedicalClinic: the profession's type alone can't list specialties, new patients,
+// insurers or treatments. Treatment kinds: E examination or diagnostic procedure, T lab test, B blood test, I imaging,
+// S surgery, R physical therapy, P psychological treatment, M other medical procedure, none: a treatment.
+const KIND = { E: 'DiagnosticProcedure', T: 'MedicalTest', B: 'BloodTest', I: 'ImagingTest', S: 'SurgicalProcedure', R: 'PhysicalTherapy', P: 'PsychologicalTreatment', M: 'MedicalProcedure', '': 'TherapeuticProcedure' };
+const SPEC = { Dermatology: 'Dermatology', PlasticSurgery: 'Plastic surgery', Pediatric: 'Paediatrics', Oncologic: 'Oncology', Ophthalmology: 'Ophthalmology', Optometric: 'Optometry',
+  Surgical: 'Surgery', Otolaryngologic: 'Ear, nose and throat (otolaryngology)', Audiology: 'Audiology', Gynecologic: 'Gynaecology', Obstetric: 'Obstetrics', Midwifery: 'Midwifery',
+  PrimaryCare: 'Primary care', Musculoskeletal: 'Musculoskeletal (orthopaedics)', Physiotherapy: 'Physiotherapy', Rheumatologic: 'Rheumatology', Cardiovascular: 'Cardiology',
+  Pulmonary: 'Pulmonology', Psychiatric: 'Psychiatry', Urologic: 'Urology', Renal: 'Nephrology (kidneys)', Neurologic: 'Neurology', Gastroenterologic: 'Gastroenterology', DietNutrition: 'Nutrition and dietetics' };
+const clinic = (label, type, main, related, list) => ({ label, type, main, related, treatments: list.split('|').map((x) => { const [name, k = ''] = x.split('#'); return [name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30), name, KIND[k]]; }) });
+const CLINICS = {
+  dermatology: clinic('Dermatology', 'Dermatology', 'Dermatology', ['PlasticSurgery', 'Pediatric', 'Oncologic'],
+    'Mole check (dermatoscopy)#E|Skin cancer screening#E|Acne treatment|Eczema and psoriasis treatment|Removal of moles and skin lesions#S|Laser treatment|Allergy patch testing#T|Hair and nail conditions|Botox and fillers|Chemical peels'),
+  eye: clinic('Eye clinic', 'Ophthalmology', 'Ophthalmology', ['Optometric', 'Pediatric', 'Surgical'],
+    'Eye examination#E|Children\'s eye tests#E|Cataract surgery#S|Laser eye surgery#S|Glaucoma care|Diabetic eye screening#I|Retinal scan (OCT)#I|Macular degeneration treatment|Dry eye treatment|Contact lens fitting#M'),
+  ent: clinic('Ear, nose and throat', 'Otolaryngologic', 'Otolaryngologic', ['Audiology', 'Pediatric', 'Surgical'],
+    'Hearing test#T|Ear wax removal|Tinnitus assessment#E|Balance and dizziness assessment#E|Sinus treatment|Nasal endoscopy#E|Allergy testing#T|Snoring and sleep apnoea treatment|Tonsil and adenoid surgery#S|Voice and swallowing problems'),
+  gynaecology: clinic('Gynaecology', 'Gynecologic', 'Gynecologic', ['Obstetric', 'Midwifery'],
+    'Gynaecological check-up#E|Cervical screening (smear test)#T|Gynaecological ultrasound#I|Colposcopy#E|Breast examination#E|Pregnancy care#M|Contraception and IUD fitting#M|Menopause care|Fertility assessment#E|Endometriosis treatment'),
+  paediatrics: clinic('Paediatrics', 'Pediatric', 'Pediatric', ['PrimaryCare'],
+    'Child health checks#E|Newborn checks#E|Vaccinations#M|Developmental assessment#E|Blood tests#B|Allergy and asthma care|Growth and nutrition|Same-day appointments for illness#M|School and sports medicals#E'),
+  orthopaedics: clinic('Orthopaedics and sports medicine', null, 'Musculoskeletal', ['Surgical', 'Physiotherapy', 'Rheumatologic'],
+    'Joint and back pain assessment#E|X-ray and ultrasound#I|Sports injury treatment|Fracture care|Joint injections|Arthroscopy#S|Knee and hip replacement#S|Spine care|Rehabilitation#R'),
+  cardiology: clinic('Cardiology', null, 'Cardiovascular', ['Pulmonary'],
+    'Heart check-up#E|ECG#E|Echocardiogram#I|24-hour ECG (Holter)#E|Stress test#E|Blood pressure monitoring#E|Cholesterol testing#B|Arrhythmia treatment|Heart failure care|Cardiac rehabilitation#R'),
+  plastic: clinic('Plastic and aesthetic surgery', 'PlasticSurgery', 'PlasticSurgery', ['Dermatology', 'Surgical'],
+    'Consultation#E|Breast augmentation#S|Breast reduction#S|Eyelid surgery#S|Rhinoplasty#S|Facelift#S|Liposuction#S|Tummy tuck#S|Scar revision#S|Botox and fillers'),
+  psychiatry: clinic('Psychiatry', 'Psychiatric', 'Psychiatric', ['Pediatric'],
+    'Psychiatric assessment#E|ADHD assessment#E|Medication management#M|Depression and anxiety treatment|Addiction treatment|Psychotherapy#P|Child and adolescent psychiatry|Crisis appointments#M'),
+  urology: clinic('Urology', null, 'Urologic', ['Renal', 'Surgical'],
+    'Urology check-up#E|Prostate check (PSA)#B|Urine tests#T|Ultrasound#I|Cystoscopy#E|Kidney stone treatment|Bladder problems and incontinence|Erectile dysfunction treatment|Vasectomy#S'),
+  neurology: clinic('Neurology', null, 'Neurologic', ['Pediatric'],
+    'Neurological examination#E|EEG#E|EMG and nerve conduction tests#E|Memory assessment#E|Headache and migraine treatment|Epilepsy care|Multiple sclerosis care|Sleep disorders|Stroke follow-up'),
+  gastro: clinic('Gastroenterology', null, 'Gastroenterologic', ['DietNutrition', 'Surgical'],
+    'Gastroscopy#E|Colonoscopy#E|Bowel cancer screening#E|Abdominal ultrasound#I|Breath tests (H. pylori, lactose)#T|Coeliac testing#B|Reflux and heartburn treatment|IBS and IBD care|Liver disease care')
+};
+// The profession's own type, as picked from the type list, is that clinic.
+const CLINIC_BY_TYPE = Object.fromEntries(Object.entries(CLINICS).filter(([, c]) => c.type).map(([k, c]) => [c.type, k]));
+PRACTICES.clinic.types.push(...Object.keys(CLINIC_BY_TYPE));
+const clinicOf = (st) => (st.practice === 'clinic' ? CLINICS[st.clinicKind] || null : null);
+// A practice's key for its treatments: a specialist clinic's are per profession.
+const practiceKey = (st) => (st.practice === 'clinic' ? `clinic.${st.clinicKind || ''}` : st.practice);
+const treatmentsOf = (key) => (key.startsWith('clinic.') ? CLINICS[key.slice(7)]?.treatments || [] : PRACTICES[key]?.treatments || []);
+// The specialties a practice offers, as [value, label]; null means the full list.
+const specialtiesOf = (st) => {
+  if (st.practice === 'clinic') { const c = clinicOf(st); return c ? [c.main, ...c.related].map((v) => [v, SPEC[v] || humanize(v)]) : null; }
+  return practiceOf(st)?.specialties || null;
+};
+const practiceOf = (st) => PRACTICES[st.practice] || null;
+// The types the markup gets. A physio can also be marked a MedicalClinic: valid schema.org, and what lets it list
+// new patients, insurers and treatments, which the Physiotherapy type alone can't.
+const typesOf = (st) => {
+  if (st.practice === 'physio' && st.type === 'Physiotherapy' && st.alsoClinic) return ['Physiotherapy', 'MedicalClinic'];
+  if (st.practice === 'clinic' && st.type !== 'MedicalClinic') return [st.type, 'MedicalClinic'];
+  return [st.type];
+};
+const propsOf = (st) => new Set(typesOf(st).flatMap((t) => engine.propertiesOf(t)));
+const isMedical = (t) => engine.isA(t, 'MedicalBusiness') || engine.isA(t, 'MedicalOrganization');
+
 // Which form sections and fields a type can use: only what schema.org allows on it, so switching type never
 // leaves behind properties the new type can't have.
-const can = (p) => engine.propertiesOf(state.type).includes(p);
+const can = (p) => propsOf(state).has(p);
 const HANDLED = new Set(['name', 'url', 'telephone', 'email', 'description', 'priceRange', 'logo', 'image', 'address', 'geo', 'hasMap', 'openingHoursSpecification',
   'specialOpeningHoursSpecification', 'areaServed', 'hasOfferCatalog', 'sameAs', 'knowsLanguage', 'paymentAccepted', 'currenciesAccepted', 'amenityFeature',
   'potentialAction', 'acceptsReservations', 'servesCuisine', 'hasMenu', 'checkinTime', 'checkoutTime', 'numberOfRooms', 'petsAllowed', 'medicalSpecialty',
-  'parentOrganization', 'branchCode', 'department', 'legalName', 'foundingDate', 'vatID', 'taxID', 'leiCode', 'iso6523Code', 'duns', 'slogan', 'openingHours', 'serviceArea']);
+  'parentOrganization', 'branchCode', 'department', 'legalName', 'foundingDate', 'vatID', 'taxID', 'leiCode', 'iso6523Code', 'duns', 'slogan', 'openingHours', 'serviceArea',
+  'availableService', 'isAcceptingNewPatients', 'healthPlanNetworkId', 'hospitalAffiliation']);
 
 // ---------- opening hours as text: "Mo-Fr 09:00-17:00; Sa 10-14; Su closed", "Monday–Friday 9 AM–5 PM", "24/7" ----------
 function dayIndex(tok) {
@@ -292,7 +394,7 @@ function hoursSpec(hours) {
 const timeOf = (v) => (/^\d{2}:\d{2}$/.test(s(v)) ? `${s(v)}:00` : undefined);
 const idOf = (u) => (isUrl(u) ? s(u).replace(/#.*$/, '') : '');
 function build(st) {
-  const canP = (p) => engine.propertiesOf(st.type).includes(p);
+  const props = propsOf(st), canP = (p) => props.has(p);
   const lat = Number(s(st.lat).replace(',', '.')), lng = Number(s(st.lng).replace(',', '.'));
   const hasGeo = s(st.lat) !== '' && s(st.lng) !== '' && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
   const brandId = idOf(st.brandUrl);
@@ -305,7 +407,10 @@ function build(st) {
     ? st.places.filter((p) => s(p.name)).map((p) => ({ '@type': p.type || 'City', name: s(p.name) }))
     : st.areaMode === 'radius' && hasGeo && Number(st.radiusKm) > 0
       ? [{ '@type': 'GeoCircle', geoMidpoint: { '@type': 'GeoCoordinates', latitude: lat, longitude: lng }, geoRadius: Math.round(Number(st.radiusKm) * 1000) }] : [];
-  const services = st.services.filter((x) => s(x.name)).map((x) => ({
+  // Treatments become medical services where the type allows them; with a price they are also offers.
+  const medical = (x) => !!x.kind && canP('availableService');
+  const avail = st.services.filter((x) => s(x.name) && medical(x)).map((x) => ({ '@type': x.kind, name: s(x.name), description: s(x.description) }));
+  const services = st.services.filter((x) => s(x.name) && (!medical(x) || s(x.price) !== '')).map((x) => ({
     '@type': 'Offer',
     itemOffered: { '@type': 'Service', name: s(x.name), description: s(x.description) },
     price: s(x.price) !== '' && Number.isFinite(Number(s(x.price).replace(',', '.'))) ? Number(s(x.price).replace(',', '.')) : undefined,
@@ -324,7 +429,7 @@ function build(st) {
   }
   const ld = {
     '@context': 'https://schema.org',
-    '@type': st.type || 'LocalBusiness',
+    '@type': one(typesOf(st)) || 'LocalBusiness',
     '@id': idOf(st.url) ? `${idOf(st.url)}#localbusiness` : undefined,
     name: s(st.name),
     description: s(st.description),
@@ -363,6 +468,10 @@ function build(st) {
     numberOfRooms: canP('numberOfRooms') && Number(st.rooms) > 0 ? Number(st.rooms) : undefined,
     petsAllowed: canP('petsAllowed') && st.pets ? st.pets === 'yes' : undefined,
     medicalSpecialty: canP('medicalSpecialty') && st.specialties.length ? one(st.specialties.map((x) => `https://schema.org/${x}`)) : undefined,
+    availableService: avail,
+    isAcceptingNewPatients: canP('isAcceptingNewPatients') && st.newPatients ? st.newPatients === 'yes' : undefined,
+    healthPlanNetworkId: canP('healthPlanNetworkId') ? one(s(st.insurers).split(',').map(s).filter(Boolean)) : undefined,
+    hospitalAffiliation: canP('hospitalAffiliation') && s(st.hospitalName) ? { '@type': 'Hospital', name: s(st.hospitalName), url: isUrl(st.hospitalUrl) ? s(st.hospitalUrl) : undefined } : undefined,
     parentOrganization: s(st.brandName) || brandId ? { '@type': 'Organization', '@id': brandId ? `${brandId}#organization` : undefined, name: s(st.brandName), url: brandId || undefined } : undefined,
     branchCode: s(st.branchCode),
     department: st.departments.filter((d) => s(d.name)).map((d) => ({ '@type': d.type || 'LocalBusiness', name: s(d.name), telephone: s(d.telephone) })),
@@ -391,6 +500,7 @@ function render() {
       <input id="f-typeFilter" placeholder="Search ${TYPES.length} types: dentist, bakery, plumber…" autocomplete="off">
       <select id="f-type" data-k="type" size="1" style="margin-top:6px">${typeOptions()}</select>
       <p class="typedesc" id="typeDesc"></p>
+      <div class="practices">Healthcare practice?${Object.entries(PRACTICES).map(([k, p]) => `<button type="button" class="tiny" data-practice="${k}">${esc(p.label)}</button>`).join('')}</div>
       <div class="row2"><div>${field('name', 'Business name, as on your sign and Google Business Profile *')}</div><div>${field('url', 'Page for this business *', { placeholder: 'https://', inputmode: 'url' })}</div></div>
       <div class="row2"><div>${field('telephone', 'Phone *', { placeholder: '+44 20 …', inputmode: 'tel' })}</div><div>${field('email', 'Email', { inputmode: 'email' })}</div></div>
       ${area('description', 'Short description', 'What you do and for whom, in a sentence or two.')}
@@ -426,8 +536,8 @@ function render() {
     sec('specific', 'For this type of business', 'Fields that only some types have', `<div id="w-food">${field('cuisine', 'Cuisine (comma-separated)', { placeholder: 'Czech, Italian' })}${field('menuUrl', 'Menu page', { placeholder: 'https://' })}</div>
       <div id="w-lodging"><div class="row2"><div>${field('checkin', 'Check-in from', { type: 'time' })}</div><div>${field('checkout', 'Check-out by', { type: 'time' })}</div></div>
         <div class="row2"><div>${field('rooms', 'Number of rooms', { inputmode: 'numeric' })}</div><div><label for="f-pets">Pets</label><select id="f-pets" data-k="pets"><option value="">Not stated</option><option value="yes"${state.pets === 'yes' ? ' selected' : ''}>Allowed</option><option value="no"${state.pets === 'no' ? ' selected' : ''}>Not allowed</option></select></div></div></div>
-      <div id="w-medical"><label>Medical specialties</label>${checks('specialties', engine.enumValues('MedicalSpecialty').sort())}</div>
-      <p class="hint" id="noSpecific">Nothing extra for this type. Choose a restaurant, hotel or clinic type to see its fields.</p>`) +
+      <div id="w-medical"></div>
+      <p class="hint" id="noSpecific">Nothing extra for this type. Choose a restaurant, hotel or healthcare type to see its fields.</p>`) +
     sec('brand', 'Brand, branches and departments', 'For chains and multi-location businesses', `
       <div class="row2"><div>${field('brandName', 'Brand or parent company')}</div><div>${field('brandUrl', 'Its website', { placeholder: 'https://' })}</div></div>
       ${field('branchCode', 'Branch or store code (as in your Google Business Profile)')}
@@ -492,6 +602,79 @@ function drawHours() {
   }).join('');
 }
 
+// The healthcare block: the kind of practice, then only the specialties, treatments and fields that suit it.
+function drawMedical() {
+  const box = $('w-medical');
+  if (!box) return;
+  const P = practiceOf(state);
+  const all = engine.enumValues('MedicalSpecialty').sort();
+  const ticks = (list) => `<div class="chkgrid">${list.map(([v, l]) => `<label><input type="checkbox" data-set="specialties" value="${v}"${state.specialties.includes(v) ? ' checked' : ''}>${esc(l)}</label>`).join('')}</div>`;
+  const opt = (k, label, on, hint) => `<label class="medopt"><input type="checkbox" data-k="${k}"${on ? ' checked' : ''}><span>${label}<br><span class="kind" style="margin:0">${hint}</span></span></label>`;
+  let html = `<label for="f-practice" style="margin-top:0">Kind of practice</label><select id="f-practice" data-k="practice"><option value="">${isMedical(state.type) ? 'Other healthcare business' : 'Not a healthcare practice'}</option>` +
+    Object.entries(PRACTICES).map(([k, p]) => `<option value="${k}"${state.practice === k ? ' selected' : ''}>${esc(p.label)}</option>`).join('') + '</select>';
+  if (state.practice === 'doctor') {
+    html += `<div class="chkgrid" style="grid-template-columns:1fr;margin-top:10px">${[['practice', 'A practice or clinic, with one or more doctors'], ['individual', 'A doctor working on their own (the business is the doctor)']]
+      .map(([v, l]) => `<label><input type="radio" name="doctorKind" data-k="doctorKind" value="${v}"${state.doctorKind === v ? ' checked' : ''}>${l}</label>`).join('')}</div>`;
+  }
+  if (state.practice === 'clinic') {
+    const c = clinicOf(state);
+    html += `<label for="f-clinicKind">Kind of clinic</label><select id="f-clinicKind" data-k="clinicKind"><option value="">Several specialties, or not listed here</option>` +
+      Object.entries(CLINICS).map(([k, x]) => `<option value="${k}"${state.clinicKind === k ? ' selected' : ''}>${esc(x.label)}</option>`).join('') + '</select>';
+    if (c?.type) html += `<p class="hint" style="margin:6px 0 0">Marked as ${esc(humanize(c.type))} and as a medical clinic: the ${esc(humanize(c.type))} type alone can't list specialties, new patients, insurers or treatments.</p>`;
+  }
+  if (state.practice === 'physio') html += opt('alsoClinic', 'Also mark it as a medical clinic', state.alsoClinic, 'Recommended. The Physiotherapy type alone can\'t list specialties, new patients, insurers or treatments; marked as both, it can.');
+  if (state.practice === 'therapy') html += opt('therapyClinical', 'A healthcare practice (psychologists, psychotherapists)', state.therapyClinical, 'Marked as a medical clinic. Untick for counselling or coaching that isn\'t healthcare: then it\'s a general local business with ordinary services.');
+  if (can('medicalSpecialty')) {
+    const spec = specialtiesOf(state);
+    html += `<label>Specialties</label>${ticks(spec || all.map((v) => [v, SPEC[v] || humanize(v)]))}`;
+    if (P?.more) html += `<details style="margin-top:6px"><summary class="tiny">More specialties</summary>${ticks(all.filter((v) => !spec.some(([x]) => x === v)).map((v) => [v, SPEC[v] || humanize(v)]))}</details>`;
+    if (P?.psychiatryWarning) html += '<p class="medwarn">Tick Psychiatry only if a psychiatrist, a medical doctor, works here. Psychology and psychotherapy aren\'t psychiatry.</p>';
+  }
+  const key = practiceKey(state), treatments = treatmentsOf(key);
+  if (treatments.length) {
+    const asMedical = can('availableService');
+    // The practice's usual kind of service is said once; only the treatments of another kind are labelled.
+    const count = {}; treatments.forEach(([, , k]) => { count[k] = (count[k] || 0) + 1; });
+    const main = Object.keys(count).sort((x, y) => count[y] - count[x])[0], mixed = Object.keys(count).length > 1;
+    html += `<label>Treatments</label><p class="hint" style="margin:0 0 6px">Each one you tick goes into the Services list above, where you can rename it or add a price${asMedical ? `, and into the markup as a medical service (${humanize(main).toLowerCase()}${mixed ? ', unless marked otherwise' : ''})` : state.practice === 'dental' ? '. schema.org doesn\'t let a dental practice list medical services, so they go in as ordinary services' : ''}.</p>` +
+      `<div class="chkgrid">${treatments.map(([id, name, kind]) => `<label><input type="checkbox" data-treat="${key}:${id}"${state.services.some((x) => x.treat === `${key}:${id}`) ? ' checked' : ''}>${esc(name)}${asMedical && kind && kind !== main ? `<span class="kind">${esc(humanize(kind).toLowerCase())}</span>` : ''}</label>`).join('')}</div>`;
+  }
+  if (can('isAcceptingNewPatients')) {
+    html += `<label for="f-newPatients">Accepting new ${state.practice === 'therapy' ? 'clients' : 'patients'}</label><select id="f-newPatients" data-k="newPatients">` +
+      [['', 'Not stated'], ['yes', 'Yes'], ['no', 'No']].map(([v, l]) => `<option value="${v}"${state.newPatients === v ? ' selected' : ''}>${l}</option>`).join('') + '</select>';
+  }
+  if (can('healthPlanNetworkId')) html += field('insurers', 'Health insurers you have contracts with (comma-separated)', { placeholder: 'VZP, OZP, ZPMV' });
+  if (can('hospitalAffiliation')) html += `<div class="row2"><div>${field('hospitalName', 'Hospital the doctor works with (optional)')}</div><div>${field('hospitalUrl', 'Its website', { placeholder: 'https://' })}</div></div>`;
+  box.innerHTML = html;
+}
+// Choosing a practice (or one of its options) sets the type; specialties that don't fit the new practice are dropped.
+function applyPractice(fromPicker) {
+  const P = practiceOf(state);
+  // The practice now decides the type: clear the type search, or leaving it would re-pick its own match.
+  const f = $('f-typeFilter');
+  if (f && f.value) { f.value = ''; filterTypes(''); }
+  if (P) {
+    state.type = P.type(state);
+    if (fromPicker) {
+      const spec = specialtiesOf(state);
+      const ok = new Set(P.more || !spec ? engine.enumValues('MedicalSpecialty') : spec.map(([v]) => v));
+      state.specialties = state.specialties.filter((v) => ok.has(v));
+      // A clinic's own specialty is ticked for it.
+      const c = clinicOf(state);
+      if (c && !state.specialties.includes(c.main)) state.specialties.unshift(c.main);
+      // Another practice's ticked treatments go too, unless they were renamed or given a price or description.
+      const key = practiceKey(state);
+      state.services = state.services.filter((x) => {
+        if (!x.treat || x.treat.startsWith(key + ':')) return true;
+        const [pk, id] = x.treat.split(':'), tr = treatmentsOf(pk).find(([y]) => y === id);
+        return !(tr && x.name === tr[1] && !s(x.price) && !s(x.description));
+      });
+      drawList('services');
+    }
+  }
+  syncType();
+}
+
 // Show only what the chosen type can have.
 function syncType() {
   const sel = $('f-type');
@@ -503,8 +686,21 @@ function syncType() {
   show('w-payment', can('paymentAccepted'));
   show('w-amenities', can('amenityFeature')); show('noAmenities', !can('amenityFeature'));
   show('w-reservations', can('acceptsReservations'));
-  show('w-food', can('servesCuisine')); show('w-lodging', can('checkinTime')); show('w-medical', can('medicalSpecialty'));
-  show('noSpecific', !can('servesCuisine') && !can('checkinTime') && !can('medicalSpecialty'));
+  // A practice follows the type: picking Dentist in the list is a dental practice; picking an unrelated type ends it.
+  if (practiceOf(state) && !practiceOf(state).types.includes(state.type)) state.practice = '';
+  if (!state.practice) {
+    const k = ['dental', 'doctor', 'physio', 'clinic'].find((x) => PRACTICES[x].types.includes(state.type));
+    if (k) { state.practice = k; if (k === 'doctor') state.doctorKind = state.type === 'IndividualPhysician' ? 'individual' : 'practice'; }
+  }
+  // A profession's type picked from the list is that clinic; plain Medical clinic keeps whatever profession has no type of its own.
+  if (state.practice === 'clinic') {
+    const want = CLINIC_BY_TYPE[state.type] || (CLINICS[state.clinicKind]?.type ? '' : state.clinicKind);
+    if (want !== state.clinicKind) { state.clinicKind = want; const c = clinicOf(state); if (c && !state.specialties.includes(c.main)) state.specialties.unshift(c.main); }
+  }
+  const med = !!state.practice || isMedical(state.type);
+  show('w-food', can('servesCuisine')); show('w-lodging', can('checkinTime')); show('w-medical', med);
+  if (med) drawMedical();
+  show('noSpecific', !can('servesCuisine') && !can('checkinTime') && !med);
   show('w-street', !state.serviceArea); show('w-postcode', !state.serviceArea);
   show('w-places', state.areaMode === 'places'); show('w-radius', state.areaMode === 'radius');
   $('propList').innerHTML = engine.propertiesOf(state.type).filter((p) => !HANDLED.has(p) && !engine.properties[p].deprecated && engine.properties[p].status !== 'pending')
@@ -546,13 +742,22 @@ function onChange(e) {
     const k = t.dataset.k;
     state[k] = t.type === 'checkbox' ? t.checked : t.value;
     if (k === 'mapsLink') readMapsLink(t.value);
-    if (k === 'type' || k === 'serviceArea' || k === 'areaMode') syncType();
+    if (['practice', 'clinicKind', 'doctorKind', 'therapyClinical', 'alsoClinic'].includes(k)) applyPractice(k === 'practice' || k === 'clinicKind');
+    else if (k === 'type' || k === 'serviceArea' || k === 'areaMode') syncType();
   } else if (t.dataset.set) {
     const set = new Set(state[t.dataset.set]); t.checked ? set.add(t.value) : set.delete(t.value); state[t.dataset.set] = [...set];
   } else if (t.dataset.list) {
     const list = state[t.dataset.list], i = +t.dataset.i, f = t.dataset.f;
     if (f) list[i][f] = t.type === 'checkbox' ? t.checked : t.value; else list[i] = t.value;
     if ((t.dataset.list === 'special' && f === 'closed') || (t.dataset.list === 'extras' && f === 'prop' && e.type === 'change')) drawList(t.dataset.list);
+  } else if (t.dataset.treat) {
+    // A ticked treatment is a row in the Services list (renamed or priced there); unticking removes that row.
+    const [pk, id] = t.dataset.treat.split(':');
+    const tr = treatmentsOf(pk).find(([x]) => x === id);
+    if (!tr) return;
+    if (t.checked) { if (!state.services.some((x) => x.treat === t.dataset.treat)) state.services.push({ name: tr[1], description: '', price: '', currency: '', kind: tr[2] || '', treat: t.dataset.treat }); }
+    else state.services = state.services.filter((x) => x.treat !== t.dataset.treat);
+    drawList('services');
   } else if (t.dataset.day) {
     const h = state.hours[t.dataset.day];
     if (t.dataset.hf === 'mode') { h.mode = t.value; drawHours(); } else h.slots[+t.dataset.slot][+t.dataset.se] = t.value;
@@ -563,8 +768,10 @@ app.addEventListener('click', (e) => {
   const t = e.target.closest('button');
   if (!t) return;
   if (t.dataset.add) { state[t.dataset.add].push(LISTS[t.dataset.add].blank()); drawList(t.dataset.add); refresh(); }
-  else if (t.dataset.rm) { state[t.dataset.rm].splice(+t.dataset.i, 1); drawList(t.dataset.rm); refresh(); }
+  else if (t.dataset.rm && t.dataset.rm !== 'services') { state[t.dataset.rm].splice(+t.dataset.i, 1); drawList(t.dataset.rm); refresh(); }
   else if (t.dataset.addslot) { state.hours[t.dataset.addslot].slots.push(['13:00', '17:00']); drawHours(); refresh(); }
+  else if (t.dataset.practice) { state.practice = t.dataset.practice; applyPractice(true); $('sec-specific').open = true; $('sec-specific').scrollIntoView({ block: 'start', behavior: 'smooth' }); refresh(); }
+  else if (t.dataset.rm === 'services') { state.services.splice(+t.dataset.i, 1); drawList('services'); syncType(); refresh(); }
   else if (t.dataset.rmslot) { state.hours[t.dataset.rmslot].slots.splice(+t.dataset.slot, 1); drawHours(); refresh(); }
   else if (t.id === 'copyMon') { for (const d of DAYS.slice(1, 5)) state.hours[d] = JSON.parse(JSON.stringify(state.hours.Monday)); drawHours(); refresh(); }
   else if (t.id === 'showPaste') { const b = $('pasteBox'); b.style.display = b.style.display === 'none' ? '' : 'none'; }
@@ -635,8 +842,12 @@ const strs = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]).map(str).filte
 const local = (v) => String(v || '').replace(/^https?:\/\/schema\.org\//, '').replace(/^schema:/, '');
 function fromLd(n) {
   const st = blank();
-  const t = (Array.isArray(n['@type']) ? n['@type'] : [n['@type']]).map(local).find((x) => TYPES.includes(x));
+  const ts = (Array.isArray(n['@type']) ? n['@type'] : [n['@type']]).map(local);
+  const t = ts.includes('Physiotherapy') ? 'Physiotherapy' : ts.find((x) => TYPES.includes(x));
   st.type = t || 'LocalBusiness';
+  if (t === 'Physiotherapy') { st.practice = 'physio'; st.alsoClinic = ts.includes('MedicalClinic'); }
+  const own = ts.find((x) => CLINIC_BY_TYPE[x]);
+  if (own) { st.type = own; st.practice = 'clinic'; st.clinicKind = CLINIC_BY_TYPE[own]; }
   for (const k of ['name', 'telephone', 'email', 'description', 'priceRange', 'branchCode', 'legalName', 'foundingDate', 'vatID', 'taxID', 'leiCode', 'iso6523Code', 'duns', 'slogan']) st[k] = str(n[k]);
   st.url = str(n.url); st.logo = str(n.logo); st.hasMap = str(n.hasMap);
   st.images = strs(n.image).length ? strs(n.image) : [''];
@@ -671,6 +882,10 @@ function fromLd(n) {
   st.checkin = str(n.checkinTime).slice(0, 5); st.checkout = str(n.checkoutTime).slice(0, 5); st.rooms = str(n.numberOfRooms);
   st.pets = n.petsAllowed === true || n.petsAllowed === 'true' ? 'yes' : n.petsAllowed === false || n.petsAllowed === 'false' ? 'no' : '';
   st.specialties = strs(n.medicalSpecialty).map(local);
+  st.newPatients = n.isAcceptingNewPatients === true || n.isAcceptingNewPatients === 'true' ? 'yes' : n.isAcceptingNewPatients === false || n.isAcceptingNewPatients === 'false' ? 'no' : '';
+  st.insurers = strs(n.healthPlanNetworkId).join(', ');
+  const ha = first(n.hospitalAffiliation);
+  if (ha) { st.hospitalName = str(ha.name || ha); st.hospitalUrl = typeof ha === 'object' ? str(ha.url) : ''; }
   const langs = strs(n.knowsLanguage);
   st.languages = langs.filter((l) => LANGS.includes(l)); st.languagesOther = langs.filter((l) => !LANGS.includes(l)).join(', ');
   const pays = String(str(n.paymentAccepted)).split(/\s*,\s*/).filter(Boolean);
@@ -686,6 +901,9 @@ function fromLd(n) {
   if (po) { st.brandName = str(po.name || po); st.brandUrl = typeof po === 'object' ? str(po.url) : ''; }
   const offers = first(n.hasOfferCatalog)?.itemListElement;
   st.services = (Array.isArray(offers) ? offers : offers ? [offers] : []).map((o) => ({ name: str(o?.itemOffered?.name || o?.name), description: str(o?.itemOffered?.description || o?.description), price: str(o?.price), currency: str(o?.priceCurrency) })).filter((x) => x.name);
+  for (const sv of (Array.isArray(n.availableService) ? n.availableService : n.availableService ? [n.availableService] : [])) {
+    if (sv && typeof sv === 'object' && str(sv.name) && !st.services.some((x) => x.name === str(sv.name))) st.services.push({ name: str(sv.name), description: str(sv.description), price: '', currency: '', kind: local(first(sv['@type'])) || 'MedicalProcedure' });
+  }
   st.departments = (Array.isArray(n.department) ? n.department : n.department ? [n.department] : []).map((d) => ({ type: TYPES.includes(local(d?.['@type'])) ? local(d['@type']) : 'LocalBusiness', name: str(d?.name), telephone: str(d?.telephone) })).filter((d) => d.name);
   // Anything else the page had that this type can take, as "more properties" (text values only).
   const known = new Set([...HANDLED, 'menu', 'image']);
@@ -757,7 +975,15 @@ if (new URLSearchParams(location.search).get('prefill') === '1') {
       // Google's category ("Medical clinic", "Italian restaurant") to the nearest schema.org type, else LocalBusiness.
       const camel = (x) => String(x || '').split(/[^A-Za-z0-9]+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase()).join('');
       const words = String(filled.gbpCategory || '').trim().split(/\s+/);
-      const guesses = [camel(filled.gbpCategory), camel(words[words.length - 1]), /ologist$|doctor|physician/i.test(filled.gbpCategory || '') ? 'Physician' : ''];
+      const cat = filled.gbpCategory || '';
+      const guesses = [/physio/i.test(cat) ? 'Physiotherapy' : '', /psycholog|psychotherap|counsel/i.test(cat) ? 'MedicalClinic' : '', camel(cat), camel(words[words.length - 1]),
+        /ologist$|doctor|physician|general practitioner|medical practice/i.test(cat) ? 'PhysiciansOffice' : ''];
+      if (/psycholog|psychotherap|counsel/i.test(cat)) filled.practice = 'therapy';
+      // Clinic professions: "Dermatologist", "Eye care center", "Cardiologist"… are that specialist clinic.
+      const prof = [[/dermatolog|skin care clinic/i, 'dermatology'], [/ophthalmolog|eye care|eye clinic/i, 'eye'], [/otolaryngolog|ear, nose|\bent\b/i, 'ent'],
+        [/gyn(a)?ecolog|obstetric/i, 'gynaecology'], [/p(a)?ediatric/i, 'paediatrics'], [/orthop(a)?edic|sports medicine/i, 'orthopaedics'], [/cardiolog/i, 'cardiology'],
+        [/plastic surg|cosmetic surg|aesthetic/i, 'plastic'], [/psychiatr/i, 'psychiatry'], [/urolog/i, 'urology'], [/neurolog/i, 'neurology'], [/gastroenterolog/i, 'gastro']].find(([re]) => re.test(cat));
+      if (prof) { filled.practice = 'clinic'; filled.clinicKind = prof[1]; filled.specialties = [CLINICS[prof[1]].main]; guesses.unshift(CLINICS[prof[1]].type || 'MedicalClinic'); }
       const type = guesses.find((t) => t && engine.types[t] && !engine.types[t].deprecated && engine.isA(t, 'LocalBusiness')) || 'LocalBusiness';
       const { gbpCategory, ...fields } = filled;
       state = { ...blank(), ...fields, type, csv: state.csv };
