@@ -285,18 +285,28 @@ function addLocation() {
 // place ID to /gbp/add, which looks up that exact listing, and fills in the city from the suggestion's address line.
 var GOOGLE_PLACES_KEY = 'AIzaSyBgbllzncdzD9xG3ZhJMnyQtWxb5hKp440';
 var placesLib = null, sessionToken = null, acItems = [], acActive = -1, acDebounce = null;
+// Google's script loads once, from the first click into the business name. A suggestion request waits for it, so
+// letters typed while it is still loading aren't lost; if it fails to load, the field stays a plain text field.
+var mapsReady = null;
 function loadGoogleMaps() {
-  if (!GOOGLE_PLACES_KEY || window.__gmapsLoading) return;
-  window.__gmapsLoading = true;
-  var sc = document.createElement('script');
-  sc.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_PLACES_KEY + '&libraries=places&loading=async&v=weekly';
-  sc.async = true;
-  document.head.appendChild(sc);
+  if (mapsReady) return mapsReady;
+  if (!GOOGLE_PLACES_KEY) { mapsReady = Promise.resolve(false); return mapsReady; }
+  mapsReady = new Promise(function (resolve) {
+    var sc = document.createElement('script');
+    sc.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_PLACES_KEY + '&libraries=places&loading=async&v=weekly';
+    sc.async = true;
+    sc.onload = function () { resolve(true); };
+    sc.onerror = function () { resolve(false); };
+    document.head.appendChild(sc);
+  });
+  return mapsReady;
 }
 function placesReady() {
   if (placesLib) return Promise.resolve(placesLib);
-  if (!window.google || !google.maps || !google.maps.importLibrary) return Promise.resolve(null);
-  return google.maps.importLibrary('places').then(function (lib) { placesLib = lib; return lib; });
+  return loadGoogleMaps().then(function (ok) {
+    if (!ok || !window.google || !google.maps || !google.maps.importLibrary) return null;
+    return google.maps.importLibrary('places').then(function (lib) { placesLib = lib; return lib; });
+  }).catch(function () { return null; });
 }
 function closeSuggestions() { var l = $('acList'); if (l) { l.classList.remove('show'); l.innerHTML = ''; } acItems = []; acActive = -1; }
 function showSuggestions(list) {
@@ -751,6 +761,7 @@ app.addEventListener('click', function (e) {
 });
 
 var ADD_FIELDS = { aLink: 'link', aName: 'name', aCity: 'city', aClient: 'client', aKeyword: 'keyword' };
+app.addEventListener('focusin', function (e) { if (e.target.id === 'aName') loadGoogleMaps(); });
 app.addEventListener('mousedown', function (e) {
   var item = e.target.closest('[data-ac]');
   if (item) { e.preventDefault(); pickSuggestion(+item.dataset.ac); }
