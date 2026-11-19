@@ -114,6 +114,12 @@
   .loc{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:8px}
   .loc>summary{cursor:pointer;font-size:12.5px}
   .loc .e{color:var(--bad)} .loc .ok{color:var(--ok)}
+  .btn2.mini{font-size:11.5px;padding:5px 9px}
+  .locrow{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin:10px 0}
+  .lochead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .lochead .sub{font-size:11px;color:var(--muted);flex:1}
+  .locgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+  @media(max-width:600px){.locgrid{grid-template-columns:1fr}}
   .foot{font-size:10.5px;color:var(--muted);margin-top:22px;line-height:1.6}
   .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:11px}
   .sidenav-link{font-size:12px;color:var(--muted)}
@@ -196,9 +202,11 @@ const blank = () => ({
   placeId: '', placeWhere: '', practice: '', clinicKind: '', alsoClinic: true, doctorKind: 'practice', therapyClinical: true, newPatients: '', insurers: '', hospitalName: '', hospitalUrl: '',
   brandName: '', brandUrl: '', branchCode: '', departments: [],
   legalName: '', foundingDate: '', vatID: '', taxID: '', leiCode: '', iso6523Code: '', duns: '', slogan: '',
-  extras: [], csv: ''
+  extras: [], locs: []
 });
 let state = (() => { try { const d = JSON.parse(localStorage.getItem(DRAFT) || 'null'); return d ? { ...blank(), ...d } : blank(); } catch (e) { return blank(); } })();
+// A lookup that was still running when the page closed will not finish: those locations are filled in by hand.
+state.locs = (Array.isArray(state.locs) ? state.locs : []).map((l) => (l.status === 'loading' ? { ...l, status: 'manual' } : l));
 const save = () => { try { localStorage.setItem(DRAFT, JSON.stringify(state)); } catch (e) { /* drafts are a convenience */ } };
 
 const LANGS = ['English', 'German', 'French', 'Spanish', 'Italian', 'Czech', 'Polish', 'Dutch', 'Portuguese', 'Russian', 'Ukrainian', 'Chinese', 'Arabic'];
@@ -570,12 +578,14 @@ function render() {
       <div class="bar"><button class="submit" type="button" id="copyBtn">Copy code</button><button class="btn2" type="button" id="checkBtn">Check in the validator →</button><button class="btn2" type="button" id="dlBtn">Download .json</button><button class="btn2" type="button" id="resetBtn">Start again</button></div>
       <p class="hint">Paste it into the page's &lt;head&gt;, or anywhere in its HTML. On a site with several locations, put each location's block on that location's own page; the next section makes them all at once.</p>
     </div>` +
-    sec('locations', 'Many locations', 'One block per location page, from a spreadsheet', `
-      <p class="hint">Paste rows from a spreadsheet, first row as headings. Columns: <b>name, url, street, city, region, postcode, country, phone, lat, lng, hours, branch_code</b> (only <b>url</b> and <b>city</b> needed). Everything else (type, brand, services, profiles…) comes from the form above. Hours as text, e.g. "Mo-Fr 09:00-17:00; Sa 10:00-14:00".</p>
-      ${area('csv', 'Locations', 'name,url,street,city,postcode,country,phone,hours\nAcme Soho,https://acme.com/soho/,12 Dean St,London,W1D 3RR,GB,+44 20 7946 0000,Mo-Fr 08:00-18:00; Sa 09:00-13:00')}
-      <div class="bar"><button class="btn2" type="button" id="locBtn">Make the location blocks</button><button class="btn2" type="button" id="locTpl">Download a template</button></div>
-      <div id="locOut"></div>`, !!state.csv);
-  drawLists(); drawHours(); syncType(); drawPicked(); refresh();
+    sec('locations', 'Many locations', 'Find each location on Google: one block per location page', `
+      <p class="hint">Find each location on Google and it is added below with its address, phone number, opening hours and map position. Then give each one the address of its own page, and make the blocks. Everything else (type, brand, services, profiles…) comes from the form above.</p>
+      <div class="ac-wrap"><label for="locFind">Find a location</label><input id="locFind" autocomplete="off" placeholder="Start typing a business name and pick it from Google's suggestions"><div class="ac-list" id="locAc"></div></div>
+      <p class="hint" style="margin:6px 0 0">Each location you add is looked up in its Business Profile (a cent or two, once per place per day).</p>
+      <div id="locList"></div>
+      <div class="bar"><button class="btn2" type="button" id="locBtn">Make the location blocks</button></div>
+      <div id="locOut"></div>`, state.locs.length > 0);
+  drawLists(); drawHours(); syncType(); drawPicked(); drawLocs(); refresh();
 }
 
 // Repeating rows: images, profiles, special hours, places, services, departments, extra properties.
@@ -753,6 +763,8 @@ function onChange(e) {
   const t = e.target;
   if (t.id === 'f-typeFilter') { filterTypes(t.value); return; }
   if (t.id === 'importUrl' || t.id === 'hoursText') return;
+  if (t.id === 'locFind') { if (e.type === 'input') onLocTyped(t.value); return; }
+  if (t.dataset.loc) { const l = state.locs.find((x) => x.id === t.dataset.loc); if (l) { l[t.dataset.f] = t.value; save(); } return; }
   if (t.dataset.k) {
     const k = t.dataset.k;
     state[k] = t.type === 'checkbox' ? t.checked : t.value;
@@ -780,12 +792,22 @@ function onChange(e) {
   } else return;
   refresh();
 }
-app.addEventListener('focusin', (e) => { if (e.target.id === 'f-name') loadGoogleMaps(); });
+app.addEventListener('focusin', (e) => { if (e.target.id === 'f-name' || e.target.id === 'locFind') loadGoogleMaps(); });
 app.addEventListener('mousedown', (e) => {
   const item = e.target.closest('[data-ac]');
   if (item) { e.preventDefault(); pickSuggestion(+item.dataset.ac); }
+  const li = e.target.closest('[data-lac]');
+  if (li) { e.preventDefault(); pickLoc(+li.dataset.lac); }
 });
 app.addEventListener('keydown', (e) => {
+  if (e.target.id === 'locFind' && locItems.length) {
+    const mark = () => [...$('locAc').querySelectorAll('.ac-item')].forEach((el, i) => el.classList.toggle('active', i === locActive));
+    if (e.key === 'ArrowDown') { e.preventDefault(); locActive = Math.min(locActive + 1, locItems.length - 1); mark(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); locActive = Math.max(locActive - 1, 0); mark(); }
+    else if (e.key === 'Enter' && locActive >= 0) { e.preventDefault(); pickLoc(locActive); }
+    else if (e.key === 'Escape') closeLocSuggestions();
+    return;
+  }
   if (e.target.id !== 'f-name' || !acItems.length) return;
   const mark = () => [...$('acList').querySelectorAll('.ac-item')].forEach((el, i) => el.classList.toggle('active', i === acActive));
   if (e.key === 'ArrowDown') { e.preventDefault(); acActive = Math.min(acActive + 1, acItems.length - 1); mark(); }
@@ -793,7 +815,7 @@ app.addEventListener('keydown', (e) => {
   else if (e.key === 'Enter' && acActive >= 0) { e.preventDefault(); pickSuggestion(acActive); }
   else if (e.key === 'Escape') closeSuggestions();
 });
-document.addEventListener('click', (e) => { if (!e.target.closest('.ac-wrap')) closeSuggestions(); });
+document.addEventListener('click', (e) => { if (!e.target.closest('.ac-wrap')) { closeSuggestions(); closeLocSuggestions(); } });
 app.addEventListener('click', (e) => {
   const t = e.target.closest('button');
   if (!t) return;
@@ -818,7 +840,7 @@ app.addEventListener('click', (e) => {
   else if (t.id === 'resetBtn') { if (confirm('Clear the whole form?')) { state = blank(); save(); render(); } }
   else if (t.id === 'importBtn') importFrom($('importUrl').value);
   else if (t.id === 'locBtn') makeLocations();
-  else if (t.id === 'locTpl') download('locations.csv', 'name,url,street,city,region,postcode,country,phone,lat,lng,hours,branch_code\n', 'text/csv');
+  else if (t.dataset.locrm) { state.locs = state.locs.filter((x) => x.id !== t.dataset.locrm); save(); drawLocs(); }
 });
 function filterTypes(q) {
   const sel = $('f-type'), needle = q.toLowerCase().trim();
@@ -861,7 +883,7 @@ async function importFrom(raw) {
   const items = d.report?.items || [];
   const pick = items.find((i) => i.types.some((t) => engine.isA(t, 'LocalBusiness'))) || items.find((i) => i.types.some((t) => engine.isA(t, 'Organization')));
   if (!pick) { msg.className = 'msg bad'; msg.textContent = items.length || d.schemas_found?.length ? `That page has structured data (${(d.schemas_found || []).join(', ')}) but no business in it. Fill in the form instead.` : 'That page has no structured data to start from. Fill in the form instead.'; return; }
-  state = { ...blank(), ...fromLd(pick.data), csv: state.csv };
+  state = { ...blank(), ...fromLd(pick.data), locs: state.locs };
   render(); // redraws the form, so the message goes in the new one
   $('importUrl').value = url;
   $('importMsg').className = 'msg good';
@@ -943,57 +965,110 @@ function fromLd(n) {
   return st;
 }
 
-// ---------- many locations: one block per row, linked to the brand ----------
-function parseCsv(text) {
-  const firstLine = text.split('\n')[0] || '';
-  const sep = ['\t', ';', ','].map((c) => [c, firstLine.split(c).length]).sort((a, b) => b[1] - a[1])[0][0];
-  const rows = []; let row = [], cell = '', q = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (q) { if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; continue; }
-    if (c === '"') q = true; else if (c === sep) { row.push(cell); cell = ''; } else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; } else if (c !== '\r') cell += c;
-  }
-  if (cell || row.length) { row.push(cell); rows.push(row); }
-  return rows.filter((r) => r.some((x) => s(x)));
-}
-const COLS = { name: ['name', 'business name', 'location name'], url: ['url', 'page', 'location page', 'website'], street: ['street', 'address', 'street address', 'address line 1'],
-  city: ['city', 'town', 'locality'], region: ['region', 'state', 'county', 'province'], postcode: ['postcode', 'postal code', 'zip', 'zip code'], country: ['country', 'country code'],
-  phone: ['phone', 'telephone', 'tel'], lat: ['lat', 'latitude'], lng: ['lng', 'lon', 'long', 'longitude'], hours: ['hours', 'opening hours'], branch_code: ['branch_code', 'branch code', 'store code', 'store_code'], email: ['email'] };
+// ---------- many locations: found on Google, one block per location page, linked to the brand ----------
 function makeLocations() {
   const out = $('locOut');
-  const rows = parseCsv(state.csv || '');
-  if (rows.length < 2) { out.innerHTML = '<p class="msg bad">Paste a heading row and at least one location.</p>'; return; }
-  const head = rows[0].map((h) => s(h).toLowerCase());
-  const col = Object.fromEntries(Object.entries(COLS).map(([k, names]) => [k, head.findIndex((h) => names.includes(h))]));
-  if (col.url < 0 || col.city < 0) { out.innerHTML = '<p class="msg bad">The heading row needs at least a "url" and a "city" column.</p>'; return; }
+  const locs = state.locs;
+  if (!locs.length) { out.innerHTML = '<p class="msg bad">Find at least one location above first.</p>'; return; }
   const brandName = s(state.brandName) || s(state.name), brandUrl = isUrl(state.brandUrl) ? state.brandUrl : (isUrl(state.url) ? new URL(state.url).origin + '/' : '');
-  const results = rows.slice(1).map((r, i) => {
-    const get = (k) => (col[k] >= 0 ? s(r[col[k]]) : '');
+  const results = locs.map((l, i) => {
     const st = JSON.parse(JSON.stringify(state));
-    const city = get('city');
-    Object.assign(st, { name: get('name') || `${brandName} ${city}`.trim(), url: get('url'), telephone: get('phone') || st.telephone, email: get('email') || st.email,
-      street: get('street'), locality: city, region: get('region'), postcode: get('postcode'), country: get('country') || st.country, lat: get('lat'), lng: get('lng'),
-      branchCode: get('branch_code'), brandName, brandUrl, hasMap: '', mapsLink: '', serviceArea: false });
-    let note = '';
-    if (get('hours')) { const { hours, unread } = parseHours(get('hours')); if (hours) st.hours = hours; if (!hours || unread.length) note = `Hours not fully read: ${unread.join(' · ') || get('hours')}`; }
+    const city = s(l.city);
+    Object.assign(st, { name: s(l.name) || `${brandName} ${city}`.trim(), url: s(l.url), telephone: s(l.phone) || st.telephone,
+      street: s(l.street), locality: city, region: s(l.region), postcode: s(l.postcode), country: s(l.country) || st.country, lat: s(l.lat), lng: s(l.lng),
+      branchCode: '', brandName, brandUrl, hasMap: l.placeId ? `https://www.google.com/maps/place/?q=place_id:${l.placeId}` : '', mapsLink: '', serviceArea: false });
+    if (l.hours) st.hours = l.hours;
+    const note = '';
     const ld = build(st);
     const rep = engine.validateExtracted({ jsonld: [JSON.stringify(ld)] });
     const lb = rep.items[0]?.features.find((f) => f.id === 'local-business');
     const errs = rep.summary.errors;
     // Each row is its own page: it needs its own address and city, whatever the form above has.
-    const own = [...(isUrl(get('url')) ? [] : ['no page address (url): each location block belongs on its own page']), ...(city ? [] : ['no city'])];
-    return { row: i + 2, name: st.name, url: st.url, ld, ok: lb?.status === 'eligible' && !errs && !own.length, problems: [...own, ...(lb?.missing || []).map((m) => `missing ${m}`), ...rep.items.flatMap((x) => x.issues).filter((x) => x.level === 'error').map((x) => x.message), ...(note ? [note] : [])] };
+    const own = [...(isUrl(l.url) ? [] : ["no page address: add the address of this location's own page above, each block belongs on its own page"]), ...(city ? [] : ['no city'])];
+    return { row: i + 1, name: st.name, url: st.url, ld, ok: lb?.status === 'eligible' && !errs && !own.length, problems: [...own, ...(lb?.missing || []).map((m) => `missing ${m}`), ...rep.items.flatMap((x) => x.issues).filter((x) => x.level === 'error').map((x) => x.message), ...(note ? [note] : [])] };
   });
   const good = results.filter((x) => x.ok).length;
   window.__locations = results;
   out.innerHTML = `<p class="msg ${good === results.length ? 'good' : 'bad'}">${results.length} location${results.length === 1 ? '' : 's'}: ${good} ready${good < results.length ? `, ${results.length - good} to fix` : ''}. Each block links to ${esc(brandName || 'the brand')} as its parent organization.</p>
     <div class="bar"><button class="btn2" type="button" id="locJson">Download all (.json)</button><button class="btn2" type="button" id="locHtml">Download all as snippets (.txt)</button></div>` +
-    results.map((x, i) => `<details class="loc"><summary><span class="${x.ok ? 'ok' : 'e'}">${x.ok ? '✓' : '✗'}</span> Row ${x.row}: ${esc(x.name)} <span style="color:var(--muted)">${esc(x.url)}</span></summary>
+    results.map((x, i) => `<details class="loc"><summary><span class="${x.ok ? 'ok' : 'e'}">${x.ok ? '✓' : '✗'}</span> Location ${x.row}: ${esc(x.name)} <span style="color:var(--muted)">${esc(x.url)}</span></summary>
       ${x.problems.length ? `<ul style="margin:6px 0 0 18px;font-size:12px">${x.problems.map((p) => `<li class="e">${esc(p)}</li>`).join('')}</ul>` : ''}
       <pre class="code" style="margin-top:8px;max-height:260px">${esc(JSON.stringify(x.ld, null, 2))}</pre><button class="btn2" type="button" data-copyloc="${i}">Copy this block</button></details>`).join('');
   $('locJson').onclick = () => { download('locations-schema.json', JSON.stringify(results.map((x) => ({ url: x.url, name: x.name, jsonld: x.ld })), null, 2), 'application/json'); logCopy(results.length); };
   $('locHtml').onclick = () => { download('locations-schema.txt', results.map((x) => `<!-- ${x.name}: ${x.url} -->\n<script type="application/ld+json">\n${JSON.stringify(x.ld, null, 2)}\n<\/script>\n`).join('\n'), 'text/plain'); logCopy(results.length); };
   out.querySelectorAll('[data-copyloc]').forEach((b) => { b.onclick = () => { const x = results[+b.dataset.copyloc]; navigator.clipboard?.writeText(`<script type="application/ld+json">\n${JSON.stringify(x.ld, null, 2)}\n<\/script>`); flash(b, 'Copied ✓'); }; });
+}
+
+// ---------- the location finder: Google's suggestions add a location, its Business Profile fills it in ----------
+const MAX_LOCS = 50;
+let locItems = [], locActive = -1, locToken = null, locDebounce = null;
+const newLocId = () => Math.random().toString(36).slice(2, 10);
+function closeLocSuggestions() { const l = $('locAc'); if (l) { l.classList.remove('show'); l.innerHTML = ''; } locItems = []; locActive = -1; }
+function showLocSuggestions(list) {
+  const box = $('locAc');
+  locItems = list; locActive = -1;
+  if (!box || !list.length) { closeLocSuggestions(); return; }
+  box.innerHTML = list.map((x, i) => {
+    const p = x.placePrediction;
+    return `<div class="ac-item" data-lac="${i}"><span>${esc(p.mainText?.text ?? p.text.text)}</span>${p.secondaryText?.text ? `<span class="sub">${esc(p.secondaryText.text)}</span>` : ''}</div>`;
+  }).join('') + '<div class="ac-foot">Suggestions from Google Maps</div>';
+  box.classList.add('show');
+}
+function onLocTyped(value) {
+  clearTimeout(locDebounce);
+  const q = s(value);
+  if (q.length < 2) { closeLocSuggestions(); return; }
+  loadGoogleMaps();
+  locDebounce = setTimeout(async () => {
+    const lib = await placesReady();
+    if (!lib) return;
+    if (!locToken) locToken = new lib.AutocompleteSessionToken();
+    try {
+      const { suggestions } = await lib.AutocompleteSuggestion.fetchAutocompleteSuggestions({ input: q, sessionToken: locToken, includedPrimaryTypes: ['establishment'] });
+      if (s($('locFind')?.value) === q) showLocSuggestions(suggestions || []);
+    } catch (e) { closeLocSuggestions(); }
+  }, 300);
+}
+function pickLoc(i) {
+  const p = locItems[i]?.placePrediction;
+  if (!p) return;
+  closeLocSuggestions();
+  locToken = null; // a pick ends Google's billing session
+  if ($('locFind')) $('locFind').value = '';
+  addLoc({ placeId: p.placeId, name: p.mainText?.text ?? p.text.text, where: p.secondaryText?.text || '' });
+}
+async function addLoc({ placeId, name, where }) {
+  const note = (text, bad) => { const m = $('locOut'); if (m) m.innerHTML = `<p class="msg ${bad ? 'bad' : 'good'}">${esc(text)}</p>`; };
+  if (state.locs.some((l) => l.placeId === placeId)) { note(`${name} is already in the list.`, true); return; }
+  if (state.locs.length >= MAX_LOCS) { note(`Up to ${MAX_LOCS} locations at a time.`, true); return; }
+  const loc = { id: newLocId(), placeId, where, name, url: '', street: '', city: '', region: '', postcode: '', country: '', phone: '', lat: '', lng: '', website: '', hours: null, status: 'loading', note: '' };
+  state.locs.push(loc); save(); drawLocs();
+  let d;
+  try { d = await (await fetch(API + '/gbp/lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, place_id: placeId, where, language: 'en' }) })).json(); }
+  catch (e) { d = { error: 'Couldn\'t reach the server.' }; }
+  if (d.profile) {
+    const f = fieldsFromProfile(d.profile);
+    Object.assign(loc, { name: f.name || loc.name, street: f.street || '', city: f.locality || '', postcode: f.postcode || '', country: f.country || '', phone: f.telephone || '',
+      lat: f.lat || '', lng: f.lng || '', website: f.url || '', hours: f.hours || null, status: 'ok', note: '' });
+  } else {
+    loc.status = 'manual';
+    loc.note = d.error === 'not found' ? 'Looking up Business Profiles isn\'t switched on yet. Fill in this location by hand.' : (d.error || 'Couldn\'t look it up. Fill in this location by hand.');
+  }
+  save(); drawLocs();
+}
+function drawLocs() {
+  const box = $('locList');
+  if (!box) return;
+  box.innerHTML = state.locs.map((l) => {
+    const inp = (f, label, ph = '', wide = false) => `<div${wide ? ' style="grid-column:1/-1"' : ''}><label for="loc-${l.id}-${f}">${label}</label><input id="loc-${l.id}-${f}" data-loc="${l.id}" data-f="${f}" value="${esc(l[f])}" placeholder="${esc(ph)}"></div>`;
+    const days = l.hours ? DAYS.filter((d) => l.hours[d]?.mode && l.hours[d].mode !== 'closed').length : 0;
+    return `<div class="locrow"><div class="lochead"><b>${esc(l.name)}</b> <span class="sub">${esc(l.where)}</span><button type="button" class="btn2 mini" data-locrm="${l.id}" aria-label="Remove ${esc(l.name)}">Remove</button></div>` +
+      (l.status === 'loading' ? '<p class="hint" style="margin:6px 0 0">Looking up its Business Profile…</p>' :
+        `${l.note ? `<p class="msg bad" style="margin:6px 0 0">${esc(l.note)}</p>` : ''}<div class="locgrid">` +
+        inp('url', "This location's own page (required)", l.website || 'https://', true) +
+        inp('name', 'Name') + inp('phone', 'Phone') + inp('street', 'Street') + inp('city', 'City') + inp('postcode', 'Postcode') + inp('country', 'Country (2 letters)') +
+        `</div><p class="hint" style="margin:6px 0 0">${l.status === 'ok' ? `Filled in from its Business Profile${l.hours ? `: open ${days} day${days === 1 ? '' : 's'} a week` : ''}${l.lat ? ', map position found' : ''}.` : 'No profile data: fill in what you have.'}</p>`) + '</div>';
+  }).join('');
 }
 
 // ---------- finding the business on Google, and filling the form from its Business Profile ----------
@@ -1138,7 +1213,7 @@ if (new URLSearchParams(location.search).get('prefill') === '1') {
     if (filled) {
       const { gbpCategory, ...fields } = filled;
       const guess = fromCategory(gbpCategory), type = guess.type;
-      state = { ...blank(), ...fields, ...guess, csv: state.csv };
+      state = { ...blank(), ...fields, ...guess, locs: state.locs };
       save();
       prefillNote = `Filled in from the Business Profile of ${filled.name || 'the business'}${gbpCategory ? ` (Google category "${gbpCategory}", here as ${humanize(type)})` : ''}. Check every field, and set the page address to the page this markup goes on.`;
     }
