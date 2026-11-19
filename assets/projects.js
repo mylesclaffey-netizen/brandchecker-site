@@ -27,6 +27,7 @@
     '.bcp-panel button.bcp-go{font:700 12px var(--mc-display,"Archivo",Arial,sans-serif);background:var(--you,#ff3d00);color:#fff;border:0;border-radius:7px;padding:8px 12px;cursor:pointer}' +
     '.bcp-panel button.bcp-go:disabled{opacity:.5;cursor:default}' +
     '.bcp-panel button.bcp-alt{font:700 12px var(--mc-display,"Archivo",Arial,sans-serif);background:#fff;color:#0a0a0a;border:1px solid var(--ink,#0a0a0a);border-radius:7px;padding:8px 12px;cursor:pointer}' +
+    '.bcp-check{display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:11.5px;cursor:pointer}.bcp-check[hidden]{display:none}.bcp-check input{width:auto;margin-top:2px}' +
     '.bcp-save{width:100%;margin-top:12px;padding:11px!important;font-size:13px!important}' +
     '.bcp-msg{margin-top:8px;font-size:11.5px;min-height:16px}.bcp-msg.bad{color:var(--bad,#d40000)}.bcp-msg.good{color:var(--ok,#00844a)}' +
     '.bcp-foot{margin-top:8px;font-size:11px}.bcp-foot a{color:var(--you,#ff3d00)}' +
@@ -44,6 +45,7 @@
     '<label for="bcpNew">Or add a new project</label>' +
     '<div class="bcp-row"><input id="bcpNew" maxlength="60" placeholder="e.g. Acme Dental"><button type="button" class="bcp-alt" id="bcpAdd">Add</button></div>' +
     '<label for="bcpNote">Note (optional)</label><input id="bcpNote" maxlength="300" placeholder="e.g. before the schema fix">' +
+    '<label class="bcp-check" id="bcpPdfRow" hidden><input type="checkbox" id="bcpPdf" checked> <span>Also attach the PDF you just made: <b id="bcpPdfName"></b></span></label>' +
     '<button type="button" class="bcp-go bcp-save" id="bcpSave" disabled>Save to project</button>' +
     '<div class="bcp-msg" id="bcpMsg"></div>' +
     '<div class="bcp-foot"><a id="bcpOpen" target="_blank" rel="noopener">Open my projects →</a></div>';
@@ -100,17 +102,43 @@
   function snapshot() {
     var hid = panel.hidden, shown = btn.style.display;
     panel.hidden = true; btn.style.display = 'none';
+    // Collapsed sections hold report content too: open them for the read, then close them again.
+    var shut = [].slice.call(document.querySelectorAll('details:not([open])'));
+    shut.forEach(function (d) { d.open = true; });
     var text = '';
     try { text = (document.body.innerText || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, 12000); } catch (e) { /* the page is saved without its text */ }
+    shut.forEach(function (d) { d.open = false; });
     panel.hidden = hid; btn.style.display = shown;
     return text;
+  }
+
+  // A tool that makes its own PDF hands it over here, so saving the page can keep that same file.
+  var held = null;
+  window.BCProjects = { holdPdf: function (blob, name) {
+    if (!blob || blob.size > 3 * 1024 * 1024) { held = null; $('bcpPdfRow').hidden = true; return; }
+    held = { blob: blob, name: name || 'report.pdf' };
+    $('bcpPdfName').textContent = held.name; $('bcpPdfRow').hidden = false;
+  } };
+  function blobToB64(blob) {
+    return new Promise(function (resolve) {
+      var r = new FileReader();
+      r.onload = function () { resolve(String(r.result).split(',')[1] || ''); };
+      r.onerror = function () { resolve(''); };
+      r.readAsDataURL(blob);
+    });
   }
 
   $('bcpSave').addEventListener('click', function () {
     var id = $('bcpSel').value;
     if (!id || busy) return;
     busy = true; $('bcpSave').disabled = true; say('Saving…');
-    api('/projects/add', { project_id: id, tool: slug, title: document.title, url: location.href, note: $('bcpNote').value.trim(), snapshot: snapshot() }).then(function (d) {
+    var attach = held && $('bcpPdf').checked ? held : null;
+    var snap = snapshot();
+    (attach ? blobToB64(attach.blob) : Promise.resolve('')).then(function (b64) {
+      var body = { project_id: id, tool: slug, title: document.title, url: location.href, note: $('bcpNote').value.trim(), snapshot: snap };
+      if (attach && b64) body.file = { name: attach.name, b64: b64 };
+      return api('/projects/add', body);
+    }).then(function (d) {
       busy = false; $('bcpSave').disabled = false;
       if (d.error) { say(d.error, 'bad'); return; }
       var p = projects.filter(function (x) { return x.id === id; })[0]; if (p) p.count = d.project.count;

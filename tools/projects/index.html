@@ -204,7 +204,7 @@ function render(msg) {
   var items = cur ? (cur.items.length ? cur.items.map(function (i) {
     return '<div class="item"><div><a class="t" href="' + esc(i.url) + '" target="_blank" rel="noopener">' + esc(i.title) + '</a>' +
       '<div class="meta">' + (i.tool ? '<span class="tool">' + esc(i.tool.replace(/-/g, ' ')) + '</span>' : '') + (i.snap ? '' : '<span class="tool bare" title="Saved as a link only: save it again from its tool to include its content in the plan">link only</span>') + esc(fmt(i.saved_at)) + '</div></div>' +
-      '<div><button class="btn2 mini" type="button" data-rm="' + i.id + '">Remove</button></div>' +
+      '<div>' + (i.file ? '<button class="btn2 mini" type="button" data-pdf="' + i.id + '" title="' + esc(i.file.name) + '">PDF</button> ' : '') + '<button class="btn2 mini" type="button" data-rm="' + i.id + '">Remove</button></div>' +
       (i.note ? '<div class="note">' + esc(i.note) + '</div>' : '') + '</div>';
   }).join('') : '<p class="lede" style="margin:8px 0 0">Nothing saved here yet. Open any tool and use <b>+ Save to project</b>.</p>') : '';
   app.innerHTML =
@@ -231,6 +231,14 @@ app.addEventListener('click', function (e) {
     api('/projects/delete', { id: cur.id }).then(function (d) { if (d.error) return flash(d.error, 'bad'); curId = ''; loadList('Project deleted.'); });
   } else if (t.dataset.rm && cur) {
     api('/projects/remove', { project_id: cur.id, item_id: t.dataset.rm }).then(function (d) { if (d.error) return flash(d.error, 'bad'); loadList('Removed.'); });
+  } else if (t.dataset.pdf && cur) {
+    var it = cur.items.filter(function (x) { return x.id === t.dataset.pdf; })[0]; if (!it || !it.file) return;
+    t.disabled = true;
+    fetch(API + '/projects/file', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, project_id: cur.id, item_id: it.id }) })
+      .then(function (r) { if ((r.headers.get('Content-Type') || '').indexOf('application/pdf') === -1) return r.json().then(function (d) { throw new Error(d.error || 'The PDF could not be opened.'); }); return r.blob(); })
+      .then(function (blob) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = it.file.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000); })
+      .catch(function (e) { flash(e.message, 'bad'); })
+      .then(function () { t.disabled = false; });
   } else if (t.id === 'writePlan' && cur && !planBusy) {
     planBusy = true; render();
     var pid = cur.id;

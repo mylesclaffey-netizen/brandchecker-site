@@ -432,6 +432,7 @@ async function downloadPdf(btn) {
     const blob = await r.blob(), a = document.createElement('a');
     const name = 'page-audit-' + report.url.replace(/^https?:\/\//, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase().slice(0, 50) + '-' + String(report.checked_at).slice(0, 10) + '.pdf';
     a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    if (window.BCProjects) window.BCProjects.holdPdf(blob, name);   // "Save to project" can keep this PDF
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     $('pdfNote').textContent = 'Downloaded.';
   } catch (e) { $('pdfNote').textContent = e.message; }

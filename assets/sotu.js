@@ -818,6 +818,7 @@
         var a = document.createElement('a');
         a.href = URL.createObjectURL(blob); a.download = filename || 'state-of-the-llm-union.pdf';
         document.body.appendChild(a); a.click(); a.remove();
+        if (window.BCProjects) window.BCProjects.holdPdf(blob, a.download);   // "Save to project" can keep this PDF
         setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
       })
       .catch(function (e) { alert(e.message); })
