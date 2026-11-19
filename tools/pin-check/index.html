@@ -134,6 +134,22 @@
     .map-box{height:60vh}
   }
   body.embed .sidenav{display:none}
+
+  /* ---- PDF export: results first, then the map, as one flowing page (applied before print so the map can resize) ---- */
+  .printmeta{display:none}
+  body.printing .printmeta{display:block;font-size:11px;color:var(--muted);margin:-10px 0 14px}
+  body.printing,body.printing html{height:auto}
+  body.printing .app{display:block;height:auto;overflow:visible}
+  body.printing .sidebar{width:auto;border:0;padding:0;overflow:visible}
+  body.printing .map-wrap{display:block;margin-top:18px;height:auto}
+  body.printing .map-box{height:340px;border:1px solid var(--line)}
+  body.printing #controls,body.printing #gate,body.printing .sharebar,body.printing .sidenav,
+  body.printing .maphint,body.printing .leaflet-control-container{display:none!important}
+  body.printing .placecard,body.printing .kwresult,body.printing .brand{break-inside:avoid}
+  @media print{
+    @page{margin:12mm}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
 </style>
 <link rel="stylesheet" href="/assets/theme.css">
 </head>
@@ -148,6 +164,7 @@
         <p>Brand Checker free tool</p>
       </div>
     </div>
+    <p class="printmeta" id="printMeta"></p>
 
     <p class="err" id="reportErr" style="display:none"></p>
 
@@ -511,10 +528,11 @@ function renderOverlapSection(overlaps){
 function renderOutcomes(outcomes, showLabels, keywords){
   const overlapHtml = showLabels ? renderOverlapSection(computeOverlaps(outcomes, keywords)) : '';
   $('results').innerHTML = overlapHtml + outcomes.map(o => renderPointOutcome(o, showLabels)).join('') +
-    '<div class="sharebar" id="sharebar"><input id="shareUrl" readonly><button id="copyShare" type="button">Copy</button></div>';
+    '<div class="sharebar" id="sharebar"><input id="shareUrl" readonly><button id="copyShare" type="button">Copy</button><button id="pdfBtn" type="button">Download PDF</button></div>';
   const url = location.origin + location.pathname + '?k=' + encodeURIComponent(CODE) + '&id=' + reportId;
   $('shareUrl').value = url;
   $('sharebar').style.display = 'flex';
+  $('pdfBtn').onclick = printPdf;
   $('copyShare').onclick = () => {
     $('shareUrl').select();
     navigator.clipboard?.writeText($('shareUrl').value);
@@ -522,6 +540,41 @@ function renderOutcomes(outcomes, showLabels, keywords){
     setTimeout(() => $('copyShare').textContent = 'Copy', 1500);
   };
 }
+
+// PDF export: the browser's "Save as PDF" print dialog. The page switches to a single-column print layout first so the
+// map resizes and reloads its tiles at the new size, then prints; closing the dialog puts everything back.
+function fitPoints(){
+  if (!points.length) return;
+  if (points.length === 1) map.setView([points[0].lat, points[0].lng], map.getZoom());
+  else map.fitBounds(points.map(p => [p.lat, p.lng]), { padding: [40, 40] });
+}
+let printing = false, oldTitle = '', savedView = null;
+function enterPrintLayout(){
+  if (printing) return; printing = true;
+  oldTitle = document.title;
+  const kws = currentKeywords();
+  document.title = 'map-pin-check-' + (kws.join('-').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'report');
+  $('printMeta').textContent = 'Keywords: ' + kws.join(', ') + ' · ' +
+    points.map(p => (points.length > 1 ? p.label + ' ' : '') + p.lat.toFixed(4) + '°, ' + p.lng.toFixed(4) + '°').join(' · ') +
+    ' · ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  savedView = { c: map.getCenter(), z: map.getZoom() };
+  document.body.classList.add('printing');
+  map.invalidateSize(); fitPoints();
+}
+function leavePrintLayout(){
+  if (!printing) return; printing = false;
+  document.body.classList.remove('printing');
+  document.title = oldTitle; $('printMeta').textContent = '';
+  map.invalidateSize();
+  if (savedView) map.setView(savedView.c, savedView.z, { animate: false });
+}
+function printPdf(){
+  enterPrintLayout();
+  // Give the map's tiles a moment to load at the print size before the dialog opens.
+  setTimeout(() => { window.print(); setTimeout(leavePrintLayout, 1000); }, 1200);
+}
+window.addEventListener('beforeprint', enterPrintLayout);
+window.addEventListener('afterprint', leavePrintLayout);
 
 function renderPointOutcome(o, showLabels){
   const heading = showLabels ? '<h3 class="pointheading">Point ' + esc(o.label) + ' — ' + o.lat.toFixed(4) + '°, ' + o.lng.toFixed(4) + '°</h3>' : '';
