@@ -141,6 +141,21 @@
   .sidenav-link{font-size:12px;color:var(--muted)}
   .sidenav-link:hover{color:var(--ink)}
   body.embed .sidenav{display:none}
+  .printmeta{display:none}
+  @media print{
+    @page{margin:14mm}
+    body{padding:0;font-size:11px}
+    .wrap{max-width:none}
+    .sidenav,.eyebrow,.lede,.hint,.back,.bar,.noprint,.ac-list,.card.addcard,#acList,details.sec>summary::after,#since .btn2,button,label[for^=f],.filters{display:none!important}
+    .printmeta{display:block;font-size:11px;color:var(--muted);margin:0 0 10px}
+    details.sec,.card,.chg,.check,.rev,.stat,.since{break-inside:avoid}
+    details.sec>summary{margin-bottom:8px}
+    input,select,textarea{border:0;padding:0;background:none;appearance:none;-webkit-appearance:none}
+    .tablewrap{overflow:visible;border:1px solid #999}
+    tr.click{cursor:default}
+    a{color:inherit;text-decoration:none}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
 </style>
 <link rel="stylesheet" href="/assets/theme.css">
 </head>
@@ -151,6 +166,7 @@
   <p class="lede">All your clients' Google Business Profiles in one workspace. Each analysis compares a profile with the businesses Google Maps shows for its main search: their categories, reviews and photos. It checks the client's website says the same as the profile, reads the latest reviews, and keeps a list of the changes to make. The next analysis confirms each change once Google shows it.</p>
   <p class="hint">You make the changes in Google's own dashboard for now: each one comes with the text to paste and where the setting is. Sending changes straight to Google needs Google to approve API access, and comes later.</p>
 
+  <p class="printmeta" id="printMeta"></p>
   <div id="app"><p class="loading">Loading…</p></div>
 
   <div class="sidenav">
@@ -242,7 +258,7 @@ function renderWorkspace(msg) {
       groups[c].map(row).join('') + '</tbody></table></div>';
   }).join('');
   app.innerHTML =
-    '<section class="card"><h2>Add a location</h2>' +
+    '<section class="card addcard"><h2>Add a location</h2>' +
     '<p class="hint" style="margin-top:6px">Start typing the business name and pick it from Google\'s suggestions, or paste its Google Maps link (in Maps: Share → Copy link).</p>' +
     '<div class="row2"><div class="ac-wrap"><label for="aName">Business name</label><input id="aName" autocomplete="off" placeholder="Start typing to find it on Google" value="' + esc(addDraft.name) + '"><div class="ac-list" id="acList"></div></div>' +
     '<div><label for="aCity">City (with the country if it\'s ambiguous)</label><input id="aCity" placeholder="Prague, Czechia" value="' + esc(addDraft.city) + '"></div></div>' +
@@ -253,7 +269,7 @@ function renderWorkspace(msg) {
     '<div><label for="aLang">Language people search in</label><select id="aLang">' + LANGS.map(function (l) { return '<option value="' + l[0] + '"' + (addDraft.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('') + '</select></div></div>' +
     '<div class="bar"><button class="submit" id="addBtn" type="button">Add and analyse</button></div><div id="addMsg" class="msg">' + (msg ? esc(msg) : '') + '</div></section>' +
     '<section class="card"><div class="bar" style="margin-top:0;justify-content:space-between"><h2>Locations <span class="small">(' + ws.length + ')</span></h2>' +
-    (ws.length ? '<div class="bar" style="margin:0"><button class="btn2 mini" id="runAll" type="button">' + (running ? 'Stop' : 'Re-analyse all') + '</button><button class="btn2 mini" id="wsCsv" type="button">Download CSV</button></div>' : '') + '</div>' +
+    (ws.length ? '<div class="bar" style="margin:0"><button class="btn2 mini" id="runAll" type="button">' + (running ? 'Stop' : 'Re-analyse all') + '</button><button class="btn2 mini" id="wsCsv" type="button">Download CSV</button><button class="btn2 mini" id="wsPdf" type="button">Download PDF</button></div>' : '') + '</div>' +
     (ws.length > 1 ? '<div class="row2"><div><label for="fClient">Client</label><select id="fClient"><option value="">All clients</option>' + clients.map(function (c) { return '<option value="' + esc(c) + '"' + (view.client === c ? ' selected' : '') + '>' + esc(c || 'No client set') + '</option>'; }).join('') + '</select></div><div><label for="fQ">Find</label><input id="fQ" value="' + esc(view.q) + '" placeholder="Name or address"></div></div>' : '') +
     (ws.length ? table || '<p class="hint" style="margin-top:10px">Nothing matches.</p>' : '<p class="hint" style="margin-top:10px">No locations yet. Add your first client\'s profile above.</p>') +
     '<div id="runMsg" class="msg"></div></section>';
@@ -383,6 +399,25 @@ function workspaceCsv() {
   download('business-profiles.csv', head.join(',') + '\n' + rows.join('\n') + '\n', 'text/csv');
 }
 
+// PDF export: the browser's own "Save as PDF" print dialog, with a print stylesheet that drops the controls and the
+// add form. Every collapsed section is opened for the print so the whole report lands in the file, then restored.
+function printPdf(title, meta) {
+  var opened = [], oldTitle = document.title;
+  document.querySelectorAll('details.sec:not([open])').forEach(function (d) { d.open = true; opened.push(d); });
+  document.title = title;
+  $('printMeta').textContent = meta + ' · ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  var done = false;
+  function restore() {
+    if (done) return; done = true;
+    opened.forEach(function (d) { d.open = false; });
+    document.title = oldTitle; $('printMeta').textContent = '';
+    window.removeEventListener('afterprint', restore);
+  }
+  window.addEventListener('afterprint', restore);
+  setTimeout(function () { window.print(); setTimeout(restore, 1000); }, 50);
+}
+var slug = function (v) { return String(v || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
+
 /* ======================= one location ======================= */
 function openLoc(id) {
   clearTimeout(pollTimer);
@@ -409,7 +444,7 @@ function renderLoc(msg) {
     '<div class="row3"><div><label for="lClient">Client</label><input id="lClient" value="' + esc(L.client || '') + '"></div>' +
     '<div><label for="lKeyword">Main search to compare against</label><input id="lKeyword" value="' + esc(L.keyword || '') + '"></div>' +
     '<div><label for="lLang">Language</label><select id="lLang">' + LANGS.map(function (l) { return '<option value="' + l[0] + '"' + (L.language === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('') + '</select></div></div>' +
-    '<div class="bar"><button class="submit" id="rerun" type="button">Re-analyse</button><button class="btn2" id="revBtn" type="button">Fetch latest reviews</button><button class="btn2" id="schemaBtn" type="button">Make matching website markup</button><button class="btn2" id="rmBtn" type="button">Remove</button></div>' +
+    '<div class="bar"><button class="submit" id="rerun" type="button">Re-analyse</button><button class="btn2" id="revBtn" type="button">Fetch latest reviews</button><button class="btn2" id="schemaBtn" type="button">Make matching website markup</button><button class="btn2" id="locPdf" type="button">Download PDF</button><button class="btn2" id="rmBtn" type="button">Remove</button></div>' +
     '<div id="locMsg" class="msg">' + (msg ? esc(msg) : '') + '</div></div>' +
     '<div id="since"></div>' +
     sec('attention', 'What needs attention', 'Most important first', true) +
@@ -681,6 +716,8 @@ app.addEventListener('click', function (e) {
   if (t.id === 'addBtn') return addLocation();
   if (t.id === 'runAll') return runAll();
   if (t.id === 'wsCsv') return workspaceCsv();
+  if (t.id === 'wsPdf') return printPdf('business-profiles-' + slug(view.client || 'all-clients'), 'Business Profile manager · ' + (view.client || 'All clients') + ' · ' + ws.length + ' locations');
+  if (t.id === 'locPdf' && cur) { var pp = cur.location.profile || {}; return printPdf('business-profile-' + slug(pp.name), 'Business Profile report · ' + (pp.name || 'Location') + (cur.location.client ? ' · ' + cur.location.client : '') + ' · ' + (pp.address || '')); }
   if (!cur) return;
   var L = cur.location, msg = $('locMsg');
   if (t.id === 'rerun') {
