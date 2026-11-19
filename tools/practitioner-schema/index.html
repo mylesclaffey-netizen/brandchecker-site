@@ -256,7 +256,7 @@ function render() {
       <div class="row2"><div>${field('image', 'Photo address', { placeholder: 'https://…/jana.jpg' })}</div><div>${field('telephone', 'Work phone', { inputmode: 'tel' })}</div></div>
       ${field('email', 'Work email', { inputmode: 'email' })}`, true) +
     sec('where', 'Where they practise', 'The clinic, linked to its own markup', `
-      <p class="hint">If you made the clinic's markup with the <a href="/tools/local-schema/">local business schema generator</a> using the same address here, the two link up automatically.</p><div id="list-clinics"></div>`, true) +
+      <p class="hint">If you made the clinic's markup with the <a href="/tools/local-schema/" target="_blank" rel="noopener">local business schema generator</a> using the same address here, the two link up automatically.</p><div id="list-clinics"></div>`, true) +
     sec('expertise', 'Expertise and languages', 'What they treat, the languages they speak', `
       <div class="row2"><div>${field('occupation', 'Profession', { placeholder: 'Dermatologist' })}</div><div>${field('occupationCode', 'Occupation code (optional)', { placeholder: 'ISCO-08 2212' })}</div></div>
       ${area('knowsAbout', 'Specialties and treatments, one per line', 'Dermatology\nMole checks\nPsoriasis')}
@@ -349,7 +349,7 @@ app.addEventListener('click', (e) => {
   else if (t.dataset.rm) { state[t.dataset.rm].splice(+t.dataset.i, 1); drawList(t.dataset.rm); refresh(); }
   else if (t.id === 'copyBtn') { navigator.clipboard?.writeText($('code').textContent); flash(t, 'Copied ✓'); logCopy(1); }
   else if (t.id === 'copyReview') { navigator.clipboard?.writeText($('reviewCode').textContent); flash(t, 'Copied ✓'); }
-  else if (t.id === 'checkBtn') { try { localStorage.setItem('schema-check-code', $('code').textContent); } catch (err) { /* nothing kept */ } location.href = '/tools/schema-audit/?paste=1' + (CODE ? '&k=' + encodeURIComponent(CODE) : ''); }
+  else if (t.id === 'checkBtn') { try { localStorage.setItem('schema-check-code', $('code').textContent); } catch (err) { /* nothing kept */ } window.open('/tools/schema-audit/?paste=1' + (CODE ? '&k=' + encodeURIComponent(CODE) : ''), '_blank'); }
   else if (t.id === 'dlBtn') download(`${(s(state.name) || 'practitioner').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-')}.json`, JSON.stringify(current, null, 2), 'application/json');
   else if (t.id === 'resetBtn') { if (confirm('Clear the whole form?')) { state = blank(); save(); render(); } }
   else if (t.id === 'importBtn') importFrom($('importUrl').value);
