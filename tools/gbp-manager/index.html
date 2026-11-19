@@ -609,7 +609,7 @@ function fillMarket() {
   if (m.error) { el.innerHTML = '<p class="msg bad">' + esc(m.error) + '</p>'; return; }
   var mine = cur.location.profile || {};
   el.innerHTML = '<p class="hint">Google Maps results for "' + esc(m.keyword) + '", searched from the business\'s own address, ' + esc(when(m.checked_at)) + '. ' +
-    (m.your_rank != null ? 'This profile is <b>#' + m.your_rank + '</b>.' : 'This profile isn\'t in the top 20.') + ' People searching from elsewhere see a different order: use the <a href="/tools/pin-check/">map pin check</a> for other spots.</p>' +
+    (m.your_rank != null ? 'This profile is <b>#' + m.your_rank + '</b>.' : 'This profile isn\'t in the top 20.') + ' People searching from elsewhere see a different order: use the <a href="/tools/pin-check/" target="_blank" rel="noopener">map pin check</a> for other spots.</p>' +
     (m.gaps && m.gaps.length ? '<p class="hint"><b>Categories the top competitors use and this profile doesn\'t:</b> ' + m.gaps.map(function (g) { return esc(g.category) + ' (' + g.count + ' of ' + g.of + ')'; }).join(', ') + '.</p>' : '') +
     '<div class="tablewrap"><table><thead><tr><th class="num">#</th><th>Business</th><th>Primary category</th><th>Other categories</th><th class="num">Rating</th><th class="num">Reviews</th><th class="num">Photos</th></tr></thead><tbody>' +
     m.results.map(function (r) {
@@ -655,7 +655,7 @@ function fillWebsite() {
   if (s.error) { el.innerHTML = '<p class="msg bad">' + esc(s.error) + '</p><p class="small">' + esc(s.url || '') + '</p>'; return; }
   el.innerHTML = '<p class="hint">Checked <a href="' + esc(s.final_url || s.url) + '" target="_blank" rel="noopener">' + esc(s.final_url || s.url) + '</a> ' + esc(when(s.checked_at)) + '. Search engines match a profile to its website partly by the name, address and phone they share.</p>' +
     s.checks.map(function (c) { return '<div class="check"><span class="pill ' + c.status + '">' + (c.status === 'ok' ? 'Fine' : c.status === 'bad' ? 'Fix' : 'Improve') + '</span><b>' + esc(c.label) + '</b><span class="d">' + esc(c.detail) + '</span></div>'; }).join('') +
-    '<p class="small" style="margin-top:8px">Structured data on the page: ' + esc((s.schema_types || []).join(', ') || 'none') + '. <a href="/tools/schema-audit/?u=' + encodeURIComponent(s.final_url || s.url) + '" style="color:var(--you)">Check it in the schema validator</a>.</p>';
+    '<p class="small" style="margin-top:8px">Structured data on the page: ' + esc((s.schema_types || []).join(', ') || 'none') + '. <a href="/tools/schema-audit/?u=' + encodeURIComponent(s.final_url || s.url) + '" target="_blank" rel="noopener" style="color:var(--you)">Check it in the schema validator</a>.</p>';
 }
 
 function fillProfile() {
@@ -685,7 +685,7 @@ function toLocalSchema() {
     street: a.address || '', locality: a.city || '', postcode: a.zip || '', country: a.country_code || '', lat: p.lat != null ? String(p.lat) : '', lng: p.lng != null ? String(p.lng) : '',
     hasMap: mapsLink(p), hours: hours, reserveUrl: (p.links && p.links.booking) || '', menuUrl: (p.links && p.links.menu) || '' };
   try { localStorage.setItem('bc-local-schema-prefill', JSON.stringify(prefill)); } catch (e) { /* the generator still opens, empty */ }
-  location.href = '/tools/local-schema/?prefill=1' + (new URLSearchParams(location.search).get('k') ? '&k=' + encodeURIComponent(CODE) : '');
+  window.open('/tools/local-schema/?prefill=1' + (new URLSearchParams(location.search).get('k') ? '&k=' + encodeURIComponent(CODE) : ''), '_blank');
 }
 
 /* ---- the reviews job: check back while it runs ---- */
