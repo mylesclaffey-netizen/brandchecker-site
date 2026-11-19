@@ -1246,7 +1246,7 @@
     <p class="note">No access code needed — open to anyone.</p>
   </div>
 
-  <div class="live">
+  <div class="live" data-side="primary">
     <span class="tag"><i></i>Live</span><span class="usage-tag free">Free Token Usage</span>
     <h3>Google review link generator</h3>
     <p>A direct link that takes customers straight to the "leave a review" box on your Google Business Profile — one click, no searching. Good for receipts, email signatures, and QR codes.</p>
@@ -1260,7 +1260,7 @@
   </div>
 
 
-  <div class="live">
+  <div class="live" data-side="primary">
     <span class="tag"><i></i>Live</span><span class="usage-tag free">Free Token Usage</span>
     <h3>Local business schema generator</h3>
     <p>LocalBusiness structured data for any of schema.org's 150 local business types, checked live against Google's rules: the markup local search runs on, from opening hours to service area.</p>
@@ -1273,7 +1273,7 @@
     <p class="note">No access code needed — open to anyone.</p>
   </div>
 
-  <div class="live">
+  <div class="live" data-side="primary">
     <span class="tag"><i></i>Live</span><span class="usage-tag free">Free Token Usage</span>
     <h3>Practitioner schema generator</h3>
     <p>Profile markup for doctors, dentists, therapists and other professionals at a clinic or practice, so search engines and AI assistants can tell exactly who they are. Checked live against schema.org and Google's profile page rules.</p>
@@ -1634,10 +1634,16 @@
   // where it visually sits in the card grid — without changing which
   // category "wins" a given tool.
   var seen = {};
+  // A card marked data-side="primary" is where its tool sits in the sidebar, whatever category lists it first.
+  var primary = {};
+  document.querySelectorAll('.live[data-side="primary"]').forEach(function(card){
+    primary[slugFromHref(card.querySelector('a.btn').getAttribute('href'))] = card;
+  });
   var lastFrag = document.createDocumentFragment();
   document.querySelectorAll('.category').forEach(function(cat){
     var cards = Array.prototype.filter.call(cat.querySelectorAll('.live'), function(card){
       var slug = slugFromHref(card.querySelector('a.btn').getAttribute('href'));
+      if (primary[slug] && primary[slug] !== card) return false;
       if (seen[slug]) return false;
       seen[slug] = true;
       return true;
