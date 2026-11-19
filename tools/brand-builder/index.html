@@ -94,8 +94,8 @@
 
     <div class="section">Where you compete</div>
     <div class="row2">
-      <div class="field"><label for="market">Country</label><select id="market"></select></div>
-      <div class="field"><label for="city">City (optional)</label><input id="city" type="text" placeholder="e.g. Prague"></div>
+      <div class="field"><label for="market">Country</label><select id="market" name="report_market" autocomplete="off"></select></div>
+      <div class="field"><label for="city">City (optional)</label><input id="city" name="report_city" type="text" autocomplete="off" placeholder="e.g. Prague"></div>
     </div>
     <p class="hint" style="margin:-6px 0 14px">Local map-pack tracking (grid-check) only runs for Prague, Dublin, Hamburg, Belfast or Los Angeles right now — any city still helps our local-pack pin check, which works worldwide.</p>
     <div class="field">
@@ -108,7 +108,7 @@
     </div>
 
     <div class="section">Delivery</div>
-    <div class="field"><label for="email">Email — the report goes here</label><input id="email" type="email" placeholder="you@yourcompany.com"></div>
+    <div class="field"><label for="email">Email — the report goes here</label><input id="email" name="report_email" type="email" autocomplete="email" placeholder="you@yourcompany.com"></div>
 
     <button class="submit" id="go" type="button">Build my report</button>
     <p class="after">This runs a real batch of tools — brand-bidding, AI mentions, rank tracking and more — against your data. No live wait on this page; the full report arrives by email.</p>
