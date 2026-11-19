@@ -96,11 +96,21 @@
   });
   $('bcpNew').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('bcpAdd').click(); });
 
+  // The page's visible text, without this widget: what "Plan & priorities" reads later.
+  function snapshot() {
+    var hid = panel.hidden, shown = btn.style.display;
+    panel.hidden = true; btn.style.display = 'none';
+    var text = '';
+    try { text = (document.body.innerText || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, 12000); } catch (e) { /* the page is saved without its text */ }
+    panel.hidden = hid; btn.style.display = shown;
+    return text;
+  }
+
   $('bcpSave').addEventListener('click', function () {
     var id = $('bcpSel').value;
     if (!id || busy) return;
     busy = true; $('bcpSave').disabled = true; say('Saving…');
-    api('/projects/add', { project_id: id, tool: slug, title: document.title, url: location.href, note: $('bcpNote').value.trim() }).then(function (d) {
+    api('/projects/add', { project_id: id, tool: slug, title: document.title, url: location.href, note: $('bcpNote').value.trim(), snapshot: snapshot() }).then(function (d) {
       busy = false; $('bcpSave').disabled = false;
       if (d.error) { say(d.error, 'bad'); return; }
       var p = projects.filter(function (x) { return x.id === id; })[0]; if (p) p.count = d.project.count;

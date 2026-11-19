@@ -88,6 +88,22 @@
   .item .note{grid-column:1;font-size:12px;font-style:italic;color:var(--muted)}
   .tool{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:#f3f3f3;border-radius:20px;padding:2px 8px;margin-right:6px}
   .row{display:flex;gap:8px}.row input{flex:1}
+  .tool.bare{background:#fdecea;color:var(--bad)}
+  .plan h3{font-family:'Archivo',sans-serif;font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin:18px 0 8px}
+  .act{border:1px solid var(--line);border-radius:9px;padding:11px 13px;margin-bottom:9px;break-inside:avoid}
+  .act b{font-family:'Archivo',sans-serif;font-size:14px}
+  .act .why,.act .how{font-size:12.5px;margin-top:5px}
+  .act .how{color:var(--muted)}
+  .pill{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:20px;padding:2px 8px;margin-left:6px;background:#f3f3f3}
+  .pill.hi{background:rgba(0,132,74,.12);color:var(--ok)}.pill.lo{background:#f3f3f3;color:var(--muted)}.pill.hard{background:rgba(180,95,0,.12);color:var(--warn)}
+  .src{font-size:11px;color:var(--muted);margin-top:6px}.src a{color:var(--you)}
+  .plan ul{margin:6px 0 0 18px;font-size:12.5px}
+  .plannote{font-size:11px;color:var(--muted);margin-top:14px}
+  @media print{
+    body.printplan .card:not(#planCard),body.printplan .eyebrow,body.printplan .lede,body.printplan .sidenav,body.printplan .noprint,body.printplan #msg,body.printplan .bcp-btn,body.printplan .bcp-panel{display:none!important}
+    body.printplan{padding:0}
+    @page{margin:14mm}
+  }
 </style>
 <link rel="stylesheet" href="/assets/theme.css">
 </head>
@@ -116,6 +132,7 @@ var app = document.getElementById('app');
 var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 var fmt = function (iso) { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); };
 var projects = [], cur = null, curId = new URLSearchParams(location.search).get('p') || '';
+var plans = [], planIdx = 0, planBusy = false;
 
 function api(path, body) {
   return fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ code: CODE }, body || {})) })
@@ -134,16 +151,59 @@ function loadList(keep) {
 }
 function openProject(id, msg) {
   curId = id;
+  plans = []; planIdx = 0;
   api('/projects/get', { id: id }).then(function (d) {
     cur = d.project || null; render(msg);
+    api('/projects/plans', { project_id: id }).then(function (r) { if (curId === id && r.versions) { plans = r.versions; render(); } });
     try { history.replaceState(null, '', '?' + new URLSearchParams(Object.assign(Object.fromEntries(new URLSearchParams(location.search)), { p: id })).toString()); } catch (e) { /* address bar left as it is */ }
   });
 }
+var HORIZON = { now: 'This week: quick wins', '30days': 'Next 30 days', later: 'Later' };
+function planBody(v) {
+  var pl = v.plan, src = function (n) { var x = v.sources[n - 1]; return x ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener">[' + n + '] ' + esc(x.title) + '</a>' : '[' + n + ']'; };
+  var grp = ['now', '30days', 'later'].map(function (h) {
+    var list = pl.actions.filter(function (a) { return a.horizon === h; });
+    return list.length ? '<h3>' + HORIZON[h] + '</h3>' + list.map(function (a) {
+      return '<div class="act"><b>' + esc(a.title) + '</b><span class="pill ' + (a.impact === 'high' ? 'hi' : a.impact === 'low' ? 'lo' : '') + '">' + esc(a.impact) + ' impact</span><span class="pill ' + (a.effort === 'high' ? 'hard' : a.effort === 'low' ? 'hi' : '') + '">' + esc(a.effort) + ' effort</span>' +
+        (a.why ? '<div class="why">' + esc(a.why) + '</div>' : '') + (a.how ? '<div class="how"><b style="font-size:12px">First steps:</b> ' + esc(a.how) + '</div>' : '') +
+        (a.sources.length ? '<div class="src">From: ' + a.sources.map(src).join(' · ') + '</div>' : '') + '</div>';
+    }).join('') : '';
+  }).join('');
+  var li = function (t, arr) { return arr.length ? '<h3>' + t + '</h3><ul>' + arr.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : ''; };
+  return (pl.summary ? '<p style="margin-top:12px;font-size:13px">' + esc(pl.summary) + '</p>' : '') + li('What is working', pl.strengths) + grp + li('Not checked yet', pl.gaps) + li('Where the reports disagree', pl.conflicts) +
+    '<p class="plannote">Written ' + esc(fmt(v.created_at)) + ' from ' + v.item_count + ' saved report' + (v.item_count === 1 ? '' : 's') + (v.via === 'gemini' ? ' by Gemini' : ' by a shorter backup writer (Gemini was busy)') + '. A starting point to check, not advice to follow blindly.</p>';
+}
+function planCard() {
+  var withContent = cur.items.filter(function (i) { return i.snap; }).length, bare = cur.items.length - withContent;
+  var v = plans[planIdx];
+  return '<div class="card plan" id="planCard"><h2>Plan &amp; priorities</h2>' +
+    '<p class="hint" style="margin-top:6px">Reads the content of the reports saved in this project and ranks what to do first. ' + (withContent ? withContent + ' of ' + cur.items.length + ' saved item' + (cur.items.length === 1 ? ' has' : 's have') + ' content to read.' : 'None of the saved items has its content yet.') + '</p>' +
+    (bare && withContent ? '<p class="hint" style="color:var(--warn)">' + bare + ' saved as a link only: open each from its tool and save it again to include it.</p>' : '') +
+    (!withContent && cur.items.length ? '<p class="hint" style="color:var(--warn)">Reports saved before this feature are links only. Open each report and use <b>+ Save to project</b> again.</p>' : '') +
+    '<div class="bar noprint"><button class="submit" id="writePlan" type="button"' + (withContent && !planBusy ? '' : ' disabled') + '>' + (planBusy ? 'Reading the reports… 20–60 seconds' : plans.length ? 'Write a new plan' : 'Write the plan') + '</button>' +
+    (plans.length ? '<button class="btn2 mini" id="copyPlan" type="button">Copy as text</button><button class="btn2 mini" id="printPlan" type="button">Print / save as PDF</button>' : '') + '</div>' +
+    (plans.length > 1 ? '<label for="planPick">Earlier plans</label><select id="planPick" class="noprint">' + plans.map(function (x, n) { return '<option value="' + n + '"' + (n === planIdx ? ' selected' : '') + '>' + esc(fmt(x.created_at)) + ' · ' + x.item_count + ' reports' + (n === 0 ? ' (latest)' : '') + '</option>'; }).join('') + '</select>' : '') +
+    (v ? planBody(v) : '') + '<div id="planMsg" class="msg"></div></div>';
+}
+function planText(v) {
+  var pl = v.plan, out = [(cur ? cur.name : 'Project') + ': plan & priorities (' + fmt(v.created_at) + ')', '', pl.summary, ''];
+  ['now', '30days', 'later'].forEach(function (h) {
+    var list = pl.actions.filter(function (a) { return a.horizon === h; });
+    if (!list.length) return;
+    out.push(HORIZON[h].toUpperCase());
+    list.forEach(function (a, n) { out.push((n + 1) + '. ' + a.title + ' (' + a.impact + ' impact, ' + a.effort + ' effort)', '   ' + a.why, a.how ? '   First steps: ' + a.how : ''); });
+    out.push('');
+  });
+  if (pl.gaps.length) out.push('NOT CHECKED YET', ...pl.gaps.map(function (g) { return '- ' + g; }), '');
+  if (pl.conflicts.length) out.push('WHERE THE REPORTS DISAGREE', ...pl.conflicts.map(function (g) { return '- ' + g; }));
+  return out.join('\n').replace(/\n{3,}/g, '\n\n');
+}
+
 function render(msg) {
   var opts = projects.map(function (p) { return '<option value="' + p.id + '"' + (p.id === curId ? ' selected' : '') + '>' + esc(p.name) + ' (' + p.count + ')</option>'; }).join('');
   var items = cur ? (cur.items.length ? cur.items.map(function (i) {
     return '<div class="item"><div><a class="t" href="' + esc(i.url) + '" target="_blank" rel="noopener">' + esc(i.title) + '</a>' +
-      '<div class="meta">' + (i.tool ? '<span class="tool">' + esc(i.tool.replace(/-/g, ' ')) + '</span>' : '') + esc(fmt(i.saved_at)) + '</div></div>' +
+      '<div class="meta">' + (i.tool ? '<span class="tool">' + esc(i.tool.replace(/-/g, ' ')) + '</span>' : '') + (i.snap ? '' : '<span class="tool bare" title="Saved as a link only: save it again from its tool to include its content in the plan">link only</span>') + esc(fmt(i.saved_at)) + '</div></div>' +
       '<div><button class="btn2 mini" type="button" data-rm="' + i.id + '">Remove</button></div>' +
       (i.note ? '<div class="note">' + esc(i.note) + '</div>' : '') + '</div>';
   }).join('') : '<p class="lede" style="margin:8px 0 0">Nothing saved here yet. Open any tool and use <b>+ Save to project</b>.</p>') : '';
@@ -153,7 +213,7 @@ function render(msg) {
     (projects.length ? '<div class="card"><label for="pick" style="margin-top:0">Project</label><select id="pick">' + opts + '</select>' +
       '<div class="bar"><button class="btn2 mini" id="rename" type="button">Rename</button><button class="btn2 mini" id="copyAll" type="button"' + (cur && cur.items.length ? '' : ' disabled') + '>Copy all links</button>' +
       '<button class="btn2 mini" id="csv" type="button"' + (cur && cur.items.length ? '' : ' disabled') + '>Download CSV</button><button class="btn2 mini" id="delProj" type="button">Delete project</button></div>' +
-      items + '</div>' : '<p class="lede">No projects yet. Add your first one above.</p>') +
+      items + '</div>' + planCard() : '<p class="lede">No projects yet. Add your first one above.</p>') +
     '<div id="msg" class="msg"></div>';
   if (msg) flash(msg, 'good');
 }
@@ -171,6 +231,21 @@ app.addEventListener('click', function (e) {
     api('/projects/delete', { id: cur.id }).then(function (d) { if (d.error) return flash(d.error, 'bad'); curId = ''; loadList('Project deleted.'); });
   } else if (t.dataset.rm && cur) {
     api('/projects/remove', { project_id: cur.id, item_id: t.dataset.rm }).then(function (d) { if (d.error) return flash(d.error, 'bad'); loadList('Removed.'); });
+  } else if (t.id === 'writePlan' && cur && !planBusy) {
+    planBusy = true; render();
+    var pid = cur.id;
+    api('/projects/plan', { project_id: pid }).then(function (d) {
+      planBusy = false;
+      if (d.error) { render(); var m = document.getElementById('planMsg'); if (m) { m.textContent = d.error; m.className = 'msg bad'; } return; }
+      if (curId === pid) { plans.unshift(d.version); planIdx = 0; render(); }
+    });
+  } else if (t.id === 'copyPlan' && plans[planIdx]) {
+    if (navigator.clipboard) navigator.clipboard.writeText(planText(plans[planIdx])); var pm = document.getElementById('planMsg'); if (pm) { pm.textContent = 'Plan copied.'; pm.className = 'msg good'; }
+  } else if (t.id === 'printPlan' && plans[planIdx]) {
+    var old = document.title; document.title = 'plan-' + (cur ? cur.name : 'project').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    document.body.classList.add('printplan');
+    var done = function () { document.body.classList.remove('printplan'); document.title = old; window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done); setTimeout(function () { window.print(); setTimeout(done, 1000); }, 50);
   } else if (t.id === 'copyAll' && cur) {
     var text = cur.name + '\n\n' + cur.items.map(function (i) { return i.title + '\n' + i.url; }).join('\n\n');
     if (navigator.clipboard) navigator.clipboard.writeText(text); flash('Copied ' + cur.items.length + ' links.', 'good');
@@ -181,7 +256,7 @@ app.addEventListener('click', function (e) {
     a.download = 'project-' + cur.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.csv'; document.body.appendChild(a); a.click(); a.remove();
   }
 });
-app.addEventListener('change', function (e) { if (e.target.id === 'pick') openProject(e.target.value); });
+app.addEventListener('change', function (e) { if (e.target.id === 'pick') openProject(e.target.value); if (e.target.id === 'planPick') { planIdx = +e.target.value; render(); } });
 app.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'newName') document.getElementById('addProj').click(); });
 
 loadList();
