@@ -170,6 +170,8 @@
   .subhead{font-family:'Archivo',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;
        text-transform:uppercase;color:var(--muted);margin:0 0 12px}
   .gridbox{display:grid;gap:6px;margin:0 0 4px}
+  .droppin{width:22px;height:22px;border-radius:50%;background:var(--you);border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.6);cursor:grab;position:relative}
+  .droppin::after{content:'';position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff}
   .cell{aspect-ratio:1;border-radius:7px;display:flex;align-items:center;justify-content:center;
         font-family:'Archivo',sans-serif;font-size:13px;font-weight:700;color:#fff;
         background:var(--muted);cursor:default;position:relative}
@@ -276,8 +278,10 @@
         <select id="centerMode">
           <option value="city">City centre</option>
           <option value="business">Company location</option>
+          <option value="pin">Drop a pin</option>
         </select>
       </div>
+      <p class="cap" id="pinCap" style="display:none">Click the map to drop the centre of the grid, then drag the pin to fine-tune it. The outline shows the area the grid will cover.</p>
       <p class="cap" id="centerCap" style="display:none">Estimated from the business name and city — accuracy depends on how well the business is listed publicly. Falls back to the city centre if it can't be found.</p>
 
       <label class="aio-check"><input type="checkbox" id="checkAio" checked> Also check Google's AI Overview <span>+1 search</span></label>
@@ -344,6 +348,8 @@ const CODE = new URLSearchParams(location.search).get('k') || window.MC_VISITOR 
 document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
 const REPORT_ID = new URLSearchParams(location.search).get('id') || '';
 const CITY_NAMES = { prague: 'Prague', dublin: 'Dublin', hamburg: 'Hamburg', belfast: 'Belfast', losangeles: 'Los Angeles' };
+// The area each city's grid may cover (the Worker clamps to the same boxes), so a dropped pin can be checked before a scan.
+const CITY_BOUNDS = { prague: [49.94, 50.18, 14.22, 14.71], dublin: [53.20, 53.47, -6.55, -6.05], hamburg: [53.39, 53.75, 9.65, 10.35], belfast: [54.52, 54.68, -6.05, -5.82], losangeles: [33.90, 34.20, -118.55, -118.10] };
 const CITY_CENTERS = { prague: [50.0755, 14.4378], dublin: [53.3498, -6.2603], hamburg: [53.5511, 9.9937], belfast: [54.5973, -5.9301], losangeles: [34.0522, -118.2437] };
 
 const $ = id => document.getElementById(id);
@@ -579,9 +585,38 @@ function updateCap(){
 $('size').addEventListener('change', updateCap);
 updateCap();
 
+// "Drop a pin": the grid is built around a point the user places on the map. The pin is draggable, and an outline shows
+// the area the grid will cover at the chosen size and spacing. A pin outside the city's box is refused before a scan,
+// because the Worker would otherwise quietly fall back to the city centre.
+let pinLatLng = null, pinMarker = null, pinBox = null;
+const pinMode = () => $('centerMode').value === 'pin';
+const pinInside = (ll) => { const b = CITY_BOUNDS[$('city').value]; return !!b && ll.lat >= b[0] && ll.lat <= b[1] && ll.lng >= b[2] && ll.lng <= b[3]; };
+function drawPin() {
+  if (pinMarker) { map.removeLayer(pinMarker); pinMarker = null; }
+  if (pinBox) { map.removeLayer(pinBox); pinBox = null; }
+  if (!pinMode() || !pinLatLng) return;
+  pinMarker = L.marker(pinLatLng, { draggable: true, icon: L.divIcon({ className: '', html: '<div class="droppin"></div>', iconSize: [22, 22], iconAnchor: [11, 11] }), zIndexOffset: -500 }).addTo(map);
+  pinMarker.on('dragend', () => { pinLatLng = pinMarker.getLatLng(); checkPin(); drawPin(); });
+  const half = Number($('size').value) / 2 * Number($('spacing').value);   // km from the pin to the edge of the outermost cells
+  const dLat = half / 111.32, dLng = half / (111.32 * Math.cos(pinLatLng.lat * Math.PI / 180));
+  pinBox = L.rectangle([[pinLatLng.lat - dLat, pinLatLng.lng - dLng], [pinLatLng.lat + dLat, pinLatLng.lng + dLng]], { color: '#ff3d00', weight: 1.5, dashArray: '5 5', fillOpacity: 0.04, interactive: false }).addTo(map);
+}
+function checkPin() {
+  if (pinMode() && pinLatLng && !pinInside(pinLatLng)) showBanner('That pin is outside the area we cover for ' + (CITY_NAMES[$('city').value] || 'this city') + '. Move it inside, or choose another city.');
+  else hideBanner();
+}
+map.on('click', (e) => {
+  if (!pinMode()) return;
+  pinLatLng = e.latlng; checkPin(); drawPin();
+});
 $('centerMode').addEventListener('change', () => {
   $('centerCap').style.display = $('centerMode').value === 'business' ? 'block' : 'none';
+  $('pinCap').style.display = pinMode() ? 'block' : 'none';
+  checkPin(); drawPin();
 });
+$('city').addEventListener('change', () => { pinLatLng = null; drawPin(); hideBanner(); });
+$('size').addEventListener('change', drawPin);
+$('spacing').addEventListener('change', drawPin);
 
 function showBanner(msg){
   $('banner').textContent = msg;
@@ -604,6 +639,10 @@ async function run(){
     return;
   }
 
+  if (pinMode()) {
+    if (!pinLatLng) { $('go').textContent = 'Drop a pin on the map first'; setTimeout(() => $('go').textContent = 'Check my rankings', 2000); return; }
+    if (!pinInside(pinLatLng)) { checkPin(); return; }
+  }
   hideBanner();
   $('go').disabled = true;
   $('progress').classList.add('show');
@@ -620,7 +659,8 @@ async function run(){
 
   // selectedPlaceInfo was already fetched when the business was picked from
   // the dropdown (see loadPlaceInfo) — no need to fetch it again here.
-  const center = ($('centerMode').value === 'business' && selectedPlaceInfo?.location) ? selectedPlaceInfo.location : undefined;
+  const center = pinMode() ? { lat: pinLatLng.lat, lng: pinLatLng.lng }
+    : ($('centerMode').value === 'business' && selectedPlaceInfo?.location) ? selectedPlaceInfo.location : undefined;
 
   let data;
   try {
@@ -743,7 +783,7 @@ function showResults(d){
 
   $('foot').textContent = (d.center_source === 'business_fallback'
     ? 'Couldn’t pinpoint "' + d.business + '" precisely, so the grid is centred on ' + d.city_name + ' instead. '
-    : '') +
+    : d.center_source === 'custom' ? 'The grid is centred on the pin you dropped. ' : '') +
     'Each point checks Google Maps results for the keyword at that exact coordinate. ' +
     'Rankings move; treat this as a snapshot.';
 }
