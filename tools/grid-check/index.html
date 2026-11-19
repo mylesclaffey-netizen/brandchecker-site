@@ -242,6 +242,7 @@
           <option value="dublin">Dublin</option>
           <option value="hamburg">Hamburg</option>
           <option value="belfast">Belfast</option>
+          <option value="losangeles">Los Angeles</option>
         </select>
       </div>
 
@@ -342,8 +343,8 @@ const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
 const CODE = new URLSearchParams(location.search).get('k') || window.MC_VISITOR || '';
 document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
 const REPORT_ID = new URLSearchParams(location.search).get('id') || '';
-const CITY_NAMES = { prague: 'Prague', dublin: 'Dublin', hamburg: 'Hamburg', belfast: 'Belfast' };
-const CITY_CENTERS = { prague: [50.0755, 14.4378], dublin: [53.3498, -6.2603], hamburg: [53.5511, 9.9937], belfast: [54.5973, -5.9301] };
+const CITY_NAMES = { prague: 'Prague', dublin: 'Dublin', hamburg: 'Hamburg', belfast: 'Belfast', losangeles: 'Los Angeles' };
+const CITY_CENTERS = { prague: [50.0755, 14.4378], dublin: [53.3498, -6.2603], hamburg: [53.5511, 9.9937], belfast: [54.5973, -5.9301], losangeles: [34.0522, -118.2437] };
 
 const $ = id => document.getElementById(id);
 
@@ -555,7 +556,7 @@ $('city').addEventListener('change', () => {
 // (Prague, the first <option>) alone rather than guessing. Fires the
 // existing 'change' listeners rather than duplicating their session-reset
 // and map-recenter logic.
-const GEO_CITY_BY_COUNTRY = { IE: 'dublin', CZ: 'prague', DE: 'hamburg' };
+const GEO_CITY_BY_COUNTRY = { IE: 'dublin', CZ: 'prague', DE: 'hamburg', US: 'losangeles' };
 async function applyGeoCityDefault(){
   let d;
   try {
