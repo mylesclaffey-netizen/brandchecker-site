@@ -1679,6 +1679,14 @@
   historyEntry.addEventListener('click', function(e){ e.preventDefault(); openTool('history'); closeSidebarMobile(); });
   sidebar.insertBefore(historyEntry, sidebar.firstChild);
 
+  var projectsEntry = document.createElement('a');
+  projectsEntry.className = 'sidetool';
+  projectsEntry.href = '/tools/projects/';
+  projectsEntry.dataset.slug = 'projects';
+  projectsEntry.innerHTML = '<span class="dot free"></span>My projects';
+  projectsEntry.addEventListener('click', function(e){ e.preventDefault(); openTool('projects'); closeSidebarMobile(); });
+  sidebar.insertBefore(projectsEntry, historyEntry.nextSibling);
+
   document.querySelector('.headHistory').addEventListener('click', function(e){ e.preventDefault(); openTool('history'); });
 
   // Signed in to a credit account (assets/visitor.js): show the balance in the header's Credits link.

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<script src="/assets/visitor.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My projects</title>
+<link rel="canonical" href="https://brandchecker.eu/tools/projects/">
+<meta name="description" content="Your projects: the reports and pages you saved from each tool, grouped by client or campaign.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23e0a93a'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;
+        --you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000;--gold:#0a0a0a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:640px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Archivo',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
+  fieldset{border:0;margin-bottom:24px}
+  legend{font-family:'Archivo',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+         text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .hint{font-size:11.5px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;margin-top:14px}
+  label:first-child{margin-top:0}
+  input,textarea,select{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  textarea{resize:vertical;min-height:70px;font-family:'IBM Plex Mono',monospace}
+  .field{margin-bottom:12px;position:relative}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
+
+  .siterow{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px}
+  .siterow input{flex:1}
+  .rmbtn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:7px;
+        width:38px;height:38px;flex:none;cursor:pointer;font-size:16px;margin-top:1px}
+  .addbtn{font-size:12px;color:var(--you);background:none;border:1px dashed var(--line);
+        border-radius:7px;padding:9px 14px;cursor:pointer;font-family:'IBM Plex Mono',monospace}
+
+  .block{background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:16px;margin-bottom:12px;position:relative}
+  .block .rmblock{position:absolute;top:12px;right:12px;background:none;border:1px solid var(--line);
+        color:var(--muted);border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px}
+  .block .blocktitle{font-family:'Archivo',sans-serif;font-size:11px;font-weight:700;
+        letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+
+  .outheading{font-family:'Archivo',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;
+     text-transform:uppercase;color:var(--muted);margin:28px 0 10px}
+  .codebox{background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:16px;max-height:420px;overflow:auto;margin-bottom:14px}
+  .codebox pre{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ok);
+        white-space:pre-wrap;word-break:break-word}
+  .codebox .empty{color:var(--muted);white-space:normal}
+
+  .submit{width:100%;font-family:'Archivo',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer}
+  .submit:hover{background:#d92f00}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px;line-height:1.6}
+  .after a{color:var(--you)}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+       display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  .sidenav-link.accent{color:var(--you);font-weight:500}
+  .sidenav-link.accent:hover{color:#ff3d00}
+  body.embed .sidenav{display:none}
+  .wrap{max-width:820px}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .btn2{font-family:'Archivo',sans-serif;font-size:12.5px;font-weight:700;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 13px;cursor:pointer}
+  .btn2:hover{border-color:var(--you);color:var(--you)}
+  .btn2.mini{font-size:11.5px;padding:6px 10px}
+  .btn2[disabled]{opacity:.45;cursor:default}
+  .msg{font-size:12px;margin-top:8px}.msg.bad{color:var(--bad)}.msg.good{color:var(--ok)}
+  .card{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  .item{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:11px 0;border-bottom:1px solid #e6e6e6}
+  .item:last-child{border-bottom:0}
+  .item a.t{font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;color:var(--ink);text-decoration:none}
+  .item a.t:hover{color:var(--you)}
+  .item .meta{font-size:11.5px;color:var(--muted)}
+  .item .note{grid-column:1;font-size:12px;font-style:italic;color:var(--muted)}
+  .tool{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:#f3f3f3;border-radius:20px;padding:2px 8px;margin-right:6px}
+  .row{display:flex;gap:8px}.row input{flex:1}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Every tool, one place</p>
+  <h1>My projects</h1>
+  <p class="lede">Use the <b>+ Save to project</b> button on any tool to send what you are looking at to a project: a client, a campaign or a site. Each project keeps its saved reports together, with a note, ready to reopen or hand over.</p>
+
+  <div id="app"><p class="lede">Loading…</p></div>
+
+  <div class="sidenav">
+    <a href="/" class="sidenav-link">← Back to tools</a>
+    <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+  </div>
+</div>
+
+<script>
+(function () {
+'use strict';
+if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
+var API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+var CODE = new URLSearchParams(location.search).get('k') || window.MC_VISITOR || '';
+document.querySelectorAll('.historyLink').forEach(function (a) { a.href = '/tools/history/?k=' + encodeURIComponent(CODE); });
+var app = document.getElementById('app');
+var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+var fmt = function (iso) { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); };
+var projects = [], cur = null, curId = new URLSearchParams(location.search).get('p') || '';
+
+function api(path, body) {
+  return fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ code: CODE }, body || {})) })
+    .then(function (r) { return r.json(); }).catch(function () { return { error: 'Couldn\'t reach the server. Check your connection and try again.' }; });
+}
+function flash(text, cls) { var m = document.getElementById('msg'); if (m) { m.textContent = text || ''; m.className = 'msg' + (cls ? ' ' + cls : ''); } }
+
+function loadList(keep) {
+  if (!CODE) { app.innerHTML = '<p class="msg bad">Projects belong to an access code, and this browser has none. Open the tool from your access link.</p>'; return; }
+  api('/projects/list').then(function (d) {
+    if (d.error) { app.innerHTML = '<p class="msg bad">' + esc(d.error) + '</p>'; return; }
+    projects = d.projects || [];
+    if (!projects.some(function (p) { return p.id === curId; })) curId = projects.length ? projects[0].id : '';
+    if (curId) openProject(curId, keep); else { cur = null; render(keep); }
+  });
+}
+function openProject(id, msg) {
+  curId = id;
+  api('/projects/get', { id: id }).then(function (d) {
+    cur = d.project || null; render(msg);
+    try { history.replaceState(null, '', '?' + new URLSearchParams(Object.assign(Object.fromEntries(new URLSearchParams(location.search)), { p: id })).toString()); } catch (e) { /* address bar left as it is */ }
+  });
+}
+function render(msg) {
+  var opts = projects.map(function (p) { return '<option value="' + p.id + '"' + (p.id === curId ? ' selected' : '') + '>' + esc(p.name) + ' (' + p.count + ')</option>'; }).join('');
+  var items = cur ? (cur.items.length ? cur.items.map(function (i) {
+    return '<div class="item"><div><a class="t" href="' + esc(i.url) + '" target="_blank" rel="noopener">' + esc(i.title) + '</a>' +
+      '<div class="meta">' + (i.tool ? '<span class="tool">' + esc(i.tool.replace(/-/g, ' ')) + '</span>' : '') + esc(fmt(i.saved_at)) + '</div></div>' +
+      '<div><button class="btn2 mini" type="button" data-rm="' + i.id + '">Remove</button></div>' +
+      (i.note ? '<div class="note">' + esc(i.note) + '</div>' : '') + '</div>';
+  }).join('') : '<p class="lede" style="margin:8px 0 0">Nothing saved here yet. Open any tool and use <b>+ Save to project</b>.</p>') : '';
+  app.innerHTML =
+    '<div class="card"><label for="newName" style="margin-top:0">New project</label>' +
+    '<div class="row"><input id="newName" maxlength="60" placeholder="e.g. Acme Dental"><button class="btn2" id="addProj" type="button">Add project</button></div></div>' +
+    (projects.length ? '<div class="card"><label for="pick" style="margin-top:0">Project</label><select id="pick">' + opts + '</select>' +
+      '<div class="bar"><button class="btn2 mini" id="rename" type="button">Rename</button><button class="btn2 mini" id="copyAll" type="button"' + (cur && cur.items.length ? '' : ' disabled') + '>Copy all links</button>' +
+      '<button class="btn2 mini" id="csv" type="button"' + (cur && cur.items.length ? '' : ' disabled') + '>Download CSV</button><button class="btn2 mini" id="delProj" type="button">Delete project</button></div>' +
+      items + '</div>' : '<p class="lede">No projects yet. Add your first one above.</p>') +
+    '<div id="msg" class="msg"></div>';
+  if (msg) flash(msg, 'good');
+}
+
+app.addEventListener('click', function (e) {
+  var t = e.target.closest('button'); if (!t) return;
+  if (t.id === 'addProj') {
+    var name = document.getElementById('newName').value.trim(); if (!name) return;
+    api('/projects/create', { name: name }).then(function (d) { if (d.error) return flash(d.error, 'bad'); curId = d.project.id; loadList(d.existing ? 'You already have that project.' : 'Project added.'); });
+  } else if (t.id === 'rename' && cur) {
+    var n = prompt('Rename this project', cur.name); if (!n || !n.trim()) return;
+    api('/projects/rename', { id: cur.id, name: n }).then(function (d) { if (d.error) return flash(d.error, 'bad'); loadList('Renamed.'); });
+  } else if (t.id === 'delProj' && cur) {
+    if (!confirm('Delete "' + cur.name + '" and the ' + cur.items.length + ' links saved in it? The reports themselves are not deleted.')) return;
+    api('/projects/delete', { id: cur.id }).then(function (d) { if (d.error) return flash(d.error, 'bad'); curId = ''; loadList('Project deleted.'); });
+  } else if (t.dataset.rm && cur) {
+    api('/projects/remove', { project_id: cur.id, item_id: t.dataset.rm }).then(function (d) { if (d.error) return flash(d.error, 'bad'); loadList('Removed.'); });
+  } else if (t.id === 'copyAll' && cur) {
+    var text = cur.name + '\n\n' + cur.items.map(function (i) { return i.title + '\n' + i.url; }).join('\n\n');
+    if (navigator.clipboard) navigator.clipboard.writeText(text); flash('Copied ' + cur.items.length + ' links.', 'good');
+  } else if (t.id === 'csv' && cur) {
+    var q = function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var rows = ['Tool,Title,Link,Note,Saved'].concat(cur.items.map(function (i) { return [i.tool, i.title, i.url, i.note, i.saved_at].map(q).join(','); }));
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([rows.join('\n') + '\n'], { type: 'text/csv' }));
+    a.download = 'project-' + cur.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.csv'; document.body.appendChild(a); a.click(); a.remove();
+  }
+});
+app.addEventListener('change', function (e) { if (e.target.id === 'pick') openProject(e.target.value); });
+app.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'newName') document.getElementById('addProj').click(); });
+
+loadList();
+})();
+</script>
+</body>
+</html>
