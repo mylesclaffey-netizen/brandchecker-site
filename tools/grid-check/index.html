@@ -349,7 +349,7 @@ document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/
 const REPORT_ID = new URLSearchParams(location.search).get('id') || '';
 const CITY_NAMES = { prague: 'Prague', dublin: 'Dublin', hamburg: 'Hamburg', belfast: 'Belfast', losangeles: 'Los Angeles' };
 // The area each city's grid may cover (the Worker clamps to the same boxes), so a dropped pin can be checked before a scan.
-const CITY_BOUNDS = { prague: [49.94, 50.18, 14.22, 14.71], dublin: [53.20, 53.47, -6.55, -6.05], hamburg: [53.39, 53.75, 9.65, 10.35], belfast: [54.52, 54.68, -6.05, -5.82], losangeles: [33.90, 34.20, -118.55, -118.10] };
+const CITY_BOUNDS = { prague: [49.94, 50.18, 14.22, 14.71], dublin: [53.20, 53.47, -6.55, -6.05], hamburg: [53.39, 53.75, 9.65, 10.35], belfast: [54.52, 54.68, -6.05, -5.82], losangeles: [33.70, 34.35, -118.70, -117.85] };
 const CITY_CENTERS = { prague: [50.0755, 14.4378], dublin: [53.3498, -6.2603], hamburg: [53.5511, 9.9937], belfast: [54.5973, -5.9301], losangeles: [34.0522, -118.2437] };
 
 const $ = id => document.getElementById(id);
