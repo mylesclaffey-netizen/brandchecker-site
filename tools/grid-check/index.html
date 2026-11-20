@@ -183,11 +183,11 @@
        background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:7px 9px;
        font-size:10.5px;color:var(--ink);white-space:nowrap;z-index:2;box-shadow:0 6px 18px rgba(0,0,0,.4)}
 
-  .pin{display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;
-       color:#fff;font-family:'Archivo',sans-serif;font-size:17px;font-weight:800;
-       border:2px solid rgba(255,255,255,.85);box-shadow:0 1px 4px rgba(0,0,0,.5);background:var(--muted)}
+  .pin{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;
+       color:#fff;font-family:'Archivo',sans-serif;font-size:24px;font-weight:800;
+       border:3px solid rgba(255,255,255,.9);box-shadow:0 1px 4px rgba(0,0,0,.5);background:var(--muted)}
   .pin.ok{background:var(--ok)} .pin.warn{background:var(--warn);color:#1a1408}
-  .pin.bad{background:var(--bad)} .pin.err{background:var(--line);color:var(--muted);font-size:14px}
+  .pin.bad{background:var(--bad)} .pin.err{background:var(--line);color:var(--muted);font-size:20px}
   .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--card);color:var(--ink);border:1px solid var(--line)}
   .leaflet-popup-content{font-family:'IBM Plex Mono',monospace;font-size:12px;margin:9px 12px}
   .leaflet-popup-content b{font-family:'Archivo',sans-serif;color:var(--gold)}
@@ -718,7 +718,7 @@ function verdictText(s){
 
 function pinIcon(text, cls){
   return L.divIcon({ className: '', html: '<div class="pin ' + cls + '">' + text + '</div>',
-    iconSize: [42, 42], iconAnchor: [21, 21] });
+    iconSize: [56, 56], iconAnchor: [28, 28] });
 }
 
 let lastResult = null;
