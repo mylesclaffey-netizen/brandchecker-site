@@ -351,7 +351,7 @@ document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/
 const REPORT_ID = new URLSearchParams(location.search).get('id') || '';
 const CITY_NAMES = { prague: 'Prague', dublin: 'Dublin', hamburg: 'Hamburg', belfast: 'Belfast', losangeles: 'Los Angeles', saltlakecity: 'Salt Lake City' };
 // The area each city's grid may cover (the Worker clamps to the same boxes), so a dropped pin can be checked before a scan.
-const CITY_BOUNDS = { prague: [49.85, 50.28, 14.05, 14.90], dublin: [53.10, 53.60, -6.75, -5.95], hamburg: [53.30, 53.85, 9.50, 10.50], belfast: [54.40, 54.78, -6.35, -5.55], losangeles: [33.70, 34.35, -118.70, -117.85], saltlakecity: [40.40, 41.00, -112.15, -111.65] };
+const CITY_BOUNDS = { prague: [49.85, 50.28, 14.05, 14.90], dublin: [53.10, 53.60, -6.75, -5.95], hamburg: [53.30, 53.85, 9.50, 10.50], belfast: [54.40, 54.78, -6.35, -5.55], losangeles: [33.55, 34.35, -118.70, -117.65], saltlakecity: [40.40, 41.00, -112.15, -111.65] };
 const CITY_CENTERS = { prague: [50.0755, 14.4378], dublin: [53.3498, -6.2603], hamburg: [53.5511, 9.9937], belfast: [54.5973, -5.9301], losangeles: [34.0522, -118.2437], saltlakecity: [40.7608, -111.8910] };
 
 const $ = id => document.getElementById(id);
