@@ -82,6 +82,12 @@
   .rows{display:flex;flex-direction:column}
   .row{display:flex;gap:10px;padding:10px 16px;border-top:1px solid #e3e3e3;font-size:12.5px;line-height:1.5}
   .row:first-child{border-top:0}
+  .drow{padding:11px 0;border-top:1px solid var(--line)}
+  .drow:first-child{border-top:0}
+  .dtop{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .dpill{font-size:10.5px;font-weight:700;color:#fff;padding:3px 10px;border-radius:20px;white-space:nowrap}
+  .dval{font-size:13px;margin-top:5px;word-break:break-word}
+  .dval.none{color:var(--muted)}
   .badge{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:20px;flex:none;height:fit-content;min-width:52px;text-align:center}
   .row.ok .badge{color:var(--ok);background:rgba(0,132,74,.1)}
   .row.warn .badge{color:var(--warn);background:rgba(180,95,0,.12)}
@@ -159,6 +165,7 @@ const COLOURS = { ok: 'var(--ok)', warn: 'var(--warn)', error: 'var(--bad)' };
 
 // The sections, in report order. `tool` is the full tool each one links to.
 const SECTIONS = [
+  { id: 'snapshot', title: 'Page snapshot', sub: 'The title, description, address and canonical, as search engines read them.', data: true },
   { id: 'indexing', title: 'Can it be indexed?', sub: 'Status, redirects, HTTPS, noindex and canonical.' },
   { id: 'google', title: 'Google’s view', sub: 'From your Search Console: is the page indexed, and what does it earn in Google search?', gsc: true },
   { id: 'site', title: 'Site-wide', sub: 'Checked because this is the homepage: one address for the site, robots.txt and sitemap, and who the brand is.', home: true },
@@ -192,6 +199,15 @@ const passed = list => list.filter(r => r.severity === 'ok').length;
 
 function renderSection(s) {
   const el = $('sec-' + s.id), list = rows[s.id];
+  if (s.data) {   // key/value list with a status pill, not pass/fail rows (the same tags are judged in the sections below)
+    const pill = r => r.pill ? '<span class="dpill" style="background:' + ({ ok: 'var(--ok)', warn: 'var(--warn)', bad: 'var(--bad)' }[r.tone] || 'var(--muted)') + '">' + esc(r.pill) + '</span>' : '';
+    el.innerHTML = '<div class="sechead"><div class="t"><h2>' + esc(s.title) + '</h2><p>' + esc(s.sub) + '</p></div></div>' +
+      (!list ? '<div class="pending">' + esc(waiting[s.id] || 'Checking') + '</div>'
+        : '<div class="rows">' + list.map(r => '<div class="drow"><div class="dtop"><span class="label">' + esc(r.label) + '</span>' + pill(r) + '</div>' +
+          '<div class="dval' + (r.message ? '' : ' none') + '">' + (r.message ? esc(r.message) : 'Not set') + '</div></div>').join('') + '</div>');
+    renderOverview();
+    return;
+  }
   const head = '<div class="sechead"><div class="ringbox">' + (list ? ring(passed(list), counted(list).length, 54) : ring(0, 0, 54)) + '</div>' +
     '<div class="t"><h2>' + esc(s.title) + '</h2><p>' + esc(s.sub) + '</p></div>' +
     (s.tool ? '<a href="/tools/' + s.tool + '/?url=' + encodeURIComponent($('url').value.trim()) + '" target="_top">Full tool →</a>' : '') + '</div>';
@@ -306,12 +322,20 @@ async function run(fresh) {
     $('eyebrow').textContent = 'Page audit · homepage';
     const rowsBefore = rows; drawSections(); rows = rowsBefore;
   }
+  if (basics.snapshot) {
+    const sn = basics.snapshot, t = sn.title, d = sn.description, u = sn.url, c = sn.canonical;
+    const mk = (label, message, pill, tone) => (rows.snapshot = rows.snapshot || []).push({ severity: 'info', label, message, pill, tone });
+    mk('Title', t.text, t.length ? t.length + ' characters' : 'Missing', !t.length ? 'bad' : (t.length > 60 || t.length < 15) ? 'warn' : 'ok');
+    mk('Description', d.text, d.length ? d.length + ' characters' : 'Missing', !d.length ? 'warn' : (d.length > 160 || d.length < 50) ? 'warn' : 'ok');
+    mk('URL', u.final, u.indexable ? 'Indexable' : 'Noindex (' + u.noindex_by + ')', u.indexable ? 'ok' : 'bad');
+    mk('Canonical', c.href || '', { self: 'Self-referencing', other: 'Points elsewhere', missing: 'Missing', multiple: c.tags + ' canonical tags', invalid: 'Invalid' }[c.state], c.state === 'self' ? 'ok' : c.state === 'other' ? 'warn' : 'bad');
+  }
   basics.checks.forEach(c => add(c.section === 'content' && c.type === 'words' ? 'ai' : c.section, c.severity, LABELS[c.type] || c.type, c.message));
   if (basics.status >= 400) {
     ACTIVE.filter(s => !rows[s.id]).forEach(s => rows[s.id] = [{ severity: 'info', label: 'Skipped', message: 'Not checked — the page didn\'t load for this checker.' }]);
     return done(ACTIVE.map(s => s.id));
   }
-  done(['indexing', 'content']);
+  done(['snapshot', 'indexing', 'content']);
   const home = !!basics.is_home;
   const page = basics.final_url;
   report = { url: page, is_home: !!basics.is_home, checked_at: basics.checked_at };
@@ -422,7 +446,7 @@ async function run(fresh) {
 
 // "Download PDF": send the finished report to the Worker, which prints it on an A4 layout (/tools/page-audit/print/).
 async function downloadPdf(btn) {
-  const sections = ACTIVE.map(s => ({ title: s.title, sub: s.sub, rows: rows[s.id] || [] }));
+  const sections = ACTIVE.map(s => ({ title: s.title, sub: s.sub, rows: (rows[s.id] || []).map(r => s.data ? { severity: 'info', label: r.label, message: (r.message || 'Not set') + (r.pill ? ' — ' + r.pill : '') } : r) }));
   const fixes = uniq(ACTIVE.flatMap(s => (rows[s.id] || []).filter(r => r.severity === 'error' || r.severity === 'warn').map(r => ({ ...r, where: s.title }))))
     .sort((a, b) => (a.severity === 'error' ? 0 : 1) - (b.severity === 'error' ? 0 : 1)).slice(0, 5);
   btn.disabled = true; btn.textContent = 'Making PDF…'; $('pdfNote').textContent = 'Usually 5–15 seconds.';
