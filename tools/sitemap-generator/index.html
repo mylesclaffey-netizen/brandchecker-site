@@ -224,7 +224,7 @@ function renderResults(d){
   const sub = d.stopped_reason === 'pages'
     ? 'Stopped at the 800-page limit — this site has more pages than one crawl covers.'
     : d.stopped_reason === 'time'
-    ? 'Stopped after the time budget — some pages may be missing.'
+    ? 'Stopped after the 60-second crawl limit — a large or slow site may have more pages than were found.'
     : 'Crawl finished on its own — every reachable same-site link was found.';
 
   let html = '<div class="summary ' + (d.stopped_reason ? 'issues' : 'clean') + '"><div class="headline">' + esc(headline) + '</div><div class="sub">' + esc(sub) + '</div></div>';
