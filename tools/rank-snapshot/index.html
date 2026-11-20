@@ -105,6 +105,12 @@
       <div class="field"><label for="website">Your website</label><input id="website" type="text" placeholder="yoursite.com"></div>
       <div class="field"><label for="market">Market</label><select id="market"></select></div>
     </div>
+    <div class="field" style="position:relative">
+      <label for="city">City <span style="color:var(--muted)">(optional — narrows the search to one city)</span></label>
+      <input id="city" type="text" placeholder="e.g. Salt Lake City" autocomplete="off">
+      <div id="citySuggest" style="display:none;position:absolute;left:0;right:0;z-index:5;background:var(--card);border:1px solid var(--line);border-radius:7px;max-height:240px;overflow:auto"></div>
+      <div class="count" id="cityPicked" style="display:none"></div>
+    </div>
     <div class="field">
       <label for="keywords">Keywords — one per line, up to 10</label>
       <textarea id="keywords" placeholder="car insurance&#10;cheap car insurance&#10;auto insurance quotes"></textarea>
@@ -145,12 +151,49 @@ document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/
 const MARKETS = ['United Kingdom','United States','Canada','Ireland','Australia','Germany','France',
   'Netherlands','Switzerland','Austria','Spain','Italy','Poland','Czechia','Slovakia'];
 const MAX_KEYWORDS = 10;
+const MARKET_ISO = {'United Kingdom':'gb','United States':'us','Canada':'ca','Ireland':'ie','Australia':'au','Germany':'de','France':'fr',
+  'Netherlands':'nl','Switzerland':'ch','Austria':'at','Spain':'es','Italy':'it','Poland':'pl','Czechia':'cz','Slovakia':'sk'};
 
 const $ = id => document.getElementById(id);
 function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 const ord = n => { const s=['th','st','nd','rd'], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); };
 
 $('market').innerHTML = MARKETS.map(m => '<option' + (m === 'United States' ? ' selected' : '') + '>' + esc(m) + '</option>').join('');
+
+// City: optional. Suggestions come from the same free locations list the SERP preview uses; only a picked suggestion counts.
+let pickedCity = null, citySuggestTimer = null;
+function clearCity(){ pickedCity = null; $('cityPicked').style.display = 'none'; }
+$('city').addEventListener('input', () => {
+  clearCity();
+  clearTimeout(citySuggestTimer);
+  const q = $('city').value.trim();
+  if (q.length < 2){ $('citySuggest').style.display = 'none'; return; }
+  citySuggestTimer = setTimeout(() => loadCities(q), 300);
+});
+$('market').addEventListener('change', () => { $('city').value = ''; clearCity(); $('citySuggest').style.display = 'none'; });
+async function loadCities(q){
+  let data;
+  try {
+    const res = await fetch(API + '/serp-preview/locations', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, country: MARKET_ISO[$('market').value], q })
+    });
+    data = await res.json();
+  } catch (e) { return; }
+  const list = data.locations || [];
+  const box = $('citySuggest');
+  if (!list.length){ box.style.display = 'none'; return; }
+  box.innerHTML = list.map((l, i) => '<button type="button" data-i="' + i + '" style="display:block;width:100%;text-align:left;font:inherit;font-size:13px;color:var(--ink);background:none;border:0;padding:9px 12px;cursor:pointer">' +
+    esc(l.location_name.split(',').join(', ')) + ' <span style="color:var(--muted);font-size:11px">' + esc(l.location_type) + '</span></button>').join('');
+  box.querySelectorAll('button').forEach(b => b.onclick = () => {
+    pickedCity = list[Number(b.dataset.i)];
+    $('city').value = pickedCity.location_name.split(',').join(', ');
+    box.style.display = 'none';
+    $('cityPicked').textContent = '✓ ' + pickedCity.location_type + ' — rankings are checked from here; volume stays country-wide';
+    $('cityPicked').style.display = 'block';
+  });
+  box.style.display = 'block';
+}
 
 $('go').onclick = run;
 $('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; };
@@ -204,14 +247,14 @@ async function run(){
   $('form').style.display = 'none';
   $('results').style.display = 'block';
   $('rTitle').textContent = 'Checking…';
-  $('out').innerHTML = '<p class="empty">Running ' + keywords.length + ' live search' + (keywords.length === 1 ? '' : 'es') + ' in ' + market + '…</p>';
+  $('out').innerHTML = '<p class="empty">Running ' + keywords.length + ' live search' + (keywords.length === 1 ? '' : 'es') + ' in ' + (pickedCity ? pickedCity.location_name.split(',').join(', ') : market) + '…</p>';
   window.scrollTo(0,0);
 
   let d;
   try {
     const res = await fetch(API + '/rank-snapshot', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: CODE, website, market, keywords })
+      body: JSON.stringify({ code: CODE, website, market, keywords, location_code: pickedCity ? pickedCity.location_code : undefined })
     });
     d = await res.json();
   } catch (e) { d = { error: 'could not reach the API' }; }
@@ -232,7 +275,7 @@ function renderResults(d){
   const ok = d.results.filter(r => !r.error);
   const inTop = ok.filter(r => r.in_top).length;
   const first = ok.filter(r => r.position === 1).length;
-  const headline = inTop + ' of ' + d.results.length + ' keyword' + (d.results.length === 1 ? '' : 's') + ' rank in the top 30, in ' + d.market;
+  const headline = inTop + ' of ' + d.results.length + ' keyword' + (d.results.length === 1 ? '' : 's') + ' rank in the top 30, in ' + (d.city ? d.city.split(',').join(', ') : d.market);
   const sub = first
     ? first + ' at #1 · checked just now'
     : 'None at #1 yet — checked just now';
