@@ -193,6 +193,8 @@ async function run(){
   }
   $('rTitle').textContent = d.origin;
   $('out').innerHTML = renderResults(d) + renderShare(url);
+  const cb = $('copyUrls');
+  if (cb) cb.onclick = () => { navigator.clipboard.writeText((window.__sitemapUrls || []).join('\n')).then(() => { cb.textContent = 'Copied'; setTimeout(() => cb.textContent = 'Copy list', 1500); }, () => {}); };
 }
 
 function renderResults(d){
@@ -226,6 +228,19 @@ function renderResults(d){
     ).join('') + '</div>';
   } else if (d.found) {
     html += '<p class="empty">No issues found — the sitemap parses cleanly, every URL matches the site\'s own host, and the sampled URLs all resolved.</p>';
+  }
+
+  if (d.found && (d.urls || []).length){
+    const isIdx = d.type === 'sitemapindex';
+    const shown = d.urls.length, total = d.url_count || shown;
+    html += '<details class="urllist" style="margin:0 0 20px;border:1px solid var(--line);border-radius:10px;padding:12px 14px">' +
+      '<summary style="cursor:pointer;font-size:13px;font-weight:600">' + (isIdx ? 'Child sitemaps' : 'URLs in this sitemap') + ' (' + total.toLocaleString() + ')</summary>' +
+      '<div style="margin:10px 0"><button type="button" id="copyUrls" style="font-family:inherit;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;padding:6px 10px;cursor:pointer">Copy list</button>' +
+      (shown < total ? ' <span style="font-size:11px;color:var(--muted)">showing the first ' + shown.toLocaleString() + ' of ' + total.toLocaleString() + '</span>' : '') + '</div>' +
+      '<ol style="margin:0;padding-left:26px;max-height:380px;overflow:auto;font-size:12px;line-height:1.7;word-break:break-all">' +
+      d.urls.map(u => '<li>' + (/^https?:\/\//i.test(u) ? '<a href="' + esc(u) + '" target="_blank" rel="noopener" style="color:var(--ink)">' + esc(u) + '</a>' : esc(u)) + '</li>').join('') +
+      '</ol></details>';
+    window.__sitemapUrls = d.urls;
   }
 
   html += '<p class="foot">Discovers the sitemap via robots.txt\'s Sitemap: directive, falling back to /sitemap.xml. Spot-checks up to 25 listed URLs spread across the file rather than fetching every one. Doesn\'t recursively crawl child sitemaps in a sitemap index, and doesn\'t read image/video sitemap extensions. Missing a sitemap entirely? Most site generators (WordPress, Shopify, etc.) build one automatically — check your platform\'s docs.</p>';
