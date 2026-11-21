@@ -185,22 +185,25 @@ async function run() {
   found = new Map(); view = 'all';
   $('results').style.display = 'block'; $('out').innerHTML = '';
   // Centre-out: every kind in a cell before moving to the next cell, so the first clinics found are the central ones.
-  const jobs = []; for (const a of areas) for (const t of types) jobs.push({ t, a });
+  const jobs = []; for (const a of areas) for (const t of types) jobs.push({ t, a, idx: jobs.length });
   const total = Math.min(jobs.length, MAX_SEARCHES);
   let done = 0, failed = 0, stop = '';
   const tick = () => { $('prog').innerHTML = '<div class="after" style="margin:0">Searching… ' + Math.min(found.size, target) + ' of ' + target + ' clinics found (' + done + ' searches' + (failed ? ', ' + failed + ' failed' : '') + ')</div><div class="progress"><i style="width:' + Math.round(Math.min(found.size / target, 1) * 100) + '%"></i></div>'; };
   tick();
 
-  async function one({ t, a }) {
+  async function one({ t, a, idx }) {
     let places = null;
     for (let attempt = 0; attempt < 2 && !places; attempt++) {
       try { ({ places } = await lib.Place.searchByText({ textQuery: t[0], fields: FIELDS, locationRestriction: { south: a.south, north: a.north, west: a.west, east: a.east }, maxResultCount: 20, language: 'en', region: 'cz' })); }
       catch (e) { await new Promise(r => setTimeout(r, 600)); }
     }
     if (!places) failed++;
-    else for (const p of places) {
+    else for (const [k, p] of places.entries()) {
       if (p.businessStatus && p.businessStatus !== 'OPERATIONAL') continue;
-      const rec = found.get(p.id) || { id: p.id, order: found.size, name: p.displayName, address: p.formattedAddress, phone: p.nationalPhoneNumber || '', rating: p.rating ?? null, reviews: p.userRatingCount ?? 0, website: p.websiteURI || '', maps: p.googleMapsURI || '', kinds: new Set() };
+      // Order by how central the search area is (then Google's own ranking inside it), not by which search answered first.
+      const order = idx * 1000 + k;
+      const rec = found.get(p.id) || { id: p.id, order, name: p.displayName, address: p.formattedAddress, phone: p.nationalPhoneNumber || '', rating: p.rating ?? null, reviews: p.userRatingCount ?? 0, website: p.websiteURI || '', maps: p.googleMapsURI || '', kinds: new Set() };
+      rec.order = Math.min(rec.order, order);
       rec.kinds.add(t[1]); found.set(p.id, rec);
     }
     done++; tick();
