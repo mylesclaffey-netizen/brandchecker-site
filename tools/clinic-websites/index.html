@@ -77,16 +77,24 @@
   <div id="form">
     <div class="row">
       <div class="field">
+        <label for="goal">What to do</label>
+        <select id="goal">
+          <option value="count">Check a number of clinics</option>
+          <option value="nosite">Keep going until I have clinics without a website</option>
+        </select>
+      </div>
+      <div class="field">
         <label for="kind">Type of clinic</label>
         <select id="kind"></select>
       </div>
       <div class="field">
-        <label for="count">How many clinics to check</label>
+        <label for="count" id="countLabel">How many clinics to check</label>
         <select id="count">
           <option>10</option><option selected>20</option><option>30</option><option>40</option><option>50</option>
         </select>
       </div>
     </div>
+    <label class="skiprow" id="socialRow" style="display:none"><input type="checkbox" id="inclSocial"> Count clinics with only a Facebook or booking page too</label>
     <label class="skiprow"><input type="checkbox" id="skip" checked> Skip clinics I've already checked</label>
     <div class="after" id="seenline" style="margin:4px 0 14px"></div>
     <div class="after" id="estimate"></div>
@@ -130,8 +138,22 @@ $('kind').innerHTML = '<option value="all">All types of clinic</option>' + TYPES
 const chosen = () => $('kind').value === 'all' ? TYPES.filter(t => !t[2]) : [TYPES[+$('kind').value]];
 const wanted = () => +$('count').value;
 const COLS = 6, ROWS = 4, MAX_SEARCHES = 120, BATCH = 8;
-function estimate() { $('estimate').textContent = 'Stops once ' + wanted() + ' clinics are found, after at most ' + MAX_SEARCHES + ' Google searches (usually far fewer).'; }
-$('kind').onchange = $('count').onchange = estimate;
+const isNoSite = () => $('goal').value === 'nosite';
+function estimate() {
+  $('estimate').textContent = isNoSite()
+    ? 'Keeps searching until it has ' + wanted() + ' clinics without a website, after at most ' + MAX_SEARCHES + ' Google searches. Roughly one clinic in ten has none, so expect to check about ' + wanted() * 10 + '.'
+    : 'Stops once ' + wanted() + ' clinics are found, after at most ' + MAX_SEARCHES + ' Google searches (usually far fewer).';
+}
+function setGoal() {
+  const opts = isNoSite() ? [5, 10, 15, 20] : [10, 20, 30, 40, 50];
+  $('count').innerHTML = opts.map(n => '<option' + (n === (isNoSite() ? 5 : 20) ? ' selected' : '') + '>' + n + '</option>').join('');
+  $('countLabel').textContent = isNoSite() ? 'How many without a website' : 'How many clinics to check';
+  $('socialRow').style.display = isNoSite() ? 'flex' : 'none';
+  $('go').textContent = isNoSite() ? 'Find clinics without a website' : 'Check Prague clinics';
+  estimate();
+}
+$('goal').onchange = setGoal;
+$('kind').onchange = $('count').onchange = $('inclSocial').onchange = estimate;
 estimate();
 
 // Clinics checked in earlier scans, kept by the Worker under this key.
@@ -212,9 +234,11 @@ async function run() {
   // Centre-out: every kind in a cell before moving to the next cell, so the first clinics found are the central ones.
   const jobs = []; for (const a of areas) for (const t of types) jobs.push({ t, a, idx: jobs.length });
   const total = Math.min(jobs.length, MAX_SEARCHES);
-  const skipOn = $('skip').checked, skippedIds = new Set();
+  const skipOn = $('skip').checked, skippedIds = new Set(), nosite = isNoSite(), incl = $('inclSocial').checked;
+  const matches = () => [...found.values()].filter(r => { const c = classify(r.website); return c === 'none' || (incl && c === 'social'); }).length;
+  const have = () => nosite ? matches() : found.size;
   let done = 0, failed = 0, stop = '';
-  const tick = () => { $('prog').innerHTML = '<div class="after" style="margin:0">Searching… ' + Math.min(found.size, target) + ' of ' + target + ' clinics found (' + done + ' searches' + (failed ? ', ' + failed + ' failed' : '') + ')</div><div class="progress"><i style="width:' + Math.round(Math.min(found.size / target, 1) * 100) + '%"></i></div>'; };
+  const tick = () => { $('prog').innerHTML = '<div class="after" style="margin:0">Searching… ' + Math.min(have(), target) + ' of ' + target + (nosite ? ' clinics without a website' : ' clinics') + ' found (' + found.size + ' clinics checked, ' + done + ' searches' + (failed ? ', ' + failed + ' failed' : '') + ')</div><div class="progress"><i style="width:' + Math.round(Math.min(have() / target, 1) * 100) + '%"></i></div>'; };
   tick();
 
   async function one({ t, a, idx }) {
@@ -238,16 +262,19 @@ async function run() {
 
   // Searches go in small batches; each batch claims its share of the monthly Google allowance first, so a scan that
   // finds its clinics early only ever uses what it needed.
-  for (let i = 0; i < total && found.size < target; i += BATCH) {
+  for (let i = 0; i < total && have() < target; i += BATCH) {
     const batch = jobs.slice(i, Math.min(i + BATCH, total));
     const rs = await reserve(batch.length);
     if (rs.error || !rs.allowed) { stop = rs.error || 'The month\'s free Google searches have run out (' + rs.remaining + ' left), so the scan stopped here.'; break; }
     await Promise.all(batch.map(one));
   }
-  if (!stop && found.size < target) stop = 'Only ' + found.size + (skipOn ? ' new' : '') + ' clinics found after ' + done + ' searches' + (skippedIds.size ? ' (' + skippedIds.size + ' you had already checked were skipped)' : '') + ' — Google has no more for this type in the area searched.';
+  if (!stop && have() < target) stop = nosite
+    ? 'Found only ' + have() + ' without a website among ' + found.size + ' new clinics checked, after ' + done + ' searches' + (skippedIds.size ? ' (' + skippedIds.size + ' you had already checked were skipped)' : '') + ' — the search stopped at its limit or Google has no more for this type in the area searched.'
+    : 'Only ' + found.size + (skipOn ? ' new' : '') + ' clinics found after ' + done + ' searches' + (skippedIds.size ? ' (' + skippedIds.size + ' you had already checked were skipped)' : '') + ' — Google has no more for this type in the area searched.';
   // Keep the central ones: the first `target` found, in the order they were found.
-  const keep = [...found.values()].sort((a, b) => a.order - b.order).slice(0, target);
-  found = new Map(keep.map(r => [r.id, r]));
+  // In the count mode keep the central ones (the first `target`); in the without-a-website mode keep everything checked so it is all remembered.
+  if (!nosite) { const keep = [...found.values()].sort((a, b) => a.order - b.order).slice(0, target); found = new Map(keep.map(r => [r.id, r])); }
+  else view = 'none';
   $('prog').innerHTML = '';
   render(failed);
   // Remember what this scan showed, so the next one skips it.
@@ -255,6 +282,7 @@ async function run() {
   const sv = shown.length ? await api('/clinics/save', { clinics: shown.map(r => ({ id: r.id, name: r.name, address: r.address, phone: r.phone, rating: r.rating, reviews: r.reviews, website: r.website, status: r.status, kinds: [...r.kinds].join('; '), maps: r.maps })) }) : {};
   if (sv.error) $('out').insertAdjacentHTML('afterbegin', '<div class="err" style="margin:0 0 12px">These clinics could not be saved, so the next scan may show them again: ' + esc(sv.error) + '</div>');
   else { for (const r of shown) seen.set(r.id, { ...r, kinds: [...r.kinds].join('; ') }); seenLine(); }
+  if (nosite && !stop) $('out').insertAdjacentHTML('afterbegin', '<div class="after" style="margin:0 0 10px">Found ' + have() + ' clinics without a website after checking ' + found.size + ' clinics (' + done + ' searches). They are all remembered, so the next run starts fresh.</div>');
   if (skippedIds.size) $('out').insertAdjacentHTML('afterbegin', '<div class="after" style="margin:0 0 10px">' + skippedIds.size + ' clinics you had already checked were skipped.</div>');
   if (stop) $('out').insertAdjacentHTML('afterbegin', '<div class="err" style="margin:0 0 12px">' + esc(stop) + '</div>');
   $('go').disabled = false; showQuota();
