@@ -20,6 +20,9 @@
   label,.lab{display:block;font-size:11px;color:var(--muted);margin-bottom:6px}
   select{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:7px;padding:10px 12px}
   .field{margin-bottom:16px}
+  .skiprow{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);margin:2px 0 0;cursor:pointer}
+  .skiprow input{width:16px;height:16px;accent-color:var(--you)}
+  .linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--you);text-decoration:underline;cursor:pointer}
   .row{display:flex;flex-wrap:wrap;gap:16px}
   .row .field{min-width:220px}
   .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -84,6 +87,8 @@
         </select>
       </div>
     </div>
+    <label class="skiprow"><input type="checkbox" id="skip" checked> Skip clinics I've already checked</label>
+    <div class="after" id="seenline" style="margin:4px 0 14px"></div>
     <div class="after" id="estimate"></div>
     <button class="submit" id="go" type="button">Check Prague clinics</button>
     <p class="after">It starts in the centre of Prague and works outwards, and stops as soon as it has the number you picked. Opening hours, photos and the profile's other details are not read, only what Google shows publicly.</p>
@@ -108,7 +113,7 @@ const PLACES_KEY = 'AIzaSyBgbllzncdzD9xG3ZhJMnyQtWxb5hKp440';   // public browse
 const BOUNDS = { south: 49.94, north: 50.18, west: 14.22, east: 14.71 };
 const TYPES = [
   ['clinic', 'Clinic / medical centre'], ['dentist', 'Dentist'], ['doctor', 'Doctor / GP'], ['dermatology clinic', 'Dermatology'],
-  ['beauty clinic', 'Beauty clinic'],
+  ['beauty clinic', 'Beauty clinic'], ['spa clinic', 'Spa clinic'],
   ['physiotherapy', 'Physiotherapy'], ['plastic surgery clinic', 'Plastic surgery'], ['gynecology clinic', 'Gynecology'],
   ['eye clinic', 'Eye clinic'], ['pediatric clinic', 'Pediatric'], ['orthopedic clinic', 'Orthopedic'], ['psychologist', 'Psychology'],
   ['veterinary clinic', 'Veterinary', true]   // third value: not part of "All types"
@@ -128,6 +133,25 @@ const COLS = 6, ROWS = 4, MAX_SEARCHES = 120, BATCH = 8;
 function estimate() { $('estimate').textContent = 'Stops once ' + wanted() + ' clinics are found, after at most ' + MAX_SEARCHES + ' Google searches (usually far fewer).'; }
 $('kind').onchange = $('count').onchange = estimate;
 estimate();
+
+// Clinics checked in earlier scans, kept by the Worker under this key.
+let seen = new Map();
+async function api(path, body) {
+  try { return await (await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, ...body }) })).json(); }
+  catch (e) { return { error: 'could not reach the checker' }; }
+}
+function seenLine() {
+  $('seenline').innerHTML = seen.size
+    ? 'Checked so far: <b>' + seen.size + '</b> clinics · <button type="button" class="linkbtn" id="dlSeen">Download the full list</button>'
+    : 'No clinics checked yet. Each scan is remembered from now on.';
+}
+async function loadSeen() {
+  const d = await api('/clinics/seen', {});
+  if (d && d.clinics) seen = new Map(d.clinics.map(c => [c.id, c]));
+  seenLine();
+}
+loadSeen();
+$('seenline').addEventListener('click', e => { if (e.target.id === 'dlSeen') downloadCsv([...seen.entries()].map(([id, c]) => ({ id, ...c, kinds: new Set(String(c.kinds || '').split('; ').filter(Boolean)) })), 'prague-clinics-all-checked'); });
 
 async function reserve(n) {
   try {
@@ -188,6 +212,7 @@ async function run() {
   // Centre-out: every kind in a cell before moving to the next cell, so the first clinics found are the central ones.
   const jobs = []; for (const a of areas) for (const t of types) jobs.push({ t, a, idx: jobs.length });
   const total = Math.min(jobs.length, MAX_SEARCHES);
+  const skipOn = $('skip').checked, skippedIds = new Set();
   let done = 0, failed = 0, stop = '';
   const tick = () => { $('prog').innerHTML = '<div class="after" style="margin:0">Searching… ' + Math.min(found.size, target) + ' of ' + target + ' clinics found (' + done + ' searches' + (failed ? ', ' + failed + ' failed' : '') + ')</div><div class="progress"><i style="width:' + Math.round(Math.min(found.size / target, 1) * 100) + '%"></i></div>'; };
   tick();
@@ -201,6 +226,7 @@ async function run() {
     if (!places) failed++;
     else for (const [k, p] of places.entries()) {
       if (p.businessStatus && p.businessStatus !== 'OPERATIONAL') continue;
+      if (skipOn && seen.has(p.id)) { skippedIds.add(p.id); continue; }
       // Order by how central the search area is (then Google's own ranking inside it), not by which search answered first.
       const order = idx * 1000 + k;
       const rec = found.get(p.id) || { id: p.id, order, name: p.displayName, address: p.formattedAddress, phone: p.nationalPhoneNumber || '', rating: p.rating ?? null, reviews: p.userRatingCount ?? 0, website: p.websiteURI || '', maps: p.googleMapsURI || '', kinds: new Set() };
@@ -218,12 +244,18 @@ async function run() {
     if (rs.error || !rs.allowed) { stop = rs.error || 'The month\'s free Google searches have run out (' + rs.remaining + ' left), so the scan stopped here.'; break; }
     await Promise.all(batch.map(one));
   }
-  if (!stop && found.size < target) stop = 'Only ' + found.size + ' clinics found after ' + done + ' searches — Google has no more for this type in Prague.';
+  if (!stop && found.size < target) stop = 'Only ' + found.size + (skipOn ? ' new' : '') + ' clinics found after ' + done + ' searches' + (skippedIds.size ? ' (' + skippedIds.size + ' you had already checked were skipped)' : '') + ' — Google has no more for this type in the area searched.';
   // Keep the central ones: the first `target` found, in the order they were found.
   const keep = [...found.values()].sort((a, b) => a.order - b.order).slice(0, target);
   found = new Map(keep.map(r => [r.id, r]));
   $('prog').innerHTML = '';
   render(failed);
+  // Remember what this scan showed, so the next one skips it.
+  const shown = list();
+  const sv = shown.length ? await api('/clinics/save', { clinics: shown.map(r => ({ id: r.id, name: r.name, address: r.address, phone: r.phone, rating: r.rating, reviews: r.reviews, website: r.website, status: r.status, kinds: [...r.kinds].join('; '), maps: r.maps })) }) : {};
+  if (sv.error) $('out').insertAdjacentHTML('afterbegin', '<div class="err" style="margin:0 0 12px">These clinics could not be saved, so the next scan may show them again: ' + esc(sv.error) + '</div>');
+  else { for (const r of shown) seen.set(r.id, { ...r, kinds: [...r.kinds].join('; ') }); seenLine(); }
+  if (skippedIds.size) $('out').insertAdjacentHTML('afterbegin', '<div class="after" style="margin:0 0 10px">' + skippedIds.size + ' clinics you had already checked were skipped.</div>');
   if (stop) $('out').insertAdjacentHTML('afterbegin', '<div class="err" style="margin:0 0 12px">' + esc(stop) + '</div>');
   $('go').disabled = false; showQuota();
 }
@@ -253,14 +285,14 @@ $('out').addEventListener('click', e => {
   if (e.target.dataset.v) { view = e.target.dataset.v; render(0); }
   if (e.target.id === 'csv') downloadCsv();
 });
-function downloadCsv() {
+function downloadCsv(rowsIn, base) {
   const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-  const rows = list().sort((a, b) => b.reviews - a.reviews);
+  const rows = (rowsIn || list()).sort((a, b) => b.reviews - a.reviews);
   const csv = [['Clinic', 'Address', 'Phone', 'Rating', 'Reviews', 'Website on Google', 'Status', 'Kinds', 'Google Maps'].map(q).join(',')]
     .concat(rows.map(r => [r.name, r.address, r.phone, r.rating ?? '', r.reviews, r.website, ({ none: 'No website', social: 'Social or listing only', ok: 'Has a website' })[r.status], [...r.kinds].join('; '), r.maps].map(q).join(','))).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = 'prague-clinics-website-check-' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.download = (base || 'prague-clinics-website-check') + '-' + new Date().toISOString().slice(0, 10) + '.csv';
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
 </script>
