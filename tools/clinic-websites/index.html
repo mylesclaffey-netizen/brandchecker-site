@@ -95,8 +95,9 @@
       </div>
     </div>
     <label class="skiprow" id="socialRow" style="display:none"><input type="checkbox" id="inclSocial"> Count clinics with only a Facebook or booking page too</label>
-    <label class="skiprow"><input type="checkbox" id="skip" checked> Skip clinics I've already checked</label>
-    <div class="after" id="seenline" style="margin:4px 0 14px"></div>
+    <label class="skiprow"><input type="checkbox" id="skip" checked> Skip clinics and areas I've already checked</label>
+    <div class="after" id="seenline" style="margin:4px 0 2px"></div>
+    <div class="after" id="areasline" style="margin:0 0 14px"></div>
     <div class="after" id="estimate"></div>
     <button class="submit" id="go" type="button">Check Prague clinics</button>
     <p class="after">It starts in the centre of Prague and works outwards, and stops as soon as it has the number you picked. Opening hours, photos and the profile's other details are not read, only what Google shows publicly.</p>
@@ -156,7 +157,8 @@ function setGoal() {
   estimate();
 }
 $('goal').onchange = setGoal;
-$('kind').onchange = $('count').onchange = $('inclSocial').onchange = estimate;
+$('kind').onchange = () => { estimate(); areasLine(); };
+$('count').onchange = $('inclSocial').onchange = estimate;
 estimate();
 
 // Clinics checked in earlier scans, kept by the Worker under this key.
@@ -164,6 +166,16 @@ let seen = new Map();
 async function api(path, body) {
   try { return await (await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, ...body }) })).json(); }
   catch (e) { return { error: 'could not reach the checker' }; }
+}
+// Searches already run: "<kind>@<row>-<col>" -> date. A search returns the same top 20 each time, so repeating one is wasted.
+let areasDone = new Map();
+const areaKey = (t, a) => t[0] + '@' + a.r + '-' + a.c;
+function areasLine() {
+  const ts = chosen(), total = ts.length * ROWS * COLS;
+  const done = ts.reduce((n, t) => n + [...areasDone.keys()].filter(k => k.startsWith(t[0] + '@')).length, 0);
+  $('areasline').textContent = done
+    ? 'Areas searched for ' + ($('kind').value === 'all' ? 'these types' : 'this type') + ': ' + done + ' of ' + total + '. A new scan carries on with the rest' + (done >= total ? ' (all done — untick the box to search them again)' : '') + '.'
+    : '';
 }
 function seenLine() {
   $('seenline').innerHTML = seen.size
@@ -173,7 +185,8 @@ function seenLine() {
 async function loadSeen() {
   const d = await api('/clinics/seen', {});
   if (d && d.clinics) seen = new Map(d.clinics.map(c => [c.id, c]));
-  seenLine();
+  if (d && d.areas) areasDone = new Map(Object.entries(d.areas));
+  seenLine(); areasLine();
 }
 loadSeen();
 $('seenline').addEventListener('click', e => { if (e.target.id === 'dlSeen') downloadCsv([...seen.entries()].map(([id, c]) => ({ id, ...c, kinds: new Set(String(c.kinds || '').split('; ').filter(Boolean)) })), 'prague-clinics-all-checked'); });
@@ -225,7 +238,7 @@ function gridCells() {
   const cLat = 50.0755, cLng = 14.4378;   // Old Town: the scan starts here and spreads outwards
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
     const a = { south: BOUNDS.south + r * dLat, north: BOUNDS.south + (r + 1) * dLat, west: BOUNDS.west + c * dLng, east: BOUNDS.west + (c + 1) * dLng };
-    out.push({ ...a, d: Math.hypot((a.south + a.north) / 2 - cLat, ((a.west + a.east) / 2 - cLng) * 0.64) });
+    out.push({ ...a, r, c, d: Math.hypot((a.south + a.north) / 2 - cLat, ((a.west + a.east) / 2 - cLng) * 0.64) });
   }
   return out.sort((x, y) => x.d - y.d);
 }
@@ -251,7 +264,15 @@ async function run() {
   found = new Map(); view = 'all';
   $('results').style.display = 'block'; $('out').innerHTML = '';
   // Centre-out: every kind in a cell before moving to the next cell, so the first clinics found are the central ones.
-  const jobs = []; for (const a of areas) for (const t of types) jobs.push({ t, a, idx: jobs.length });
+  const allJobs = []; for (const a of areas) for (const t of types) allJobs.push({ t, a, idx: allJobs.length });
+  // With "skip" on, searches already run in an earlier scan are left out, so this one starts where the last stopped.
+  const jobs = $('skip').checked ? allJobs.filter(j => !areasDone.has(areaKey(j.t, j.a))) : allJobs;
+  const areasSkipped = allJobs.length - jobs.length, ranAreas = new Set();
+  if (!jobs.length) {
+    $('results').style.display = 'none'; $('stopBtn').style.display = 'none';
+    $('err').textContent = 'Every area for ' + (types.length > 1 ? 'these types' : 'this type') + ' has already been searched. Untick "Skip clinics and areas I\'ve already checked" to search them again.';
+    $('err').style.display = 'block'; $('go').disabled = false; return;
+  }
   const total = Math.min(jobs.length, MAX_SEARCHES);
   const skipOn = $('skip').checked, skippedIds = new Set(), nosite = isNoSite(), incl = $('inclSocial').checked;
   const matches = () => [...found.values()].filter(r => { const c = classify(r.website); return c === 'none' || (incl && c === 'social'); }).length;
@@ -267,7 +288,8 @@ async function run() {
       catch (e) { await new Promise(r => setTimeout(r, 600)); }
     }
     if (!places) failed++;
-    else for (const [k, p] of places.entries()) {
+    else { ranAreas.add(areaKey(t, a)); }
+    if (places) for (const [k, p] of places.entries()) {
       if (p.businessStatus && p.businessStatus !== 'OPERATIONAL') continue;
       if (skipOn && seen.has(p.id)) { skippedIds.add(p.id); continue; }
       // Order by how central the search area is (then Google's own ranking inside it), not by which search answered first.
@@ -311,9 +333,10 @@ async function run() {
   render(failed);
   // Remember what this scan showed, so the next one skips it.
   const shown = list();
-  const sv = shown.length ? await retrying('/clinics/save', { clinics: shown.map(r => ({ id: r.id, name: r.name, address: r.address, phone: r.phone, rating: r.rating, reviews: r.reviews, website: r.website, status: r.status, kinds: [...r.kinds].join('; '), maps: r.maps })) }) : {};
+  const sv = (shown.length || ranAreas.size) ? await retrying('/clinics/save', { areas: [...ranAreas], clinics: shown.map(r => ({ id: r.id, name: r.name, address: r.address, phone: r.phone, rating: r.rating, reviews: r.reviews, website: r.website, status: r.status, kinds: [...r.kinds].join('; '), maps: r.maps })) }) : {};
   if (sv.error) $('out').insertAdjacentHTML('afterbegin', '<div class="err" style="margin:0 0 12px">These clinics could not be saved, so the next scan may show them again: ' + esc(sv.error) + '</div>');
-  else { for (const r of shown) seen.set(r.id, { ...r, kinds: [...r.kinds].join('; ') }); seenLine(); }
+  else { for (const r of shown) seen.set(r.id, { ...r, kinds: [...r.kinds].join('; ') }); const nowIso = new Date().toISOString(); for (const k of ranAreas) areasDone.set(k, nowIso); seenLine(); areasLine(); }
+  if (areasSkipped) $('out').insertAdjacentHTML('afterbegin', '<div class="after" style="margin:0 0 10px">' + areasSkipped + ' searches in areas already searched were left out, so this scan went straight to new ground.</div>');
   if (nosite && !stop) $('out').insertAdjacentHTML('afterbegin', '<div class="after" style="margin:0 0 10px">' + (target === Infinity ? info + ': ' : '') + 'Found ' + have() + ' clinics without a website after checking ' + found.size + ' clinics (' + done + ' searches). They are all remembered, so the next run starts fresh.</div>');
   if (skippedIds.size) $('out').insertAdjacentHTML('afterbegin', '<div class="after" style="margin:0 0 10px">' + skippedIds.size + ' clinics you had already checked were skipped.</div>');
   if (stop) $('out').insertAdjacentHTML('afterbegin', '<div class="err" style="margin:0 0 12px">' + esc(stop) + '</div>');
