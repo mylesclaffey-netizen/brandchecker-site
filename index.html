@@ -933,7 +933,7 @@
       <div class="cattitle">Where You Rank</div>
       <p class="catlede">Position tracking — one keyword across markets, a full keyword list, or a recurring weekly check with each change flagged.</p>
     </div>
-    <div class="catmeta"><span class="catcount">7 tools</span><span class="chev">›</span></div>
+    <div class="catmeta"><span class="catcount">6 tools</span><span class="chev">›</span></div>
   </summary>
   <div class="live-grid">
 
@@ -1218,19 +1218,6 @@
     </ul>
     <a class="btn" href="/tools/gbp-manager/">Open the tool</a>
     <p class="note">No access code needed — open to anyone.</p>
-  </div>
-
-  <div class="live">
-    <span class="tag"><i></i>Live</span><span class="usage-tag light">Light Token Usage</span>
-    <h3>Clinic website check</h3>
-    <p>Finds clinics across Prague on Google Maps and shows which have no website on their Google profile, or only a Facebook page or a booking listing — the best people to talk to first.</p>
-    <ul>
-      <li>Searches by kind of clinic and area, so crowded parts of the city are covered</li>
-      <li>Sorted by review count, with phone number and a link to each clinic on Google Maps</li>
-      <li>Download the list as a CSV</li>
-    </ul>
-    <a class="btn" href="/tools/clinic-websites/">Open the tool</a>
-    <p class="note">Needs an access link. It uses Google's free monthly searches, shared with the grid tool.</p>
   </div>
 
   <div class="live">
@@ -1701,6 +1688,46 @@
   sidebar.insertBefore(projectsEntry, historyEntry.nextSibling);
 
   document.querySelector('.headHistory').addEventListener('click', function(e){ e.preventDefault(); openTool('history'); });
+
+  // Custom tools: private tools that only the owner's key opens. The Worker says whether this key may see them and which
+  // ones there are; for any other key nothing is added and nothing about them is in this page.
+  if (CODE) {
+    fetch('https://mc2seo-tools-api.mylesclaffey.workers.dev/api/custom-tools/check', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE })
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (!d || !d.allowed || !d.tools || !d.tools.length) return;
+      var esc = function(t){ return String(t).replace(/[&<>"]/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+      var heading = document.createElement('div');
+      heading.className = 'scat';
+      heading.textContent = 'Custom tools';
+      sidebar.appendChild(heading);
+      var cards = '';
+      d.tools.forEach(function(t){
+        var a = document.createElement('a');
+        a.className = 'sidetool';
+        a.href = '/tools/' + t.slug + '/';
+        a.dataset.slug = t.slug;
+        a.innerHTML = '<span class="dot light"></span>' + esc(t.title);
+        a.addEventListener('click', function(e){ e.preventDefault(); openTool(t.slug); closeSidebarMobile(); });
+        sidebar.appendChild(a);
+        cards += '<div class="live"><span class="tag"><i></i>Private</span><h3>' + esc(t.title) + '</h3><p>' + esc(t.blurb) + '</p>' +
+          '<a class="btn" href="/tools/' + t.slug + '/" data-custom="' + esc(t.slug) + '">Open the tool</a><p class="note">Only your key opens this.</p></div>';
+      });
+      var menu = document.querySelector('.category-menu');
+      if (menu) {
+        var det = document.createElement('details');
+        det.className = 'category';
+        det.setAttribute('name', 'category-group');
+        det.innerHTML = '<summary><div><div class="cattitle">Custom tools</div><p class="catlede">Private tools, only visible with your key.</p></div>' +
+          '<div class="catmeta"><span class="catcount">' + d.tools.length + (d.tools.length === 1 ? ' tool' : ' tools') + '</span><span class="chev">›</span></div></summary>' +
+          '<div class="live-grid">' + cards + '</div>';
+        menu.appendChild(det);
+        det.querySelectorAll('a.btn').forEach(function(btn){
+          btn.addEventListener('click', function(e){ e.preventDefault(); openTool(btn.dataset.custom); });
+        });
+      }
+    }).catch(function(){ /* no tab */ });
+  }
 
   // Signed in to a credit account (assets/visitor.js): show the balance in the header's Credits link.
   if (window.BC_ACCOUNT) {
