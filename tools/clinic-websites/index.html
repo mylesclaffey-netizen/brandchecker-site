@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<script src="/assets/visitor.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clinic website check</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2335c48d'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;
+        --you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000;--gold:#0a0a0a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:980px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Archivo',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.14;margin:8px 0;color:var(--gold)}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.6;max-width:640px}
+  label,.lab{display:block;font-size:11px;color:var(--muted);margin-bottom:6px}
+  select{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:7px;padding:10px 12px}
+  .field{margin-bottom:16px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-size:12px;border:1px solid var(--line);border-radius:20px;padding:6px 13px;cursor:pointer;user-select:none;background:var(--card)}
+  .chip input{display:none}
+  .chip.on{background:var(--ink);color:#fff}
+  .submit{font-family:'Archivo',sans-serif;font-size:15px;font-weight:700;background:var(--you);color:#fff;border:0;border-radius:8px;padding:14px 26px;cursor:pointer;margin-top:4px}
+  .submit:hover{background:#d92f00}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);margin-top:11px;line-height:1.6;max-width:640px}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px;margin-top:14px}
+  .quota{font-size:12px;margin:0 0 18px}
+  .quota b{font-family:'Archivo',sans-serif}
+
+  #results{display:none;margin-top:26px}
+  .progress{height:8px;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:10px 0 6px}
+  .progress i{display:block;height:100%;width:0;background:var(--you);transition:width .25s}
+  .stats{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 18px}
+  .stat{border:1px solid var(--line);border-radius:10px;padding:12px 16px;min-width:140px}
+  .stat b{font-family:'Archivo',sans-serif;font-size:26px;display:block;line-height:1.1}
+  .stat span{font-size:11px;color:var(--muted)}
+  .stat.none b{color:var(--bad)} .stat.social b{color:var(--warn)} .stat.ok b{color:var(--ok)}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+  .tab{font-size:12px;border:1px solid var(--line);border-radius:20px;padding:6px 13px;cursor:pointer;background:var(--card);font-family:inherit;color:var(--ink)}
+  .tab.on{background:var(--ink);color:#fff}
+  .sp{flex:1}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:2px solid var(--line);font-weight:500}
+  td{padding:10px;border-bottom:1px solid #e5e5e5;vertical-align:top}
+  td .nm{font-weight:600}
+  td .ad{color:var(--muted);font-size:11px}
+  .pill{font-size:10.5px;font-weight:700;color:#fff;border-radius:20px;padding:3px 10px;white-space:nowrap;display:inline-block}
+  .pill.none{background:var(--bad)} .pill.social{background:var(--warn)} .pill.ok{background:var(--ok)}
+  td a{color:var(--ink);word-break:break-all}
+  td .site{display:block;font-size:11px;margin-top:3px}
+  .foot{font-size:10.5px;color:var(--muted);margin-top:20px;line-height:1.6;max-width:760px}
+  .tblwrap{overflow-x:auto}
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted)}
+  body.embed .sidenav{display:none}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Local search · Google Places</p>
+  <h1>Clinic website check</h1>
+  <p class="lede">Finds clinics across Prague on Google Maps and shows which of them have no website on their Google profile, or only a Facebook page or a booking listing. The clinics with the most reviews and no website are the best people to talk to.</p>
+
+  <div class="quota" id="quota"></div>
+
+  <div id="form">
+    <div class="field">
+      <span class="lab">Kinds of clinic</span>
+      <div class="chips" id="types"></div>
+    </div>
+    <div class="field">
+      <label for="detail">How closely to search</label>
+      <select id="detail">
+        <option value="4x3">Standard — Prague in 12 areas</option>
+        <option value="6x4">Fine — Prague in 24 areas (catches more in the centre)</option>
+      </select>
+    </div>
+    <div class="after" id="estimate"></div>
+    <button class="submit" id="go" type="button">Check Prague clinics</button>
+    <p class="after">Each search returns at most 20 clinics, so a crowded area can be cut off: use Fine for the centre. Opening hours, photos and the profile's other details are not read. Only what Google shows publicly.</p>
+    <div class="err" id="err" style="display:none"></div>
+  </div>
+
+  <div id="results">
+    <div id="prog"></div>
+    <div id="out"></div>
+  </div>
+
+  <div class="sidenav">
+    <a href="/" class="sidenav-link">← Back to tools</a>
+  </div>
+</div>
+
+<script>
+if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || '';
+const PLACES_KEY = 'AIzaSyBgbllzncdzD9xG3ZhJMnyQtWxb5hKp440';   // public browser key, restricted to our sites (same one the grid tool uses)
+const BOUNDS = { south: 49.94, north: 50.18, west: 14.22, east: 14.71 };
+const TYPES = [
+  ['clinic', 'Clinic / medical centre', true], ['dentist', 'Dentist', true], ['doctor', 'Doctor / GP', true],
+  ['dermatology clinic', 'Dermatology', true], ['physiotherapy', 'Physiotherapy', true],
+  ['plastic surgery clinic', 'Plastic surgery', false], ['gynecology clinic', 'Gynecology', false], ['eye clinic', 'Eye clinic', false],
+  ['pediatric clinic', 'Pediatric', false], ['orthopedic clinic', 'Orthopedic', false], ['psychologist', 'Psychology', false],
+  ['veterinary clinic', 'Veterinary', false]
+];
+// Facebook, Instagram and the like are not a website of their own; booking and listing sites are somebody else's page.
+const SOCIAL = /(^|\.)(facebook|instagram|linkedin|twitter|x|youtube|tiktok|linktr)\.(com|ee)$|(^|\.)wa\.me$|(^|\.)fb\.com$/i;
+const LISTING = /(^|\.)(business\.site|reservio\.com|firmy\.cz|zlatestranky\.cz|znamylekar\.cz|idoktor\.cz|doctena\.(com|cz)|google\.com|g\.page|goo\.gl|mapy\.cz|mapy\.com)$/i;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+$('types').innerHTML = TYPES.map(([q, label, on], i) => '<label class="chip' + (on ? ' on' : '') + '"><input type="checkbox" value="' + i + '"' + (on ? ' checked' : '') + '>' + esc(label) + '</label>').join('');
+$('types').addEventListener('change', e => { e.target.parentNode.classList.toggle('on', e.target.checked); estimate(); });
+$('detail').onchange = estimate;
+
+const chosen = () => [...document.querySelectorAll('#types input:checked')].map(i => TYPES[+i.value]);
+const cells = () => { const [c, r] = $('detail').value.split('x').map(Number); return { cols: c, rows: r }; };
+const callCount = () => chosen().length * cells().cols * cells().rows;
+function estimate() {
+  const n = callCount();
+  $('estimate').textContent = n ? 'This will make ' + n + ' Google searches.' : 'Pick at least one kind of clinic.';
+  $('go').disabled = !n;
+}
+estimate();
+
+async function reserve(n) {
+  try {
+    const r = await fetch(API + '/places-scan/reserve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, n }) });
+    return await r.json();
+  } catch (e) { return { error: 'could not reach the checker' }; }
+}
+async function showQuota() {
+  const q = await reserve(0);
+  $('quota').innerHTML = q.error ? '<span style="color:var(--bad)">' + esc(q.error) + (CODE ? '' : ' (open this tool from your access link)') + '</span>'
+    : '<b>' + q.remaining + '</b> of ' + q.cap + ' free Google searches left this month — shared with the grid tool.';
+  if (q.error) $('go').disabled = true;
+}
+showQuota();
+
+let placesLib = null;
+function loadPlaces() {
+  if (placesLib) return placesLib;
+  placesLib = new Promise((resolve, reject) => {
+    window.__placesReady = async () => { try { resolve(await google.maps.importLibrary('places')); } catch (e) { reject(e); } };
+    const s = document.createElement('script');
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + PLACES_KEY + '&loading=async&v=weekly&callback=__placesReady';
+    s.onerror = () => reject(new Error('Google Maps could not load'));
+    document.head.appendChild(s);
+  });
+  return placesLib;
+}
+
+const FIELDS = ['id', 'displayName', 'formattedAddress', 'websiteURI', 'nationalPhoneNumber', 'rating', 'userRatingCount', 'businessStatus', 'googleMapsURI'];
+function gridCells() {
+  const { cols, rows } = cells(), dLat = (BOUNDS.north - BOUNDS.south) / rows, dLng = (BOUNDS.east - BOUNDS.west) / cols, out = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++)
+    out.push({ south: BOUNDS.south + r * dLat, north: BOUNDS.south + (r + 1) * dLat, west: BOUNDS.west + c * dLng, east: BOUNDS.west + (c + 1) * dLng });
+  return out;
+}
+function classify(url) {
+  if (!url) return 'none';
+  let host = '';
+  try { host = new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return 'ok'; }
+  return SOCIAL.test(host) || LISTING.test(host) ? 'social' : 'ok';
+}
+
+let found = new Map(), view = 'all';
+$('go').onclick = run;
+
+async function run() {
+  const types = chosen(), areas = gridCells(), n = types.length * areas.length;
+  $('err').style.display = 'none';
+  $('go').disabled = true;
+  const rs = await reserve(n);
+  if (rs.error || !rs.allowed) {
+    $('err').textContent = rs.error || 'That scan needs ' + n + ' Google searches and only ' + rs.remaining + ' are left this month. Pick fewer kinds of clinic, use Standard, or wait until next month.';
+    $('err').style.display = 'block'; $('go').disabled = false; showQuota(); return;
+  }
+  let lib;
+  try { lib = await loadPlaces(); } catch (e) { $('err').textContent = 'Google Maps could not be loaded: ' + e.message; $('err').style.display = 'block'; $('go').disabled = false; return; }
+
+  found = new Map(); view = 'all';
+  $('results').style.display = 'block'; $('out').innerHTML = '';
+  const jobs = []; for (const t of types) for (const a of areas) jobs.push({ t, a });
+  let done = 0, failed = 0;
+  const tick = () => { $('prog').innerHTML = '<div class="after" style="margin:0">Searching… ' + done + ' of ' + jobs.length + ' (' + found.size + ' clinics so far' + (failed ? ', ' + failed + ' searches failed' : '') + ')</div><div class="progress"><i style="width:' + Math.round(done / jobs.length * 100) + '%"></i></div>'; };
+  tick();
+
+  let next = 0;
+  async function worker() {
+    while (next < jobs.length) {
+      const { t, a } = jobs[next++];
+      let places = null;
+      for (let attempt = 0; attempt < 2 && !places; attempt++) {
+        try { ({ places } = await lib.Place.searchByText({ textQuery: t[0], fields: FIELDS, locationRestriction: a, maxResultCount: 20, language: 'en', region: 'cz' })); }
+        catch (e) { await new Promise(r => setTimeout(r, 600)); }
+      }
+      if (!places) failed++;
+      else for (const p of places) {
+        if (p.businessStatus && p.businessStatus !== 'OPERATIONAL') continue;
+        const rec = found.get(p.id) || { id: p.id, name: p.displayName, address: p.formattedAddress, phone: p.nationalPhoneNumber || '', rating: p.rating ?? null, reviews: p.userRatingCount ?? 0, website: p.websiteURI || '', maps: p.googleMapsURI || '', kinds: new Set() };
+        rec.kinds.add(t[1]); found.set(p.id, rec);
+      }
+      done++; tick();
+    }
+  }
+  await Promise.all([worker(), worker(), worker(), worker()]);
+  $('prog').innerHTML = '';
+  render(failed);
+  $('go').disabled = false; showQuota();
+}
+
+const list = () => [...found.values()].map(r => ({ ...r, status: classify(r.website) }));
+function render(failed) {
+  const all = list(), by = s => all.filter(r => r.status === s).length;
+  const rows = (view === 'all' ? all : all.filter(r => r.status === view)).sort((a, b) => b.reviews - a.reviews);
+  const tab = (id, label, n) => '<button class="tab' + (view === id ? ' on' : '') + '" data-v="' + id + '">' + label + ' (' + n + ')</button>';
+  $('out').innerHTML =
+    '<div class="stats"><div class="stat"><b>' + all.length + '</b><span>clinics found</span></div>' +
+    '<div class="stat none"><b>' + by('none') + '</b><span>no website on Google</span></div>' +
+    '<div class="stat social"><b>' + by('social') + '</b><span>social or listing page only</span></div>' +
+    '<div class="stat ok"><b>' + by('ok') + '</b><span>have a website</span></div></div>' +
+    (failed ? '<div class="err" style="margin:0 0 12px">' + failed + ' searches failed, so some clinics may be missing. Run it again to fill the gaps.</div>' : '') +
+    '<div class="bar">' + tab('all', 'All', all.length) + tab('none', 'No website', by('none')) + tab('social', 'Social / listing only', by('social')) + tab('ok', 'Has a website', by('ok')) +
+    '<span class="sp"></span><button class="tab" id="csv">Download CSV</button></div>' +
+    '<div class="tblwrap"><table><thead><tr><th>Clinic</th><th>Reviews</th><th>Phone</th><th>Website on Google</th></tr></thead><tbody>' +
+    (rows.length ? rows.map(r => '<tr><td><div class="nm">' + esc(r.name) + '</div><div class="ad">' + esc(r.address) + '</div><div class="ad">' + esc([...r.kinds].join(', ')) + (r.maps ? ' · <a href="' + esc(r.maps) + '" target="_blank" rel="noopener">Google Maps</a>' : '') + '</div></td>' +
+      '<td>' + (r.rating ? '★ ' + r.rating.toFixed(1) + '<br>' : '') + r.reviews.toLocaleString() + '</td><td>' + esc(r.phone) + '</td>' +
+      '<td><span class="pill ' + r.status + '">' + ({ none: 'No website', social: 'Social / listing only', ok: 'Has a website' }[r.status]) + '</span>' +
+      (r.website ? '<a class="site" href="' + esc(r.website) + '" target="_blank" rel="noopener">' + esc(r.website.replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</a>' : '') + '</td></tr>').join('')
+      : '<tr><td colspan="4" class="after">Nothing in this view.</td></tr>') + '</tbody></table></div>' +
+    '<p class="foot">Sorted by number of reviews. "No website" means the Google profile has no website link; the clinic may still have a site that isn\'t linked there, or only a booking page. Worth a quick look before getting in touch. Clinics that Google marks as closed are left out.</p>';
+}
+$('out').addEventListener('click', e => {
+  if (e.target.dataset.v) { view = e.target.dataset.v; render(0); }
+  if (e.target.id === 'csv') downloadCsv();
+});
+function downloadCsv() {
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const rows = list().sort((a, b) => b.reviews - a.reviews);
+  const csv = [['Clinic', 'Address', 'Phone', 'Rating', 'Reviews', 'Website on Google', 'Status', 'Kinds', 'Google Maps'].map(q).join(',')]
+    .concat(rows.map(r => [r.name, r.address, r.phone, r.rating ?? '', r.reviews, r.website, ({ none: 'No website', social: 'Social or listing only', ok: 'Has a website' })[r.status], [...r.kinds].join('; '), r.maps].map(q).join(','))).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'prague-clinics-website-check-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+</script>
+</body>
+</html>
