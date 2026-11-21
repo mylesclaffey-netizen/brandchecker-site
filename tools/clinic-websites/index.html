@@ -178,11 +178,25 @@ async function loadSeen() {
 loadSeen();
 $('seenline').addEventListener('click', e => { if (e.target.id === 'dlSeen') downloadCsv([...seen.entries()].map(([id, c]) => ({ id, ...c, kinds: new Set(String(c.kinds || '').split('; ').filter(Boolean)) })), 'prague-clinics-all-checked'); });
 
+async function retrying(path, body) {
+  let last = { error: 'could not reach the checker' };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    last = await api(path, body);
+    if (!last.error || /private|access|code/i.test(last.error)) return last;
+    await new Promise(r => setTimeout(r, 2500));
+  }
+  return last;
+}
 async function reserve(n) {
-  try {
-    const r = await fetch(API + '/places-scan/reserve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, n }) });
-    return await r.json();
-  } catch (e) { return { error: 'could not reach the checker' }; }
+  // Tries again a couple of times: the Worker limits how many requests one address may make a minute, and a hiccup
+  // here must not end a scan that is part-way through.
+  let last = { error: 'could not reach the checker' };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    last = await api('/places-scan/reserve', { n });
+    if (!last.error || /private|access|code/i.test(last.error)) return last;
+    await new Promise(r => setTimeout(r, 2500));
+  }
+  return last;
 }
 async function showQuota() {
   const q = await reserve(0);
@@ -269,9 +283,18 @@ async function run() {
   // finds its clinics early only ever uses what it needed.
   // Smaller rounds when there is a target, so it stops close to it instead of overshooting by a whole round.
   const round = nosite && target !== Infinity ? 4 : BATCH;
+  // Google searches are claimed from the monthly allowance in chunks (fewer requests to the Worker), and whatever a scan
+  // did not use is handed back at the end.
+  let claimedLeft = 0;
   for (let i = 0; i < total && have() < target && !stopNow; i += round) {
     const batch = jobs.slice(i, Math.min(i + round, total));
-    const rs = await reserve(batch.length);
+    let rs = { allowed: true };
+    if (claimedLeft < batch.length) {
+      const ask = Math.min(32, total - i);
+      rs = await reserve(ask);
+      if (rs.allowed) claimedLeft += ask;
+    }
+    if (rs.allowed) claimedLeft -= batch.length;
     if (rs.error || !rs.allowed) { stop = rs.error || 'The month\'s free Google searches have run out (' + rs.remaining + ' left), so the scan stopped here.'; break; }
     await Promise.all(batch.map(one));
   }
@@ -288,12 +311,13 @@ async function run() {
   render(failed);
   // Remember what this scan showed, so the next one skips it.
   const shown = list();
-  const sv = shown.length ? await api('/clinics/save', { clinics: shown.map(r => ({ id: r.id, name: r.name, address: r.address, phone: r.phone, rating: r.rating, reviews: r.reviews, website: r.website, status: r.status, kinds: [...r.kinds].join('; '), maps: r.maps })) }) : {};
+  const sv = shown.length ? await retrying('/clinics/save', { clinics: shown.map(r => ({ id: r.id, name: r.name, address: r.address, phone: r.phone, rating: r.rating, reviews: r.reviews, website: r.website, status: r.status, kinds: [...r.kinds].join('; '), maps: r.maps })) }) : {};
   if (sv.error) $('out').insertAdjacentHTML('afterbegin', '<div class="err" style="margin:0 0 12px">These clinics could not be saved, so the next scan may show them again: ' + esc(sv.error) + '</div>');
   else { for (const r of shown) seen.set(r.id, { ...r, kinds: [...r.kinds].join('; ') }); seenLine(); }
   if (nosite && !stop) $('out').insertAdjacentHTML('afterbegin', '<div class="after" style="margin:0 0 10px">' + (target === Infinity ? info + ': ' : '') + 'Found ' + have() + ' clinics without a website after checking ' + found.size + ' clinics (' + done + ' searches). They are all remembered, so the next run starts fresh.</div>');
   if (skippedIds.size) $('out').insertAdjacentHTML('afterbegin', '<div class="after" style="margin:0 0 10px">' + skippedIds.size + ' clinics you had already checked were skipped.</div>');
   if (stop) $('out').insertAdjacentHTML('afterbegin', '<div class="err" style="margin:0 0 12px">' + esc(stop) + '</div>');
+  if (claimedLeft > 0) await reserve(-claimedLeft);
   $('stopBtn').style.display = 'none'; $('stopBtn').textContent = 'Stop and show what\'s found';
   $('go').disabled = false; showQuota();
 }
