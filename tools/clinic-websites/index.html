@@ -333,7 +333,17 @@ async function run() {
   render(failed);
   // Remember what this scan showed, so the next one skips it.
   const shown = list();
-  const sv = (shown.length || ranAreas.size) ? await retrying('/clinics/save', { areas: [...ranAreas], clinics: shown.map(r => ({ id: r.id, name: r.name, address: r.address, phone: r.phone, rating: r.rating, reviews: r.reviews, website: r.website, status: r.status, kinds: [...r.kinds].join('; '), maps: r.maps })) }) : {};
+  // Saved in chunks of 500 (and the searched areas with the first one), and checked: the page only treats clinics as
+  // remembered when the Worker says it kept them all.
+  const rows = shown.map(r => ({ id: r.id, name: r.name, address: r.address, phone: r.phone, rating: r.rating, reviews: r.reviews, website: r.website, status: r.status, kinds: [...r.kinds].join('; '), maps: r.maps }));
+  let sv = {}, savedN = 0;
+  for (let k = 0; k === 0 || k < rows.length; k += 500) {
+    const part = rows.slice(k, k + 500);
+    sv = (part.length || (k === 0 && ranAreas.size)) ? await retrying('/clinics/save', { areas: k === 0 ? [...ranAreas] : [], clinics: part }) : {};
+    if (sv.error) break;
+    savedN += sv.saved || 0;
+  }
+  if (!sv.error && savedN < rows.length) sv = { error: 'only ' + savedN + ' of ' + rows.length + ' clinics were kept' };
   if (sv.error) $('out').insertAdjacentHTML('afterbegin', '<div class="err" style="margin:0 0 12px">These clinics could not be saved, so the next scan may show them again: ' + esc(sv.error) + '</div>');
   else { for (const r of shown) seen.set(r.id, { ...r, kinds: [...r.kinds].join('; ') }); const nowIso = new Date().toISOString(); for (const k of ranAreas) areasDone.set(k, nowIso); seenLine(); areasLine(); }
   if (areasSkipped) $('out').insertAdjacentHTML('afterbegin', '<div class="after" style="margin:0 0 10px">' + areasSkipped + ' searches in areas already searched were left out, so this scan went straight to new ground.</div>');
