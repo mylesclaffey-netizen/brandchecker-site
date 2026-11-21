@@ -20,6 +20,8 @@
   label,.lab{display:block;font-size:11px;color:var(--muted);margin-bottom:6px}
   select{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:7px;padding:10px 12px}
   .field{margin-bottom:16px}
+  .row{display:flex;flex-wrap:wrap;gap:16px}
+  .row .field{min-width:220px}
   .chips{display:flex;flex-wrap:wrap;gap:8px}
   .chip{font-size:12px;border:1px solid var(--line);border-radius:20px;padding:6px 13px;cursor:pointer;user-select:none;background:var(--card)}
   .chip input{display:none}
@@ -70,20 +72,21 @@
   <div class="quota" id="quota"></div>
 
   <div id="form">
-    <div class="field">
-      <span class="lab">Kinds of clinic</span>
-      <div class="chips" id="types"></div>
-    </div>
-    <div class="field">
-      <label for="detail">How closely to search</label>
-      <select id="detail">
-        <option value="4x3">Standard — Prague in 12 areas</option>
-        <option value="6x4">Fine — Prague in 24 areas (catches more in the centre)</option>
-      </select>
+    <div class="row">
+      <div class="field">
+        <label for="kind">Type of clinic</label>
+        <select id="kind"></select>
+      </div>
+      <div class="field">
+        <label for="count">How many clinics to check</label>
+        <select id="count">
+          <option>10</option><option selected>20</option><option>30</option><option>40</option><option>50</option>
+        </select>
+      </div>
     </div>
     <div class="after" id="estimate"></div>
     <button class="submit" id="go" type="button">Check Prague clinics</button>
-    <p class="after">Each search returns at most 20 clinics, so a crowded area can be cut off: use Fine for the centre. Opening hours, photos and the profile's other details are not read. Only what Google shows publicly.</p>
+    <p class="after">It starts in the centre of Prague and works outwards, and stops as soon as it has the number you picked. Opening hours, photos and the profile's other details are not read, only what Google shows publicly.</p>
     <div class="err" id="err" style="display:none"></div>
   </div>
 
@@ -104,11 +107,10 @@ const CODE = new URLSearchParams(location.search).get('k') || '';
 const PLACES_KEY = 'AIzaSyBgbllzncdzD9xG3ZhJMnyQtWxb5hKp440';   // public browser key, restricted to our sites (same one the grid tool uses)
 const BOUNDS = { south: 49.94, north: 50.18, west: 14.22, east: 14.71 };
 const TYPES = [
-  ['clinic', 'Clinic / medical centre', true], ['dentist', 'Dentist', true], ['doctor', 'Doctor / GP', true],
-  ['dermatology clinic', 'Dermatology', true], ['physiotherapy', 'Physiotherapy', true],
-  ['plastic surgery clinic', 'Plastic surgery', false], ['gynecology clinic', 'Gynecology', false], ['eye clinic', 'Eye clinic', false],
-  ['pediatric clinic', 'Pediatric', false], ['orthopedic clinic', 'Orthopedic', false], ['psychologist', 'Psychology', false],
-  ['veterinary clinic', 'Veterinary', false]
+  ['clinic', 'Clinic / medical centre'], ['dentist', 'Dentist'], ['doctor', 'Doctor / GP'], ['dermatology clinic', 'Dermatology'],
+  ['physiotherapy', 'Physiotherapy'], ['plastic surgery clinic', 'Plastic surgery'], ['gynecology clinic', 'Gynecology'],
+  ['eye clinic', 'Eye clinic'], ['pediatric clinic', 'Pediatric'], ['orthopedic clinic', 'Orthopedic'], ['psychologist', 'Psychology'],
+  ['veterinary clinic', 'Veterinary', true]   // third value: not part of "All types"
 ];
 // Facebook, Instagram and the like are not a website of their own; booking and listing sites are somebody else's page.
 const SOCIAL = /(^|\.)(facebook|instagram|linkedin|twitter|x|youtube|tiktok|linktr)\.(com|ee)$|(^|\.)wa\.me$|(^|\.)fb\.com$/i;
@@ -117,18 +119,13 @@ const LISTING = /(^|\.)(business\.site|reservio\.com|firmy\.cz|zlatestranky\.cz|
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-$('types').innerHTML = TYPES.map(([q, label, on], i) => '<label class="chip' + (on ? ' on' : '') + '"><input type="checkbox" value="' + i + '"' + (on ? ' checked' : '') + '>' + esc(label) + '</label>').join('');
-$('types').addEventListener('change', e => { e.target.parentNode.classList.toggle('on', e.target.checked); estimate(); });
-$('detail').onchange = estimate;
-
-const chosen = () => [...document.querySelectorAll('#types input:checked')].map(i => TYPES[+i.value]);
-const cells = () => { const [c, r] = $('detail').value.split('x').map(Number); return { cols: c, rows: r }; };
-const callCount = () => chosen().length * cells().cols * cells().rows;
-function estimate() {
-  const n = callCount();
-  $('estimate').textContent = n ? 'This will make ' + n + ' Google searches.' : 'Pick at least one kind of clinic.';
-  $('go').disabled = !n;
-}
+$('kind').innerHTML = '<option value="all">All types of clinic</option>' + TYPES.map(([q, label], i) => '<option value="' + i + '">' + esc(label) + '</option>').join('');
+// "All types" covers the human medical kinds; veterinary is its own choice.
+const chosen = () => $('kind').value === 'all' ? TYPES.filter(t => !t[2]) : [TYPES[+$('kind').value]];
+const wanted = () => +$('count').value;
+const COLS = 6, ROWS = 4, MAX_SEARCHES = 120, BATCH = 8;
+function estimate() { $('estimate').textContent = 'Stops once ' + wanted() + ' clinics are found, after at most ' + MAX_SEARCHES + ' Google searches (usually far fewer).'; }
+$('kind').onchange = $('count').onchange = estimate;
 estimate();
 
 async function reserve(n) {
@@ -160,10 +157,13 @@ function loadPlaces() {
 
 const FIELDS = ['id', 'displayName', 'formattedAddress', 'websiteURI', 'nationalPhoneNumber', 'rating', 'userRatingCount', 'businessStatus', 'googleMapsURI'];
 function gridCells() {
-  const { cols, rows } = cells(), dLat = (BOUNDS.north - BOUNDS.south) / rows, dLng = (BOUNDS.east - BOUNDS.west) / cols, out = [];
-  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++)
-    out.push({ south: BOUNDS.south + r * dLat, north: BOUNDS.south + (r + 1) * dLat, west: BOUNDS.west + c * dLng, east: BOUNDS.west + (c + 1) * dLng });
-  return out;
+  const dLat = (BOUNDS.north - BOUNDS.south) / ROWS, dLng = (BOUNDS.east - BOUNDS.west) / COLS, out = [];
+  const cLat = 50.0755, cLng = 14.4378;   // Old Town: the scan starts here and spreads outwards
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const a = { south: BOUNDS.south + r * dLat, north: BOUNDS.south + (r + 1) * dLat, west: BOUNDS.west + c * dLng, east: BOUNDS.west + (c + 1) * dLng };
+    out.push({ ...a, d: Math.hypot((a.south + a.north) / 2 - cLat, ((a.west + a.east) / 2 - cLng) * 0.64) });
+  }
+  return out.sort((x, y) => x.d - y.d);
 }
 function classify(url) {
   if (!url) return 'none';
@@ -176,45 +176,51 @@ let found = new Map(), view = 'all';
 $('go').onclick = run;
 
 async function run() {
-  const types = chosen(), areas = gridCells(), n = types.length * areas.length;
+  const types = chosen(), areas = gridCells(), target = wanted();
   $('err').style.display = 'none';
   $('go').disabled = true;
-  const rs = await reserve(n);
-  if (rs.error || !rs.allowed) {
-    $('err').textContent = rs.error || 'That scan needs ' + n + ' Google searches and only ' + rs.remaining + ' are left this month. Pick fewer kinds of clinic, use Standard, or wait until next month.';
-    $('err').style.display = 'block'; $('go').disabled = false; showQuota(); return;
-  }
   let lib;
   try { lib = await loadPlaces(); } catch (e) { $('err').textContent = 'Google Maps could not be loaded: ' + e.message; $('err').style.display = 'block'; $('go').disabled = false; return; }
 
   found = new Map(); view = 'all';
   $('results').style.display = 'block'; $('out').innerHTML = '';
-  const jobs = []; for (const t of types) for (const a of areas) jobs.push({ t, a });
-  let done = 0, failed = 0;
-  const tick = () => { $('prog').innerHTML = '<div class="after" style="margin:0">Searching… ' + done + ' of ' + jobs.length + ' (' + found.size + ' clinics so far' + (failed ? ', ' + failed + ' searches failed' : '') + ')</div><div class="progress"><i style="width:' + Math.round(done / jobs.length * 100) + '%"></i></div>'; };
+  // Centre-out: every kind in a cell before moving to the next cell, so the first clinics found are the central ones.
+  const jobs = []; for (const a of areas) for (const t of types) jobs.push({ t, a });
+  const total = Math.min(jobs.length, MAX_SEARCHES);
+  let done = 0, failed = 0, stop = '';
+  const tick = () => { $('prog').innerHTML = '<div class="after" style="margin:0">Searching… ' + Math.min(found.size, target) + ' of ' + target + ' clinics found (' + done + ' searches' + (failed ? ', ' + failed + ' failed' : '') + ')</div><div class="progress"><i style="width:' + Math.round(Math.min(found.size / target, 1) * 100) + '%"></i></div>'; };
   tick();
 
-  let next = 0;
-  async function worker() {
-    while (next < jobs.length) {
-      const { t, a } = jobs[next++];
-      let places = null;
-      for (let attempt = 0; attempt < 2 && !places; attempt++) {
-        try { ({ places } = await lib.Place.searchByText({ textQuery: t[0], fields: FIELDS, locationRestriction: a, maxResultCount: 20, language: 'en', region: 'cz' })); }
-        catch (e) { await new Promise(r => setTimeout(r, 600)); }
-      }
-      if (!places) failed++;
-      else for (const p of places) {
-        if (p.businessStatus && p.businessStatus !== 'OPERATIONAL') continue;
-        const rec = found.get(p.id) || { id: p.id, name: p.displayName, address: p.formattedAddress, phone: p.nationalPhoneNumber || '', rating: p.rating ?? null, reviews: p.userRatingCount ?? 0, website: p.websiteURI || '', maps: p.googleMapsURI || '', kinds: new Set() };
-        rec.kinds.add(t[1]); found.set(p.id, rec);
-      }
-      done++; tick();
+  async function one({ t, a }) {
+    let places = null;
+    for (let attempt = 0; attempt < 2 && !places; attempt++) {
+      try { ({ places } = await lib.Place.searchByText({ textQuery: t[0], fields: FIELDS, locationRestriction: { south: a.south, north: a.north, west: a.west, east: a.east }, maxResultCount: 20, language: 'en', region: 'cz' })); }
+      catch (e) { await new Promise(r => setTimeout(r, 600)); }
     }
+    if (!places) failed++;
+    else for (const p of places) {
+      if (p.businessStatus && p.businessStatus !== 'OPERATIONAL') continue;
+      const rec = found.get(p.id) || { id: p.id, order: found.size, name: p.displayName, address: p.formattedAddress, phone: p.nationalPhoneNumber || '', rating: p.rating ?? null, reviews: p.userRatingCount ?? 0, website: p.websiteURI || '', maps: p.googleMapsURI || '', kinds: new Set() };
+      rec.kinds.add(t[1]); found.set(p.id, rec);
+    }
+    done++; tick();
   }
-  await Promise.all([worker(), worker(), worker(), worker()]);
+
+  // Searches go in small batches; each batch claims its share of the monthly Google allowance first, so a scan that
+  // finds its clinics early only ever uses what it needed.
+  for (let i = 0; i < total && found.size < target; i += BATCH) {
+    const batch = jobs.slice(i, Math.min(i + BATCH, total));
+    const rs = await reserve(batch.length);
+    if (rs.error || !rs.allowed) { stop = rs.error || 'The month\'s free Google searches have run out (' + rs.remaining + ' left), so the scan stopped here.'; break; }
+    await Promise.all(batch.map(one));
+  }
+  if (!stop && found.size < target) stop = 'Only ' + found.size + ' clinics found after ' + done + ' searches — Google has no more for this type in Prague.';
+  // Keep the central ones: the first `target` found, in the order they were found.
+  const keep = [...found.values()].sort((a, b) => a.order - b.order).slice(0, target);
+  found = new Map(keep.map(r => [r.id, r]));
   $('prog').innerHTML = '';
   render(failed);
+  if (stop) $('out').insertAdjacentHTML('afterbegin', '<div class="err" style="margin:0 0 12px">' + esc(stop) + '</div>');
   $('go').disabled = false; showQuota();
 }
 
