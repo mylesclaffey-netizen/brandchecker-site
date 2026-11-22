@@ -23,6 +23,8 @@
   .skiprow{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);margin:2px 0 0;cursor:pointer}
   .skiprow input{width:16px;height:16px;accent-color:var(--you)}
   .linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--you);text-decoration:underline;cursor:pointer}
+  .pill.efirst{background:var(--ok)} .pill.eavail{background:#1b6ec2} .pill.local{background:#6b6b6b} .pill.unk{background:#9a9a9a}
+  .tab.sm{font-size:11px;padding:4px 11px}
   .row{display:flex;flex-wrap:wrap;gap:16px}
   .row .field{min-width:220px}
   .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -81,6 +83,7 @@
         <select id="goal">
           <option value="count">Check a number of clinics</option>
           <option value="nosite">Keep going until I have clinics without a website</option>
+          <option value="english">Check which saved clinics use English</option>
         </select>
       </div>
       <div class="field">
@@ -95,7 +98,9 @@
       </div>
     </div>
     <label class="skiprow" id="socialRow" style="display:none"><input type="checkbox" id="inclSocial"> Count clinics with only a Facebook or booking page too</label>
-    <label class="skiprow"><input type="checkbox" id="skip" checked> Skip clinics and areas I've already checked</label>
+    <label class="skiprow" id="revRow"><input type="checkbox" id="revLang" checked> Read the language of the Google reviews too (a slightly higher Google price per search)</label>
+    <label class="skiprow" id="autoRow"><input type="checkbox" id="autoLang" checked> Then check which language each website is in</label>
+    <label class="skiprow" id="skipRow"><input type="checkbox" id="skip" checked> Skip clinics and areas I've already checked</label>
     <div class="after" id="seenline" style="margin:4px 0 2px"></div>
     <div class="after" id="areasline" style="margin:0 0 14px"></div>
     <div class="after" id="estimate"></div>
@@ -141,7 +146,13 @@ const chosen = () => $('kind').value === 'all' ? TYPES.filter(t => !t[2]) : [TYP
 const wanted = () => +$('count').value;
 const COLS = 6, ROWS = 4, MAX_SEARCHES = 120, BATCH = 8;
 const isNoSite = () => $('goal').value === 'nosite';
+const isEnglish = () => $('goal').value === 'english';
 function estimate() {
+  if (isEnglish()) {
+    const todo = [...seen.values()].filter(c => c.website && c.status === 'ok' && !c.lang).length;
+    $('estimate').textContent = todo + ' of your ' + seen.size + ' saved clinics have a website that has not been read yet. This reads their websites only, with no Google searches and no cost.';
+    return;
+  }
   $('estimate').textContent = isNoSite() && wanted() === 0
     ? 'Runs until it has used ' + MAX_SEARCHES + ' Google searches or run out of new clinics, collecting every clinic without a website it finds. Roughly one clinic in ten has none. You can stop it at any time and keep what it has found.'
     : isNoSite()
@@ -149,6 +160,9 @@ function estimate() {
     : 'Stops once ' + wanted() + ' clinics are found, after at most ' + MAX_SEARCHES + ' Google searches (usually far fewer).';
 }
 function setGoal() {
+  const eng = isEnglish();
+  for (const el of [$('kind').parentNode, $('count').parentNode, $('skipRow'), $('revRow'), $('autoRow'), $('areasline')]) el.style.display = eng ? 'none' : (el.classList.contains('skiprow') ? 'flex' : '');
+  if (eng) { $('socialRow').style.display = 'none'; $('go').textContent = 'Check English on saved clinics'; estimate(); return; }
   const opts = isNoSite() ? [5, 10, 15, 20, 0] : [10, 20, 30, 40, 50];
   $('count').innerHTML = opts.map(n => '<option value="' + n + '"' + (n === (isNoSite() ? 5 : 20) ? ' selected' : '') + '>' + (n === 0 ? 'As many as it can find' : n) + '</option>').join('');
   $('countLabel').textContent = isNoSite() ? 'How many without a website' : 'How many clinics to check';
@@ -186,7 +200,7 @@ async function loadSeen() {
   const d = await api('/clinics/seen', {});
   if (d && d.clinics) seen = new Map(d.clinics.map(c => [c.id, c]));
   if (d && d.areas) areasDone = new Map(Object.entries(d.areas));
-  seenLine(); areasLine();
+  seenLine(); areasLine(); if (typeof estimate === 'function') estimate();
 }
 loadSeen();
 $('seenline').addEventListener('click', e => { if (e.target.id === 'dlSeen') downloadCsv([...seen.entries()].map(([id, c]) => ({ id, ...c, kinds: new Set(String(c.kinds || '').split('; ').filter(Boolean)) })), 'prague-clinics-all-checked'); });
@@ -249,10 +263,12 @@ function classify(url) {
   return SOCIAL.test(host) || LISTING.test(host) ? 'social' : 'ok';
 }
 
-let found = new Map(), view = 'all';
+let found = new Map(), view = 'all', langView = 'all', engMode = false;
 $('go').onclick = run;
 
 async function run() {
+  if (isEnglish()) return runEnglish();
+  engMode = false; langView = 'all';
   const types = chosen(), areas = gridCells(), wantedN = wanted(), target = wantedN === 0 ? Infinity : wantedN;
   let stopNow = false;
   $('stopBtn').style.display = 'inline-block'; $('stopBtn').onclick = () => { stopNow = true; $('stopBtn').textContent = 'Stopping…'; };
@@ -274,6 +290,7 @@ async function run() {
     $('err').style.display = 'block'; $('go').disabled = false; return;
   }
   const total = Math.min(jobs.length, MAX_SEARCHES);
+  const revOn = $('revLang').checked;
   const skipOn = $('skip').checked, skippedIds = new Set(), nosite = isNoSite(), incl = $('inclSocial').checked;
   const matches = () => [...found.values()].filter(r => { const c = classify(r.website); return c === 'none' || (incl && c === 'social'); }).length;
   const have = () => nosite ? matches() : found.size;
@@ -284,7 +301,7 @@ async function run() {
   async function one({ t, a, idx }) {
     let places = null;
     for (let attempt = 0; attempt < 2 && !places; attempt++) {
-      try { ({ places } = await lib.Place.searchByText({ textQuery: t[0], fields: FIELDS, locationRestriction: { south: a.south, north: a.north, west: a.west, east: a.east }, maxResultCount: 20, language: 'en', region: 'cz' })); }
+      try { ({ places } = await lib.Place.searchByText({ textQuery: t[0], fields: revOn ? FIELDS.concat(['reviews']) : FIELDS, locationRestriction: { south: a.south, north: a.north, west: a.west, east: a.east }, maxResultCount: 20, language: 'en', region: 'cz' })); }
       catch (e) { await new Promise(r => setTimeout(r, 600)); }
     }
     if (!places) failed++;
@@ -295,6 +312,7 @@ async function run() {
       // Order by how central the search area is (then Google's own ranking inside it), not by which search answered first.
       const order = idx * 1000 + k;
       const rec = found.get(p.id) || { id: p.id, order, name: p.displayName, address: p.formattedAddress, phone: p.nationalPhoneNumber || '', rating: p.rating ?? null, reviews: p.userRatingCount ?? 0, website: p.websiteURI || '', maps: p.googleMapsURI || '', kinds: new Set() };
+      if (revOn) { const rv = p.reviews || []; rec.revN = rv.length; rec.revEn = rv.filter(x => String(x.originalTextLanguageCode || '').startsWith('en')).length; }
       rec.order = Math.min(rec.order, order);
       rec.kinds.add(t[1]); found.set(p.id, rec);
     }
@@ -335,7 +353,7 @@ async function run() {
   const shown = list();
   // Saved in chunks of 500 (and the searched areas with the first one), and checked: the page only treats clinics as
   // remembered when the Worker says it kept them all.
-  const rows = shown.map(r => ({ id: r.id, name: r.name, address: r.address, phone: r.phone, rating: r.rating, reviews: r.reviews, website: r.website, status: r.status, kinds: [...r.kinds].join('; '), maps: r.maps }));
+  const rows = shown.map(r => ({ id: r.id, name: r.name, address: r.address, phone: r.phone, rating: r.rating, reviews: r.reviews, website: r.website, status: r.status, kinds: [...r.kinds].join('; '), maps: r.maps, ...(r.revN !== undefined ? { revN: r.revN, revEn: r.revEn } : {}) }));
   let sv = {}, savedN = 0;
   for (let k = 0; k === 0 || k < rows.length; k += 500) {
     const part = rows.slice(k, k + 500);
@@ -351,40 +369,102 @@ async function run() {
   if (skippedIds.size) $('out').insertAdjacentHTML('afterbegin', '<div class="after" style="margin:0 0 10px">' + skippedIds.size + ' clinics you had already checked were skipped.</div>');
   if (stop) $('out').insertAdjacentHTML('afterbegin', '<div class="err" style="margin:0 0 12px">' + esc(stop) + '</div>');
   if (claimedLeft > 0) await reserve(-claimedLeft);
+  if ($('autoLang').checked && !sv.error && !stopNow && found.size) {
+    const keepNotes = [...$('out').children].filter(el => el.matches('.err,.after')).map(el => el.outerHTML).join('');
+    const res = await languageLoop();
+    render(0);
+    $('out').insertAdjacentHTML('afterbegin', keepNotes + (res.err ? '<div class="err" style="margin:0 0 12px">The website language check stopped: ' + esc(res.err) + '</div>' : ''));
+  }
   $('stopBtn').style.display = 'none'; $('stopBtn').textContent = 'Stop and show what\'s found';
   $('go').disabled = false; showQuota();
 }
 
+// Reads the websites of saved clinics (the Worker does the reading, 30 at a time) and puts the results on every copy of the clinic.
+async function languageLoop() {
+  let stop = false, total = null, doneN = 0, err = '';
+  $('stopBtn').style.display = 'inline-block'; $('stopBtn').textContent = 'Stop checking languages';
+  $('stopBtn').onclick = () => { stop = true; $('stopBtn').textContent = 'Stopping…'; };
+  while (!stop) {
+    const d = await retrying('/clinics/language', {});
+    if (d.error) { err = d.error; break; }
+    if (total === null) total = d.done + d.remaining;
+    doneN += d.done;
+    for (const r of d.results) { const a = seen.get(r.id); if (a) a.lang = r.lang; const b = found.get(r.id); if (b) b.lang = r.lang; }
+    $('prog').innerHTML = '<div class="after" style="margin:0">Reading websites… ' + doneN + ' of ' + total + '</div><div class="progress"><i style="width:' + Math.round(doneN / Math.max(total, 1) * 100) + '%"></i></div>';
+    if (!d.remaining || !d.done) break;
+  }
+  $('prog').innerHTML = ''; $('stopBtn').style.display = 'none'; $('stopBtn').textContent = "Stop and show what's found";
+  return { doneN, total: total || 0, err, stopped: stop };
+}
+async function runEnglish() {
+  $('err').style.display = 'none'; $('go').disabled = true;
+  await loadSeen();
+  engMode = true; langView = 'english'; view = 'all';
+  found = new Map([...seen.entries()].map(([id, c]) => [id, { ...c, id, reviews: c.reviews || 0, website: c.website || '', kinds: new Set(String(c.kinds || '').split('; ').filter(Boolean)) }]));
+  $('results').style.display = 'block'; $('out').innerHTML = '';
+  const res = await languageLoop();
+  render(0);
+  $('out').insertAdjacentHTML('afterbegin', res.err ? '<div class="err" style="margin:0 0 12px">The check stopped: ' + esc(res.err) + '</div>' : res.total ? '<div class="after" style="margin:0 0 10px">Read ' + res.doneN + ' websites' + (res.stopped ? ' (stopped by you — run it again to carry on)' : '') + '.</div>' : '');
+  $('go').disabled = false;
+}
+
+const LANG_LABEL = { 'english-first': ['English first', 'efirst'], 'english-available': ['English version', 'eavail'], 'local-only': ['Czech only', 'local'], unknown: ['Unknown', 'unk'] };
+const revShare = r => (r.revN >= 3 ? r.revEn / r.revN : null);
+const langKey = r => r.lang ? r.lang.level : (r.status === 'ok' ? 'unchecked' : 'na');
+const inLang = (r, v) => v === 'all' ? true
+  : v === 'english' ? (langKey(r) === 'english-first' || langKey(r) === 'english-available' || (revShare(r) !== null && revShare(r) >= 0.6))
+  : v === 'unknown' ? (langKey(r) === 'unknown' || langKey(r) === 'unchecked')
+  : v === 'first' ? langKey(r) === 'english-first' : v === 'available' ? langKey(r) === 'english-available' : v === 'local' ? langKey(r) === 'local-only'
+  : v === 'reviews' ? (revShare(r) !== null && revShare(r) >= 0.6) : true;
+const engCell = r => {
+  let h = '';
+  if (r.lang) { const [t, c] = LANG_LABEL[r.lang.level] || LANG_LABEL.unknown; h += '<span class="pill ' + c + '">' + t + '</span><div class="ad">' + esc((r.lang.evidence || []).filter(x => !/^page language/.test(x)).join('; ')) + '</div>'; }
+  else if (r.status === 'ok') h += '<span class="pill unk">Not checked yet</span>';
+  else h += '<span class="ad">No website to read</span>';
+  if (r.revN) h += '<div class="ad">Reviews in English: <b>' + r.revEn + ' of ' + r.revN + '</b></div>';
+  return h;
+};
 const list = () => [...found.values()].map(r => ({ ...r, status: classify(r.website) }));
 function render(failed) {
-  const all = list(), by = s => all.filter(r => r.status === s).length;
-  const rows = (view === 'all' ? all : all.filter(r => r.status === view)).sort((a, b) => b.reviews - a.reviews);
+  const all = list(), by = s => all.filter(r => r.status === s).length, lk = k => all.filter(r => inLang(r, k)).length;
+  const hasLang = all.some(r => r.lang || r.revN);
+  const rows = all.filter(r => (view === 'all' || r.status === view) && inLang(r, langView)).sort((a, b) => b.reviews - a.reviews);
   const tab = (id, label, n) => '<button class="tab' + (view === id ? ' on' : '') + '" data-v="' + id + '">' + label + ' (' + n + ')</button>';
+  const ltab = (id, label) => '<button class="tab sm' + (langView === id ? ' on' : '') + '" data-l="' + id + '">' + label + ' (' + lk(id) + ')</button>';
   $('out').innerHTML =
-    '<div class="stats"><div class="stat"><b>' + all.length + '</b><span>clinics found</span></div>' +
-    '<div class="stat none"><b>' + by('none') + '</b><span>no website on Google</span></div>' +
-    '<div class="stat social"><b>' + by('social') + '</b><span>social or listing page only</span></div>' +
-    '<div class="stat ok"><b>' + by('ok') + '</b><span>have a website</span></div></div>' +
+    (engMode
+      ? '<div class="stats"><div class="stat"><b>' + all.length + '</b><span>clinics saved</span></div>' +
+        '<div class="stat ok"><b>' + lk('first') + '</b><span>English first</span></div>' +
+        '<div class="stat"><b>' + lk('available') + '</b><span>with an English version</span></div>' +
+        '<div class="stat social"><b>' + lk('local') + '</b><span>Czech only</span></div>' +
+        '<div class="stat"><b>' + lk('unknown') + '</b><span>unknown or not checked</span></div></div>'
+      : '<div class="stats"><div class="stat"><b>' + all.length + '</b><span>clinics found</span></div>' +
+        '<div class="stat none"><b>' + by('none') + '</b><span>no website on Google</span></div>' +
+        '<div class="stat social"><b>' + by('social') + '</b><span>social or listing page only</span></div>' +
+        '<div class="stat ok"><b>' + by('ok') + '</b><span>have a website</span></div></div>') +
     (failed ? '<div class="err" style="margin:0 0 12px">' + failed + ' searches failed, so some clinics may be missing. Run it again to fill the gaps.</div>' : '') +
     '<div class="bar">' + tab('all', 'All', all.length) + tab('none', 'No website', by('none')) + tab('social', 'Social / listing only', by('social')) + tab('ok', 'Has a website', by('ok')) +
     '<span class="sp"></span><button class="tab" id="csv">Download CSV</button></div>' +
-    '<div class="tblwrap"><table><thead><tr><th>Clinic</th><th>Reviews</th><th>Phone</th><th>Website on Google</th></tr></thead><tbody>' +
+    (hasLang || engMode ? '<div class="bar"><span class="after" style="margin:0">English:</span>' + ltab('all', 'All') + ltab('english', 'English likely') + ltab('first', 'English first') + ltab('available', 'English version') + ltab('reviews', 'English reviews') + ltab('local', 'Czech only') + ltab('unknown', 'Unknown') + '</div>' : '') +
+    '<div class="tblwrap"><table><thead><tr><th>Clinic</th><th>Reviews</th><th>Phone</th><th>Website on Google</th><th>English</th></tr></thead><tbody>' +
     (rows.length ? rows.map(r => '<tr><td><div class="nm">' + esc(r.name) + '</div><div class="ad">' + esc(r.address) + '</div><div class="ad">' + esc([...r.kinds].join(', ')) + (r.maps ? ' · <a href="' + esc(r.maps) + '" target="_blank" rel="noopener">Google Maps</a>' : '') + '</div></td>' +
       '<td>' + (r.rating ? '★ ' + r.rating.toFixed(1) + '<br>' : '') + r.reviews.toLocaleString() + '</td><td>' + esc(r.phone) + '</td>' +
       '<td><span class="pill ' + r.status + '">' + ({ none: 'No website', social: 'Social / listing only', ok: 'Has a website' }[r.status]) + '</span>' +
-      (r.website ? '<a class="site" href="' + esc(r.website) + '" target="_blank" rel="noopener">' + esc(r.website.replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</a>' : '') + '</td></tr>').join('')
-      : '<tr><td colspan="4" class="after">Nothing in this view.</td></tr>') + '</tbody></table></div>' +
-    '<p class="foot">Sorted by number of reviews. "No website" means the Google profile has no website link; the clinic may still have a site that isn\'t linked there, or only a booking page. Worth a quick look before getting in touch. Clinics that Google marks as closed are left out.</p>';
+      (r.website ? '<a class="site" href="' + esc(r.website) + '" target="_blank" rel="noopener">' + esc(r.website.replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</a>' : '') + '</td>' +
+      '<td>' + engCell(r) + '</td></tr>').join('')
+      : '<tr><td colspan="5" class="after">Nothing in this view.</td></tr>') + '</tbody></table></div>' +
+    '<p class="foot">Sorted by number of reviews. "No website" means the Google profile has no website link; the clinic may still have a site that isn\'t linked there, or only a booking page. "English first" means the website\'s own text is in English; "English version" means a Czech site with a working English page. Review languages come from the few reviews Google returns per clinic (usually 5), so treat them as a hint. A website shows what a clinic publishes, not who answers the phone. Clinics that Google marks as closed are left out.</p>';
 }
 $('out').addEventListener('click', e => {
   if (e.target.dataset.v) { view = e.target.dataset.v; render(0); }
+  if (e.target.dataset.l) { langView = e.target.dataset.l; render(0); }
   if (e.target.id === 'csv') downloadCsv();
 });
 function downloadCsv(rowsIn, base) {
   const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
   const rows = (rowsIn || list()).sort((a, b) => b.reviews - a.reviews);
-  const csv = [['Clinic', 'Address', 'Phone', 'Rating', 'Reviews', 'Website on Google', 'Status', 'Kinds', 'Google Maps'].map(q).join(',')]
-    .concat(rows.map(r => [r.name, r.address, r.phone, r.rating ?? '', r.reviews, r.website, ({ none: 'No website', social: 'Social or listing only', ok: 'Has a website' })[r.status], [...r.kinds].join('; '), r.maps].map(q).join(','))).join('\n');
+  const csv = [['Clinic', 'Address', 'Phone', 'Rating', 'Reviews', 'Website on Google', 'Status', 'English', 'English evidence', 'Reviews in English', 'Kinds', 'Google Maps'].map(q).join(',')]
+    .concat(rows.map(r => [r.name, r.address, r.phone, r.rating ?? '', r.reviews, r.website, ({ none: 'No website', social: 'Social or listing only', ok: 'Has a website' })[r.status], r.lang ? (LANG_LABEL[r.lang.level] || LANG_LABEL.unknown)[0] : '', r.lang ? (r.lang.evidence || []).join('; ') : '', r.revN ? r.revEn + ' of ' + r.revN : '', [...r.kinds].join('; '), r.maps].map(q).join(','))).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
   a.download = (base || 'prague-clinics-website-check') + '-' + new Date().toISOString().slice(0, 10) + '.csv';
