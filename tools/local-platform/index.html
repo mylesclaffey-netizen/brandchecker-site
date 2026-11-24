@@ -60,6 +60,7 @@
     <div class="pick"><label for="proj">Project</label><select id="proj" disabled><option>Loading…</option></select></div>
     <button class="btn" id="newBtn" type="button">+ New project</button>
     <button class="btn" id="detBtn" type="button" aria-expanded="false">Project details</button>
+    <button class="btn" id="wBtn" type="button" aria-expanded="false">Local Watch</button>
     <span class="spacer"></span>
     <a class="toplink" id="projLink" href="/tools/projects/" target="_blank" rel="noopener">My projects →</a>
     <a class="toplink" href="/">← All tools</a>
@@ -79,6 +80,21 @@
     </div>
     <div class="row" style="margin-top:10px"><button class="btn go" id="detSave" type="button">Save and fill into the tools</button></div>
     <div class="msg" id="detMsg"></div>
+  </div>
+  <div class="panel" id="wPanel" hidden>
+    <p class="hint">Local Watch re-checks this project's Business Profiles every week and re-runs its rank grids every month. It emails you only when something that matters changed: nothing changed, nothing sent. It uses the same credits as running the tools yourself.</p>
+    <div class="grid">
+      <div><label for="wEmail">Send changes to</label><input id="wEmail" type="email" maxlength="200" placeholder="you@agency.com" autocomplete="email"></div>
+      <div><label for="wOn">Status</label><select id="wOn"><option value="1">Watching</option><option value="0">Paused</option></select></div>
+    </div>
+    <div class="row" style="margin-top:10px;flex-wrap:wrap">
+      <button class="btn go" id="wSave" type="button">Save</button>
+      <button class="btn" id="wProf" type="button">Check profiles now</button>
+      <button class="btn" id="wGrid" type="button">Re-run grids now</button>
+      <button class="btn" id="wOff" type="button">Turn off and forget</button>
+    </div>
+    <div class="msg" id="wMsg"></div>
+    <div id="wInfo" style="font-size:12px;line-height:1.6"></div>
   </div>
   <nav class="tabs" id="tabs" role="tablist" aria-label="Local search tools"></nav>
 </header>
@@ -159,7 +175,8 @@ function fillDetails() {
   var p = (current && current.profile) || {};
   $('dBiz').value = p.business || (current ? current.name : ''); $('dSite').value = p.website || ''; $('dCity').value = p.city || ''; $('dKw').value = p.keyword || '';
   $('dLang').value = p.language || 'en';
-  $('detBtn').disabled = !current;
+  $('detBtn').disabled = !current; $('wBtn').disabled = !current;
+  if (!$('wPanel').hidden) loadWatch();
 }
 function choose(id) {
   current = projects.filter(function (p) { return p.id === id; })[0] || null;
@@ -211,6 +228,64 @@ $('detSave').addEventListener('click', function () {
     msg('detMsg', 'Saved. The tools have been filled in.', 'good'); broadcast();
   });
 });
+
+/* ---- Local Watch ---- */
+var watchData = null;
+function fmtDate(t) { if (!t) return 'never'; var d = new Date(t); return isNaN(d) ? 'never' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
+function renderWatch(d) {
+  watchData = d;
+  var w = d.watch, ing = d.watching || { locations: [], grids: [] };
+  if (w) { $('wEmail').value = w.email || ''; $('wOn').value = w.enabled ? '1' : '0'; }
+  ['wProf', 'wGrid', 'wOff'].forEach(function (id) { $(id).disabled = !w; });
+  var h = '<p style="margin-top:10px"><b>Watching:</b> ' + ing.locations.length + ' Business Profile' + (ing.locations.length === 1 ? '' : 's') + (ing.locations.length ? ' (' + ing.locations.map(function (l) { return esc(l.name || 'unnamed'); }).slice(0, 8).join(', ') + (ing.locations.length > 8 ? '…' : '') + ')' : ' (none: set each profile\'s client to <i>' + esc(current ? current.name : '') + '</i> in Business Profiles)') + ', ' + ing.grids.length + ' rank grid' + (ing.grids.length === 1 ? '' : 's') + (ing.grids.length ? ' (' + ing.grids.map(function (g) { return esc(g.keyword + ' · ' + g.city); }).join('; ') + ')' : ' (none: save a scan in the Rank grid tab, and put the business name in Project details)') + '.</p>';
+  if (w) {
+    h += '<p><b>Next:</b> profiles ' + fmtDate(w.next_profiles_at) + ', grids ' + fmtDate(w.next_grids_at) + (w.enabled ? '' : ' (paused, nothing will run)') + '.</p>';
+    var r = (w.runs || [])[0];
+    if (r) h += '<p><b>Last check:</b> ' + fmtDate(r.at) + (r.skipped ? ', skipped: ' + esc(r.skipped) : ': ' + (r.profiles != null ? r.profiles + ' profiles' : '') + (r.profiles != null && r.grids != null ? ', ' : '') + (r.grids != null ? r.grids + ' grids' : '') + ', ' + (r.changes ? r.changes + ' change' + (r.changes === 1 ? '' : 's') + (r.email === 'sent' ? ', emailed' : r.email === 'failed' ? ', email failed to send' : '') : 'nothing changed, no email') + (r.errors && r.errors.length ? '. Problems: ' + esc(r.errors.join('; ')) : '') + (r.notes && r.notes.length ? ' ' + esc(r.notes.join(' ')) : '')) + '</p>';
+    if ((w.last_changes || []).length) h += '<p style="margin-top:6px"><b>Recent changes:</b></p><ul style="padding-left:18px">' + w.last_changes.slice(0, 12).map(function (c) { return '<li>' + esc(c.where) + ' (' + esc(fmtDate(c.at)) + '): ' + esc(c.items.join('; ')) + '</li>'; }).join('') + '</ul>';
+  }
+  $('wInfo').innerHTML = h;
+}
+function loadWatch() {
+  if (!current) return;
+  var id = current.id; msg('wMsg', 'Loading…'); $('wInfo').innerHTML = '';
+  api('/local-watch/get', { project_id: id }).then(function (d) {
+    if (!current || current.id !== id) return;
+    if (d.error) { msg('wMsg', d.error, 'bad'); return; }
+    msg('wMsg', d.watch ? '' : 'Not on yet. Enter your email and save to start.'); renderWatch(d);
+  });
+}
+$('wBtn').addEventListener('click', function () { var open = $('wPanel').hidden; $('wPanel').hidden = !open; $('wBtn').setAttribute('aria-expanded', String(open)); if (open) loadWatch(); });
+$('wSave').addEventListener('click', function () {
+  if (!current) return;
+  $('wSave').disabled = true; msg('wMsg', 'Saving…');
+  api('/local-watch/set', { project_id: current.id, email: $('wEmail').value.trim(), enabled: $('wOn').value === '1' }).then(function (d) {
+    $('wSave').disabled = false;
+    if (d.error) { msg('wMsg', d.error, 'bad'); return; }
+    msg('wMsg', 'Saved.', 'good'); renderWatch(d);
+  });
+});
+function watchNow(what, btn) {
+  if (!current) return;
+  var was = btn.textContent; btn.disabled = true; msg('wMsg', 'Checking. Profiles take a minute; grids a little longer…');
+  api('/local-watch/run', { project_id: current.id, what: what }).then(function (d) {
+    btn.disabled = false; btn.textContent = was;
+    if (d.error) { msg('wMsg', d.error, 'bad'); return; }
+    var r = d.result;
+    msg('wMsg', r.changes ? r.changes + ' change' + (r.changes === 1 ? '' : 's') + ' found' + (r.email === 'sent' ? ' and emailed.' : r.email === 'failed' ? ', but the email failed to send.' : '.') : 'Checked. Nothing that matters changed, so no email.', r.changes && r.email === 'failed' ? 'bad' : 'good');
+    api('/local-watch/get', { project_id: current.id }).then(function (x) { if (!x.error) renderWatch(x); });
+  });
+}
+$('wProf').addEventListener('click', function () { watchNow('profiles', $('wProf')); });
+$('wGrid').addEventListener('click', function () { watchNow('grids', $('wGrid')); });
+$('wOff').addEventListener('click', function () {
+  if (!current || !confirm('Turn Local Watch off for this project and forget its history?')) return;
+  api('/local-watch/delete', { project_id: current.id }).then(function (d) {
+    if (d.error) { msg('wMsg', d.error, 'bad'); return; }
+    $('wEmail').value = ''; $('wOn').value = '1'; loadWatch();
+  });
+});
+
 $('tabs').addEventListener('click', function (e) { var b = e.target.closest('.tab'); if (b) openTool(b.dataset.tool); });
 
 /* ---- start ---- */
