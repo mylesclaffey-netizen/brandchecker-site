@@ -20,6 +20,7 @@
     '.bcp-btn:hover{background:var(--you,#ff3d00)}' +
     '.bcp-panel{position:fixed;right:16px;bottom:60px;z-index:2147483000;width:320px;max-width:calc(100vw - 32px);background:#fff;color:#0a0a0a;border:1px solid var(--ink,#0a0a0a);border-radius:10px;padding:14px;font:12.5px var(--mc-mono,"IBM Plex Mono",monospace);box-shadow:0 6px 24px rgba(0,0,0,.25)}' +
     '.bcp-panel[hidden]{display:none}' +
+    '.bcp-panel h2{padding-right:26px}.bcp-x{position:absolute;top:6px;right:8px;width:24px;height:24px;border:0;background:none;color:#0a0a0a;font:400 20px/1 Arial,sans-serif;cursor:pointer;border-radius:5px;padding:0}.bcp-x:hover{background:#eee}' +
     '.bcp-panel h2{font:700 13px var(--mc-display,"Archivo",Arial,sans-serif);margin:0 0 10px}' +
     '.bcp-panel label{display:block;font-size:11px;color:#3d3d3d;margin:10px 0 4px}' +
     '.bcp-panel select,.bcp-panel input{width:100%;font:13px var(--mc-mono,"IBM Plex Mono",monospace);color:#0a0a0a;background:#fff;border:1px solid var(--ink,#0a0a0a);border-radius:7px;padding:8px 9px}' +
@@ -40,6 +41,7 @@
   var panel = document.createElement('div');
   panel.className = 'bcp-panel'; panel.hidden = true; panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Save to project');
   panel.innerHTML =
+    '<button type="button" class="bcp-x" id="bcpClose" aria-label="Close" title="Close">×</button>' +
     '<h2>Save this page to a project</h2>' +
     '<label for="bcpSel">Project</label><select id="bcpSel"><option value="">Loading…</option></select>' +
     '<label for="bcpNew">Or add a new project</label>' +
@@ -79,6 +81,7 @@
     if (show) { load(); say(''); }
   }
   btn.addEventListener('click', function () { toggle(); });
+  $('bcpClose').addEventListener('click', function () { toggle(false); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') toggle(false); });
   $('bcpSel').addEventListener('change', function () { $('bcpSave').disabled = !$('bcpSel').value; try { localStorage.setItem(LAST, $('bcpSel').value); } catch (e) { /* ignore */ } });
 
