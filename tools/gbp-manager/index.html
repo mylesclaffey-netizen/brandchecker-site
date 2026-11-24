@@ -222,6 +222,7 @@ function hoursText(h) {
 }
 
 /* ======================= the workspace ======================= */
+var projectNames = [];
 var ws = [], cur = null, view = { client: '', q: '' }, running = false, pollTimer = null;
 var addDraft = { link: '', name: '', city: '', client: '', keyword: '', lang: 'en', placeId: '', where: '' };
 
@@ -229,11 +230,20 @@ function showWorkspace(msg) {
   cur = null; clearTimeout(pollTimer);
   if (!CODE) { app.innerHTML = '<p class="msg bad">The workspace belongs to an access code, and this browser has none. Open the tool from your access link.</p>'; return; }
   app.innerHTML = '<p class="loading">Loading your workspace…</p>';
+  // The projects saved with the "Save to project" button count as clients too, so a new project can be picked here.
+  var projectsLoaded = api('/projects/list').then(function (d) { projectNames = (d.projects || []).map(function (p) { return p.name; }); }).catch(function () { /* the list still works without them */ });
   api('/gbp/list').then(function (d) {
     if (d.error) { app.innerHTML = '<p class="msg bad">' + esc(d.error) + '</p>'; return; }
     ws = d.locations || [];
-    renderWorkspace(msg);
+    projectsLoaded.then(function () { renderWorkspace(msg); });
   });
+}
+
+// Every name that can be used as a client: those already on a location, plus the saved projects.
+function clientChoices() {
+  var seen = {}, out = [];
+  ws.map(function (l) { return l.client || ''; }).concat(projectNames).forEach(function (c) { if (c && !seen[c.toLowerCase()]) { seen[c.toLowerCase()] = 1; out.push(c); } });
+  return out.sort();
 }
 
 function renderWorkspace(msg) {
@@ -264,7 +274,7 @@ function renderWorkspace(msg) {
     '<div><label for="aCity">City (with the country if it\'s ambiguous)</label><input id="aCity" placeholder="Prague, Czechia" value="' + esc(addDraft.city) + '"></div></div>' +
     '<div class="picked" id="aPicked">' + (addDraft.placeId ? '✓ Matched to its Google listing' + (addDraft.where ? ': ' + esc(addDraft.where) : '') + '.' : '') + '</div>' +
     '<label for="aLink">Or its Google Maps link</label><input id="aLink" placeholder="https://maps.app.goo.gl/…" inputmode="url" value="' + esc(addDraft.link) + '">' +
-    '<div class="row3"><div><label for="aClient">Client, to group locations</label><input id="aClient" list="clientList" value="' + esc(addDraft.client) + '"><datalist id="clientList">' + clients.filter(Boolean).map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist></div>' +
+    '<div class="row3"><div><label for="aClient">Client, to group locations</label><input id="aClient" list="clientList" value="' + esc(addDraft.client) + '"><datalist id="clientList">' + clientChoices().map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist></div>' +
     '<div><label for="aKeyword">Main search to compare against</label><input id="aKeyword" placeholder="Its primary category, e.g. dentist" value="' + esc(addDraft.keyword) + '"></div>' +
     '<div><label for="aLang">Language people search in</label><select id="aLang">' + LANGS.map(function (l) { return '<option value="' + l[0] + '"' + (addDraft.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('') + '</select></div></div>' +
     '<div class="bar"><button class="submit" id="addBtn" type="button">Add and analyse</button></div><div id="addMsg" class="msg">' + (msg ? esc(msg) : '') + '</div></section>' +
@@ -441,7 +451,7 @@ function renderLoc(msg) {
     '<p class="sub">' + esc([p.category].concat(p.additional_categories || []).filter(Boolean).join(' · ')) + '</p>' +
     '<p class="sub">' + esc(p.address || '') + (link ? ' · <a href="' + esc(link) + '" target="_blank" rel="noopener">Open on Google Maps</a>' : '') + '</p>' +
     '<p class="sub">Analysed ' + esc(when(L.analysed_at)) + (p.position_from === 'search' ? ' · Google gave no map position; the search area was used instead' : '') + '</p>' +
-    '<div class="row3"><div><label for="lClient">Client</label><input id="lClient" value="' + esc(L.client || '') + '"></div>' +
+    '<div class="row3"><div><label for="lClient">Client</label><input id="lClient" list="clientListLoc" value="' + esc(L.client || '') + '"><datalist id="clientListLoc">' + clientChoices().map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist></div>' +
     '<div><label for="lKeyword">Main search to compare against</label><input id="lKeyword" value="' + esc(L.keyword || '') + '"></div>' +
     '<div><label for="lLang">Language</label><select id="lLang">' + LANGS.map(function (l) { return '<option value="' + l[0] + '"' + (L.language === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('') + '</select></div></div>' +
     '<div class="bar"><button class="submit" id="rerun" type="button">Re-analyse</button><button class="btn2" id="revBtn" type="button">Fetch latest reviews</button><button class="btn2" id="schemaBtn" type="button">Make matching website markup</button><button class="btn2" id="locPdf" type="button">Download PDF</button><button class="btn2" id="rmBtn" type="button">Remove</button></div>' +
