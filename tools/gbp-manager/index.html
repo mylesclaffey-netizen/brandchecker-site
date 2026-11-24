@@ -278,11 +278,93 @@ function renderWorkspace(msg) {
     '<div><label for="aKeyword">Main search to compare against</label><input id="aKeyword" placeholder="Its primary category, e.g. dentist" value="' + esc(addDraft.keyword) + '"></div>' +
     '<div><label for="aLang">Language people search in</label><select id="aLang">' + LANGS.map(function (l) { return '<option value="' + l[0] + '"' + (addDraft.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('') + '</select></div></div>' +
     '<div class="bar"><button class="submit" id="addBtn" type="button">Add and analyse</button></div><div id="addMsg" class="msg">' + (msg ? esc(msg) : '') + '</div></section>' +
+    '<section class="card" id="findCard"></section>' +
     '<section class="card"><div class="bar" style="margin-top:0;justify-content:space-between"><h2>Locations <span class="small">(' + ws.length + ')</span></h2>' +
     (ws.length ? '<div class="bar" style="margin:0"><button class="btn2 mini" id="runAll" type="button">' + (running ? 'Stop' : 'Re-analyse all') + '</button><button class="btn2 mini" id="wsCsv" type="button">Download CSV</button><button class="btn2 mini" id="wsPdf" type="button">Download PDF</button></div>' : '') + '</div>' +
     (ws.length > 1 ? '<div class="row2"><div><label for="fClient">Client</label><select id="fClient"><option value="">All clients</option>' + clients.map(function (c) { return '<option value="' + esc(c) + '"' + (view.client === c ? ' selected' : '') + '>' + esc(c || 'No client set') + '</option>'; }).join('') + '</select></div><div><label for="fQ">Find</label><input id="fQ" value="' + esc(view.q) + '" placeholder="Name or address"></div></div>' : '') +
     (ws.length ? table || '<p class="hint" style="margin-top:10px">Nothing matches.</p>' : '<p class="hint" style="margin-top:10px">No locations yet. Add your first client\'s profile above.</p>') +
     '<div id="runMsg" class="msg"></div></section>';
+  renderFind();
+}
+
+/* ---- find every location of one company, add them together, analyse them side by side ---- */
+var findDraft = { name: '', areas: '', site: '', client: '', lang: 'en', reviews: true };
+var findState = { busy: false, stop: false, candidates: null, picked: {}, notFound: [], msg: '', bad: false };
+var BATCH = 8;   // locations the Worker looks up and analyses side by side in one request
+
+function renderFind() {
+  var el = $('findCard'); if (!el) return;
+  var f = findState, cands = f.candidates, html =
+    '<h2>Find all locations of a company</h2>' +
+    '<p class="hint" style="margin-top:6px">Type the company\'s name and the cities or countries to search. It lists every Google Business Profile that looks like that company, and you tick the ones to add. They are all analysed together.</p>' +
+    '<div class="row2"><div><label for="fName">Company name</label><input id="fName" placeholder="e.g. Smile Dental" value="' + esc(findDraft.name) + '"></div>' +
+    '<div><label for="fSite">Company website (optional)</label><input id="fSite" placeholder="smile-dental.cz" inputmode="url" value="' + esc(findDraft.site) + '"></div></div>' +
+    '<label for="fAreas">Where to search: one city or country per line</label><textarea id="fAreas" rows="3" placeholder="Prague, Czechia&#10;Brno, Czechia&#10;Czechia">' + esc(findDraft.areas) + '</textarea>' +
+    '<p class="hint" style="margin:4px 0 0">Google shows the branches nearest each place, up to about 60 per search, so add each city or region where the company has branches. A website helps find branches whose Google name differs from the company\'s.</p>' +
+    '<div class="row3"><div><label for="fClientNew">Client, to group the locations</label><input id="fClientNew" list="clientList" value="' + esc(findDraft.client) + '"></div>' +
+    '<div><label for="fLang">Language people search in</label><select id="fLang">' + LANGS.map(function (l) { return '<option value="' + l[0] + '"' + (findDraft.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('') + '</select></div>' +
+    '<div><label>&nbsp;</label><label style="display:flex;align-items:center;margin:0;padding-top:8px"><input type="checkbox" id="fReviews"' + (findDraft.reviews ? ' checked' : '') + '> Also read their reviews</label></div></div>' +
+    '<div class="bar"><button class="submit" id="findBtn" type="button"' + (f.busy ? ' disabled' : '') + '>Find locations</button></div>';
+  if (cands) {
+    var fresh = cands.filter(function (c) { return !c.already; }), n = fresh.filter(function (c) { return f.picked[candKey(c)]; }).length;
+    html += '<div id="findList"><h3 style="margin:14px 0 4px">' + cands.length + ' location' + (cands.length === 1 ? '' : 's') + ' found <span class="small">(' + fresh.length + ' not added yet)</span></h3>' +
+      (cands.length ? '<div class="bar" style="margin:6px 0"><button class="btn2 mini" id="fAll" type="button">Select all new</button><button class="btn2 mini" id="fNone" type="button">Select none</button></div>' +
+      '<div class="tablewrap"><table><thead><tr><th></th><th>Location</th><th class="num">Rating</th><th>Found by</th></tr></thead><tbody>' +
+      cands.map(function (c) {
+        var k = candKey(c);
+        return '<tr' + (c.already ? ' style="opacity:.55"' : '') + '><td><input type="checkbox" data-pick="' + esc(k) + '"' + (c.already ? ' disabled' : f.picked[k] ? ' checked' : '') + '></td>' +
+          '<td><b>' + esc(c.name || '(unnamed)') + '</b><div class="small">' + esc(c.address || '') + '</div></td>' +
+          '<td class="num">' + (c.rating != null ? c.rating + '★' : '–') + '<div class="small">' + (c.votes != null ? c.votes + ' reviews' : '') + '</div></td>' +
+          '<td class="small">' + (c.already ? '<span class="pill ok">Already added</span>' : c.matched_by === 'website' ? 'Same website' : 'Name') + '</td></tr>';
+      }).join('') + '</tbody></table></div>' +
+      '<div class="bar"><button class="submit" id="addPicked" type="button"' + (f.busy || !n ? ' disabled' : '') + '>' + (f.busy ? 'Working…' : n ? 'Add ' + n + ' and analyse them all' : 'Tick the locations to add') + '</button>' + (f.busy ? '<button class="btn2" id="addStop" type="button">Stop</button>' : '') + '</div>' : '') + '</div>';
+  }
+  html += '<div id="findMsg" class="msg' + (f.bad ? ' bad' : '') + '">' + esc(f.msg) + '</div>';
+  el.innerHTML = html;
+}
+var candKey = function (c) { return c.cid || c.place_id; };
+function findMsg(text, bad) { findState.msg = text; findState.bad = !!bad; var m = $('findMsg'); if (m) { m.textContent = text; m.className = 'msg' + (bad ? ' bad' : ''); } }
+
+function findLocations() {
+  var f = findState;
+  var name = findDraft.name.trim(), areas = findDraft.areas.split(/[\n;]+/).map(function (a) { return a.trim(); }).filter(Boolean);
+  if (name.length < 2) { findMsg('Type the company name.', true); return; }
+  if (!areas.length) { findMsg('Add at least one city or country to search.', true); return; }
+  f.busy = true; f.candidates = null; findMsg('Searching Google Maps in ' + areas.length + ' place' + (areas.length === 1 ? '' : 's') + '…'); renderFind(); findMsg('Searching Google Maps in ' + areas.length + ' place' + (areas.length === 1 ? '' : 's') + '…');
+  api('/gbp/find', { name: name, areas: areas, website: findDraft.site.trim(), language: findDraft.lang }).then(function (d) {
+    f.busy = false;
+    if (d.error) { findMsg(d.error, true); renderFind(); findMsg(d.error, true); return; }
+    f.candidates = d.candidates || []; f.picked = {};
+    f.candidates.forEach(function (c) { if (!c.already) f.picked[candKey(c)] = true; });
+    var extra = (d.not_found && d.not_found.length ? ' Couldn\'t search: ' + d.not_found.join(', ') + '.' : '');
+    f.msg = f.candidates.length ? 'Untick any that aren\'t part of the company, then add the rest.' + extra : 'No locations of "' + name + '" found there. Try the city names with their country, add the company website, or check the spelling.' + extra;
+    f.bad = !f.candidates.length;
+    renderFind();
+  });
+}
+
+function addPicked() {
+  var f = findState, list = (f.candidates || []).filter(function (c) { return !c.already && f.picked[candKey(c)]; });
+  if (!list.length || f.busy) return;
+  f.busy = true; f.stop = false; renderFind();
+  var i = 0, added = 0, failed = [], skipped = 0, total = list.length;
+  (function next() {
+    if (f.stop || i >= total) {
+      f.busy = false;
+      var msg = 'Added ' + added + ' of ' + total + ' location' + (total === 1 ? '' : 's') + (f.stop && i < total ? ' (stopped)' : '') + '.' + (skipped ? ' ' + skipped + ' were already there.' : '') +
+        (failed.length ? ' Couldn\'t add: ' + failed.map(function (x) { return x.name + ' (' + x.error + ')'; }).join('; ') + '.' : '');
+      f.candidates = null;
+      showWorkspace(msg);
+      return;
+    }
+    var batch = list.slice(i, i + BATCH); i += batch.length;
+    findMsg('Adding and analysing ' + Math.min(i, total) + ' of ' + total + '…');
+    api('/gbp/add-many', { items: batch, client: findDraft.client.trim() || findDraft.name.trim(), language: findDraft.lang, reviews: findDraft.reviews }).then(function (d) {
+      if (d.error) { failed = failed.concat(batch.map(function (b) { return { name: b.name, error: d.error }; })); }
+      else { added += (d.added || []).length; skipped += (d.skipped || []).length; failed = failed.concat(d.failed || []); }
+      next();
+    });
+  })();
 }
 
 function addLocation() {
@@ -383,7 +465,7 @@ function pickSuggestion(i) {
 function runAll() {
   if (running) { running = false; $('runAll').textContent = 'Re-analyse all'; return; }
   var ids = ws.filter(function (l) { return (!view.client || (l.client || '') === view.client); }).map(function (l) { return l.id; });
-  if (!ids.length || !confirm('Re-analyse ' + ids.length + ' location' + (ids.length === 1 ? '' : 's') + '? Each one is a fresh lookup.')) return;
+  if (!ids.length || !confirm('Re-analyse ' + ids.length + ' location' + (ids.length === 1 ? '' : 's') + ' together? Each one is a fresh lookup.')) return;
   running = true; $('runAll').textContent = 'Stop';
   var i = 0, failed = 0;
   (function next() {
@@ -392,12 +474,15 @@ function runAll() {
       if (!cur) showWorkspace(failed ? failed + ' of ' + ids.length + ' couldn\'t be analysed. Open them to see why.' : '');
       return;
     }
-    var id = ids[i++], cell = document.querySelector('[data-runstate="' + id + '"]');
-    if (cell) cell.textContent = 'analysing…';
-    if ($('runMsg')) $('runMsg').textContent = 'Analysing ' + i + ' of ' + ids.length + '…';
-    api('/gbp/run', { id: id }).then(function (d) {
-      if (d.error) failed++;
-      if (cell) cell.textContent = d.error ? 'failed' : 'just now';
+    var batch = ids.slice(i, i + BATCH); i += batch.length;
+    batch.forEach(function (id) { var cell = document.querySelector('[data-runstate="' + id + '"]'); if (cell) cell.textContent = 'analysing…'; });
+    if ($('runMsg')) $('runMsg').textContent = 'Analysing ' + Math.min(i, ids.length) + ' of ' + ids.length + ' (' + batch.length + ' at a time)…';
+    api('/gbp/run-many', { ids: batch }).then(function (d) {
+      var results = d.results || batch.map(function (id) { return { id: id, ok: false }; });
+      results.forEach(function (r) {
+        if (!r.ok) failed++;
+        var cell = document.querySelector('[data-runstate="' + r.id + '"]'); if (cell) cell.textContent = r.ok ? 'just now' : 'failed';
+      });
       next();
     });
   })();
@@ -724,6 +809,10 @@ app.addEventListener('click', function (e) {
   if (!t) return;
   if (t.dataset.open) { location.hash = '#/loc/' + t.dataset.open; return; }
   if (t.id === 'addBtn') return addLocation();
+  if (t.id === 'findBtn') return findLocations();
+  if (t.id === 'addPicked') return addPicked();
+  if (t.id === 'addStop') { findState.stop = true; t.disabled = true; t.textContent = 'Stopping…'; return; }
+  if (t.id === 'fAll' || t.id === 'fNone') { (findState.candidates || []).forEach(function (c) { if (!c.already) findState.picked[candKey(c)] = t.id === 'fAll'; }); renderFind(); return; }
   if (t.id === 'runAll') return runAll();
   if (t.id === 'wsCsv') return workspaceCsv();
   if (t.id === 'wsPdf') return printPdf('business-profiles-' + slug(view.client || 'all-clients'), 'Business Profile manager · ' + (view.client || 'All clients') + ' · ' + ws.length + ' locations');
@@ -807,6 +896,7 @@ app.addEventListener('click', function (e) {
   }
 });
 
+var FIND_FIELDS = { fName: 'name', fSite: 'site', fAreas: 'areas', fClientNew: 'client' };
 var ADD_FIELDS = { aLink: 'link', aName: 'name', aCity: 'city', aClient: 'client', aKeyword: 'keyword' };
 app.addEventListener('focusin', function (e) { if (e.target.id === 'aName') loadGoogleMaps(); });
 app.addEventListener('mousedown', function (e) {
@@ -816,6 +906,7 @@ app.addEventListener('mousedown', function (e) {
 document.addEventListener('click', function (e) { if (!e.target.closest('.ac-wrap')) closeSuggestions(); });
 app.addEventListener('input', function (e) {
   var t = e.target;
+  if (FIND_FIELDS[t.id]) { findDraft[FIND_FIELDS[t.id]] = t.value; return; }
   if (ADD_FIELDS[t.id]) { addDraft[ADD_FIELDS[t.id]] = t.value; if (t.id === 'aName') onNameTyped(t.value); return; }
   if (t.id === 'fQ') { view.q = t.value; var pos = t.selectionStart; renderWorkspace(); var q = $('fQ'); q.focus(); q.setSelectionRange(pos, pos); return; }
   if (!cur) return;
@@ -836,6 +927,9 @@ app.addEventListener('input', function (e) {
 app.addEventListener('change', function (e) {
   var t = e.target;
   if (t.id === 'aLang') { addDraft.lang = t.value; return; }
+  if (t.id === 'fLang') { findDraft.lang = t.value; return; }
+  if (t.id === 'fReviews') { findDraft.reviews = t.checked; return; }
+  if (t.dataset.pick != null && t.dataset.pick !== '') { findState.picked[t.dataset.pick] = t.checked; var fresh = (findState.candidates || []).filter(function (c) { return !c.already && findState.picked[candKey(c)]; }).length; var ab = $('addPicked'); if (ab) { ab.disabled = !fresh; ab.textContent = fresh ? 'Add ' + fresh + ' and analyse them all' : 'Tick the locations to add'; } return; }
   if (t.id === 'fClient') { view.client = t.value; renderWorkspace(); return; }
   if (!cur) return;
   if (t.dataset.hmode) { readHours(t.dataset.hmode); fillChanges(); scheduleSave(); return; }
@@ -858,6 +952,7 @@ app.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') { closeSuggestions(); return; }
   }
   if (e.key === 'Enter' && e.target.id && /^a(Link|Name|City|Client|Keyword)$/.test(e.target.id)) addLocation();
+  if (e.key === 'Enter' && (e.target.id === 'fName' || e.target.id === 'fSite')) findLocations();
 });
 
 function route() { var m = location.hash.match(/^#\/loc\/([a-f0-9]{12})$/); if (m) { polls = 0; openLoc(m[1]); } else showWorkspace(); }
