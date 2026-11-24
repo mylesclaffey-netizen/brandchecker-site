@@ -523,7 +523,7 @@ function render() {
   app.innerHTML =
     `<div class="status" style="margin-bottom:14px"><label for="importUrl" style="margin-top:0">Start from a page that already has markup (optional)</label>
       <div class="inrow"><input id="importUrl" placeholder="https://yourbusiness.com/" value="https://"><button class="btn2" id="importBtn" type="button">Read its markup</button></div><div id="importMsg" class="msg"></div>
-      <div style="text-align:right;margin-top:8px"><button class="btn2" id="resetBtn" type="button">Reset the form</button></div></div>` +
+      <div style="text-align:right;margin-top:8px"><button class="btn2" id="resetTopBtn" type="button">Reset the form</button></div></div>` +
     sec('essentials', 'Business', 'Type, name and contact', `
       <label for="f-typeFilter">Type of business — the most specific one that fits</label>
       <input id="f-typeFilter" placeholder="Search ${TYPES.length} types: dentist, bakery, plumber…" autocomplete="off">
@@ -854,9 +854,8 @@ app.addEventListener('click', (e) => {
   else if (t.id === 'copyBtn') { navigator.clipboard?.writeText($('code').textContent); flash(t, 'Copied ✓'); logCopy(1); }
   else if (t.id === 'checkBtn') { try { localStorage.setItem('schema-check-code', $('code').textContent); } catch (err) { /* nothing kept */ } window.open('/tools/schema-audit/?paste=1' + (CODE ? '&k=' + encodeURIComponent(CODE) : ''), '_blank'); }
   else if (t.id === 'dlBtn') download(`${(s(state.name) || 'local-business').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.json`, JSON.stringify(current, null, 2), 'application/json');
-  else if (t.id === 'resetBtn') { if (confirm('Clear the whole form?')) { state = blank(); save(); render(); } }
+  else if (t.id === 'resetBtn' || t.id === 'resetTopBtn') resetForm();
   else if (t.id === 'importBtn') importFrom($('importUrl').value);
-  else if (t.id === 'resetBtn') resetForm();
   else if (t.id === 'locBtn') makeLocations();
   else if (t.dataset.locrm) { state.locs = state.locs.filter((x) => x.id !== t.dataset.locrm); save(); drawLocs(); }
 });

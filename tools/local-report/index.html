@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<script src="/assets/visitor.js"></script><script src="/assets/project-context.js"></script><script>if(new URLSearchParams(location.search).get("r"))window.__bcProjects=true;</script><script src="/assets/projects.js" defer></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Client report</title>
+<link rel="canonical" href="https://brandchecker.eu/tools/local-report/">
+<meta name="description" content="A client report for a local search project: rank grid, Business Profile checks, reviews, website match and the changes made, as a shareable page and a PDF.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#fff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--soft:#f3f3f3;--acc:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5;padding:22px 16px 60px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .wrap{max-width:980px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Archivo',sans-serif;font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:8px 0}
+  h2{font-family:'Archivo',sans-serif;font-size:17px;font-weight:800;margin:0 0 8px}
+  h3{font-family:'Archivo',sans-serif;font-size:14px;font-weight:800;margin:14px 0 6px}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6}
+  label{display:block;font-size:11px;color:var(--muted);margin:12px 0 5px;font-weight:700}
+  input,select,textarea{width:100%;font-family:'IBM Plex Mono',monospace;font-size:13.5px;color:var(--ink);background:#fff;border:2px solid var(--ink);border-radius:0;padding:9px 10px}
+  input[type=checkbox]{width:auto;margin-right:7px;vertical-align:-1px}
+  textarea{min-height:90px;resize:vertical}
+  input:focus,select:focus,textarea:focus{outline:3px solid var(--acc);outline-offset:0}
+  .card{border:2px solid var(--ink);padding:14px 16px;margin-bottom:14px;background:#fff}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .btn{font-family:'Archivo',sans-serif;font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:#fff;color:var(--ink);border:2px solid var(--ink);padding:9px 13px;cursor:pointer}
+  .btn:hover{background:var(--ink);color:#fff}
+  .btn.go{background:var(--ink);color:#fff;box-shadow:4px 4px 0 var(--acc)}
+  .btn[disabled]{opacity:.45;cursor:default;box-shadow:none}
+  .btn.mini{font-size:11px;padding:5px 9px}
+  .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+  .msg{font-size:12px;margin-top:8px;min-height:16px}.msg.bad{color:var(--bad)}.msg.good{color:var(--ok)}
+  .hint{font-size:11.5px;color:var(--muted);line-height:1.5}
+  .pick{max-height:230px;overflow:auto;border:2px solid var(--ink);padding:6px 10px}
+  .pick label{display:flex;align-items:flex-start;margin:6px 0;font-weight:500;color:var(--ink);font-size:12.5px}
+  .pick .sub{display:block;font-size:11px;color:var(--muted)}
+  .links a{color:var(--acc);font-weight:700}
+  .saved{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px solid #ddd;padding:7px 0;font-size:12.5px}
+  .saved:first-of-type{border-top:0}
+  .saved .grow{flex:1;min-width:200px}
+  /* ---- the report itself ---- */
+  .report{border:2px solid var(--ink);padding:26px 28px;background:#fff;margin-top:16px}
+  .rhead{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:4px solid var(--acc);padding-bottom:14px;margin-bottom:6px}
+  .rhead img{max-height:52px;max-width:200px;object-fit:contain}
+  .rhead .by{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .report h1{font-size:26px;margin:2px 0 4px}
+  .report .meta{font-size:12px;color:var(--muted)}
+  .rsec{margin-top:24px;break-inside:avoid-page}
+  .rsec>h2{border-bottom:2px solid var(--ink);padding-bottom:5px;margin-bottom:12px}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:12px}
+  .tile{border:2px solid var(--ink);padding:9px 11px}.tile b{display:block;font-family:'Archivo',sans-serif;font-size:24px;line-height:1.1}.tile span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  ul.find{margin:0 0 6px 18px;font-size:13px}ul.find li{margin:4px 0}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid #d6d6d6;vertical-align:top}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--ink)}
+  td.n,th.n{text-align:right;white-space:nowrap}
+  .small{font-size:11px;color:var(--muted)}
+  .chip{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:20px;white-space:nowrap}
+  .chip.ok{color:var(--ok);background:rgba(0,132,74,.12)}.chip.warn{color:var(--warn);background:rgba(180,95,0,.14)}.chip.bad{color:var(--bad);background:rgba(212,0,0,.12)}.chip.info{color:var(--muted);background:var(--soft)}
+  .gcard{border:2px solid var(--ink);padding:14px;margin-bottom:14px;break-inside:avoid}
+  .gtop{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+  .gcells{display:grid;gap:3px;flex:none}
+  .gcell{width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-family:'Archivo',sans-serif;font-weight:800;font-size:20px;color:#fff}
+  .gcell.ok{background:var(--ok)}.gcell.warn{background:var(--warn)}.gcell.bad{background:var(--bad)}.gcell.none{background:#3d3d3d}.gcell.err{background:#0a0a0a}
+  .gstats{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0}
+  .gstats div{border:2px solid var(--ink);padding:6px 10px;min-width:110px}.gstats b{display:block;font-family:'Archivo',sans-serif;font-size:20px}.gstats span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .up{color:var(--ok);font-weight:700}.down{color:var(--bad);font-weight:700}
+  .legend{display:flex;gap:12px;font-size:10.5px;color:var(--muted);margin-top:6px}.legend i{display:inline-block;width:10px;height:10px;margin-right:4px;vertical-align:-1px}
+  .loc{border:2px solid var(--ink);padding:12px 14px;margin-bottom:12px;break-inside:avoid}
+  .loc h3{margin:0 0 2px}
+  .notes{border-left:6px solid var(--acc);background:var(--soft);padding:12px 16px;font-size:13px;line-height:1.65}
+  .disc{margin-top:22px;font-size:10.5px;color:var(--muted);border-top:1px solid #ccc;padding-top:8px}
+  .toolbar{position:sticky;top:0;background:#fff;border-bottom:2px solid var(--ink);padding:8px 16px;margin:-22px -16px 16px;display:flex;gap:10px;align-items:center;z-index:5}
+  body.embed .sidenav{display:none}
+  .sidenav{margin-top:28px;padding-top:16px;border-top:2px solid var(--ink)}.sidenav a{font-size:12px;color:var(--muted)}
+  body.print .toolbar,body.print .noprint{display:none!important}
+  body.print{padding:0}body.print .report{border:0;padding:0;margin:0}
+  @page{size:A4;margin:12mm}
+  @media print{.toolbar,.noprint,.sidenav{display:none!important}body{padding:0}.report{border:0;padding:0;margin:0}}
+  @media (max-width:700px){.row2{grid-template-columns:1fr}.report{padding:16px}}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <div id="builder" hidden>
+    <p class="eyebrow">For agencies and consultants</p>
+    <h1>Client report</h1>
+    <p class="lede">One report for a client: the rank grid, Business Profile checks, reviews, website match and the changes made. Pick what goes in, add your notes, then share it as a link or save it as a PDF. It uses results you have already run, so building it costs nothing.</p>
+
+    <div class="card">
+      <div class="row2">
+        <div><label for="proj">Project</label><select id="proj"><option>Loading…</option></select></div>
+        <div><label for="title">Report title</label><input id="title" maxlength="120" placeholder="Kodak Lens: local search report"></div>
+      </div>
+      <div id="sources" hidden>
+        <label>Business Profiles to include <span class="small" id="locCount"></span></label>
+        <div class="bar" style="margin:0 0 6px"><button class="btn mini" id="locAll" type="button">All</button><button class="btn mini" id="locNone" type="button">None</button></div>
+        <div class="pick" id="locList"></div>
+        <label style="margin-top:16px">Rank grid scans to include (up to 5)</label>
+        <div class="pick" id="scanList"></div>
+        <p class="hint" style="margin-top:6px">Scans come from the Local rank grid. If the same search was scanned before, the report shows how it changed.</p>
+        <label style="margin-top:16px">Sections</label>
+        <div id="secs" class="bar" style="margin:0"></div>
+        <label for="notes">Your notes for the client (optional)</label>
+        <textarea id="notes" maxlength="4000" placeholder="What was done this period, what you recommend next…"></textarea>
+        <label style="margin-top:16px">Agency name on the report</label>
+        <div class="row2"><div><input id="agName" maxlength="80" placeholder="Your agency"></div><div><label style="display:flex;align-items:center;margin:0;padding-top:8px;font-weight:500"><input type="checkbox" id="agWhite"> Don't mention Brand Checker</label></div></div>
+        <div class="row2"><div><label for="agAccent">Accent colour (optional)</label><input id="agAccent" placeholder="#ff3d00" maxlength="7"></div><div><p class="hint" id="logoNote" style="margin-top:30px"></p></div></div>
+        <div class="bar"><button class="btn" id="agSave" type="button">Save branding</button><span class="msg" id="agMsg" style="margin:0"></span></div>
+        <div class="bar" style="margin-top:20px"><button class="btn go" id="preview" type="button">Preview</button><button class="btn go" id="save" type="button">Save and get a link</button></div>
+      </div>
+      <div class="msg" id="msg"></div>
+      <div id="done" hidden></div>
+    </div>
+
+    <div class="card" id="savedCard" hidden><h2>Saved reports for this project</h2><div id="savedList"></div></div>
+    <div id="previewBox"></div>
+    <div class="sidenav"><a href="/">← Back to tools</a></div>
+  </div>
+  <div id="viewer" hidden>
+    <div class="toolbar noprint" id="toolbar"><button class="btn go" id="printBtn" type="button">Print / Save as PDF</button><span class="small" id="viewNote"></span></div>
+    <div id="reportBox"><p class="hint">Loading the report…</p></div>
+  </div>
+  <div id="gate" hidden>
+    <h2>Enter your access code</h2><p class="hint">Reports are built from your own saved results. Open this page from your access link, or enter the code.</p>
+    <div class="bar"><input id="manual" placeholder="your-code" autocapitalize="off" spellcheck="false" style="max-width:320px"><button class="btn go" id="enter" type="button">Open</button></div>
+  </div>
+</div>
+
+<script>
+(function () {
+'use strict';
+var API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+var qs = new URLSearchParams(location.search);
+var CODE = qs.get('k') || window.MC_VISITOR || '';
+var RID = qs.get('r') || '';
+var PRINT = qs.get('print') === '1';
+if (qs.get('embed') === '1') document.body.classList.add('embed');
+if (PRINT) document.body.classList.add('print');
+var $ = function (id) { return document.getElementById(id); };
+var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+var SECTIONS = [['summary', 'Summary'], ['grids', 'Rank grid'], ['profiles', 'Profiles'], ['reviews', 'Reviews'], ['website', 'Website match'], ['changes', 'Changes']];
+function api(path, body) {
+  return fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ code: CODE }, body || {})) })
+    .then(function (r) { return r.json(); }).catch(function () { return { error: 'Couldn\'t reach the server. Check your connection and try again.' }; });
+}
+var fmtDate = function (iso) { var d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); };
+var num = function (v) { return v == null ? '–' : v; };
+
+/* ======================= the report ======================= */
+var band = function (rank, err) { return err ? 'err' : rank == null ? 'none' : rank <= 3 ? 'ok' : rank <= 10 ? 'warn' : 'bad'; };
+var chip = function (s) { return '<span class="chip ' + (s === 'ok' ? 'ok' : s === 'bad' ? 'bad' : s === 'warn' ? 'warn' : 'info') + '">' + (s === 'ok' ? 'Good' : s === 'bad' ? 'Fix' : s === 'warn' ? 'Improve' : 'Note') + '</span>'; };
+function delta(now, before, lowerBetter, unit) {
+  if (now == null || before == null) return '';
+  var d = Math.round((now - before) * 10) / 10;
+  if (!d) return '<span class="small"> no change</span>';
+  var good = lowerBetter ? d < 0 : d > 0;
+  if (lowerBetter) return ' <span class="' + (good ? 'up' : 'down') + '">' + (good ? '▲ ' : '▼ ') + Math.abs(d) + (good ? ' better' : ' worse') + '</span>';
+  return ' <span class="' + (good ? 'up' : 'down') + '">' + (d > 0 ? '▲ ' : '▼ ') + Math.abs(d) + (unit || '') + '</span>';
+}
+function gridCard(g) {
+  var s = g.summary || {}, prev = g.previous;
+  var cells = (g.points || []).map(function (p) { return '<div class="gcell ' + band(p.rank, p.error) + '">' + (p.error ? '!' : p.rank == null ? '×' : p.rank) + '</div>'; }).join('');
+  return '<div class="gcard"><h3 style="margin-top:0">' + esc(g.business) + ' · "' + esc(g.keyword) + '"</h3><div class="small">' + esc(g.city_name) + ' · ' + g.grid_size + '×' + g.grid_size + ' grid, ' + g.spacing_km + ' km spacing · scanned ' + esc(fmtDate(g.created_at)) + '</div>' +
+    '<div class="gtop"><div><div class="gcells" style="grid-template-columns:repeat(' + g.grid_size + ',50px)">' + cells + '</div>' +
+    '<div class="legend"><span><i style="background:var(--ok)"></i>Top 3</span><span><i style="background:var(--warn)"></i>4–10</span><span><i style="background:var(--bad)"></i>11+</span><span><i style="background:#3d3d3d"></i>Not found</span></div></div>' +
+    '<div style="flex:1;min-width:230px"><div class="gstats"><div><b>' + num(s.avg_rank) + delta(s.avg_rank, prev && prev.avg_rank, true, '') + '</b><span>Average position</span></div>' +
+    '<div><b>' + Math.round(s.coverage || 0) + '%' + delta(s.coverage, prev && prev.coverage, false, ' pts') + '</b><span>Coverage</span></div>' +
+    '<div><b>' + Math.round(s.top3_share || 0) + '%' + delta(s.top3_share, prev && prev.top3_share, false, ' pts') + '</b><span>In the top 3</span></div></div>' +
+    (prev ? '<p class="small">Compared with the scan on ' + esc(fmtDate(prev.created_at)) + '.</p>' : '') +
+    (g.rivals && g.rivals.length ? '<p style="font-size:12px;margin-top:8px"><b>Most often in the top 3 across this area:</b><br>' + g.rivals.map(function (r) { return esc(r.title) + ' <span class="small">(' + r.points + ' points)</span>'; }).join('<br>') + '</p>' : '') +
+    (g.ai_overview ? '<p class="small" style="margin-top:8px">Google AI Overview: ' + (g.ai_overview.present ? (g.ai_overview.mentioned ? 'shown, and the business appears to be mentioned.' : 'shown, without the business being mentioned.') : 'not shown for this search.') + '</p>' : '') +
+    '</div></div></div>';
+}
+function renderReport(rep) {
+  var S = rep.sections || {}, sm = rep.summary || {}, t = sm.totals || {}, ag = rep.agency || {};
+  var out = '<div class="report"' + (ag.accent ? ' style="--acc:' + esc(/^#[0-9a-f]{6}$/i.test(ag.accent) ? ag.accent : '#ff3d00') + '"' : '') + '>';
+  out += '<div class="rhead"><div><div class="by">' + (ag.name ? 'Prepared by ' + esc(ag.name) : 'Local search report') + '</div><h1>' + esc(rep.title) + '</h1><div class="meta">' +
+    esc([rep.project.business || rep.project.name, rep.project.city].filter(Boolean).join(' · ')) + ' · ' + esc(fmtDate(rep.created_at)) + '</div></div>' +
+    (ag.logo && /^data:image\/(png|jpeg);base64,/.test(ag.logo) ? '<img src="' + ag.logo + '" alt="">' : '') + '</div>';
+  if (S.summary !== false) {
+    out += '<div class="rsec"><h2>Summary</h2><div class="tiles">' +
+      (t.locations ? '<div class="tile"><b>' + t.locations + '</b><span>Profiles checked</span></div>' : '') +
+      (t.avg_rating != null ? '<div class="tile"><b>' + t.avg_rating + '★</b><span>Average rating</span></div><div class="tile"><b>' + Number(t.reviews).toLocaleString('en-GB') + '</b><span>Reviews</span></div>' : '') +
+      (t.locations ? '<div class="tile"><b>' + t.needing_attention + '</b><span>Need attention</span></div><div class="tile"><b>' + t.unanswered + '</b><span>Unanswered low reviews</span></div><div class="tile"><b>' + t.live_changes + '</b><span>Changes live</span></div>' : '') +
+      (rep.grids || []).map(function (g) { return g.summary ? '<div class="tile"><b>' + Math.round(g.summary.coverage || 0) + '%</b><span>Map coverage · ' + esc(g.keyword) + '</span></div>' : ''; }).join('') + '</div>' +
+      (sm.findings && sm.findings.length ? '<ul class="find">' + sm.findings.map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ul>' : '');
+    if (sm.priorities && sm.priorities.length) {
+      out += '<h3>What to fix first</h3><table><thead><tr><th></th><th>Issue</th><th>Where</th></tr></thead><tbody>' + sm.priorities.map(function (p) {
+        return '<tr><td>' + chip(p.status) + '</td><td><b>' + esc(p.label) + '</b><div class="small">' + esc(p.detail) + '</div></td><td class="small">' + esc(p.locations.join(', ')) + (p.count > p.locations.length ? ' and ' + (p.count - p.locations.length) + ' more' : '') + '</td></tr>';
+      }).join('') + '</tbody></table>';
+    }
+    out += '</div>';
+  }
+  if (S.grids !== false && rep.grids && rep.grids.length) out += '<div class="rsec"><h2>Visibility on Google Maps</h2><p class="small" style="margin-bottom:10px">Each square is a point on the map; the number is where the business ranks in Google Maps for the search from that exact spot.</p>' + rep.grids.map(gridCard).join('') + '</div>';
+  var P = rep.profiles || [];
+  if (S.profiles !== false && P.length) {
+    out += '<div class="rsec"><h2>Business Profiles</h2><table><thead><tr><th>Location</th><th class="n">Rating</th><th class="n">Position</th><th class="n">Needs attention</th><th class="n">Photos</th></tr></thead><tbody>' + P.map(function (p) {
+      return '<tr><td><b>' + esc(p.name) + '</b><div class="small">' + esc(p.address) + '</div></td><td class="n">' + (p.rating != null ? p.rating + '★' : '–') + '<div class="small">' + (p.votes != null ? p.votes + ' reviews' : '') + '</div></td><td class="n">' + (p.rank != null ? '#' + p.rank : '<span class="small">not top 20</span>') + '<div class="small">' + esc(p.keyword) + '</div></td><td class="n">' + (p.flags ? '<span class="chip warn">' + p.flags + '</span>' : '<span class="chip ok">0</span>') + '</td><td class="n">' + num(p.photos) + '</td></tr>';
+    }).join('') + '</tbody></table>';
+    out += P.map(function (p) {
+      var issues = p.checklist.filter(function (c) { return c.status !== 'ok' && c.status !== 'info'; });
+      if (!issues.length && !(p.gaps && p.gaps.length)) return '';
+      return '<div class="loc"><h3>' + esc(p.name) + '</h3><div class="small">Checked ' + esc(fmtDate(p.analysed_at)) + '</div>' +
+        (issues.length ? '<table style="margin-top:6px"><tbody>' + issues.map(function (c) { return '<tr><td style="width:70px">' + chip(c.status) + '</td><td><b>' + esc(c.label) + '</b><div class="small">' + esc(c.detail) + '</div></td></tr>'; }).join('') + '</tbody></table>' : '') +
+        (p.gaps && p.gaps.length ? '<p class="small" style="margin-top:6px">Categories the top competitors use that this profile doesn\'t: ' + p.gaps.map(function (g) { return esc(g.category) + ' (' + g.count + ' of ' + g.of + ')'; }).join(', ') + '.</p>' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+  if (S.reviews !== false && P.some(function (p) { return p.reviews; })) {
+    out += '<div class="rsec"><h2>Reviews</h2><table><thead><tr><th>Location</th><th class="n">Reply rate</th><th class="n">Last 90 days</th><th class="n">Unanswered (3★ or lower)</th><th class="n">Median reply time</th></tr></thead><tbody>' + P.filter(function (p) { return p.reviews; }).map(function (p) {
+      var r = p.reviews;
+      return '<tr><td><b>' + esc(p.name) + '</b></td><td class="n">' + (r.reply_rate != null ? r.reply_rate + '%' : '–') + '</td><td class="n">' + (r.last_90_days != null ? r.last_90_days : r.at_least_last_90_days != null ? r.at_least_last_90_days + '+' : '–') + '</td><td class="n">' + num(r.unanswered_count) + '</td><td class="n">' + (r.median_reply_hours != null ? (r.median_reply_hours >= 48 ? Math.round(r.median_reply_hours / 24) + ' days' : Math.round(r.median_reply_hours) + ' h') : '–') + '</td></tr>';
+    }).join('') + '</tbody></table><p class="small" style="margin-top:6px">Based on the newest reviews Google shows for each profile.</p></div>';
+  }
+  if (S.website !== false && P.some(function (p) { return p.site && p.site.checks; })) {
+    out += '<div class="rsec"><h2>Website and profile match</h2>' + P.filter(function (p) { return p.site && p.site.checks; }).map(function (p) {
+      var bad = p.site.checks.filter(function (c) { return c.status !== 'ok'; });
+      return '<div class="loc"><h3>' + esc(p.name) + '</h3><div class="small">' + esc(p.site.url) + '</div>' + (bad.length ? '<table style="margin-top:6px"><tbody>' + bad.map(function (c) { return '<tr><td style="width:70px">' + chip(c.status) + '</td><td><b>' + esc(c.label) + '</b><div class="small">' + esc(c.detail) + '</div></td></tr>'; }).join('') + '</tbody></table>' : '<p style="font-size:12.5px;margin-top:6px">' + chip('ok') + ' The website agrees with the profile on everything checked.</p>') + '</div>';
+    }).join('') + '</div>';
+  }
+  if (S.changes !== false && P.some(function (p) { return p.changes && p.changes.length; })) {
+    out += '<div class="rsec"><h2>Changes</h2>' + P.filter(function (p) { return p.changes && p.changes.length; }).map(function (p) {
+      return '<div class="loc"><h3>' + esc(p.name) + '</h3><table><tbody>' + p.changes.map(function (c) {
+        return '<tr><td style="width:190px">' + chip(c.status === 'confirmed' ? 'ok' : c.status === 'draft' ? 'info' : c.status === 'skipped' ? 'info' : 'warn') + ' <span class="small">' + esc(c.status_label) + '</span></td><td><b>' + esc(c.label) + '</b>' + (c.text ? '<div class="small">' + esc(c.text) + '</div>' : '') + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+    }).join('') + '</div>';
+  }
+  if (rep.notes) out += '<div class="rsec"><h2>Notes' + (ag.name ? ' from ' + esc(ag.name) : '') + '</h2><div class="notes">' + esc(rep.notes).replace(/\n/g, '<br>') + '</div></div>';
+  out += '<p class="disc">Rankings and profile details are a snapshot taken on the dates shown; Google Maps results move from day to day and differ by device and exact location. Ratings and reviews are as Google showed them when each profile was checked.' + (ag.white_label ? '' : ' Made with brandchecker.eu.') + '</p></div>';
+  return out;
+}
+function show(box, rep) { $(box).innerHTML = renderReport(rep); }
+
+/* ======================= viewing a saved report ======================= */
+function viewer() {
+  $('viewer').hidden = false;
+  $('printBtn').onclick = function () { window.print(); };
+  var done = function (rep) {
+    if (rep.error) { $('reportBox').innerHTML = '<p class="msg bad">' + esc(rep.error) + '</p>'; window.PRINT_READY = true; return; }
+    document.title = rep.title;
+    show('reportBox', rep);
+    var go = function () { window.PRINT_READY = true; };
+    (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(go, go);
+  };
+  if (window.LOCAL_REPORT) return done(window.LOCAL_REPORT);
+  api('/local-report/get', { id: RID }).then(done);
+}
+
+/* ======================= building one ======================= */
+var projects = [], opts = null;
+var LAST = 'bc-project:' + CODE;
+function setMsg(t, cls) { var m = $('msg'); m.textContent = t || ''; m.className = 'msg' + (cls ? ' ' + cls : ''); }
+function loadProjects(preferId) {
+  api('/projects/list').then(function (d) {
+    if (d.error) { $('proj').innerHTML = '<option>' + esc(d.error) + '</option>'; return; }
+    projects = d.projects || [];
+    var want = preferId || ''; try { want = want || localStorage.getItem(LAST) || ''; } catch (e) { /* none */ }
+    $('proj').innerHTML = '<option value="">' + (projects.length ? 'Choose a project…' : 'No projects yet: make one on the Local Search platform') + '</option>' +
+      projects.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + '</option>'; }).join('');
+    if (want && projects.some(function (p) { return p.id === want; })) { $('proj').value = want; loadOptions(); }
+  });
+}
+function loadOptions() {
+  var id = $('proj').value;
+  $('sources').hidden = true; $('done').hidden = true; $('previewBox').innerHTML = ''; $('savedCard').hidden = true; setMsg('');
+  if (!id) return;
+  setMsg('Loading what is saved for this project…');
+  api('/local-report/options', { project_id: id }).then(function (d) {
+    if (d.error) { setMsg(d.error, 'bad'); return; }
+    opts = d; setMsg('');
+    var pr = d.project.profile || {};
+    if (!$('title').value) $('title').placeholder = (pr.business || d.project.name) + ': local search report';
+    var locs = d.locations.slice().sort(function (a, b) { return (b.matched ? 1 : 0) - (a.matched ? 1 : 0); });
+    $('locList').innerHTML = locs.length ? locs.map(function (l) { return '<label><input type="checkbox" data-loc="' + l.id + '"' + (l.matched ? ' checked' : '') + '><span>' + esc(l.name || '(unnamed)') + '<span class="sub">' + esc(l.address || '') + (l.client ? ' · client: ' + esc(l.client) : '') + '</span></span></label>'; }).join('') : '<p class="hint" style="padding:6px 0">No Business Profiles yet. Add them in the Business Profiles tool.</p>';
+    var seen = {}, picked = 0;
+    var scans = d.scans.slice().sort(function (a, b) { return (b.matched ? 1 : 0) - (a.matched ? 1 : 0); });
+    $('scanList').innerHTML = scans.length ? scans.map(function (s) {
+      var k = (s.business + '|' + s.keyword + '|' + s.city).toLowerCase(), on = s.matched && !seen[k] && picked < 3;
+      if (on) { seen[k] = 1; picked++; }
+      return '<label><input type="checkbox" data-scan="' + s.id + '"' + (on ? ' checked' : '') + '><span>' + esc(s.business) + ' · "' + esc(s.keyword) + '"' + (s.city ? ' · ' + esc(s.city) : '') + '<span class="sub">' + esc(fmtDate(s.created_at)) + (s.metric ? ' · ' + esc(s.metric) : '') + '</span></span></label>';
+    }).join('') : '<p class="hint" style="padding:6px 0">No rank grid scans saved yet. Run one in the Local rank grid tool.</p>';
+    $('secs').innerHTML = SECTIONS.map(function (s) { return '<label style="display:flex;align-items:center;margin:0;font-weight:500;color:var(--ink)"><input type="checkbox" data-sec="' + s[0] + '" checked>' + s[1] + '</label>'; }).join('');
+    var b = d.branding || {}; $('agName').value = b.name || ''; $('agAccent').value = b.accent || ''; $('agWhite').checked = !!b.white_label;
+    $('logoNote').innerHTML = b.has_logo ? 'Your agency logo is already set and appears on the report.' : 'No logo set. You can add one in the branding settings on <a href="/tools/state-of-the-llm-union/" target="_blank" rel="noopener" style="color:var(--acc)">State Of The LLM Union</a>.';
+    count(); $('sources').hidden = false;
+    renderSaved(d.saved || []);
+  });
+}
+function count() {
+  var l = document.querySelectorAll('[data-loc]:checked').length, s = document.querySelectorAll('[data-scan]:checked').length;
+  $('locCount').textContent = '(' + l + ' selected)';
+  $('preview').disabled = $('save').disabled = !(l || s);
+}
+function payload(save) {
+  var secs = {}; document.querySelectorAll('[data-sec]').forEach(function (c) { secs[c.dataset.sec] = c.checked; });
+  return {
+    project_id: $('proj').value, title: $('title').value.trim(), notes: $('notes').value, sections: secs, save: !!save,
+    locations: Array.prototype.map.call(document.querySelectorAll('[data-loc]:checked'), function (c) { return c.dataset.loc; }),
+    scans: Array.prototype.map.call(document.querySelectorAll('[data-scan]:checked'), function (c) { return c.dataset.scan; })
+  };
+}
+function renderSaved(list) {
+  $('savedCard').hidden = !list.length;
+  $('savedList').innerHTML = list.map(function (s) {
+    return '<div class="saved" data-id="' + s.id + '"><span class="grow"><b>' + esc(s.title) + '</b> <span class="small">' + esc(fmtDate(s.created_at)) + '</span></span><span class="links"><a href="/tools/local-report/?r=' + s.id + '" target="_blank" rel="noopener">Open</a></span><button class="btn mini" data-copy="' + s.id + '" type="button">Copy link</button><button class="btn mini" data-pdf="' + s.id + '" type="button">PDF</button><button class="btn mini" data-del="' + s.id + '" type="button">Delete</button></div>';
+  }).join('');
+}
+var linkOf = function (id) { return location.origin + '/tools/local-report/?r=' + id; };
+function downloadPdf(id, btn) {
+  var old = btn.textContent; btn.disabled = true; btn.textContent = 'Making the PDF…';
+  fetch(API + '/local-report/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, id: id }) }).then(function (r) {
+    if ((r.headers.get('content-type') || '').indexOf('application/pdf') < 0) return r.json().then(function (d) { throw new Error(d.error || 'The PDF could not be made.'); });
+    return r.blob();
+  }).then(function (blob) {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'client-report.pdf'; document.body.appendChild(a); a.click(); a.remove();
+    btn.textContent = 'Downloaded ✓'; setTimeout(function () { btn.textContent = old; btn.disabled = false; }, 1800);
+  }).catch(function (e) { btn.textContent = old; btn.disabled = false; setMsg(e.message, 'bad'); });
+}
+function builder() {
+  $('builder').hidden = false;
+  loadProjects();
+  $('proj').addEventListener('change', function () { try { localStorage.setItem(LAST, $('proj').value); } catch (e) { /* ignore */ } loadOptions(); });
+  $('sources').addEventListener('change', function (e) { if (e.target.dataset.loc != null || e.target.dataset.scan != null) { if (document.querySelectorAll('[data-scan]:checked').length > 5) { e.target.checked = false; setMsg('Up to 5 rank grid scans.', 'bad'); } count(); } });
+  $('locAll').onclick = function () { document.querySelectorAll('[data-loc]').forEach(function (c) { c.checked = true; }); count(); };
+  $('locNone').onclick = function () { document.querySelectorAll('[data-loc]').forEach(function (c) { c.checked = false; }); count(); };
+  $('preview').onclick = function () {
+    setMsg('Building the report…'); $('done').hidden = true;
+    api('/local-report/build', payload(false)).then(function (d) {
+      if (d.error) { setMsg(d.error, 'bad'); return; }
+      setMsg('This is a preview. Save it to get a link and a PDF.', 'good'); show('previewBox', d.report);
+      $('previewBox').scrollIntoView({ behavior: 'smooth' });
+    });
+  };
+  $('save').onclick = function () {
+    setMsg('Saving…'); $('save').disabled = true;
+    api('/local-report/build', payload(true)).then(function (d) {
+      $('save').disabled = false;
+      if (d.error) { setMsg(d.error, 'bad'); return; }
+      setMsg(''); show('previewBox', d.report);
+      var url = linkOf(d.id);
+      $('done').hidden = false;
+      $('done').innerHTML = '<div class="notes" style="margin-top:14px"><b>Saved.</b> Anyone with this link can read the report:<br><input id="doneUrl" readonly value="' + esc(url) + '" style="margin:8px 0"><div class="bar" style="margin:0"><button class="btn mini" data-copy="' + d.id + '" type="button">Copy link</button><a class="btn mini" href="' + esc(url) + '" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">Open</a><button class="btn mini" data-pdf="' + d.id + '" type="button">Download PDF</button><button class="btn mini" data-addproj="' + d.id + '" type="button">Add to the project</button></div></div>';
+      d.report.id = d.id; window.__lastReport = d.report;
+      api('/local-report/options', { project_id: $('proj').value }).then(function (o) { if (!o.error) renderSaved(o.saved || []); });
+    });
+  };
+  $('agSave').onclick = function () {
+    $('agMsg').textContent = 'Saving…';
+    api('/branding/set', { name: $('agName').value, accent: $('agAccent').value, white_label: $('agWhite').checked }).then(function (d) { $('agMsg').textContent = d.error ? d.error : 'Saved. It appears on the next report you build.'; $('agMsg').className = 'msg ' + (d.error ? 'bad' : 'good'); });
+  };
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.copy) { var u = linkOf(b.dataset.copy); if (navigator.clipboard) navigator.clipboard.writeText(u); var o = b.textContent; b.textContent = 'Copied ✓'; setTimeout(function () { b.textContent = o; }, 1500); }
+    else if (b.dataset.pdf) downloadPdf(b.dataset.pdf, b);
+    else if (b.dataset.del) {
+      if (!confirm('Delete this saved report? Its link will stop working.')) return;
+      api('/local-report/delete', { id: b.dataset.del }).then(function (d) { if (d.error) { setMsg(d.error, 'bad'); return; } var row = b.closest('.saved'); if (row) row.remove(); });
+    }
+    else if (b.dataset.addproj) {
+      var r = window.__lastReport || {}; b.disabled = true;
+      api('/projects/add', { project_id: $('proj').value, url: linkOf(b.dataset.addproj), title: r.title || 'Client report', tool: 'local-report', note: '' }).then(function (d) { b.textContent = d.error ? 'Couldn\'t add' : 'Added ✓'; if (d.error) { b.disabled = false; setMsg(d.error, 'bad'); } });
+    }
+  });
+  // Inside the Local Search platform the project picked at the top is the one reported on.
+  if (window.bcProject) bcProject.on(function (p) { if (p.id && $('proj').value !== p.id && [].some.call($('proj').options, function (o) { return o.value === p.id; })) { $('proj').value = p.id; loadOptions(); } else if (p.id && !$('proj').value) loadProjects(p.id); });
+}
+
+if (RID) viewer();
+else if (!CODE) {
+  $('gate').hidden = false;
+  var go = function () { var v = $('manual').value.trim().toLowerCase().replace(/\s+/g, ''); if (v) location.search = '?k=' + encodeURIComponent(v); };
+  $('enter').onclick = go; $('manual').onkeydown = function (e) { if (e.key === 'Enter') go(); };
+} else builder();
+})();
+</script>
+<script src="/assets/presets.js"></script>
+</body>
+</html>
