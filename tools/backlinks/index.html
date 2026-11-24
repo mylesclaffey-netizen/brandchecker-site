@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
-<script src="/assets/visitor.js"></script><script src="/assets/projects.js" defer></script>
+<script src="/assets/visitor.js"></script><script src="/assets/project-context.js"></script><script src="/assets/projects.js" defer></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Backlink profile check</title>
 <meta property="og:type" content="website">
@@ -268,6 +268,10 @@ function renderSite(s, i){
 
   return html + '</div>';
 }
+// Inside the Local Search platform: fill in the selected project's website.
+if (window.bcProject) bcProject.on(function (p) {
+  if (p.website) $('website').value = p.website.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+});
 </script>
 <script src="/assets/presets.js"></script>
 </body>

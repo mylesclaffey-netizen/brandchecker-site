@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="index, follow">
-<script src="/assets/visitor.js"></script><script src="/assets/projects.js" defer></script>
+<script src="/assets/visitor.js"></script><script src="/assets/project-context.js"></script><script src="/assets/projects.js" defer></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Page audit</title>
 <link rel="canonical" href="https://brandchecker.eu/tools/page-audit/">
@@ -503,6 +503,10 @@ if (new URLSearchParams(location.search).get('gsc') === 'connected') { const u =
 
 const START = Q.get('url') || Q.get('u');
 if (START) { $('url').value = START; if (Q.get('url')) run(); }
+// Inside the Local Search platform: fill in the selected project's website.
+if (window.bcProject) bcProject.on(function (p) {
+  if (p.website) $('url').value = /^https?:/i.test(p.website) ? p.website : 'https://' + p.website;
+});
 </script>
 <script src="/assets/presets.js"></script>
 </body>
