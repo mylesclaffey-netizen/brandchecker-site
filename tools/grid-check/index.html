@@ -247,7 +247,16 @@
           <option value="belfast">Belfast</option>
           <option value="losangeles">Los Angeles</option>
           <option value="saltlakecity">Salt Lake City</option>
+          <option value="world">Anywhere in the world…</option>
         </select>
+      </div>
+
+      <div id="worldBox" style="display:none">
+        <div class="field"><label for="place">Place</label>
+          <div style="display:flex;gap:8px"><input id="place" type="text" placeholder="e.g. Lisbon, Portugal" autocomplete="off"><button class="btn-secondary" id="placeGo" type="button" style="width:auto;padding:0 16px;margin:0">Find</button></div>
+        </div>
+        <p class="cap" id="placeCap">Type any city or area, then press Find. Or choose "Drop a pin" below and click anywhere on the map.</p>
+        <div class="field"><label for="lang">Search language</label><select id="lang"><option value="en">English</option><option value="de">German</option><option value="fr">French</option><option value="es">Spanish</option><option value="it">Italian</option><option value="pt">Portuguese</option><option value="nl">Dutch</option><option value="pl">Polish</option><option value="cs">Czech</option><option value="sk">Slovak</option><option value="sv">Swedish</option><option value="da">Danish</option><option value="no">Norwegian</option><option value="fi">Finnish</option><option value="tr">Turkish</option><option value="el">Greek</option><option value="hu">Hungarian</option><option value="ro">Romanian</option><option value="ru">Russian</option><option value="uk">Ukrainian</option><option value="ar">Arabic</option><option value="he">Hebrew</option><option value="ja">Japanese</option><option value="ko">Korean</option><option value="th">Thai</option><option value="vi">Vietnamese</option><option value="id">Indonesian</option><option value="zh-CN">Chinese (simplified)</option><option value="zh-TW">Chinese (traditional)</option></select></div>
       </div>
 
       <div class="field ac-wrap">
@@ -353,6 +362,22 @@ const CITY_NAMES = { prague: 'Prague', dublin: 'Dublin', hamburg: 'Hamburg', bel
 // The area each city's grid may cover (the Worker clamps to the same boxes), so a dropped pin can be checked before a scan.
 const CITY_BOUNDS = { prague: [49.85, 50.28, 14.05, 14.90], dublin: [53.10, 53.60, -6.75, -5.95], hamburg: [53.30, 53.85, 9.50, 10.50], belfast: [54.40, 54.78, -6.35, -5.55], losangeles: [33.55, 34.35, -118.70, -117.65], saltlakecity: [40.40, 41.00, -112.15, -111.65] };
 const CITY_CENTERS = { prague: [50.0755, 14.4378], dublin: [53.3498, -6.2603], hamburg: [53.5511, 9.9937], belfast: [54.5973, -5.9301], losangeles: [34.0522, -118.2437], saltlakecity: [40.7608, -111.8910] };
+// "Anywhere in the world": the place looked up by name ({ lat, lng, label }), or null until one is found.
+let worldPlace = null;
+const isWorld = () => $('city').value === 'world';
+// Where the map and the business search should look for the chosen city.
+// The name saved with a world scan: the place that was looked up, or the pin's coordinates when the pin is somewhere else.
+function worldName(){
+  if (pinMode() && pinLatLng) {
+    const near = worldPlace && Math.hypot((pinLatLng.lat - worldPlace.lat) * 111, (pinLatLng.lng - worldPlace.lng) * 111 * Math.cos(pinLatLng.lat * Math.PI / 180)) < 30;
+    return near ? worldPlace.label : 'Pin at ' + pinLatLng.lat.toFixed(3) + ', ' + pinLatLng.lng.toFixed(3);
+  }
+  return worldPlace?.label || '';
+}
+function cityCentre(){
+  if (isWorld()) return worldPlace ? [worldPlace.lat, worldPlace.lng] : (() => { try { const c = map.getCenter(); return [c.lat, c.lng]; } catch (e) { return [20, 0]; } })();
+  return CITY_CENTERS[$('city').value] || CITY_CENTERS.prague;
+}
 
 const $ = id => document.getElementById(id);
 
@@ -404,7 +429,8 @@ function newSession(){
 // Biases suggestions toward whichever city is currently selected — a bare
 // business name search would otherwise return matches from anywhere.
 function cityBias(){
-  const c = CITY_CENTERS[$('city').value] || CITY_CENTERS.prague;
+  if (isWorld() && !worldPlace) return undefined;
+  const c = cityCentre();
   return { west: c[1] - 0.35, east: c[1] + 0.35, north: c[0] + 0.25, south: c[0] - 0.25 };
 }
 
@@ -504,7 +530,7 @@ async function onBizInput(){
     if (!sessionToken) newSession();
     try {
       const { suggestions } = await lib.AutocompleteSuggestion.fetchAutocompleteSuggestions({
-        input: q, sessionToken, locationRestriction: cityBias(), includedPrimaryTypes: ['establishment']
+        input: q, sessionToken, ...(cityBias() ? { locationRestriction: cityBias() } : {}), includedPrimaryTypes: ['establishment']
       });
       renderSuggestions(suggestions || []);
     } catch (e) {
@@ -534,7 +560,7 @@ $('city').addEventListener('change', () => {
 // Zoom 13 — tight on the city centre rather than the wider metro area/
 // countryside a lower zoom shows before any scan has run.
 const DEFAULT_ZOOM = 13;
-const map = L.map('map', { zoomControl: true }).setView(CITY_CENTERS[$('city').value] || CITY_CENTERS.prague, DEFAULT_ZOOM);
+const map = L.map('map', { zoomControl: true }).setView(cityCentre(), DEFAULT_ZOOM);
 // CARTO's free anonymous raster tiles now require a signed-up API key
 // (Aug 2026, watermarking unauthenticated requests "API KEY REQUIRED") —
 // swapped to Esri's World Dark Gray Canvas, publicly free, no key. Tile
@@ -550,8 +576,35 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_D
 let markers = [];
 
 $('city').addEventListener('change', () => {
-  map.setView(CITY_CENTERS[$('city').value] || CITY_CENTERS.prague, DEFAULT_ZOOM);
+  $('worldBox').style.display = isWorld() ? 'block' : 'none';
+  $('centerMode').querySelector('option[value="city"]').textContent = isWorld() ? 'Place centre' : 'City centre';
+  if (isWorld()) { if (worldPlace) map.setView([worldPlace.lat, worldPlace.lng], DEFAULT_ZOOM); }
+  else map.setView(cityCentre(), DEFAULT_ZOOM);
 });
+
+// Looks the typed place up (free geocoder on the Worker), moves the map there and suggests the search language.
+async function findPlace(){
+  const q = $('place').value.trim();
+  if (q.length < 2) { $('placeCap').textContent = 'Type a city or area first.'; return; }
+  $('placeGo').disabled = true; $('placeCap').textContent = 'Looking…';
+  let d;
+  try {
+    const res = await fetch(API + '/grid/locate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, query: q }) });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+  $('placeGo').disabled = false;
+  if (d.error) { worldPlace = null; $('placeCap').textContent = d.error; return; }
+  worldPlace = { lat: d.lat, lng: d.lng, label: d.label || d.name };
+  $('lang').value = d.language || 'en';
+  const langName = $('lang').options[$('lang').selectedIndex]?.textContent || '';
+  $('placeCap').textContent = 'Found: ' + worldPlace.label + ' · searching in ' + langName + ' (change it below if the local searches are in another language).';
+  pinLatLng = null; drawPin(); hideBanner();
+  map.setView([d.lat, d.lng], DEFAULT_ZOOM);
+  selectedPlaceId = ''; selectedPlaceInfo = null; $('acBadge').classList.remove('show'); newSession();
+}
+$('placeGo').addEventListener('click', findPlace);
+$('place').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); findPlace(); } });
+$('place').addEventListener('input', () => { worldPlace = null; });
 
 // Defaults the city picker to whichever supported city the visitor is
 // actually closest to, using Cloudflare's free request.cf country code
@@ -592,7 +645,7 @@ updateCap();
 // because the Worker would otherwise quietly fall back to the city centre.
 let pinLatLng = null, pinMarker = null, pinBox = null;
 const pinMode = () => $('centerMode').value === 'pin';
-const pinInside = (ll) => { const b = CITY_BOUNDS[$('city').value]; return !!b && ll.lat >= b[0] && ll.lat <= b[1] && ll.lng >= b[2] && ll.lng <= b[3]; };
+const pinInside = (ll) => { if (isWorld()) return true; const b = CITY_BOUNDS[$('city').value]; return !!b && ll.lat >= b[0] && ll.lat <= b[1] && ll.lng >= b[2] && ll.lng <= b[3]; };
 function drawPin() {
   if (pinMarker) { map.removeLayer(pinMarker); pinMarker = null; }
   if (pinBox) { map.removeLayer(pinBox); pinBox = null; }
@@ -604,6 +657,7 @@ function drawPin() {
   pinBox = L.rectangle([[pinLatLng.lat - dLat, pinLatLng.lng - dLng], [pinLatLng.lat + dLat, pinLatLng.lng + dLng]], { color: '#ff3d00', weight: 1.5, dashArray: '5 5', fillOpacity: 0.04, interactive: false }).addTo(map);
 }
 function checkPin() {
+  if (isWorld() && pinMode() && pinLatLng) $('placeCap').textContent = 'Pin dropped. Check the search language below matches the local searches there.';
   if (pinMode() && pinLatLng && !pinInside(pinLatLng)) showBanner('That pin is outside the area we cover for ' + (CITY_NAMES[$('city').value] || 'this city') + '. Move it inside, or choose another city.');
   else hideBanner();
 }
@@ -641,6 +695,9 @@ async function run(){
     return;
   }
 
+  if (isWorld() && !pinMode() && !worldPlace && !(selectedPlaceInfo?.location && $('centerMode').value === 'business')) {
+    $('go').textContent = 'Find a place first'; setTimeout(() => $('go').textContent = 'Check my rankings', 2000); return;
+  }
   if (pinMode()) {
     if (!pinLatLng) { $('go').textContent = 'Drop a pin on the map first'; setTimeout(() => $('go').textContent = 'Check my rankings', 2000); return; }
     if (!pinInside(pinLatLng)) { checkPin(); return; }
@@ -662,13 +719,14 @@ async function run(){
   // selectedPlaceInfo was already fetched when the business was picked from
   // the dropdown (see loadPlaceInfo) — no need to fetch it again here.
   const center = pinMode() ? { lat: pinLatLng.lat, lng: pinLatLng.lng }
-    : ($('centerMode').value === 'business' && selectedPlaceInfo?.location) ? selectedPlaceInfo.location : undefined;
+    : ($('centerMode').value === 'business' && selectedPlaceInfo?.location) ? selectedPlaceInfo.location
+    : (isWorld() && worldPlace) ? { lat: worldPlace.lat, lng: worldPlace.lng } : undefined;
 
   let data;
   try {
     const res = await fetch(API + '/grid', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: CODE, keyword, business, place_id: selectedPlaceId, city, grid_size: gridSize, spacing_km: spacing, center_mode: $('centerMode').value, center, check_ai_overview: $('checkAio').checked })
+      body: JSON.stringify({ code: CODE, keyword, business, place_id: selectedPlaceId, city, place_name: isWorld() ? worldName() : undefined, language: isWorld() ? $('lang').value : undefined, grid_size: gridSize, spacing_km: spacing, center_mode: $('centerMode').value, center, check_ai_overview: $('checkAio').checked })
     });
     data = await res.json();
   } catch (e) {
@@ -743,7 +801,7 @@ function showResults(d){
   $('statCov').textContent = Math.round(s.coverage) + '%';
   $('statTop3').textContent = Math.round(s.top3_share) + '%';
 
-  map.setView(CITY_CENTERS[d.city] || CITY_CENTERS.prague, DEFAULT_ZOOM);
+  map.setView(d.center ? [d.center.lat, d.center.lng] : (CITY_CENTERS[d.city] || CITY_CENTERS.prague), DEFAULT_ZOOM);
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
@@ -1158,7 +1216,7 @@ async function downloadImage(d){
   const a = document.createElement('a');
   const slug = (d.business || 'grid-check').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   a.href = url;
-  a.download = 'grid-check-' + slug + '-' + d.city + '.png';
+  a.download = 'grid-check-' + slug + '-' + (d.city === 'world' ? String(d.city_name || 'world').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : d.city) + '.png';
   a.click();
 }
 
