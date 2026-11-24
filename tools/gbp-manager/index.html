@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="index, follow">
-<script src="/assets/visitor.js"></script><script src="/assets/projects.js" defer></script>
+<script src="/assets/visitor.js"></script><script src="/assets/project-context.js"></script><script src="/assets/projects.js" defer></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Business Profile manager</title>
 <link rel="canonical" href="https://brandchecker.eu/tools/gbp-manager/">
@@ -235,7 +235,7 @@ function showWorkspace(msg) {
   api('/gbp/list').then(function (d) {
     if (d.error) { app.innerHTML = '<p class="msg bad">' + esc(d.error) + '</p>'; return; }
     ws = d.locations || [];
-    projectsLoaded.then(function () { renderWorkspace(msg); });
+    projectsLoaded.then(function () { applyClientFilter(); renderWorkspace(msg); });
   });
 }
 
@@ -954,6 +954,23 @@ app.addEventListener('keydown', function (e) {
   if (e.key === 'Enter' && e.target.id && /^a(Link|Name|City|Client|Keyword)$/.test(e.target.id)) addLocation();
   if (e.key === 'Enter' && (e.target.id === 'fName' || e.target.id === 'fSite')) findLocations();
 });
+
+// Inside the Local Search platform: the selected project is the client, and its business details fill the forms.
+var pendingClientFilter = false;
+if (window.bcProject) bcProject.on(function (p) {
+  var lang = LANGS.some(function (l) { return l[0] === p.language; }) ? p.language : 'en';
+  addDraft.client = findDraft.client = p.name;
+  addDraft.city = p.city || ''; addDraft.keyword = p.keyword || ''; addDraft.lang = findDraft.lang = lang;
+  findDraft.name = p.business || p.name; findDraft.site = p.website || ''; findDraft.areas = p.city || '';
+  pendingClientFilter = true;
+  if ($('findCard') && !cur) { applyClientFilter(); renderWorkspace(); }
+});
+function applyClientFilter() {
+  if (!pendingClientFilter || !window.bcProject || !bcProject.get()) return;
+  pendingClientFilter = false;
+  var name = bcProject.get().name;
+  view.client = ws.some(function (l) { return (l.client || '') === name; }) ? name : '';
+}
 
 function route() { var m = location.hash.match(/^#\/loc\/([a-f0-9]{12})$/); if (m) { polls = 0; openLoc(m[1]); } else showWorkspace(); }
 window.addEventListener('hashchange', route);

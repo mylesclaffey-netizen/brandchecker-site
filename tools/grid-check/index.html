@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
-<script src="/assets/visitor.js"></script><script src="/assets/projects.js" defer></script>
+<script src="/assets/visitor.js"></script><script src="/assets/project-context.js"></script><script src="/assets/projects.js" defer></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Local rank grid check</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23FFFF00'/%3E%3C/svg%3E" />
@@ -619,6 +619,7 @@ $('place').addEventListener('input', () => { worldPlace = null; });
 // and map-recenter logic.
 const GEO_CITY_BY_COUNTRY = { IE: 'dublin', CZ: 'prague', DE: 'hamburg', US: 'losangeles' };
 async function applyGeoCityDefault(){
+  if (window.__projectCity) return;   // the platform's project already chose the place
   let d;
   try {
     const res = await fetch(API + '/geo-locate', {
@@ -1265,6 +1266,21 @@ async function loadSavedScan(id){
   showResults(data);
   window.scrollTo(0, 0);
 }
+
+// Inside the Local Search platform: fill in the selected project's business, search and place.
+if (window.bcProject && !REPORT_ID) bcProject.on(function(p){
+  const name = p.business || p.name || '';
+  $('biz').value = name; selectedPlaceId = ''; selectedPlaceInfo = null; $('acBadge').classList.remove('show');
+  $('kw').value = p.keyword || '';
+  const city = String(p.city || '').trim(), lower = city.toLowerCase();
+  if (!city) return;
+  window.__projectCity = true;
+  const key = Object.keys(CITY_NAMES).find(k => lower.indexOf(CITY_NAMES[k].toLowerCase()) === 0);
+  if (key) { $('city').value = key; $('city').dispatchEvent(new Event('change')); return; }
+  $('city').value = 'world'; $('city').dispatchEvent(new Event('change'));
+  $('place').value = city; $('lang').value = p.language && [...$('lang').options].some(o => o.value === p.language) ? p.language : 'en';
+  findPlace().then(() => { if (p.language && [...$('lang').options].some(o => o.value === p.language)) $('lang').value = p.language; });
+});
 
 if (!CODE){
   $('scanForm').style.display = 'none';

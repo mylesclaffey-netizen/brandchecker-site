@@ -82,6 +82,13 @@
   }
   btn.addEventListener('click', function () { toggle(); });
   $('bcpClose').addEventListener('click', function () { toggle(false); });
+  // Inside the Local Search platform the project picked at the top is the one pages are saved to.
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (e.origin !== location.origin || !d || d.type !== 'bc-project' || !d.project) return;
+    try { localStorage.setItem(LAST, d.project.id); } catch (x) { /* ignore */ }
+    if (projects && projects.some(function (p) { return p.id === d.project.id; })) { $('bcpSel').value = d.project.id; $('bcpSave').disabled = false; }
+  });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') toggle(false); });
   $('bcpSel').addEventListener('change', function () { $('bcpSave').disabled = !$('bcpSel').value; try { localStorage.setItem(LAST, $('bcpSel').value); } catch (e) { /* ignore */ } });
 

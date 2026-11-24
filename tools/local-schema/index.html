@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="index, follow">
-<script src="/assets/visitor.js"></script><script src="/assets/projects.js" defer></script>
+<script src="/assets/visitor.js"></script><script src="/assets/project-context.js"></script><script src="/assets/projects.js" defer></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Local business schema generator</title>
 <link rel="canonical" href="https://brandchecker.eu/tools/local-schema/">
@@ -1223,6 +1223,15 @@ render();
 if (prefillNote) { $('importMsg').className = 'msg good'; $('importMsg').textContent = prefillNote; }
 const pre = new URLSearchParams(location.search).get('u');
 if (pre) { $('importUrl').value = pre; }
+
+// Inside the Local Search platform: fill the business name, website and city when they are still empty.
+if (window.bcProject) bcProject.on(function (p) {
+  let changed = false;
+  if (!state.name && (p.business || p.name)) { state.name = p.business || p.name; changed = true; }
+  if (!state.url && p.website) { state.url = /^https?:\/\//i.test(p.website) ? p.website : 'https://' + p.website; changed = true; }
+  if (!state.locality && p.city) { state.locality = p.city.split(',')[0].trim(); changed = true; }
+  if (changed) render();
+});
 </script>
 <script src="/assets/presets.js"></script>
 </body>
