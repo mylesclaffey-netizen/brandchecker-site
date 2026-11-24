@@ -248,6 +248,12 @@ const PRACTICES = {
     treatments: [['individual', 'Individual therapy', 'PsychologicalTreatment'], ['couples', 'Couples therapy', 'PsychologicalTreatment'], ['family', 'Family therapy', 'PsychologicalTreatment'],
       ['cbt', 'Cognitive behavioural therapy (CBT)', 'PsychologicalTreatment'], ['emdr', 'EMDR and trauma therapy', 'PsychologicalTreatment'], ['anxiety', 'Anxiety and depression', 'PsychologicalTreatment'],
       ['young', 'Children and adolescents', 'PsychologicalTreatment'], ['assessment', 'Psychological assessment', 'DiagnosticProcedure'], ['online', 'Online sessions', 'PsychologicalTreatment']]
+  },
+  optician: {
+    label: 'Optician', types: ['Optician'], type: () => 'Optician',
+    specialties: [['Optometric', 'Optometry']],
+    treatments: [['eyetest', 'Eye test (sight test)'], ['contacts', 'Contact lens fitting and aftercare'], ['glasses', 'Prescription glasses'], ['sunglasses', 'Prescription sunglasses'],
+      ['children', 'Children\'s eye tests'], ['dryeye', 'Dry eye assessment'], ['screening', 'Eye health screening (retinal imaging)'], ['repairs', 'Repairs and adjustments'], ['home', 'Home visits']].map(([id, name]) => [id, name, ''])
   }
 };
 // Specialist clinics, by profession. Where schema.org has a type for the profession (Dermatology, Ophthalmology…) the
@@ -516,7 +522,8 @@ const typeOptions = () => `<option value="LocalBusiness">Local business (general
 function render() {
   app.innerHTML =
     `<div class="status" style="margin-bottom:14px"><label for="importUrl" style="margin-top:0">Start from a page that already has markup (optional)</label>
-      <div class="inrow"><input id="importUrl" placeholder="https://yourbusiness.com/" value="https://"><button class="btn2" id="importBtn" type="button">Read its markup</button></div><div id="importMsg" class="msg"></div></div>` +
+      <div class="inrow"><input id="importUrl" placeholder="https://yourbusiness.com/" value="https://"><button class="btn2" id="importBtn" type="button">Read its markup</button></div><div id="importMsg" class="msg"></div>
+      <div style="text-align:right;margin-top:8px"><button class="btn2" id="resetBtn" type="button">Reset the form</button></div></div>` +
     sec('essentials', 'Business', 'Type, name and contact', `
       <label for="f-typeFilter">Type of business — the most specific one that fits</label>
       <input id="f-typeFilter" placeholder="Search ${TYPES.length} types: dentist, bakery, plumber…" autocomplete="off">
@@ -586,6 +593,16 @@ function render() {
       <div class="bar"><button class="btn2" type="button" id="locBtn">Make the location blocks</button></div>
       <div id="locOut"></div>`, state.locs.length > 0);
   drawLists(); drawHours(); syncType(); drawPicked(); drawLocs(); refresh();
+}
+
+// Clears everything entered, and the saved draft, and starts from a blank form.
+function resetForm() {
+  if (!confirm('Clear everything you have entered and start again? This also removes the saved draft in this browser.')) return;
+  try { localStorage.removeItem(DRAFT); } catch (e) { /* nothing saved */ }
+  state = blank();
+  render();
+  $('importMsg').className = 'msg good'; $('importMsg').textContent = 'The form has been reset.';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // Repeating rows: images, profiles, special hours, places, services, departments, extra properties.
@@ -714,7 +731,7 @@ function syncType() {
   // A practice follows the type: picking Dentist in the list is a dental practice; picking an unrelated type ends it.
   if (practiceOf(state) && !practiceOf(state).types.includes(state.type)) state.practice = '';
   if (!state.practice) {
-    const k = ['dental', 'doctor', 'physio', 'clinic'].find((x) => PRACTICES[x].types.includes(state.type));
+    const k = ['dental', 'doctor', 'physio', 'clinic', 'optician'].find((x) => PRACTICES[x].types.includes(state.type));
     if (k) { state.practice = k; if (k === 'doctor') state.doctorKind = state.type === 'IndividualPhysician' ? 'individual' : 'practice'; }
   }
   // A profession's type picked from the list is that clinic; plain Medical clinic keeps whatever profession has no type of its own.
@@ -839,6 +856,7 @@ app.addEventListener('click', (e) => {
   else if (t.id === 'dlBtn') download(`${(s(state.name) || 'local-business').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.json`, JSON.stringify(current, null, 2), 'application/json');
   else if (t.id === 'resetBtn') { if (confirm('Clear the whole form?')) { state = blank(); save(); render(); } }
   else if (t.id === 'importBtn') importFrom($('importUrl').value);
+  else if (t.id === 'resetBtn') resetForm();
   else if (t.id === 'locBtn') makeLocations();
   else if (t.dataset.locrm) { state.locs = state.locs.filter((x) => x.id !== t.dataset.locrm); save(); drawLocs(); }
 });
@@ -899,6 +917,7 @@ function fromLd(n) {
   const t = ts.includes('Physiotherapy') ? 'Physiotherapy' : ts.find((x) => TYPES.includes(x));
   st.type = t || 'LocalBusiness';
   if (t === 'Physiotherapy') { st.practice = 'physio'; st.alsoClinic = ts.includes('MedicalClinic'); }
+  if (t === 'Optician') st.practice = 'optician';
   const own = ts.find((x) => CLINIC_BY_TYPE[x]);
   if (own) { st.type = own; st.practice = 'clinic'; st.clinicKind = CLINIC_BY_TYPE[own]; }
   for (const k of ['name', 'telephone', 'email', 'description', 'priceRange', 'branchCode', 'legalName', 'foundingDate', 'vatID', 'taxID', 'leiCode', 'iso6523Code', 'duns', 'slogan']) st[k] = str(n[k]);
