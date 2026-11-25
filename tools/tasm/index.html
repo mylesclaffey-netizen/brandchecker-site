@@ -62,13 +62,15 @@
   .assump code{background:#f3f3f3;padding:1px 5px;border-radius:4px}
   .foot{font-size:10.5px;color:var(--muted);margin-top:30px;line-height:1.6;max-width:800px}
   .back{font-size:12px;color:var(--muted)} .back:hover{color:var(--ink)}
+  body.embed .back{display:none}
   .spin{font-size:13px;color:var(--muted);margin-top:14px}
   #gate{display:none;max-width:420px}
   @media (max-width:760px){.grid2,.grid3,.cards,.cols{grid-template-columns:1fr}}
   @media print{.noprint{display:none!important} body{padding:0} .card{break-inside:avoid}}
 </style>
 <link rel="stylesheet" href="/assets/theme.css">
-<script src="/assets/projects.js" defer></script></head>
+<script src="/assets/projects.js" defer></script><script src="/assets/project-context.js"></script>
+</head>
 <body>
 <div class="wrap">
 
@@ -323,5 +325,15 @@ async function downloadCsv() {
   a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 </script>
+<script>
+// Inside the Rankings workspace: fill in the selected project's website and main keyword.
+if (window.bcProject) bcProject.on(function (p) {
+  var set = function (id, v, onlyEmpty) { var e = document.getElementById(id); if (e && v && (!onlyEmpty || !e.value.trim())) e.value = v; };
+  var site = function (q) { return String(q.website || '').replace(/^https?:\/\//i, '').replace(/\/.*$/, '').replace(/^www\./i, ''); };
+  set('site', site(p));
+  set('seeds', p.keyword, true);
+});
+</script>
+<script>if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');</script>
 </body>
 </html>

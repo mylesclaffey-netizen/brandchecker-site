@@ -62,6 +62,7 @@
   .ro .acts,.ro .slot{display:none}
   .foot{font-size:10.5px;color:var(--muted);margin-top:30px;line-height:1.6;max-width:800px}
   .back{font-size:12px;color:var(--muted)} .back:hover{color:var(--ink)}
+  body.embed .back{display:none}
   #gate{display:none;max-width:420px}
   @media (max-width:760px){.grid2,.grid3,.kpis{grid-template-columns:1fr}}
 </style>
@@ -337,5 +338,6 @@ function wireAdd(boardId) {
   };
 }
 </script>
+<script>if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');</script>
 </body>
 </html>

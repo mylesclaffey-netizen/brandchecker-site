@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<script src="/assets/visitor.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rankings workspace</title>
+<link rel="canonical" href="https://brandchecker.eu/tools/rank-platform/">
+<meta name="description" content="Every ranking tool on one page, all working on the project you pick: the rank check, rank snapshot, weekly rank scheduler, cluster and competitor trackers, KPI monitor, GSC Suite, the search market size and a client report.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--you:#ff3d00;--ok:#00844a;--bad:#d40000;--soft:#f3f3f3}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5;display:flex;flex-direction:column}
+  a{color:inherit}
+  .top{border-bottom:2px solid var(--ink);padding:10px 16px;background:#fff;flex:none}
+  .topbar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;max-width:1500px;margin:0 auto}
+  .brand{font-family:'Archivo',sans-serif;font-weight:900;text-transform:uppercase;letter-spacing:-.03em;font-size:19px;line-height:1;margin-right:6px;align-self:center}
+  .brand small{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.12em;color:var(--muted);margin-top:4px}
+  .pick{display:flex;flex-direction:column;min-width:240px;flex:0 1 320px}
+  label{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;font-weight:700}
+  select,input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:13.5px;color:var(--ink);background:#fff;border:2px solid var(--ink);border-radius:0;padding:8px 10px}
+  select{font-weight:600}
+  input:focus,select:focus{outline:3px solid var(--you);outline-offset:0}
+  .btn{font-family:'Archivo',sans-serif;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:#fff;color:var(--ink);border:2px solid var(--ink);padding:9px 12px;cursor:pointer}
+  .btn:hover{background:var(--ink);color:#fff}
+  .btn.go{background:var(--ink);color:#fff;box-shadow:3px 3px 0 var(--you)}
+  .btn[disabled]{opacity:.45;cursor:default}
+  .spacer{flex:1}
+  .toplink{font-size:11.5px;color:var(--muted);align-self:center;white-space:nowrap}
+  .toplink:hover{color:var(--ink)}
+  .panel{max-width:1500px;margin:10px auto 0;border:2px solid var(--ink);padding:12px 14px;background:var(--soft)}
+  .panel[hidden]{display:none}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 12px}
+  .row{display:flex;gap:8px;align-items:flex-end}
+  .msg{font-size:12px;margin-top:8px;min-height:16px}
+  .msg.bad{color:var(--bad)} .msg.good{color:var(--ok)}
+  .hint{font-size:11.5px;color:var(--muted);margin-bottom:8px;line-height:1.5}
+  .tabs{display:flex;gap:0;border-top:2px solid var(--ink);margin:10px -16px -10px;padding:0 16px;overflow-x:auto;background:#fff}
+  .tab{font-family:'Archivo',sans-serif;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;background:none;border:0;border-right:2px solid var(--ink);padding:11px 16px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+  .tab:first-child{border-left:2px solid var(--ink)}
+  .tab:hover{background:var(--soft)}
+  .tab[aria-selected="true"]{background:var(--ink);color:#fff}
+  .stage{flex:1;position:relative;min-height:0;background:#fff}
+  .stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;display:none}
+  .stage iframe.on{display:block}
+  .gate{max-width:640px;margin:40px auto;padding:0 16px}
+  .empty{max-width:560px;margin:40px auto;padding:0 16px;font-size:13px}
+  @media (max-width:700px){.pick{flex-basis:100%}.brand{width:100%}}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<header class="top" id="top">
+  <div class="topbar">
+    <div class="brand">Rankings workspace<small>One page, every ranking tool</small></div>
+    <div class="pick"><label for="proj">Project</label><select id="proj" disabled><option>Loading…</option></select></div>
+    <button class="btn" id="newBtn" type="button">+ New project</button>
+    <button class="btn" id="detBtn" type="button" aria-expanded="false">Project details</button>
+    <span class="spacer"></span>
+    <a class="toplink" id="projLink" href="/tools/projects/" target="_blank" rel="noopener">My projects →</a>
+    <a class="toplink" href="/">← All tools</a>
+  </div>
+  <div class="panel" id="newPanel" hidden>
+    <div class="row"><div style="flex:1;max-width:420px"><label for="newName">New project name</label><input id="newName" maxlength="60" placeholder="e.g. Acme" autocomplete="off"></div><button class="btn go" id="newAdd" type="button">Add project</button></div>
+    <div class="msg" id="newMsg"></div>
+  </div>
+  <div class="panel" id="detPanel" hidden>
+    <p class="hint">The site and search this project is about. Every tool below starts from these, so you type them once.</p>
+    <div class="grid">
+      <div><label for="dBiz">Company or product name</label><input id="dBiz" maxlength="120" placeholder="Acme"></div>
+      <div><label for="dSite">Website</label><input id="dSite" maxlength="300" placeholder="acme.com" inputmode="url"></div>
+      <div><label for="dKw">Main keyword</label><input id="dKw" maxlength="120" placeholder="crm software"></div>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="btn go" id="detSave" type="button">Save and fill into the tools</button></div>
+    <div class="msg" id="detMsg"></div>
+  </div>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Ranking tools"></nav>
+</header>
+<main class="stage" id="stage"></main>
+<div class="gate" id="gate" hidden>
+  <h2 style="font-family:'Archivo',sans-serif;margin-bottom:8px">Enter your access code</h2>
+  <p class="hint">Projects belong to an access code. Open this page from your access link, or enter the code here.</p>
+  <div class="row"><input id="manual" placeholder="your-code" autocapitalize="off" spellcheck="false"><button class="btn go" id="enter" type="button">Open</button></div>
+</div>
+
+<script>
+(function () {
+'use strict';
+var API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+var qs = new URLSearchParams(location.search);
+var CODE = qs.get('k') || window.MC_VISITOR || '';
+var KEEP_K = qs.get('k') ? '&k=' + encodeURIComponent(qs.get('k')) : '';
+var LAST = 'bc-project:' + CODE;
+var $ = function (id) { return document.getElementById(id); };
+var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+var TOOLS = [
+  { id: 'rank-check', label: 'Rank check' },
+  { id: 'rank-snapshot', label: 'Rank snapshot' },
+  { id: 'rank-scheduler', label: 'Weekly scheduler' },
+  { id: 'cluster-tracker', label: 'Cluster tracker' },
+  { id: 'competitor-tracker', label: 'Competitor tracker' },
+  { id: 'kpi-monitor', label: 'KPI Monitor' },
+  { id: 'gsc-suite', label: 'GSC Suite' },
+  { id: 'tasm', label: 'Search market' },
+  { id: 'rank-report', label: 'Client report' }
+];
+var projects = [], current = null, active = '', frames = {};
+
+function api(path, body) {
+  return fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ code: CODE }, body || {})) })
+    .then(function (r) { return r.json(); }).catch(function () { return { error: 'Couldn\'t reach the server. Check your connection and try again.' }; });
+}
+var msg = function (id, text, cls) { var m = $(id); m.textContent = text || ''; m.className = 'msg' + (cls ? ' ' + cls : ''); };
+
+/* ---- the tools: one frame each, made the first time its tab is opened and then kept, so nothing typed is lost ---- */
+function buildTabs() {
+  $('tabs').innerHTML = TOOLS.map(function (t) { return '<button class="tab" role="tab" data-tool="' + t.id + '" aria-selected="false">' + esc(t.label) + '</button>'; }).join('');
+}
+function openTool(id) {
+  active = id;
+  Array.prototype.forEach.call($('tabs').children, function (b) { b.setAttribute('aria-selected', String(b.dataset.tool === id)); });
+  if (!frames[id]) {
+    var f = document.createElement('iframe');
+    f.title = id; f.setAttribute('allow', 'clipboard-write');
+    f.src = '/tools/' + id + '/?embed=1' + KEEP_K;
+    $('stage').appendChild(f); frames[id] = f;
+  }
+  Object.keys(frames).forEach(function (k) { frames[k].classList.toggle('on', k === id); });
+  try { history.replaceState(null, '', '#' + id); } catch (e) { /* ignore */ }
+}
+function payload() {
+  if (!current) return null;
+  var p = current.profile || {};
+  return { id: current.id, name: current.name, business: p.business || '', website: p.website || '', city: p.city || '', keyword: p.keyword || '', language: p.language || 'en' };
+}
+function tell(win) { var pl = payload(); if (pl) { try { win.postMessage({ type: 'bc-project', project: pl }, location.origin); } catch (e) { /* ignore */ } } }
+function broadcast() { Object.keys(frames).forEach(function (k) { if (frames[k].contentWindow) tell(frames[k].contentWindow); }); }
+window.addEventListener('message', function (e) {
+  if (e.origin !== location.origin || !e.data || e.data.type !== 'bc-project-request' || !e.source) return;
+  tell(e.source);
+});
+
+/* ---- the project picker and its details ---- */
+function fillPicker() {
+  var sel = $('proj');
+  sel.disabled = false;
+  sel.innerHTML = '<option value="">' + (projects.length ? '— No project (tools start blank) —' : 'No projects yet: add one →') + '</option>' +
+    projects.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + ' (' + p.count + ')</option>'; }).join('');
+  sel.value = current ? current.id : '';
+}
+function fillDetails() {
+  var p = (current && current.profile) || {};
+  $('dBiz').value = p.business || (current ? current.name : ''); $('dSite').value = p.website || ''; $('dKw').value = p.keyword || '';
+  $('detBtn').disabled = !current;
+}
+function choose(id) {
+  current = projects.filter(function (p) { return p.id === id; })[0] || null;
+  try { if (current) localStorage.setItem(LAST, current.id); else localStorage.removeItem(LAST); } catch (e) { /* ignore */ }
+  fillPicker(); fillDetails(); broadcast();
+  if (current && !(current.profile && (current.profile.business || current.profile.website || current.profile.keyword))) {
+    $('detPanel').hidden = false; $('detBtn').setAttribute('aria-expanded', 'true');
+    msg('detMsg', 'Add the website and main keyword so the tools can start filled in, or skip this and type in each tool.');
+  }
+}
+function load() {
+  api('/projects/list').then(function (d) {
+    if (d.error) { $('proj').innerHTML = '<option>' + esc(d.error) + '</option>'; return; }
+    projects = d.projects || [];
+    var want = ''; try { want = localStorage.getItem(LAST) || ''; } catch (e) { /* none remembered */ }
+    current = projects.filter(function (p) { return p.id === want; })[0] || null;
+    fillPicker(); fillDetails();
+    if (!projects.length) { $('newPanel').hidden = false; $('newName').focus(); }
+    broadcast();
+  });
+}
+
+$('proj').addEventListener('change', function () { choose($('proj').value); });
+$('newBtn').addEventListener('click', function () { $('newPanel').hidden = !$('newPanel').hidden; if (!$('newPanel').hidden) $('newName').focus(); });
+$('detBtn').addEventListener('click', function () { var open = $('detPanel').hidden; $('detPanel').hidden = !open; $('detBtn').setAttribute('aria-expanded', String(open)); });
+function addProject() {
+  var name = $('newName').value.trim();
+  if (!name) return;
+  $('newAdd').disabled = true; msg('newMsg', 'Adding…');
+  api('/projects/create', { name: name }).then(function (d) {
+    $('newAdd').disabled = false;
+    if (d.error) { msg('newMsg', d.error, 'bad'); return; }
+    var p = d.project;
+    if (!projects.some(function (x) { return x.id === p.id; })) projects.push(p);
+    $('newName').value = ''; $('newPanel').hidden = true; msg('newMsg', '');
+    choose(p.id);
+  });
+}
+$('newAdd').addEventListener('click', addProject);
+$('newName').addEventListener('keydown', function (e) { if (e.key === 'Enter') addProject(); });
+$('detSave').addEventListener('click', function () {
+  if (!current) return;
+  var profile = Object.assign({}, current.profile || {}, { business: $('dBiz').value.trim(), website: $('dSite').value.trim(), keyword: $('dKw').value.trim() });
+  $('detSave').disabled = true; msg('detMsg', 'Saving…');
+  api('/projects/profile', { id: current.id, profile: profile }).then(function (d) {
+    $('detSave').disabled = false;
+    if (d.error) { msg('detMsg', d.error, 'bad'); return; }
+    current = d.project; projects = projects.map(function (p) { return p.id === current.id ? Object.assign({}, p, { profile: current.profile }) : p; });
+    msg('detMsg', 'Saved. The tools have been filled in.', 'good'); broadcast();
+  });
+});
+
+$('tabs').addEventListener('click', function (e) { var b = e.target.closest('.tab'); if (b) openTool(b.dataset.tool); });
+
+/* ---- start ---- */
+$('projLink').href = '/tools/projects/' + (qs.get('k') ? '?k=' + encodeURIComponent(qs.get('k')) : '');
+if (!CODE) {
+  $('top').hidden = true; $('stage').hidden = true; $('gate').hidden = false;
+  var go = function () { var v = $('manual').value.trim().toLowerCase().replace(/\s+/g, ''); if (v) location.search = '?k=' + encodeURIComponent(v); };
+  $('enter').onclick = go; $('manual').onkeydown = function (e) { if (e.key === 'Enter') go(); };
+} else {
+  buildTabs();
+  var first = location.hash.replace('#', '');
+  openTool(TOOLS.some(function (t) { return t.id === first; }) ? first : TOOLS[0].id);
+  load();
+}
+})();
+</script>
+</body>
+</html>

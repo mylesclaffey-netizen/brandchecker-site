@@ -57,6 +57,7 @@
   .seg button{font-family:inherit;font-size:12px;border:1px solid var(--line);background:#fff;padding:5px 10px;cursor:pointer;margin-right:-1px} .seg button.on{background:var(--ink);color:#fff}
   .foot{font-size:10.5px;color:var(--muted);margin-top:30px;line-height:1.6;max-width:820px}
   .back{font-size:12px;color:var(--muted)} .back:hover{color:var(--ink)}
+  body.embed .back{display:none}
   #gate{display:none;max-width:420px}
   @media (max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
 </style>
@@ -250,5 +251,6 @@ function render() {
   $('udel').onclick = async () => { if (!confirm('Delete this cluster and its logged changes?')) return; const r = await call('/clt/delete', { id: CUR }); if (r.error) return say(r.error); CUR = null; history.replaceState(null, '', '?k=' + encodeURIComponent(CODE)); await init(); };
 }
 </script>
+<script>if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');</script>
 </body>
 </html>
