@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="index, follow">
-<script src="/assets/visitor.js"></script><script src="/assets/projects.js" defer></script>
+<script src="/assets/visitor.js"></script><script src="/assets/project-context.js"></script><script src="/assets/projects.js" defer></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>B2B SaaS schema pack</title>
 <link rel="canonical" href="https://brandchecker.eu/tools/schema-pack/">
@@ -352,5 +352,12 @@ $('pfBtn').onclick = function () {
 planRow(); faqRow(); build();
 </script>
 <script src="/assets/presets.js"></script>
+<script>
+// Inside the B2B workspace: fill in the selected project's website.
+if (window.bcProject) bcProject.on(function (p) {
+  var set = function (id, v) { var e = document.getElementById(id); if (e && v) e.value = v; };
+  set('pfUrl', String(p.website || '').replace(/^https?:\/\//i, '').replace(/\/$/, ''));
+});
+</script>
 </body>
 </html>
