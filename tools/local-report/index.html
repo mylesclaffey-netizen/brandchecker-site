@@ -110,7 +110,7 @@
         <textarea id="notes" maxlength="4000" placeholder="What was done this period, what you recommend next…"></textarea>
         <label style="margin-top:16px">Agency name on the report</label>
         <div class="row2"><div><input id="agName" maxlength="80" placeholder="Your agency"></div><div><label style="display:flex;align-items:center;margin:0;padding-top:8px;font-weight:500"><input type="checkbox" id="agWhite"> Don't mention Brand Checker</label></div></div>
-        <div class="row2"><div><label for="agAccent">Accent colour (optional)</label><input id="agAccent" placeholder="#ff3d00" maxlength="7"></div><div><p class="hint" id="logoNote" style="margin-top:30px"></p></div></div>
+        <div class="row2"><div><label for="agAccent">Accent colour (optional)</label><input id="agAccent" placeholder="#ff3d00" maxlength="7"></div><div><label for="agLogo">Logo (optional)</label><input type="file" id="agLogo" accept="image/png,image/jpeg,image/svg+xml,image/webp"><div id="logoPrev" style="margin-top:6px;display:flex;align-items:center;gap:10px;min-height:34px"></div></div></div>
         <div class="bar"><button class="btn" id="agSave" type="button">Save branding</button><span class="msg" id="agMsg" style="margin:0"></span></div>
         <div class="bar" style="margin-top:20px"><button class="btn go" id="preview" type="button">Preview</button><button class="btn go" id="save" type="button">Save and get a link</button></div>
       </div>
@@ -286,7 +286,8 @@ function loadOptions() {
     }).join('') : '<p class="hint" style="padding:6px 0">No rank grid scans saved yet. Run one in the Local rank grid tool.</p>';
     $('secs').innerHTML = SECTIONS.map(function (s) { return '<label style="display:flex;align-items:center;margin:0;font-weight:500;color:var(--ink)"><input type="checkbox" data-sec="' + s[0] + '" checked>' + s[1] + '</label>'; }).join('');
     var b = d.branding || {}; $('agName').value = b.name || ''; $('agAccent').value = b.accent || ''; $('agWhite').checked = !!b.white_label;
-    $('logoNote').innerHTML = b.has_logo ? 'Your agency logo is already set and appears on the report.' : 'No logo set. You can add one in the branding settings on <a href="/tools/state-of-the-llm-union/" target="_blank" rel="noopener" style="color:var(--acc)">State Of The LLM Union</a>.';
+    logoPending = undefined; logoNow = null; showLogo();
+    if (b.has_logo) api('/branding/get', {}).then(function (x) { if (x && x.logo && /^data:image\/(png|jpeg);base64,/.test(x.logo)) { logoNow = x.logo; showLogo(); } });
     count(); $('sources').hidden = false;
     renderSaved(d.saved || []);
   });
@@ -349,9 +350,46 @@ function builder() {
       api('/local-report/options', { project_id: $('proj').value }).then(function (o) { if (!o.error) renderSaved(o.saved || []); });
     });
   };
+  // Logo: any image the browser can open becomes a PNG of at most 600x200 before it is sent, so only a plain bitmap is ever stored.
+  // logoPending: undefined = unchanged, null = remove, { data, w, h } = new, kept once "Save branding" is pressed.
+  var logoPending, logoNow = null;
+  function showLogo() {
+    var shown = logoPending === undefined ? logoNow : logoPending ? logoPending.data : null;
+    $('logoPrev').innerHTML = shown ? '<img src="' + shown + '" alt="Logo" style="max-height:34px;max-width:140px;border:1px solid var(--line);padding:2px;background:#fff"> <a href="#" id="logoRm" style="font-size:12px">Remove</a>' + (logoPending ? '<span class="hint">new, press Save branding to keep it</span>' : '') : '<span class="hint">No logo yet. PNG, JPEG, SVG or WebP.</span>';
+  }
+  function logoFromFile(file) {
+    return new Promise(function (resolve, reject) {
+      var rd = new FileReader();
+      rd.onerror = function () { reject(new Error('That file could not be read.')); };
+      rd.onload = function () {
+        var img = new Image();
+        img.onerror = function () { reject(new Error('That file is not an image this browser can open.')); };
+        img.onload = function () {
+          var w = img.naturalWidth || 600, h = img.naturalHeight || 200, k = Math.min(1, 600 / w, 200 / h);
+          var c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          resolve({ data: c.toDataURL('image/png'), w: c.width, h: c.height });
+        };
+        img.src = rd.result;
+      };
+      rd.readAsDataURL(file);
+    });
+  }
+  $('agLogo').onchange = function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    if (f.size > 8 * 1024 * 1024) { $('agMsg').textContent = 'That file is too big. Use one under 8 MB.'; $('agMsg').className = 'msg bad'; return; }
+    logoFromFile(f).then(function (l) { logoPending = l; showLogo(); $('agMsg').textContent = ''; }).catch(function (e) { $('agMsg').textContent = e.message; $('agMsg').className = 'msg bad'; });
+  };
+  $('logoPrev').onclick = function (e) { if (e.target.id === 'logoRm') { e.preventDefault(); logoPending = null; $('agLogo').value = ''; showLogo(); } };
   $('agSave').onclick = function () {
-    $('agMsg').textContent = 'Saving…';
-    api('/branding/set', { name: $('agName').value, accent: $('agAccent').value, white_label: $('agWhite').checked }).then(function (d) { $('agMsg').textContent = d.error ? d.error : 'Saved. It appears on the next report you build.'; $('agMsg').className = 'msg ' + (d.error ? 'bad' : 'good'); });
+    $('agMsg').textContent = 'Saving…'; $('agMsg').className = 'msg';
+    var body = { name: $('agName').value, accent: $('agAccent').value, white_label: $('agWhite').checked };
+    if (logoPending === null) body.logo = ''; else if (logoPending) { body.logo = logoPending.data; body.logo_w = logoPending.w; body.logo_h = logoPending.h; }
+    api('/branding/set', body).then(function (d) {
+      if (!d.error && logoPending !== undefined) { logoNow = d.logo || null; logoPending = undefined; $('agLogo').value = ''; showLogo(); }
+      $('agMsg').textContent = d.error ? d.error : 'Saved. It appears on the next report you build.'; $('agMsg').className = 'msg ' + (d.error ? 'bad' : 'good');
+    });
   };
   document.addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b) return;
