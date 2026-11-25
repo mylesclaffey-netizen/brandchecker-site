@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="index, follow">
-<script src="/assets/visitor.js"></script><script src="/assets/projects.js" defer></script>
+<script src="/assets/visitor.js"></script><script src="/assets/project-context.js"></script><script src="/assets/projects.js" defer></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>llms.txt generator</title>
 <link rel="canonical" href="https://brandchecker.eu/tools/llms-txt/">
@@ -317,5 +317,14 @@ if (QS.get('from') === 'chunker') {
 }
 </script>
 <script src="/assets/presets.js"></script>
+<script>
+// Inside the LLM workspace: fill in the selected project's company name and website.
+if (window.bcProject) bcProject.on(function (p) {
+  var set = function (id, v) { var e = document.getElementById(id); if (e && v) e.value = v; };
+  var site = function (q) { return String(q.website || '').replace(/^https?:\/\//i, '').replace(/\/$/, ''); };
+  set('fillUrl', site(p));
+  set('siteName', p.business);
+});
+</script>
 </body>
 </html>

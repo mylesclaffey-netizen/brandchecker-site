@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="index, follow">
-<script src="/assets/visitor.js"></script><script src="/assets/projects.js" defer></script>
+<script src="/assets/visitor.js"></script><script src="/assets/project-context.js"></script><script src="/assets/projects.js" defer></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AI crawler access checker</title>
 <link rel="canonical" href="https://brandchecker.eu/tools/crawler-check/">
@@ -251,5 +251,13 @@ const SHARED_URL = new URLSearchParams(location.search).get('url') || '';
 if (SHARED_URL) { $('url').value = SHARED_URL; run(); }
 </script>
 <script src="/assets/presets.js"></script>
+<script>
+// Inside the LLM workspace: fill in the selected project's company name and website.
+if (window.bcProject) bcProject.on(function (p) {
+  var set = function (id, v) { var e = document.getElementById(id); if (e && v) e.value = v; };
+  var site = function (q) { return String(q.website || '').replace(/^https?:\/\//i, '').replace(/\/$/, ''); };
+  set('url', site(p));
+});
+</script>
 </body>
 </html>
