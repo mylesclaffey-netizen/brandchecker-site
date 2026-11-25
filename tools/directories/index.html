@@ -103,7 +103,7 @@
       <h2>3. Check the directories</h2>
       <p class="hint">One Google search per directory, about $0.002 each, then the listing page is read for its details. Directories that refuse automated readers are marked "check by hand" rather than guessed. Search can miss a listing that exists, so "not found" is worth a quick look before submitting.</p>
       <label>Which categories</label><div class="cats" id="cats"></div>
-      <label style="display:flex;align-items:center;font-weight:500;margin-top:10px"><input type="checkbox" id="onlyNew"> Only directories not checked yet</label>
+      <label style="display:flex;align-items:center;font-weight:500;margin-top:10px"><input type="checkbox" id="onlyNew"> Only directories not checked yet or that could not be checked</label>
       <div class="bar"><button class="btn go" id="runCheck" type="button">Check</button><span class="msg" id="checkMsg" style="margin:0"></span></div>
       <div class="prog" id="prog" hidden><i id="progBar"></i></div>
     </div>
@@ -223,8 +223,9 @@ function renderResults() {
     (r.issues || []).forEach(function (x) { found.push('<span class="chip bad">' + esc(x) + '</span>'); });
     if (r.status === 'listed_ok' && r.nap) found.push('<span class="small">Checked on the ' + (r.source === 'page' ? 'listing page' : 'search result') + '</span>');
     if (r.status === 'listed_unchecked') found.push('<span class="small">Found, but its details could not be read: open it and compare.</span>');
-    if (r.status === 'not_found') found.push('<span class="small">Google returned no listing. Search for the business on the directory before submitting.</span>');
-    if (r.note) found.push('<span class="small">' + esc(r.note) + '</span>');
+    if (r.status === 'not_found') found.push('<span class="small">Google returned no listing.</span> ' + (r.find_url ? '<a href="' + esc(r.find_url) + '" target="_blank" rel="noopener">Search it yourself</a>' : ''));
+    if (!url && r.find_url && isListed(stat[i])) found.push('<a href="' + esc(r.find_url) + '" target="_blank" rel="noopener">Find the listing</a>');
+    if (r.note) found.push('<span class="small">' + esc(r.note) + '</span>' + (r.status === 'unknown' && r.find_url ? ' <a href="' + esc(r.find_url) + '" target="_blank" rel="noopener">Search it yourself</a>' : ''));
     h += '<tr data-id="' + esc(d.id) + '"><td><b>' + esc(d.name) + '</b><br><span class="small">' + esc(d.category) + (d.cost ? ' · ' + esc(d.cost) : '') + '</span></td>' +
       '<td><span class="chip ' + l[0] + '">' + l[1] + '</span></td><td>' + (found.join('<br>') || '<span class="small">Not checked yet.</span>') + '</td>' +
       '<td><select data-sub>' + SUB.map(function (o) { return '<option value="' + o[0] + '"' + (w.submission === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select><input data-note placeholder="Note" value="' + esc(w.note) + '" maxlength="400" style="margin-top:4px"></td>' +
@@ -268,7 +269,7 @@ function loadProject(id) {
 /* ---- checking, twelve directories at a time so the page shows progress ---- */
 function runCheck() {
   var cats = selectedCats(), only = $('onlyNew').checked;
-  var ids = lib.filter(function (d) { return cats.indexOf(d.category) >= 0 && (!only || !data.rows[d.id]); }).map(function (d) { return d.id; });
+  var ids = lib.filter(function (d) { return cats.indexOf(d.category) >= 0 && (!only || !data.rows[d.id] || data.rows[d.id].status === 'unknown'); }).map(function (d) { return d.id; });
   if (!data.nap.name) { msg('checkMsg', 'Save the business details first (step 2).', 'bad'); return; }
   if (!ids.length) { msg('checkMsg', 'Nothing to check with those choices.', 'bad'); return; }
   var done = 0, cost = 0; $('runCheck').disabled = true; $('prog').hidden = false; $('progBar').style.width = '0';
