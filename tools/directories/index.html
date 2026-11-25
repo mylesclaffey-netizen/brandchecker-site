@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<script src="/assets/visitor.js"></script><script src="/assets/project-context.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Directory listings</title>
+<link rel="canonical" href="https://brandchecker.eu/tools/directories/">
+<meta name="description" content="Upload a list of directories, see where a business is listed and whether its name, address and phone match, and work through the directories it is missing from.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23FF3D00'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#fff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;--soft:#f3f3f3;--acc:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:1180px;margin:0 auto}
+  body.embed{padding-top:14px}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:'Archivo',sans-serif;font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:8px 0}
+  h2{font-family:'Archivo',sans-serif;font-size:17px;font-weight:800;margin:0 0 8px}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6}
+  label{display:block;font-size:11px;color:var(--muted);margin:12px 0 5px;font-weight:700}
+  input,select,textarea{width:100%;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink);background:#fff;border:2px solid var(--ink);border-radius:0;padding:8px 10px}
+  input[type=checkbox]{width:auto;margin-right:7px;vertical-align:-1px}
+  input:focus,select:focus,textarea:focus{outline:3px solid var(--acc);outline-offset:0}
+  .card{border:2px solid var(--ink);padding:14px 16px;margin-bottom:14px;background:#fff}
+  .card[hidden]{display:none}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0 12px}
+  .btn{font-family:'Archivo',sans-serif;font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:#fff;color:var(--ink);border:2px solid var(--ink);padding:9px 13px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn:hover{background:var(--ink);color:#fff}
+  .btn.go{background:var(--ink);color:#fff;box-shadow:4px 4px 0 var(--acc)}
+  .btn[disabled]{opacity:.45;cursor:default;box-shadow:none}
+  .btn.mini{font-size:10.5px;padding:4px 8px}
+  .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+  .msg{font-size:12px;margin-top:8px;min-height:16px}.msg.bad{color:var(--bad)}.msg.good{color:var(--ok)}
+  .hint{font-size:11.5px;color:var(--muted);line-height:1.5}
+  .cats{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:6px}
+  .cats label{display:flex;margin:0;font-weight:500;color:var(--ink);font-size:12px}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:12px}
+  .tile{border:2px solid var(--ink);padding:8px 11px;cursor:pointer;background:#fff;text-align:left;font-family:inherit;color:inherit}.tile b{display:block;font-family:'Archivo',sans-serif;font-size:22px;line-height:1.1}.tile span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .tile.on{background:var(--ink);color:#fff}.tile.on span{color:#ddd}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{text-align:left;padding:8px 8px;border-bottom:1px solid #d6d6d6;vertical-align:top}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--ink)}
+  .small{font-size:11px;color:var(--muted)}
+  .chip{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:20px;white-space:nowrap}
+  .chip.good{color:var(--ok);background:rgba(0,132,74,.12)}.chip.warn{color:var(--warn);background:rgba(180,95,0,.14)}.chip.bad{color:var(--bad);background:rgba(212,0,0,.12)}.chip.info{color:var(--muted);background:var(--soft)}
+  td a{color:var(--acc);font-weight:700}
+  td select,td input{font-size:11.5px;padding:5px 6px}
+  .acts{display:flex;flex-wrap:wrap;gap:5px}
+  .sub td{background:var(--soft);padding:12px 14px}
+  .nap{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 14px;margin-bottom:10px}
+  .nap div{display:flex;gap:8px;align-items:center;justify-content:space-between;border:1px solid #bbb;background:#fff;padding:5px 8px}
+  .nap b{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block}
+  .tablewrap{overflow-x:auto}
+  .gate{max-width:560px;margin:40px auto}
+  .prog{height:8px;border:2px solid var(--ink);margin-top:10px}.prog i{display:block;height:100%;background:var(--acc);width:0}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap">
+  <div id="app" hidden>
+    <div class="eyebrow">Local search</div>
+    <h1>Directory listings</h1>
+    <p class="lede">Load your list of directories once. For each business, the tool looks for its listing on every directory, checks that the name, address and phone match, and turns the directories it is missing from into a work list: open one, copy the correct details, submit.</p>
+
+    <div class="card">
+      <label for="proj" style="margin-top:0">Project</label><select id="proj"><option>Loading…</option></select>
+      <div class="msg" id="projMsg"></div>
+    </div>
+
+    <div class="card">
+      <h2>1. Your directory list</h2>
+      <p class="hint" id="libInfo">Loading…</p>
+      <div class="grid">
+        <div><label for="csv">Upload a CSV</label><input type="file" id="csv" accept=".csv,text/csv"></div>
+        <div><label style="display:flex;align-items:center;padding-top:26px;font-weight:500"><input type="checkbox" id="replace"> Replace the whole list (otherwise new directories are added)</label></div>
+      </div>
+      <p class="hint" style="margin-top:8px">Columns it understands: <b>Directory Name</b> and <b>URL</b> (required), <b>Category</b>, <b>Cost / Access Model</b>, <b>Best For / Notes</b> and an optional <b>Submit URL</b> (the page where a listing is added). Other columns are ignored.</p>
+      <div class="msg" id="libMsg"></div>
+      <details id="libList" hidden><summary class="small" style="cursor:pointer">Show the list (remove any that are not real directories)</summary><div class="tablewrap"><table id="libTable"></table></div></details>
+    </div>
+
+    <div class="card" id="napCard" hidden>
+      <h2>2. The business's correct details</h2>
+      <p class="hint">Every listing is compared with these, so they must be exactly how the business should appear.</p>
+      <div class="bar" style="margin-top:6px" id="suggestBar" hidden><button class="btn mini" id="suggest" type="button"></button></div>
+      <div class="grid">
+        <div><label for="nName">Business name</label><input id="nName" maxlength="120"></div>
+        <div><label for="nPhone">Phone</label><input id="nPhone" maxlength="40" placeholder="(416) 555-0142"></div>
+        <div><label for="nAddr">Street address</label><input id="nAddr" maxlength="200" placeholder="120 King Street West"></div>
+        <div><label for="nCity">City</label><input id="nCity" maxlength="80"></div>
+        <div><label for="nPostal">Postal code</label><input id="nPostal" maxlength="12" placeholder="M5H 1A1"></div>
+        <div><label for="nSite">Website</label><input id="nSite" maxlength="300" placeholder="brighteyes.ca"></div>
+        <div><label for="nCountry">Country to search in</label><input id="nCountry" maxlength="60" placeholder="Canada"></div>
+      </div>
+      <div class="bar"><button class="btn" id="napSave" type="button">Save details</button><span class="msg" id="napMsg" style="margin:0"></span></div>
+    </div>
+
+    <div class="card" id="checkCard" hidden>
+      <h2>3. Check the directories</h2>
+      <p class="hint">One Google search per directory, about $0.002 each, then the listing page is read for its details. Directories that refuse automated readers are marked "check by hand" rather than guessed. Search can miss a listing that exists, so "not found" is worth a quick look before submitting.</p>
+      <label>Which categories</label><div class="cats" id="cats"></div>
+      <label style="display:flex;align-items:center;font-weight:500;margin-top:10px"><input type="checkbox" id="onlyNew"> Only directories not checked yet</label>
+      <div class="bar"><button class="btn go" id="runCheck" type="button">Check</button><span class="msg" id="checkMsg" style="margin:0"></span></div>
+      <div class="prog" id="prog" hidden><i id="progBar"></i></div>
+    </div>
+
+    <div id="results" hidden>
+      <div class="tiles" id="tiles"></div>
+      <div class="card">
+        <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">Work list</h2><span class="grow" style="flex:1"></span><button class="btn mini" id="exportCsv" type="button">Download CSV</button></div>
+        <div class="tablewrap"><table id="rows"></table></div>
+      </div>
+    </div>
+  </div>
+  <div class="gate" id="gate" hidden>
+    <h2>Enter your access code</h2>
+    <p class="hint">Directory lists belong to an access code. Open this page from your access link, or enter the code here.</p>
+    <div class="bar"><input id="manual" placeholder="your-code" autocapitalize="off" spellcheck="false"><button class="btn go" id="enter" type="button">Open</button></div>
+  </div>
+</div>
+<script>
+(function () {
+'use strict';
+var API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+var qs = new URLSearchParams(location.search);
+var CODE = qs.get('k') || window.MC_VISITOR || '';
+var $ = function (id) { return document.getElementById(id); };
+var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+if (qs.get('embed') === '1') document.body.classList.add('embed');
+function api(path, body) {
+  return fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ code: CODE }, body || {})) })
+    .then(function (r) { return r.json(); }).catch(function () { return { error: 'Couldn\'t reach the server. Check your connection and try again.' }; });
+}
+var msg = function (id, text, cls) { var m = $(id); m.textContent = text || ''; m.className = 'msg' + (cls ? ' ' + cls : ''); };
+
+var lib = [], data = null, suggested = null, pid = '', filter = 'all', openPanel = '';
+var SUB = [['todo', 'To do'], ['in_progress', 'In progress'], ['submitted', 'Submitted'], ['live', 'Live'], ['skip', 'Skip']];
+var LABEL = { listed_ok: ['good', 'Listed, details match'], listed_differs: ['bad', 'Listed, details differ'], listed_unchecked: ['warn', 'Listed, check by hand'], not_found: ['bad', 'Not found'], unknown: ['info', 'Could not check'], unchecked: ['info', 'Not checked yet'], manual_listed: ['good', 'Listed (confirmed by hand)'], manual_not: ['bad', 'Not listed (confirmed by hand)'] };
+
+/* ---- the CSV ---- */
+function parseCsv(text) {
+  var rows = [], row = [], cell = '', q = false, i = 0;
+  text = text.replace(/^﻿/, '');
+  for (; i < text.length; i++) {
+    var c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(function (r) { return r.some(function (x) { return String(x).trim(); }); });
+}
+function csvToRows(text) {
+  var t = parseCsv(text); if (t.length < 2) return [];
+  var head = t[0].map(function (h) { return h.trim().toLowerCase(); });
+  var col = function (names) { for (var k = 0; k < names.length; k++) { var ix = head.indexOf(names[k]); if (ix >= 0) return ix; } return -1; };
+  var ix = { name: col(['directory name', 'name', 'directory']), url: col(['url', 'website', 'link']), cat: col(['category']), cost: col(['cost / access model', 'cost', 'access model']), notes: col(['best for / notes', 'notes', 'best for']), submit: col(['submit url', 'submission url', 'add listing url']) };
+  if (ix.name < 0 || ix.url < 0) return null;
+  return t.slice(1).map(function (r) { var g = function (k) { return ix[k] >= 0 ? (r[ix[k]] || '').trim() : ''; }; return { name: g('name'), url: g('url'), category: g('cat'), cost: g('cost'), notes: g('notes'), submit_url: g('submit') }; });
+}
+function toCsv(rows) { return rows.map(function (r) { return r.map(function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(','); }).join('\r\n'); }
+
+/* ---- what a row says now ---- */
+function work(id) { return (data && data.work && data.work[id]) || { submission: 'todo', listing_url: '', note: '', listed: null }; }
+function statusOf(d) {
+  var w = work(d.id), r = data.rows[d.id];
+  if (w.listed === true) return 'manual_listed';
+  if (w.listed === false) return 'manual_not';
+  return r ? r.status : 'unchecked';
+}
+var isListed = function (s) { return s === 'listed_ok' || s === 'listed_differs' || s === 'listed_unchecked' || s === 'manual_listed'; };
+var FILTERS = [
+  ['all', 'All', function () { return true; }],
+  ['ok', 'Listed, correct', function (s) { return s === 'listed_ok' || s === 'manual_listed'; }],
+  ['differs', 'Fix details', function (s) { return s === 'listed_differs'; }],
+  ['hand', 'Check by hand', function (s) { return s === 'listed_unchecked' || s === 'unknown'; }],
+  ['missing', 'Not listed', function (s) { return s === 'not_found' || s === 'manual_not'; }],
+  ['new', 'Not checked', function (s) { return s === 'unchecked'; }]
+];
+
+/* ---- drawing ---- */
+function renderLib() {
+  var cats = {}; lib.forEach(function (d) { cats[d.category] = (cats[d.category] || 0) + 1; });
+  var names = Object.keys(cats);
+  $('libInfo').textContent = lib.length ? lib.length + ' directories in ' + names.length + ' categor' + (names.length === 1 ? 'y' : 'ies') + '. Upload another CSV to add more.' : 'No directories yet. Upload your CSV to start.';
+  $('libList').hidden = !lib.length;
+  $('libTable').innerHTML = '<tr><th>Directory</th><th>Category</th><th>Cost</th><th></th></tr>' + lib.map(function (d) { return '<tr><td><a href="' + esc(d.url) + '" target="_blank" rel="noopener">' + esc(d.name) + '</a></td><td>' + esc(d.category) + '</td><td>' + esc(d.cost) + '</td><td><button class="btn mini" data-rm="' + esc(d.id) + '" type="button">Remove</button></td></tr>'; }).join('');
+  var keep = {}; [].forEach.call(document.querySelectorAll('#cats input'), function (i) { keep[i.value] = i.checked; });
+  $('cats').innerHTML = names.map(function (c) { return '<label><input type="checkbox" value="' + esc(c) + '"' + (keep[c] === false ? '' : ' checked') + '>' + esc(c) + ' (' + cats[c] + ')</label>'; }).join('');
+  $('checkCard').hidden = !lib.length || !pid; $('results').hidden = !lib.length || !pid || !data;
+}
+function renderNap() {
+  var n = data.nap || {};
+  $('nName').value = n.name || ''; $('nPhone').value = n.phone || ''; $('nAddr').value = n.address || ''; $('nCity').value = n.city || ''; $('nPostal').value = n.postal || ''; $('nSite').value = n.website || ''; $('nCountry').value = n.country || 'Canada';
+  var s = suggested;
+  $('suggestBar').hidden = !s;
+  if (s) $('suggest').textContent = s.source === 'google' ? 'Fill from the Google Business Profile' : 'Fill from the project details';
+}
+function napFromForm() { return { name: $('nName').value.trim(), phone: $('nPhone').value.trim(), address: $('nAddr').value.trim(), city: $('nCity').value.trim(), postal: $('nPostal').value.trim(), website: $('nSite').value.trim(), country: $('nCountry').value.trim() }; }
+function selectedCats() { return [].filter.call(document.querySelectorAll('#cats input'), function (i) { return i.checked; }).map(function (i) { return i.value; }); }
+
+function renderResults() {
+  if (!data) return;
+  var stat = lib.map(function (d) { return statusOf(d); });
+  $('tiles').innerHTML = FILTERS.map(function (f) {
+    var n = stat.filter(f[2]).length;
+    return '<button class="tile' + (filter === f[0] ? ' on' : '') + '" data-f="' + f[0] + '" type="button"><b>' + n + '</b><span>' + f[1] + '</span></button>';
+  }).join('');
+  var fn = FILTERS.filter(function (f) { return f[0] === filter; })[0][2];
+  var h = '<tr><th>Directory</th><th>Status</th><th>What was found</th><th>Progress</th><th></th></tr>';
+  lib.forEach(function (d, i) {
+    if (!fn(stat[i])) return;
+    var r = data.rows[d.id] || {}, w = work(d.id), l = LABEL[stat[i]];
+    var url = w.listing_url || r.listing_url || '';
+    var found = [];
+    if (url) found.push('<a href="' + esc(url) + '" target="_blank" rel="noopener">Open listing</a>');
+    (r.issues || []).forEach(function (x) { found.push('<span class="chip bad">' + esc(x) + '</span>'); });
+    if (r.status === 'listed_ok' && r.nap) found.push('<span class="small">Checked on the ' + (r.source === 'page' ? 'listing page' : 'search result') + '</span>');
+    if (r.status === 'listed_unchecked') found.push('<span class="small">Found, but its details could not be read: open it and compare.</span>');
+    if (r.status === 'not_found') found.push('<span class="small">Google returned no listing. Search for the business on the directory before submitting.</span>');
+    if (r.note) found.push('<span class="small">' + esc(r.note) + '</span>');
+    h += '<tr data-id="' + esc(d.id) + '"><td><b>' + esc(d.name) + '</b><br><span class="small">' + esc(d.category) + (d.cost ? ' · ' + esc(d.cost) : '') + '</span></td>' +
+      '<td><span class="chip ' + l[0] + '">' + l[1] + '</span></td><td>' + (found.join('<br>') || '<span class="small">Not checked yet.</span>') + '</td>' +
+      '<td><select data-sub>' + SUB.map(function (o) { return '<option value="' + o[0] + '"' + (w.submission === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select><input data-note placeholder="Note" value="' + esc(w.note) + '" maxlength="400" style="margin-top:4px"></td>' +
+      '<td><div class="acts"><button class="btn mini" data-act="start" type="button">' + (isListed(stat[i]) ? 'Details' : 'Start submission') + '</button><button class="btn mini" data-act="listed" type="button">Mark listed</button>' + (w.listed !== null ? '<button class="btn mini" data-act="clear" type="button">Undo</button>' : '<button class="btn mini" data-act="notlisted" type="button">Not listed</button>') + '</div></td></tr>';
+    if (openPanel === d.id) h += '<tr class="sub"><td colspan="5">' + panel(d) + '</td></tr>';
+  });
+  $('rows').innerHTML = h;
+}
+function panel(d) {
+  var n = data.nap || {};
+  var fields = [['Business name', n.name], ['Phone', n.phone], ['Street address', n.address], ['City', n.city], ['Postal code', n.postal], ['Website', n.website]].filter(function (f) { return f[1]; });
+  var go = d.submit_url || d.url;
+  return '<p class="small" style="margin-bottom:8px">Add the business to <b>' + esc(d.name) + '</b> with exactly these details. Copy each one, so it is spelled the same everywhere.</p><div class="nap">' +
+    fields.map(function (f) { return '<div><span><b>' + f[0] + '</b>' + esc(f[1]) + '</span><button class="btn mini" data-copy="' + esc(f[1]) + '" type="button">Copy</button></div>'; }).join('') + '</div>' +
+    '<div class="acts"><a class="btn mini go" href="' + esc(go) + '" target="_blank" rel="noopener">Open ' + esc(d.submit_url ? 'the submission page' : d.name) + '</a><button class="btn mini" data-copy-all type="button">Copy all details</button><button class="btn mini" data-act="submitted" type="button">I have submitted it</button></div>' +
+    (d.notes ? '<p class="small" style="margin-top:8px">' + esc(d.notes) + '</p>' : '');
+}
+
+/* ---- saving what the employee does ---- */
+function saveWork(id, patch) {
+  data.work[id] = Object.assign(work(id), patch);
+  return api('/directories/work', Object.assign({ project_id: pid, id: id }, patch)).then(function (d) { if (d.error) msg('checkMsg', d.error, 'bad'); else data.work[id] = d.work; renderResults(); });
+}
+
+/* ---- loading ---- */
+function loadLib() {
+  return api('/directories/library/get').then(function (d) { if (d.error) { msg('libMsg', d.error, 'bad'); return; } lib = d.directories || []; renderLib(); if (data) renderResults(); });
+}
+function loadProject(id) {
+  pid = id; data = null; suggested = null; openPanel = ''; $('napCard').hidden = !id; $('results').hidden = true; msg('projMsg', id ? 'Loading…' : '');
+  if (!id) { renderLib(); return; }
+  api('/directories/get', { project_id: id }).then(function (d) {
+    if (d.error) { msg('projMsg', d.error, 'bad'); return; }
+    if (pid !== id) return;
+    data = { nap: d.nap, rows: d.rows || {}, work: d.work || {} }; suggested = d.suggested; msg('projMsg', '');
+    renderNap(); renderLib(); renderResults();
+    if (!data.nap.name && suggested) msg('napMsg', 'Details are empty. Use the button above to fill them in, then check them.');
+  });
+}
+
+/* ---- checking, twelve directories at a time so the page shows progress ---- */
+function runCheck() {
+  var cats = selectedCats(), only = $('onlyNew').checked;
+  var ids = lib.filter(function (d) { return cats.indexOf(d.category) >= 0 && (!only || !data.rows[d.id]); }).map(function (d) { return d.id; });
+  if (!data.nap.name) { msg('checkMsg', 'Save the business details first (step 2).', 'bad'); return; }
+  if (!ids.length) { msg('checkMsg', 'Nothing to check with those choices.', 'bad'); return; }
+  var done = 0, cost = 0; $('runCheck').disabled = true; $('prog').hidden = false; $('progBar').style.width = '0';
+  (function next() {
+    var batch = ids.slice(done, done + 12);
+    if (!batch.length) { $('runCheck').disabled = false; $('prog').hidden = true; msg('checkMsg', 'Checked ' + ids.length + ' directories (about $' + cost.toFixed(2) + ').', 'good'); return; }
+    msg('checkMsg', 'Checking ' + (done + 1) + '–' + (done + batch.length) + ' of ' + ids.length + '…');
+    api('/directories/check', { project_id: pid, ids: batch }).then(function (d) {
+      if (d.error) { $('runCheck').disabled = false; $('prog').hidden = true; msg('checkMsg', d.error + (done ? ' (' + done + ' were checked.)' : ''), 'bad'); renderResults(); return; }
+      Object.keys(d.rows).forEach(function (k) { data.rows[k] = d.rows[k]; });
+      cost += d.cost || 0; done += batch.length; $('progBar').style.width = Math.round(done / ids.length * 100) + '%'; renderResults(); next();
+    });
+  })();
+}
+
+/* ---- events ---- */
+$('csv').onchange = function () {
+  var f = this.files[0]; if (!f) return;
+  var rd = new FileReader();
+  rd.onload = function () {
+    var rows = csvToRows(String(rd.result));
+    if (rows === null) { msg('libMsg', 'The CSV needs a "Directory Name" column and a "URL" column.', 'bad'); return; }
+    if (!rows.length) { msg('libMsg', 'No rows found in that file.', 'bad'); return; }
+    msg('libMsg', 'Saving ' + rows.length + ' rows…');
+    api('/directories/library/set', { rows: rows, mode: $('replace').checked ? 'replace' : 'merge' }).then(function (d) {
+      $('csv').value = '';
+      if (d.error) { msg('libMsg', d.error, 'bad'); return; }
+      lib = d.directories; msg('libMsg', 'Saved. ' + d.added + ' new' + (d.skipped ? ', ' + d.skipped + ' skipped (no name or website)' : '') + '.', 'good'); renderLib(); if (data) renderResults();
+    });
+  };
+  rd.readAsText(f);
+};
+$('libTable').onclick = function (e) {
+  var b = e.target.closest('[data-rm]'); if (!b) return;
+  api('/directories/library/remove', { id: b.dataset.rm }).then(function (d) { if (!d.error) { lib = d.directories; renderLib(); if (data) renderResults(); } });
+};
+$('suggest').onclick = function () {
+  var s = suggested; if (!s) return;
+  $('nName').value = s.name || ''; $('nPhone').value = s.phone || ''; $('nAddr').value = s.address || ''; $('nCity').value = s.city || ''; $('nPostal').value = s.postal || ''; $('nSite').value = s.website || '';
+  msg('napMsg', 'Filled in. Check them, then save.');
+};
+$('napSave').onclick = function () {
+  var n = napFromForm(); if (!n.name) { msg('napMsg', 'Enter the business name.', 'bad'); return; }
+  $('napSave').disabled = true; msg('napMsg', 'Saving…');
+  api('/directories/nap', { project_id: pid, nap: n }).then(function (d) { $('napSave').disabled = false; if (d.error) { msg('napMsg', d.error, 'bad'); return; } data.nap = d.nap; msg('napMsg', 'Saved.', 'good'); renderResults(); });
+};
+$('runCheck').onclick = runCheck;
+$('tiles').onclick = function (e) { var b = e.target.closest('[data-f]'); if (b) { filter = b.dataset.f; renderResults(); } };
+$('rows').onclick = function (e) {
+  var copy = e.target.closest('[data-copy]'), all = e.target.closest('[data-copy-all]');
+  if (copy || all) {
+    var n = data.nap || {}, text = all ? [n.name, n.address, [n.city, n.postal].filter(Boolean).join(' '), n.phone, n.website].filter(Boolean).join('\n') : copy.dataset.copy, btn = copy || all;
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = all ? 'Copy all details' : 'Copy'; }, 1200); }, function () { prompt('Copy this', text); });
+    return;
+  }
+  var b = e.target.closest('[data-act]'); if (!b) return;
+  var tr = b.closest('tr'), id = tr.dataset.id || (tr.previousElementSibling && tr.previousElementSibling.dataset.id), d = lib.filter(function (x) { return x.id === id; })[0];
+  if (!d) return;
+  if (b.dataset.act === 'start') { openPanel = openPanel === id ? '' : id; renderResults(); }
+  if (b.dataset.act === 'submitted') saveWork(id, { submission: 'submitted' });
+  if (b.dataset.act === 'listed') { var u = prompt('Paste the address of the live listing (or leave empty):', work(id).listing_url || ''); if (u !== null) saveWork(id, { listed: true, listing_url: u.trim() }); }
+  if (b.dataset.act === 'notlisted') saveWork(id, { listed: false });
+  if (b.dataset.act === 'clear') saveWork(id, { listed: null });
+};
+$('rows').onchange = function (e) { var s = e.target.closest('[data-sub]'); if (s) saveWork(s.closest('tr').dataset.id, { submission: s.value }); var n = e.target.closest('[data-note]'); if (n) saveWork(n.closest('tr').dataset.id, { note: n.value }); };
+$('exportCsv').onclick = function () {
+  var rows = [['Category', 'Directory Name', 'URL', 'Cost / Access Model', 'Listing status', 'Live Listing URL', 'Details differ', 'Submission Status', 'Note']];
+  lib.forEach(function (d) { var r = data.rows[d.id] || {}, w = work(d.id), s = statusOf(d); rows.push([d.category, d.name, d.url, d.cost, LABEL[s][1], w.listing_url || r.listing_url || '', (r.issues || []).join('; '), (SUB.filter(function (o) { return o[0] === w.submission; })[0] || [0, ''])[1], w.note]); });
+  var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv' })); a.download = 'directory-listings.csv'; a.click();
+};
+$('proj').onchange = function () { loadProject($('proj').value); };
+
+/* ---- start ---- */
+if (!CODE) {
+  $('gate').hidden = false;
+  var go = function () { var v = $('manual').value.trim().toLowerCase().replace(/\s+/g, ''); if (v) location.search = '?k=' + encodeURIComponent(v); };
+  $('enter').onclick = go; $('manual').onkeydown = function (e) { if (e.key === 'Enter') go(); };
+} else {
+  $('app').hidden = false;
+  loadLib();
+  api('/projects/list').then(function (d) {
+    if (d.error) { $('proj').innerHTML = '<option>' + esc(d.error) + '</option>'; return; }
+    var ps = d.projects || [];
+    $('proj').innerHTML = '<option value="">Choose a project</option>' + ps.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + '</option>'; }).join('');
+    if (window.bcProject) bcProject.on(function (p) { if (p.id && $('proj').value !== p.id && ps.some(function (x) { return x.id === p.id; })) { $('proj').value = p.id; loadProject(p.id); } });
+  });
+}
+})();
+</script>
+</body>
+</html>
