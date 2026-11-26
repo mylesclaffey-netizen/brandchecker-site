@@ -115,7 +115,7 @@
       <label for="chkLoc">Which location</label><select id="chkLoc"></select>
       <label>Which categories</label><div class="cats" id="cats"></div>
       <label style="display:flex;align-items:center;font-weight:500;margin-top:10px"><input type="checkbox" id="onlyNew"> Only directories not checked yet or that could not be checked</label>
-      <div class="bar"><button class="btn go" id="runCheck" type="button">Check</button><span class="msg" id="checkMsg" style="margin:0"></span></div>
+      <div class="bar"><button class="btn go" id="runCheck" type="button">Check</button><button class="btn" id="retryFailed" type="button" hidden>Retry failed searches</button><span class="msg" id="checkMsg" style="margin:0"></span></div>
       <div class="prog" id="prog" hidden><i id="progBar"></i></div>
     </div>
 
@@ -448,6 +448,7 @@ function renderGrid() {
 }
 function renderResults() {
   if (!data) return;
+  refreshRetry();
   var multi = data.locations.length > 1; $('vGrid').hidden = !multi; $('vTasks').hidden = !multi; if (!multi && (view === 'grid' || view === 'tasks')) view = 'list';
   $('listView').hidden = view !== 'list'; $('gridView').hidden = view !== 'grid'; $('tasksView').hidden = view !== 'tasks'; $('gapView').hidden = view !== 'gap';
   $('vList').classList.toggle('go', view === 'list'); $('vGrid').classList.toggle('go', view === 'grid'); $('vTasks').classList.toggle('go', view === 'tasks'); $('vGap').classList.toggle('go', view === 'gap');
@@ -564,7 +565,21 @@ $('wOff').onclick = function () {
 };
 
 /* ---- checking, twelve directories at a time so the page shows progress ---- */
-function runCheck() {
+// The searches that failed (the search provider errors on some), for the locations picked in "Which location".
+function failedTargets() {
+  var sel = $('chkLoc').value, ls = sel === 'all' ? data.locations : data.locations.filter(function (l) { return l.id === sel; });
+  var out = []; ls.forEach(function (l) {
+    var rows = (data.loc[l.id] || {}).rows || {}, ids = libFor(l).filter(function (d) { return rows[d.id] && rows[d.id].status === 'unknown'; }).map(function (d) { return d.id; });
+    if (ids.length) out.push({ loc: l, ids: ids });
+  });
+  return out;
+}
+function refreshRetry() {
+  if (!data || !data.locations.length) { $('retryFailed').hidden = true; return; }
+  var n = failedTargets().reduce(function (t, x) { return t + x.ids.length; }, 0);
+  $('retryFailed').hidden = !n; $('retryFailed').textContent = 'Retry ' + n + ' failed search' + (n === 1 ? '' : 'es');
+}
+function runCheck(onlyFailed) {
   var cats = selectedCats(), only = $('onlyNew').checked, sel = $('chkLoc').value;
   var targets = sel === 'all' ? data.locations : data.locations.filter(function (l) { return l.id === sel; });
   if (!targets.length) { msg('checkMsg', 'Add and save a location first (step 2).', 'bad'); return; }
@@ -572,20 +587,20 @@ function runCheck() {
   targets.forEach(function (l) {
     if (!l.nap.name) return;
     var rows = (data.loc[l.id] || {}).rows || {};
-    var ids = libFor(l).filter(function (d) { return cats.indexOf(d.category) >= 0 && (!only || !rows[d.id] || rows[d.id].status === 'unknown'); }).map(function (d) { return d.id; });
+    var ids = onlyFailed ? libFor(l).filter(function (d) { return rows[d.id] && rows[d.id].status === 'unknown'; }).map(function (d) { return d.id; }) : libFor(l).filter(function (d) { return cats.indexOf(d.category) >= 0 && (!only || !rows[d.id] || rows[d.id].status === 'unknown'); }).map(function (d) { return d.id; });
     for (var i = 0; i < ids.length; i += 12) jobs.push({ loc: l, ids: ids.slice(i, i + 12) });
   });
-  if (!jobs.length) { msg('checkMsg', 'Nothing to check with those choices.', 'bad'); return; }
-  var total = jobs.reduce(function (n, j) { return n + j.ids.length; }, 0), done = 0, cost = 0, k = 0;
-  $('runCheck').disabled = true; $('prog').hidden = false; $('progBar').style.width = '0';
-  var stop = function (text, cls) { $('runCheck').disabled = false; $('prog').hidden = true; msg('checkMsg', text, cls); renderResults(); loadWatch(); };
+  if (!jobs.length) { msg('checkMsg', onlyFailed ? 'No failed searches to retry.' : 'Nothing to check with those choices.', onlyFailed ? '' : 'bad'); return; }
+  var failedNow = 0, total = jobs.reduce(function (n, j) { return n + j.ids.length; }, 0), done = 0, cost = 0, k = 0;
+  $('runCheck').disabled = true; $('retryFailed').disabled = true; $('prog').hidden = false; $('progBar').style.width = '0';
+  var stop = function (text, cls) { $('runCheck').disabled = false; $('retryFailed').disabled = false; $('prog').hidden = true; msg('checkMsg', text, cls); renderResults(); refreshRetry(); loadWatch(); };
   (function next() {
-    if (k >= jobs.length) { stop('Checked ' + total + ' listing' + (total === 1 ? '' : 's') + ' (about $' + cost.toFixed(2) + ').', 'good'); return; }
+    if (k >= jobs.length) { stop((onlyFailed ? 'Retried ' : 'Checked ') + total + ' listing' + (total === 1 ? '' : 's') + ' (about $' + cost.toFixed(2) + ').' + (failedNow ? ' ' + failedNow + (onlyFailed ? ' still' : '') + ' could not be checked: the search provider errored. Use "Retry" (or try later), or look those up by hand.' : ''), failedNow ? '' : 'good'); return; }
     var job = jobs[k];
     msg('checkMsg', 'Checking ' + (job.loc.label || job.loc.nap.city || job.loc.nap.name) + ': ' + (done + 1) + '–' + (done + job.ids.length) + ' of ' + total + '…');
-    api('/directories/check', { project_id: pid, location_id: job.loc.id, ids: job.ids }).then(function (d) {
+    api('/directories/check', { project_id: pid, location_id: job.loc.id, ids: job.ids, gentle: onlyFailed === true }).then(function (d) {
       if (d.error) { stop(d.error + (done ? ' (' + done + ' were checked.)' : ''), 'bad'); return; }
-      var rows = data.loc[job.loc.id].rows; Object.keys(d.rows).forEach(function (x) { rows[x] = d.rows[x]; });
+      var rows = data.loc[job.loc.id].rows; Object.keys(d.rows).forEach(function (x) { rows[x] = d.rows[x]; if (d.rows[x].status === 'unknown') failedNow++; });
       cost += d.cost || 0; done += job.ids.length; k++; $('progBar').style.width = Math.round(done / total * 100) + '%'; renderResults(); next();
     });
   })();
@@ -681,7 +696,9 @@ $('locCsv').onchange = function () {
   };
   rd.readAsText(f);
 };
-$('runCheck').onclick = runCheck;
+$('runCheck').onclick = function () { runCheck(false); };
+$('retryFailed').onclick = function () { runCheck(true); };
+$('chkLoc').onchange = refreshRetry;
 $('vList').onclick = function () { view = 'list'; renderResults(); };
 $('vGrid').onclick = function () { view = 'grid'; renderResults(); };
 $('vTasks').onclick = function () { view = 'tasks'; renderResults(); };
