@@ -204,7 +204,7 @@ function render(msg) {
   var items = cur ? (cur.items.length ? cur.items.map(function (i) {
     return '<div class="item"><div><a class="t" href="' + esc(i.url) + '" target="_blank" rel="noopener">' + esc(i.title) + '</a>' +
       '<div class="meta">' + (i.tool ? '<span class="tool">' + esc(i.tool.replace(/-/g, ' ')) + '</span>' : '') + (i.snap ? '' : '<span class="tool bare" title="Saved as a link only: save it again from its tool to include its content in the plan">link only</span>') + esc(fmt(i.saved_at)) + '</div></div>' +
-      '<div>' + (i.file ? '<button class="btn2 mini" type="button" data-pdf="' + i.id + '" title="' + esc(i.file.name) + '">PDF</button> ' : '') + '<button class="btn2 mini" type="button" data-rm="' + i.id + '">Remove</button></div>' +
+      '<div>' + (i.md ? '<button class="btn2 mini" type="button" data-md="' + i.id + '" title="' + esc(i.md.name) + '">.md</button> ' : '') + (i.file ? '<button class="btn2 mini" type="button" data-pdf="' + i.id + '" title="' + esc(i.file.name) + '">PDF</button> ' : '') + '<button class="btn2 mini" type="button" data-rm="' + i.id + '">Remove</button></div>' +
       (i.note ? '<div class="note">' + esc(i.note) + '</div>' : '') + '</div>';
   }).join('') : '<p class="lede" style="margin:8px 0 0">Nothing saved here yet. Open any tool and use <b>+ Save to project</b>.</p>') : '';
   app.innerHTML =
@@ -237,6 +237,14 @@ app.addEventListener('click', function (e) {
     fetch(API + '/projects/file', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, project_id: cur.id, item_id: it.id }) })
       .then(function (r) { if ((r.headers.get('Content-Type') || '').indexOf('application/pdf') === -1) return r.json().then(function (d) { throw new Error(d.error || 'The PDF could not be opened.'); }); return r.blob(); })
       .then(function (blob) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = it.file.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000); })
+      .catch(function (e) { flash(e.message, 'bad'); })
+      .then(function () { t.disabled = false; });
+  } else if (t.dataset.md && cur) {
+    var mi = cur.items.filter(function (x) { return x.id === t.dataset.md; })[0]; if (!mi || !mi.md) return;
+    t.disabled = true;
+    fetch(API + '/projects/md', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: CODE, project_id: cur.id, item_id: mi.id }) })
+      .then(function (r) { if ((r.headers.get('Content-Type') || '').indexOf('text/markdown') === -1) return r.json().then(function (d) { throw new Error(d.error || 'The Markdown copy could not be opened.'); }); return r.blob(); })
+      .then(function (blob) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = mi.md.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000); })
       .catch(function (e) { flash(e.message, 'bad'); })
       .then(function () { t.disabled = false; });
   } else if (t.id === 'writePlan' && cur && !planBusy) {

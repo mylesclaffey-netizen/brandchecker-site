@@ -48,6 +48,7 @@
     '<div class="bcp-row"><input id="bcpNew" maxlength="60" placeholder="e.g. Acme Dental"><button type="button" class="bcp-alt" id="bcpAdd">Add</button></div>' +
     '<label for="bcpNote">Note (optional)</label><input id="bcpNote" maxlength="300" placeholder="e.g. before the schema fix">' +
     '<label class="bcp-check" id="bcpPdfRow" hidden><input type="checkbox" id="bcpPdf" checked> <span>Also attach the PDF you just made: <b id="bcpPdfName"></b></span></label>' +
+    '<label class="bcp-check"><input type="checkbox" id="bcpMd" checked> <span>Also keep a Markdown (.md) copy of this report</span></label>' +
     '<button type="button" class="bcp-go bcp-save" id="bcpSave" disabled>Save to project</button>' +
     '<div class="bcp-msg" id="bcpMsg"></div>' +
     '<div class="bcp-foot"><a id="bcpOpen" target="_blank" rel="noopener">Open my projects →</a></div>';
@@ -122,6 +123,69 @@
     return text;
   }
 
+
+  // The page as Markdown (headings, lists, tables, links, bold), so the saved copy can be pasted into a chat or read by Claude.
+  function toMarkdown() {
+    var hid = panel.hidden, shown = btn.style.display;
+    panel.hidden = true; btn.style.display = 'none';
+    var shut = [].slice.call(document.querySelectorAll('details:not([open])'));
+    shut.forEach(function (d) { d.open = true; });
+    var md = '';
+    try {
+      var root = document.querySelector('main') || document.body;
+      var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, SVG: 1, CANVAS: 1, IFRAME: 1, BUTTON: 1, SELECT: 1, INPUT: 1, TEXTAREA: 1, NAV: 1, FOOTER: 1, HEADER: 0 };
+      var hidden = function (el) { if (el.hidden || el.getAttribute('aria-hidden') === 'true') return true; var cs = getComputedStyle(el); return cs.display === 'none' || cs.visibility === 'hidden'; };
+      var clean = function (t) { return t.replace(/\s+/g, ' '); };
+      var inline = function (n) {
+        if (n.nodeType === 3) return clean(n.nodeValue);
+        if (n.nodeType !== 1 || SKIP[n.tagName.toUpperCase()] || hidden(n)) return '';
+        var t = [].map.call(n.childNodes, inline).join('');
+        var tag = n.tagName.toLowerCase();
+        if (tag === 'br') return '\n';
+        if (!t.trim()) return t;
+        if (tag === 'strong' || tag === 'b') return '**' + t.trim() + '** ';
+        if (tag === 'em' || tag === 'i') return '*' + t.trim() + '* ';
+        if (tag === 'code') return '`' + t.trim() + '`';
+        if (tag === 'a' && n.getAttribute('href') && !/^(#|javascript:)/.test(n.getAttribute('href'))) { try { return '[' + t.trim() + '](' + new URL(n.getAttribute('href'), location.href).href.replace(/([?&])k=[^&#]*&?/, '$1').replace(/[?&]$/, '') + ')'; } catch (e) { return t; } }
+        return t;
+      };
+      var out = [];
+      var table = function (tb) {
+        var rows = [].map.call(tb.querySelectorAll('tr'), function (tr) { return [].map.call(tr.children, function (c) { return inline(c).replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim(); }); }).filter(function (r) { return r.length; });
+        if (!rows.length) return;
+        var w = Math.max.apply(null, rows.map(function (r) { return r.length; }));
+        rows = rows.map(function (r) { while (r.length < w) r.push(''); return '| ' + r.join(' | ') + ' |'; });
+        rows.splice(1, 0, '| ' + new Array(w + 1).join('--- | ').trim());
+        out.push(rows.join('\n'));
+      };
+      var walk = function (n, depth) {
+        if (n.nodeType === 3) { var tx = clean(n.nodeValue).trim(); if (tx) out.push(tx); return; }
+        if (n.nodeType !== 1 || SKIP[n.tagName.toUpperCase()] || n === panel || n === btn || hidden(n)) return;
+        var tag = n.tagName.toLowerCase();
+        if (/^h[1-6]$/.test(tag)) { var h = inline(n).replace(/\s+/g, ' ').trim(); if (h) out.push(new Array(+tag[1] + 1).join('#') + ' ' + h); return; }
+        if (tag === 'table') { table(n); return; }
+        if (tag === 'ul' || tag === 'ol') {
+          var i = 0, lines = [];
+          [].forEach.call(n.children, function (li) { if (li.tagName.toLowerCase() !== 'li' || hidden(li)) return; i++; var own = [].filter.call(li.childNodes, function (c) { return !(c.nodeType === 1 && /^(ul|ol)$/i.test(c.tagName)); }).map(inline).join('').replace(/\s+/g, ' ').trim(); var pad = new Array(depth + 1).join('  '); if (own) lines.push(pad + (tag === 'ol' ? i + '. ' : '- ') + own); [].forEach.call(li.children, function (c) { if (/^(ul|ol)$/i.test(c.tagName)) { var sub = out.length; walk(c, depth + 1); lines.push(out.splice(sub).join('\n')); } }); });
+          if (lines.length) out.push(lines.join('\n'));
+          return;
+        }
+        if (tag === 'pre') { out.push('```\n' + n.innerText.replace(/\s+$/, '') + '\n```'); return; }
+        if (tag === 'summary') { var sm = inline(n).trim(); if (sm) out.push('**' + sm + '**'); return; }
+        var blockKids = [].some.call(n.children, function (c) { return /^(div|section|article|p|ul|ol|table|h[1-6]|details|pre|blockquote|figure|dl|li)$/i.test(c.tagName); });
+        if (!blockKids) { var line = inline(n).replace(/[ \t]+/g, ' ').trim(); if (line) out.push(tag === 'blockquote' ? '> ' + line : line); return; }
+        [].forEach.call(n.childNodes, function (c) { walk(c, depth); });
+      };
+      walk(root, 0);
+      var hasH1 = out.some(function (l) { return /^# /.test(l); });
+      md = (hasH1 ? '' : '# ' + document.title.replace(/\s+/g, ' ').trim() + '\n\n') + '> Saved from ' + location.origin + location.pathname + ' on ' + new Date().toISOString().slice(0, 10) + '\n\n' + out.join('\n\n');
+      md = md.replace(/\n{3,}/g, '\n\n').trim() + '\n';
+    } catch (e) { md = ''; }
+    shut.forEach(function (d) { d.open = false; });
+    panel.hidden = hid; btn.style.display = shown;
+    return md.length > 190000 ? md.slice(0, 190000) + '\n\n_(shortened)_\n' : md;
+  }
+
   // A tool that makes its own PDF hands it over here, so saving the page can keep that same file.
   var held = null;
   window.BCProjects = { holdPdf: function (blob, name) {
@@ -144,9 +208,11 @@
     busy = true; $('bcpSave').disabled = true; say('Saving…');
     var attach = held && $('bcpPdf').checked ? held : null;
     var snap = snapshot();
+    var md = $('bcpMd').checked ? toMarkdown() : '';
     (attach ? blobToB64(attach.blob) : Promise.resolve('')).then(function (b64) {
       var body = { project_id: id, tool: slug, title: document.title, url: location.href, note: $('bcpNote').value.trim(), snapshot: snap };
       if (attach && b64) body.file = { name: attach.name, b64: b64 };
+      if (md.length >= 40) body.markdown = md;
       return api('/projects/add', body);
     }).then(function (d) {
       busy = false; $('bcpSave').disabled = false;
