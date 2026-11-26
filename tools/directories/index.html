@@ -117,6 +117,18 @@
       <div class="prog" id="prog" hidden><i id="progBar"></i></div>
     </div>
 
+    <div class="card" id="watchCard" hidden>
+      <h2>4. Re-check on a schedule</h2>
+      <p class="hint">Re-checks the directories already checked, for every location, and emails you <b>only when something changed</b>: a listing that has disappeared, details that now differ, a new listing found, an update that is now confirmed, or a submitted listing that is now live. A failed search never counts as a change, and a listing is only reported gone after two misses in a row.</p>
+      <div class="grid">
+        <div><label for="wEmail">Send changes to</label><input id="wEmail" type="email" maxlength="120" placeholder="you@agency.com"></div>
+        <div><label for="wEvery">How often</label><select id="wEvery"><option value="30">Every month</option><option value="90">Every 3 months</option></select></div>
+      </div>
+      <p class="hint" id="wPlan" style="margin-top:8px"></p>
+      <div class="bar"><button class="btn go" id="wSave" type="button">Turn on</button><button class="btn" id="wRun" type="button" hidden>Re-check now</button><button class="btn" id="wOff" type="button" hidden>Turn off</button><span class="msg" id="wMsg" style="margin:0"></span></div>
+      <div id="wStatus" class="hint" style="margin-top:10px"></div>
+    </div>
+
     <div id="results" hidden>
       <div class="bar" style="margin:0 0 12px" id="viewBar"><button class="btn mini" id="vList" type="button">One location: work list</button><button class="btn mini" id="vGrid" type="button">All locations: grid</button><button class="btn mini" id="vTasks" type="button">Tasks by directory</button></div>
       <div id="listView">
@@ -163,7 +175,7 @@ function api(path, body) {
 }
 var msg = function (id, text, cls) { var m = $(id); m.textContent = text || ''; m.className = 'msg' + (cls ? ' ' + cls : ''); };
 
-var lib = [], data = null, suggested = null, pid = '', filter = 'all', openPanel = '', curLoc = '', view = 'list';
+var watchD = null, lib = [], data = null, suggested = null, pid = '', filter = 'all', openPanel = '', curLoc = '', view = 'list';
 var SUB = [['todo', 'To do'], ['in_progress', 'In progress'], ['submitted', 'Submitted'], ['live', 'Live'], ['skip', 'Skip']];
 var LABEL = { update_needed: ['warn', 'Update needed'], listed_ok: ['good', 'Listed, details match'], listed_differs: ['bad', 'Listed, details differ'], listed_unchecked: ['warn', 'Listed, check by hand'], not_found: ['bad', 'Not found'], unknown: ['info', 'Could not check'], unchecked: ['info', 'Not checked yet'], manual_listed: ['good', 'Listed (confirmed by hand)'], manual_not: ['bad', 'Not listed (confirmed by hand)'] };
 
@@ -248,6 +260,7 @@ function renderNap() {
   $('suggestBar').hidden = !s || !!l;
   if (s) $('suggest').textContent = s.source === 'google' ? 'Fill from the Google Business Profile' : 'Fill from the project details';
   renderLocs();
+  if (!data.locations.length) $('watchCard').hidden = true; else if ($('watchCard').hidden) loadWatch();
 }
 function useResponse(d) { data.locations = d.locations || []; data.loc = d.loc || {}; if (!curL() && curLoc !== '__new') curLoc = data.locations.length ? data.locations[0].id : '__new'; }
 function napFromForm() { return { name: $('nName').value.trim(), phone: $('nPhone').value.trim(), address: $('nAddr').value.trim(), city: $('nCity').value.trim(), postal: $('nPostal').value.trim(), website: $('nSite').value.trim(), country: $('nCountry').value.trim() }; }
@@ -382,10 +395,53 @@ function loadProject(id) {
     if (pid !== id) return;
     data = { locations: d.locations || [], loc: d.loc || {} }; suggested = d.suggested; msg('projMsg', '');
     curLoc = data.locations.length ? data.locations[0].id : '__new';
-    renderNap(); renderLib(); renderResults();
+    renderNap(); renderLib(); renderResults(); loadWatch();
     if (!data.locations.length && suggested) msg('napMsg', 'No locations yet. Use the button above to fill in the first one, copy them from the Business Profile manager, or upload a CSV.');
   });
 }
+
+/* ---- the schedule ---- */
+function loadWatch() {
+  watchD = null; $('watchCard').hidden = !pid || !data || !data.locations.length; if ($('watchCard').hidden) return;
+  var id = pid;
+  api('/directories/watch/get', { project_id: id }).then(function (d) { if (d.error || pid !== id) return; watchD = d; renderWatch(); });
+}
+function renderWatch() {
+  var w = watchD && watchD.watch, plan = (watchD && watchD.plan) || {};
+  $('watchCard').hidden = !data || !data.locations.length;
+  if (w) { $('wEmail').value = w.email || $('wEmail').value; $('wEvery').value = String(w.every_days); }
+  $('wSave').textContent = w ? 'Save' : 'Turn on'; $('wRun').hidden = !w; $('wOff').hidden = !w;
+  var per = (plan.this_run || 0) * 0.002 * 1.3;
+  $('wPlan').textContent = plan.targets ? plan.targets + ' listing' + (plan.targets === 1 ? '' : 's') + ' across ' + plan.locations + ' location' + (plan.locations === 1 ? '' : 's') + ' would be re-checked' + (plan.targets > plan.this_run ? ' (' + plan.this_run + ' per run, the oldest first)' : '') + ': about $' + per.toFixed(2) + ' a run.' : 'Nothing to re-check yet: run the check (step 3) on each location first.';
+  var h = '';
+  if (w) {
+    h += '<b>' + (w.enabled ? 'On.' : 'Paused.') + '</b> Next re-check: ' + (w.next_at ? w.next_at.slice(0, 10) : 'not scheduled') + (w.last_at ? '. Last: ' + w.last_at.slice(0, 10) : '') + '.';
+    var r = (w.runs || [])[0];
+    if (r) h += '<br>' + (r.error ? 'Last run could not finish: ' + esc(r.error) : 'Last run checked ' + r.checked + ' listing' + (r.checked === 1 ? '' : 's') + ', ' + (r.changes ? r.changes + ' change' + (r.changes === 1 ? '' : 's') + (r.email === 'sent' ? ', emailed' : r.email === 'failed' ? ', email failed' : '') : 'no changes, nothing sent') + (r.failed ? ', ' + r.failed + ' searches failed (left as they were)' : '') + '.');
+    if ((w.last_changes || []).length) h += '<br><br><b>Recent changes</b><br>' + w.last_changes.slice(0, 8).map(function (c) { return esc(c.at.slice(0, 10)) + ' · ' + esc(c.where) + ': ' + esc(c.text); }).join('<br>');
+  }
+  $('wStatus').innerHTML = h;
+}
+$('wSave').onclick = function () {
+  var email = $('wEmail').value.trim(); if (!email) { msg('wMsg', 'Enter the email address.', 'bad'); return; }
+  $('wSave').disabled = true; msg('wMsg', 'Saving…');
+  api('/directories/watch/set', { project_id: pid, email: email, every_days: Number($('wEvery').value), enabled: true }).then(function (d) {
+    $('wSave').disabled = false; if (d.error) { msg('wMsg', d.error, 'bad'); return; }
+    watchD = d; msg('wMsg', 'Saved. It will re-check on the schedule.', 'good'); renderWatch();
+  });
+};
+$('wRun').onclick = function () {
+  $('wRun').disabled = true; msg('wMsg', 'Starting…');
+  api('/directories/watch/run', { project_id: pid }).then(function (d) {
+    $('wRun').disabled = false;
+    if (d.error) { msg('wMsg', d.error, 'bad'); return; }
+    msg('wMsg', 'Started. It runs in the background: come back in a few minutes and reload to see the result.', 'good');
+  });
+};
+$('wOff').onclick = function () {
+  if (!confirm('Turn off the scheduled re-check for this client? Its history here is cleared.')) return;
+  api('/directories/watch/delete', { project_id: pid }).then(function () { watchD = Object.assign({}, watchD, { watch: null }); msg('wMsg', 'Turned off.', 'good'); renderWatch(); });
+};
 
 /* ---- checking, twelve directories at a time so the page shows progress ---- */
 function runCheck() {
@@ -402,7 +458,7 @@ function runCheck() {
   if (!jobs.length) { msg('checkMsg', 'Nothing to check with those choices.', 'bad'); return; }
   var total = jobs.reduce(function (n, j) { return n + j.ids.length; }, 0), done = 0, cost = 0, k = 0;
   $('runCheck').disabled = true; $('prog').hidden = false; $('progBar').style.width = '0';
-  var stop = function (text, cls) { $('runCheck').disabled = false; $('prog').hidden = true; msg('checkMsg', text, cls); renderResults(); };
+  var stop = function (text, cls) { $('runCheck').disabled = false; $('prog').hidden = true; msg('checkMsg', text, cls); renderResults(); loadWatch(); };
   (function next() {
     if (k >= jobs.length) { stop('Checked ' + total + ' listing' + (total === 1 ? '' : 's') + ' (about $' + cost.toFixed(2) + ').', 'good'); return; }
     var job = jobs[k];
