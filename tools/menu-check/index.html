@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="index, follow">
+<script src="/assets/visitor.js"></script><script src="/assets/projects.js" defer></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menu title and H1 check</title>
+<link rel="canonical" href="https://brandchecker.eu/tools/menu-check/">
+<meta name="description" content="Free check of the pages in your site menu: whether each page's title and H1 agree, whether the menu label matches the page, and which pages share a title, H1 or description.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Brand Checker">
+<meta property="og:url" content="https://brandchecker.eu/tools/menu-check/">
+<meta property="og:title" content="Menu Title and H1 Check — Free SEO Tool | Brand Checker">
+<meta property="og:description" content="Reads your site menu, then checks every page it links to: does the title match the H1, does the menu label match the page, and are any titles repeated. Free, no signup.">
+<meta property="og:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://brandchecker.eu/assets/og-brand-builder-report.jpg">
+<meta name="twitter:title" content="Menu Title and H1 Check — Free SEO Tool | Brand Checker">
+<meta name="twitter:description" content="Reads your site menu, then checks every page it links to: does the title match the H1, does the menu label match the page, and are any titles repeated. Free, no signup.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2335c48d'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#ffffff;--card:#ffffff;--ink:#0a0a0a;--muted:#3d3d3d;--line:#0a0a0a;
+        --you:#ff3d00;--ok:#00844a;--warn:#b45f00;--bad:#d40000;--gold:#0a0a0a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+       line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:760px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow.restag{font-size:15px;font-weight:600;letter-spacing:.09em}
+  h1{font-family:'Archivo',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;
+     line-height:1.14;margin:8px 0;color:var(--gold)}
+  #rTitle{overflow-wrap:break-word;word-break:break-word}
+  .lede{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input,textarea{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);
+        background:var(--card);border:1px solid var(--line);border-radius:7px;padding:11px 12px}
+  textarea{min-height:130px;resize:vertical;line-height:1.5}
+  input:focus,textarea:focus{outline:2px solid var(--you);outline-offset:1px;border-color:transparent}
+  .field{margin-bottom:12px}
+  .submit{width:100%;font-family:'Archivo',sans-serif;font-size:15px;font-weight:700;
+          background:var(--you);color:#fff;border:0;border-radius:8px;padding:15px;cursor:pointer;margin-top:6px}
+  .submit:hover{background:#d92f00}
+  .submit[disabled]{opacity:.5;cursor:not-allowed}
+  .after{font-size:11px;color:var(--muted);text-align:center;margin-top:11px}
+  .err{color:var(--bad);font-size:13px;padding:14px;border:1px solid var(--line);border-radius:8px}
+  .empty{font-size:12.5px;color:var(--muted)}
+  .hint{font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.55}
+
+  #results{display:none;margin-top:30px}
+  .backbtn{font-size:14px;color:var(--you);background:none;border:0;cursor:pointer;margin-bottom:16px;
+        font-family:'IBM Plex Mono',monospace}
+
+  .summary{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+  .summary.clean{border-color:var(--ok)}
+  .summary.issues{border-color:var(--warn)}
+  .summary.errors{border-color:var(--bad)}
+  .summary .headline{font-family:'Archivo',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px}
+  .summary .sub{font-size:12px;color:var(--muted);word-break:break-all}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+  .chip{font-family:'Archivo',sans-serif;font-size:11.5px;font-weight:700;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 13px;color:var(--ink)}
+  .chip.ok{border-color:var(--ok);color:var(--ok)} .chip.warn{border-color:var(--warn);color:var(--warn)}
+
+  h2{font-family:'Archivo',sans-serif;font-size:16px;font-weight:700;margin:22px 0 10px}
+  .pages{display:flex;flex-direction:column;gap:10px}
+  .pg{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .pg.error{border-color:var(--bad)} .pg.warn{border-color:var(--warn)}
+  .pg .top{display:flex;gap:10px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}
+  .pg .label{font-family:'Archivo',sans-serif;font-size:14px;font-weight:700}
+  .pg .url{font-size:11px;color:var(--muted);word-break:break-all;text-decoration:none}
+  .pg .url:hover{color:var(--you)}
+  .verdict{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:20px;flex:none;border:1px solid var(--line)}
+  .verdict.match{color:var(--ok);border-color:var(--ok)} .verdict.partial{color:var(--warn);border-color:var(--warn)}
+  .verdict.different,.verdict.h1_is_brand,.verdict.title_is_brand,.verdict.missing{color:var(--bad);border-color:var(--bad)}
+  dl.tags{display:grid;grid-template-columns:78px 1fr;gap:5px 12px;margin:10px 0 0;font-size:12.5px}
+  dl.tags dt{color:var(--muted);font-size:11px;padding-top:1px} dl.tags dd{overflow-wrap:anywhere}
+  dl.tags .none{color:var(--bad)}
+  .len{color:var(--muted);font-size:11px;margin-left:6px}
+  ul.issues{list-style:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+  ul.issues li{font-size:12px;line-height:1.5;display:flex;gap:8px}
+  ul.issues .sev{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:20px;flex:none;height:fit-content;margin-top:1px;border:1px solid var(--line)}
+  .sev.error{color:var(--bad);border-color:var(--bad)} .sev.warn{color:var(--warn);border-color:var(--warn)} .sev.info{color:var(--muted)}
+  .dup{border:1px solid var(--warn);border-radius:10px;padding:12px 14px;font-size:12.5px;margin-bottom:8px}
+  .dup b{font-family:'Archivo',sans-serif}
+  .foot{font-size:10px;color:var(--muted);margin-top:20px;line-height:1.5}
+  .share{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+  .sharelabel{font-size:11px;color:var(--muted)}
+  .sharebtn{font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;color:var(--ink);
+      background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 13px;cursor:pointer;
+      text-decoration:none;display:inline-block}
+  .sharebtn:hover{border-color:var(--you);color:var(--you)}
+  .sharebtn.copied{border-color:var(--ok);color:var(--ok)}
+  .sidenav{margin-top:32px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:11px}
+  .sidenav-link{font-size:12px;color:var(--muted);transition:color .15s ease}
+  .sidenav-link:hover{color:var(--ink)}
+  body.embed .sidenav{display:none}
+</style>
+<link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div id="form">
+    <p class="eyebrow">Free tool · no access code needed</p>
+    <h1>Menu title and H1 check</h1>
+    <p class="lede">Reads your site's main menu, then checks every page it links to. Does each page's title say the same thing as its H1? Does the menu label match what the page says? Do any pages share a title, H1 or description? The menu holds the pages that matter most, so a mismatch there costs the most.</p>
+
+    <div id="urlBox" class="field"><label for="url">Your website</label><input id="url" type="text" placeholder="https://yoursite.com" value="https://"></div>
+    <div id="pasteBox" class="field" hidden>
+      <p class="hint" id="pasteMsg"></p>
+      <label for="urls">Menu page addresses, one per line (up to 40)</label>
+      <textarea id="urls" placeholder="https://yoursite.com/pricing&#10;https://yoursite.com/about&#10;https://yoursite.com/contact" spellcheck="false"></textarea>
+    </div>
+    <button class="submit" id="go" type="button">Check the menu</button>
+    <p class="after">Reads the homepage and the pages its menu links to. Nothing is changed on your site.</p>
+
+    <div class="sidenav">
+      <a href="/" class="sidenav-link">← Back to tools</a>
+      <a href="/tools/history/" class="sidenav-link historyLink">My history →</a>
+    </div>
+  </div>
+
+  <div id="results">
+    <button class="backbtn" id="back">&larr; New site</button>
+    <p class="eyebrow restag">Menu title and H1 check</p>
+    <h1 id="rTitle" style="font-size:20px">Checking…</h1>
+    <div id="out"></div>
+  </div>
+
+</div>
+
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed');
+const API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+const CODE = new URLSearchParams(location.search).get('k') || window.MC_VISITOR || '';
+document.querySelectorAll('.historyLink').forEach(a => a.href = '/tools/history/?k=' + encodeURIComponent(CODE));
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const VERDICT = { match: 'Title and H1 agree', partial: 'Partly agree', different: 'Title and H1 differ', h1_is_brand: 'H1 is the brand', title_is_brand: 'Title is the brand', missing: 'Title or H1 missing' };
+
+function renderShare(inputUrl){
+  const shareUrl = location.origin + location.pathname + '?url=' + encodeURIComponent(inputUrl);
+  const text = encodeURIComponent(shareUrl);
+  return '<div class="share"><span class="sharelabel">Share this check:</span>' +
+    '<a class="sharebtn" href="https://wa.me/?text=' + text + '" target="_blank" rel="noopener">WhatsApp</a>' +
+    '<a class="sharebtn" href="mailto:?subject=' + encodeURIComponent('Menu title and H1 check') + '&body=' + text + '">Email</a>' +
+    '<button class="sharebtn" id="copyShare" type="button" onclick="copyShareLink(\'' + shareUrl.replace(/'/g, "\\'") + '\')">Copy link</button></div>';
+}
+function copyShareLink(url){
+  navigator.clipboard?.writeText(url).then(() => {
+    const btn = $('copyShare'), orig = btn.textContent;
+    btn.textContent = 'Copied!'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+$('go').onclick = run;
+$('url').onkeydown = e => { if (e.key === 'Enter') run(); };
+$('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; };
+
+async function run(){
+  const url = $('url').value.trim();
+  if (!url || url === 'https://'){
+    $('go').textContent = 'Add your website first';
+    setTimeout(() => $('go').textContent = 'Check the menu', 2000);
+    return;
+  }
+  const urls = $('pasteBox').hidden ? '' : $('urls').value.trim();
+
+  $('go').disabled = true;
+  $('form').style.display = 'none';
+  $('results').style.display = 'block';
+  $('rTitle').textContent = 'Checking…';
+  $('out').innerHTML = '<p class="empty">' + (urls ? 'Checking the pages you pasted' : 'Reading the menu, then checking each page it links to') + ' — this can take up to half a minute…</p>';
+  window.scrollTo(0,0);
+
+  let d;
+  try {
+    const res = await fetch(API + '/menu-check', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE, url, urls })
+    });
+    d = await res.json();
+  } catch (e) { d = { error: 'could not reach the API' }; }
+  $('go').disabled = false;
+
+  if (d.needs_urls){
+    $('results').style.display = 'none'; $('form').style.display = 'block';
+    $('pasteBox').hidden = false; $('pasteMsg').textContent = d.error; $('urls').focus();
+    $('go').textContent = 'Check these pages';
+    return;
+  }
+  if (d.error){
+    $('rTitle').textContent = url;
+    $('out').innerHTML = '<p class="err">' + esc(d.error) + '</p>';
+    return;
+  }
+  $('rTitle').textContent = d.site.replace(/^https?:\/\//, '');
+  $('out').innerHTML = renderResults(d) + (urls ? '' : renderShare(url));
+}
+
+function tagRow(name, text, len, bad){
+  return '<dt>' + name + '</dt><dd>' + (text ? esc(text) + (len ? '<span class="len">' + len + ' characters</span>' : '') : '<span class="none">' + bad + '</span>') + '</dd>';
+}
+
+function renderPage(p){
+  const has = sev => p.issues.some(i => i.severity === sev);
+  const cls = has('error') ? 'error' : has('warn') ? 'warn' : '';
+  let html = '<div class="pg ' + cls + '"><div class="top"><div><div class="label">' + esc(p.label || p.url) + '</div>' +
+    '<a class="url" href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.url) + '</a></div>' +
+    (p.title_h1 ? '<span class="verdict ' + p.title_h1.verdict + '">' + esc(VERDICT[p.title_h1.verdict] || '') + '</span>' : '') + '</div>';
+  if (p.status && p.status < 400){
+    html += '<dl class="tags">' + tagRow('Title', p.title, p.title_length, 'none') +
+      tagRow('H1', (p.h1 || [])[0], 0, 'none') +
+      tagRow('Description', p.description, p.description_length, 'none') + '</dl>';
+  }
+  if (p.issues.length) html += '<ul class="issues">' + p.issues.map(i => '<li><span class="sev ' + i.severity + '">' + (i.severity === 'error' ? 'Error' : i.severity === 'warn' ? 'Check' : 'Note') + '</span><span>' + esc(i.message) + '</span></li>').join('') + '</ul>';
+  return html + '</div>';
+}
+
+function renderResults(d){
+  const s = d.summary;
+  const headline = s.with_errors ? s.with_errors + ' of ' + s.pages + ' menu page' + (s.pages === 1 ? '' : 's') + ' ha' + (s.with_errors === 1 ? 's' : 've') + ' an error'
+    : s.with_warnings ? s.with_warnings + ' of ' + s.pages + ' menu page' + (s.pages === 1 ? '' : 's') + ' worth a look'
+    : 'All ' + s.pages + ' menu pages look consistent';
+  const cls = s.with_errors ? 'errors' : s.with_warnings ? 'issues' : 'clean';
+  let html = '<div class="summary ' + cls + '"><div class="headline">' + esc(headline) + '</div><div class="sub">Pages taken from ' + esc(d.menu.source) +
+    (d.menu.capped ? ' (first ' + s.pages + ' of ' + d.menu.total + ' links)' : '') + (d.menu.external ? ' · ' + d.menu.external + ' external link' + (d.menu.external === 1 ? '' : 's') + ' skipped' : '') + '</div></div>';
+  html += '<div class="chips"><span class="chip ok">' + s.title_h1.match + ' title and H1 agree</span>' +
+    '<span class="chip warn">' + s.title_h1.partial + ' partly</span><span class="chip warn">' + s.title_h1.different + ' differ</span>' +
+    '<span class="chip">' + s.clean + ' clean</span></div>';
+  if (d.duplicates.length){
+    html += '<h2>Repeated across the menu</h2>' + d.duplicates.map(x => '<div class="dup"><b>Same ' + (x.field === 'h1' ? 'H1' : x.field) + ':</b> ' + esc(x.text) + '<br><span class="hint">' + x.pages.map(p => esc(p.label || p.url)).join(' · ') + '</span></div>').join('');
+  }
+  html += '<h2>Page by page</h2><div class="pages">' + d.pages.map(renderPage).join('') + '</div>';
+  html += '<p class="foot">Reads the title, H1 and description in each page\'s HTML, not text added by JavaScript after load. "Agree" means the shorter of the title and H1 shares most of its words with the other, with the brand name set aside. A menu label that differs from the page is only a note: "Work" and "Our case studies" can both be right.</p>';
+  return html;
+}
+
+const SHARED_URL = new URLSearchParams(location.search).get('url') || '';
+if (SHARED_URL) { $('url').value = SHARED_URL; run(); }
+</script>
+<script src="/assets/presets.js"></script>
+</body>
+</html>
