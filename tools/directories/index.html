@@ -57,6 +57,7 @@
   .nap b{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block}
   .tablewrap{overflow-x:auto}
   .gate{max-width:560px;margin:40px auto}
+  .proofdlg{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:50;overflow:auto;padding:0 16px}
   @media print{body *{visibility:hidden}#cgClient,#cgClient *{visibility:visible}#cgClient{position:absolute;left:0;top:0;width:100%;border:0}.noprint{display:none!important}}
   .prog{height:8px;border:2px solid var(--ink);margin-top:10px}.prog i{display:block;height:100%;background:var(--acc);width:0}
 </style>
@@ -164,7 +165,7 @@
       <label for="chkLoc">Which location</label><select id="chkLoc"></select>
       <label>Which categories</label><div class="cats" id="cats"></div>
       <label style="display:flex;align-items:center;font-weight:500;margin-top:10px"><input type="checkbox" id="onlyNew"> Only directories not checked yet or that could not be checked</label>
-      <div class="bar"><button class="btn go" id="runCheck" type="button">Check</button><button class="btn" id="retryFailed" type="button" hidden>Retry failed searches</button><span class="msg" id="checkMsg" style="margin:0"></span></div>
+      <div class="bar"><button class="btn go" id="runCheck" type="button">Check</button><button class="btn" id="retryFailed" type="button" hidden>Retry failed searches</button><button class="btn" id="blCheck" type="button">Cross-check with backlinks</button><span class="msg" id="checkMsg" style="margin:0"></span></div>
       <div class="prog" id="prog" hidden><i id="progBar"></i></div>
     </div>
 
@@ -237,6 +238,13 @@
     <div class="bar"><input id="manual" placeholder="your-code" autocapitalize="off" spellcheck="false"><button class="btn go" id="enter" type="button">Open</button></div>
   </div>
 </div>
+<div id="proofDlg" class="proofdlg" hidden role="dialog" aria-modal="true" aria-labelledby="pfTitle"><div class="card" style="max-width:540px;margin:9vh auto">
+  <h2 id="pfTitle"></h2><p class="hint" id="pfHint"></p>
+  <label for="pfUrl" id="pfUrlLabel">Address of the live listing</label><input id="pfUrl" maxlength="1500" placeholder="https://…" autocomplete="off">
+  <label for="pfNote">Note (a confirmation number, who it was sent to)</label><input id="pfNote" maxlength="300" autocomplete="off">
+  <div class="bar"><button class="btn go" id="pfSave" type="button">Save</button><button class="btn" id="pfVerify" type="button">Save and check it now</button><button class="btn" id="pfCancel" type="button">Cancel</button></div>
+  <div class="msg" id="pfMsg"></div>
+</div></div>
 <script>
 (function () {
 'use strict';
@@ -440,7 +448,7 @@ function taskOf(d, l) {
   var kind = st === 'not_found' || st === 'manual_not' ? 'create' : st === 'update_needed' ? 'update' : st === 'listed_differs' ? 'fix' : st === 'listed_unchecked' ? 'verify' : '';
   if (!kind) return null;
   var detail = kind === 'update' && w.update ? w.update.fields.map(function (f) { return f.field + ': ' + f.old + ' → ' + f.new; }) : kind === 'fix' ? (r.issues || []) : kind === 'verify' ? [r.note || 'Found, but its details could not be read: open it and compare.'] : (r.related || []).map(function (x) { return 'A doctor\'s page exists here (not counted as the clinic): ' + (x.title || x.url); });
-  return { loc: l, kind: kind, detail: detail, waiting: w.submission === 'submitted', url: w.listing_url || r.listing_url || '' };
+  return { loc: l, kind: kind, detail: detail, waiting: w.submission === 'submitted', url: w.listing_url || r.listing_url || '', proof: w.proof || null };
 }
 function napText(n) { return [n.name, n.address, [n.city, n.postal].filter(Boolean).join(' '), n.phone, n.website].filter(Boolean).join('\n'); }
 function tasksByDirectory() {
@@ -467,7 +475,7 @@ function renderTasks() {
         var c = TASK[t.kind], n = t.loc.nap;
         return '<tr data-loc="' + esc(t.loc.id) + '"><td style="width:150px"><b>' + esc(t.loc.label || n.city || n.name) + '</b><br><span class="small">' + esc([n.address, n.city].filter(Boolean).join(', ')) + '</span></td>' +
           '<td style="width:130px"><span class="chip ' + c[0] + '">' + c[1] + '</span>' + (t.waiting ? '<br><span class="small">submitted</span>' : '') + '</td>' +
-          '<td>' + (t.detail.length ? t.detail.map(function (x) { return '<span class="small">' + esc(x) + '</span>'; }).join('<br>') : '<span class="small">' + esc(n.phone || '') + '</span>') + (t.url ? '<br><a href="' + esc(t.url) + '" target="_blank" rel="noopener">Open listing</a>' : '') + '</td>' +
+          '<td>' + (t.detail.length ? t.detail.map(function (x) { return '<span class="small">' + esc(x) + '</span>'; }).join('<br>') : '<span class="small">' + esc(n.phone || '') + '</span>') + (t.url ? '<br><a href="' + esc(t.url) + '" target="_blank" rel="noopener">Open listing</a>' : '') + (t.proof ? '<br>' + proofHtml({ proof: t.proof }) : '') + '</td>' +
           '<td><div class="acts"><button class="btn mini" data-t="copy" type="button">Copy details</button><button class="btn mini" data-t="done" type="button">' + (t.kind === 'update' ? 'I have updated it' : t.kind === 'verify' ? 'It is correct' : 'I have submitted it') + '</button><button class="btn mini" data-t="open" type="button">Details</button></div></td></tr>';
       }).join('') + '</table></div></div>';
   }).join('') || '<div class="card"><p class="hint">Nothing to do with these choices. Run the check on every location first if you have not.</p></div>';
@@ -519,9 +527,10 @@ function renderResults() {
     var found = [];
     if (url) found.push('<a href="' + esc(url) + '" target="_blank" rel="noopener">Open listing</a>');
     (r.related || []).forEach(function (x) { found.push('<span class="small">A doctor\'s page was found here, not counted as the clinic\'s listing: <a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.title || 'open it') + '</a></span>'); });
+    if (w.proof) found.push(proofHtml(w));
     if (w.update) w.update.fields.forEach(function (f) { found.push('<span class="chip warn">' + esc(f.field) + ': ' + esc(f.old) + ' → ' + esc(f.new) + '</span>'); });
     (r.issues || []).forEach(function (x) { found.push('<span class="chip bad">' + esc(x) + '</span>'); });
-    if (r.status === 'listed_ok' && r.nap) found.push('<span class="small">Checked on the ' + (r.source === 'page' ? 'listing page' : 'search result') + '</span>');
+    if (r.status === 'listed_ok' && r.nap) found.push('<span class="small">' + (r.source === 'backlink' ? 'Found through a backlink from this directory to the website, and its listing page was read' : 'Checked on the ' + (r.source === 'page' ? 'listing page' : 'search result')) + '</span>');
     if (r.status === 'listed_unchecked') found.push('<span class="small">Found, but its details could not be read: open it and compare.</span>');
     if (r.status === 'not_found') found.push('<span class="small">Google returned no listing.</span> ' + (r.find_url ? '<a href="' + esc(r.find_url) + '" target="_blank" rel="noopener">Search it yourself</a>' : ''));
     if (!url && r.find_url && isListed(stat[i])) found.push('<a href="' + esc(r.find_url) + '" target="_blank" rel="noopener">Find the listing</a>');
@@ -690,6 +699,47 @@ function runCheck(onlyFailed) {
   })();
 }
 
+/* ---- proof on done ---- */
+function proofHtml(w) {
+  var p = w && w.proof; if (!p) return '';
+  var v = p.verified, badge = v ? (v.status === 'listed_ok' ? '<span class="chip good">Verified ' + esc(String(v.at || '').slice(0, 10)) + '</span>' : '<span class="chip bad">Still differs' + (v.issues && v.issues.length ? ': ' + esc(v.issues[0]) : '') + '</span>') : '<span class="chip info">Not verified yet</span>';
+  return '<span class="small">Proof' + (p.url ? ': <a href="' + esc(p.url) + '" target="_blank" rel="noopener">the listing</a>' : '') + (p.note ? ' · ' + esc(p.note) : '') + ' · ' + esc(String(p.at || '').slice(0, 10)) + '</span> ' + badge;
+}
+var proofCb = null;
+function askProof(o) {
+  $('pfTitle').textContent = o.title; $('pfHint').textContent = o.hint || '';
+  $('pfUrlLabel').textContent = o.urlRequired ? 'Address of the live listing (required)' : 'Address of the live listing, or the confirmation page (optional)';
+  $('pfUrl').value = o.url || ''; $('pfNote').value = o.note || ''; msg('pfMsg', '');
+  proofCb = function (verify) {
+    var url = $('pfUrl').value.trim(), note = $('pfNote').value.trim();
+    if (o.urlRequired && !/^https?:\/\//i.test(url)) { msg('pfMsg', 'Paste the address of the live listing: it is the proof.', 'bad'); return; }
+    if (url && !/^https?:\/\//i.test(url)) { msg('pfMsg', 'The address must start with http:// or https://', 'bad'); return; }
+    $('proofDlg').hidden = true; o.onSave(url, note, verify);
+  };
+  $('proofDlg').hidden = false; $('pfUrl').focus();
+}
+$('pfSave').onclick = function () { if (proofCb) proofCb(false); };
+$('pfVerify').onclick = function () { if (proofCb) proofCb(true); };
+$('pfCancel').onclick = function () { $('proofDlg').hidden = true; proofCb = null; };
+$('proofDlg').onkeydown = function (e) { if (e.key === 'Escape') $('pfCancel').click(); };
+// Saves the done state with its proof, then (when asked) checks that one listing now, so the proof is confirmed straight away.
+function finishWithProof(lid, did, patch, url, note, verify) {
+  var full = Object.assign({}, patch, { proof_url: url, proof_note: note });
+  return saveWorkFor(lid, did, full).then(function () {
+    if (!verify) return;
+    msg('checkMsg', 'Checking the listing…');
+    return api('/directories/check', { project_id: pid, location_id: lid, ids: [did] }).then(function (d) {
+      if (d.error) { msg('checkMsg', d.error, 'bad'); return; }
+      return api('/directories/get', { project_id: pid }).then(function (g) {
+        if (!g.error) { data.locations = g.locations; data.loc = g.loc; }
+        var w = (data.loc[lid] || {}).work || {}, v = w[did] && w[did].proof && w[did].proof.verified;
+        msg('checkMsg', v && v.status === 'listed_ok' ? 'Confirmed: the listing shows the right details.' : v ? 'The listing is up, but it still differs: ' + (v.issues || []).join('; ') : 'The listing was not confirmed yet. Search can miss it: look at the proof link.', v && v.status === 'listed_ok' ? 'good' : '');
+        renderResults();
+      });
+    });
+  });
+}
+
 /* ---- events ---- */
 $('csv').onchange = function () {
   var f = this.files[0]; if (!f) return;
@@ -783,6 +833,23 @@ $('locCsv').onchange = function () {
 $('runCheck').onclick = function () { runCheck(false); };
 $('retryFailed').onclick = function () { runCheck(true); };
 $('chkLoc').onchange = refreshRetry;
+// A directory that links to the client's website very likely holds its listing: this finds listings the Google search missed or failed on.
+$('blCheck').onclick = function () {
+  var sel = $('chkLoc').value, targets = sel === 'all' ? data.locations : data.locations.filter(function (l) { return l.id === sel; });
+  if (!targets.length) { msg('checkMsg', 'Add and save a location first (step 2).', 'bad'); return; }
+  $('blCheck').disabled = true; var k = 0, linking = 0, ok = 0, hand = 0, cost = 0, err = '';
+  (function next() {
+    if (k >= targets.length) { $('blCheck').disabled = false; renderResults(); refreshRetry(); loadWatch(); msg('checkMsg', err ? err : linking + ' director' + (linking === 1 ? 'y links' : 'ies link') + ' to the website. ' + (ok + hand ? (ok + hand) + ' listing' + (ok + hand === 1 ? '' : 's') + ' found that the search had not: ' + ok + ' confirmed, ' + hand + ' to check by hand.' : 'No new listings found this way.') + ' (about $' + cost.toFixed(2) + ')', err ? 'bad' : 'good'); return; }
+    var l = targets[k]; msg('checkMsg', 'Reading the backlinks for ' + (l.label || l.nap.city || l.nap.name) + '…');
+    api('/directories/backlinks', { project_id: pid, location_id: l.id }).then(function (d) {
+      if (d.error) { err = (l.label || 'This location') + ': ' + d.error; } else {
+        var rows = data.loc[l.id].rows; Object.keys(d.rows || {}).forEach(function (x) { rows[x] = d.rows[x]; });
+        linking += d.directories_linking || 0; cost += d.cost || 0; (d.upgraded || []).forEach(function (u) { if (u.status === 'listed_ok') ok++; else hand++; });
+      }
+      k++; next();
+    });
+  })();
+};
 $('vList').onclick = function () { view = 'list'; renderResults(); };
 $('vGrid').onclick = function () { view = 'grid'; renderResults(); };
 $('vTasks').onclick = function () { view = 'tasks'; renderResults(); };
@@ -829,7 +896,12 @@ $('tasks').onclick = function (e) {
   var act = b.dataset.t;
   if (act === 'copy') { copied(b, napText(data.locations.filter(function (l) { return l.id === lid; })[0].nap), 'Copy details'); return; }
   if (act === 'table' && g) { copied(b, [['Name', 'Address', 'City', 'Postal', 'Phone', 'Website']].concat(g.tasks.map(function (t) { var n = t.loc.nap; return [n.name, n.address, n.city, n.postal, n.phone, n.website]; })).map(function (r) { return r.join('\t'); }).join('\n'), 'Copy all as a table'); return; }
-  if (act === 'done') { var t = taskOf(d, data.locations.filter(function (l) { return l.id === lid; })[0]); saveWorkFor(lid, did, t && t.kind === 'update' ? { update_done: true, submission: 'live', update: null } : t && t.kind === 'verify' ? { listed: true } : { submission: 'submitted' }); return; }
+  if (act === 'done') {
+    var t = taskOf(d, data.locations.filter(function (l) { return l.id === lid; })[0]), kind = t && t.kind, rowL = ((data.loc[lid] || {}).rows || {})[did] || {};
+    var patch = kind === 'update' ? { update_done: true, submission: 'live', update: null } : kind === 'verify' ? { listed: true } : { submission: 'submitted' };
+    askProof({ title: (kind === 'update' ? 'Mark as updated: ' : kind === 'verify' ? 'Confirm it is correct: ' : 'Mark as submitted: ') + d.name + ' · ' + (data.locations.filter(function (l) { return l.id === lid; })[0].label || ''), hint: kind === 'create' || kind === 'fix' ? 'Optional: the confirmation page or the listing address, so anyone can see it was done. The next check will confirm it.' : 'Paste the address of the listing as it now shows the right details. It is the proof.', urlRequired: kind === 'update' || kind === 'verify', url: kind === 'verify' ? (rowL.listing_url || '') : '', onSave: function (u, n, v) { finishWithProof(lid, did, patch, u, n, v); } });
+    return;
+  }
   if (act === 'allsub' && g) { b.disabled = true; g.tasks.reduce(function (p, t) { return p.then(function () { return saveWorkFor(t.loc.id, did, t.kind === 'update' ? { update_done: true, submission: 'live', update: null } : t.kind === 'verify' ? { listed: true } : { submission: 'submitted' }); }); }, Promise.resolve()); return; }
   if (act === 'open') { curLoc = lid; view = 'list'; filter = 'all'; openPanel = did; renderNap(); renderResults(); var row = document.querySelector('#rows tr[data-id="' + did + '"]'); if (row) row.scrollIntoView({ block: 'center' }); }
 };
@@ -856,16 +928,16 @@ $('rows').onclick = function (e) {
   var tr = b.closest('tr'), id = tr.dataset.id || (tr.previousElementSibling && tr.previousElementSibling.dataset.id), d = lib.filter(function (x) { return x.id === id; })[0];
   if (!d) return;
   if (b.dataset.act === 'start') { openPanel = openPanel === id ? '' : id; renderResults(); }
-  if (b.dataset.act === 'submitted') saveWork(id, { submission: 'submitted' });
-  if (b.dataset.act === 'updated') saveWork(id, { update_done: true, submission: 'live', update: null });
+  if (b.dataset.act === 'submitted') askProof({ title: 'Mark as submitted: ' + d.name, hint: 'Optional: the confirmation page or the listing address, so anyone can see it was done. The next check will confirm it.', urlRequired: false, url: work(id).proof && work(id).proof.url, note: work(id).proof && work(id).proof.note, onSave: function (u, n, v) { finishWithProof(curLoc, id, { submission: 'submitted' }, u, n, v); } });
+  if (b.dataset.act === 'updated') askProof({ title: 'Mark as updated: ' + d.name, hint: 'Paste the address of the listing as it now shows the new details. It is the proof, and the next check will confirm it.', urlRequired: true, url: (rowsOf()[id] || {}).listing_url || '', onSave: function (u, n, v) { finishWithProof(curLoc, id, { update_done: true, submission: 'live', update: null }, u, n, v); } });
   if (b.dataset.act === 'listed') { var u = prompt('Paste the address of the live listing (or leave empty):', work(id).listing_url || ''); if (u !== null) saveWork(id, { listed: true, listing_url: u.trim() }); }
   if (b.dataset.act === 'notlisted') saveWork(id, { listed: false });
   if (b.dataset.act === 'clear') saveWork(id, { listed: null });
 };
 $('rows').onchange = function (e) { var s = e.target.closest('[data-sub]'); if (s) saveWork(s.closest('tr').dataset.id, { submission: s.value }); var n = e.target.closest('[data-note]'); if (n) saveWork(n.closest('tr').dataset.id, { note: n.value }); };
 $('exportCsv').onclick = function () {
-  var rows = [['Location', 'Category', 'Directory Name', 'URL', 'Cost / Access Model', 'Listing status', 'Live Listing URL', 'Details differ', 'Changed since listed', 'Submission Status', 'Note']];
-  var ll = curL() || {}; libFor(curL()).forEach(function (d) { var r = rowsOf()[d.id] || {}, w = work(d.id), s = statusOf(d); rows.push([ll.label || '', d.category, d.name, d.url, d.cost, LABEL[s][1], w.listing_url || r.listing_url || '', (r.issues || []).join('; '), (w.update ? w.update.fields.map(function (f) { return f.field + ': ' + f.old + ' -> ' + f.new; }).join('; ') : ''), (SUB.filter(function (o) { return o[0] === w.submission; })[0] || [0, ''])[1], w.note]); });
+  var rows = [['Location', 'Category', 'Directory Name', 'URL', 'Cost / Access Model', 'Listing status', 'Live Listing URL', 'Details differ', 'Changed since listed', 'Proof URL', 'Proof note', 'Proof verified', 'Submission Status', 'Note']];
+  var ll = curL() || {}; libFor(curL()).forEach(function (d) { var r = rowsOf()[d.id] || {}, w = work(d.id), s = statusOf(d); rows.push([ll.label || '', d.category, d.name, d.url, d.cost, LABEL[s][1], w.listing_url || r.listing_url || '', (r.issues || []).join('; '), (w.update ? w.update.fields.map(function (f) { return f.field + ': ' + f.old + ' -> ' + f.new; }).join('; ') : ''), (w.proof ? w.proof.url : ''), (w.proof ? w.proof.note : ''), (w.proof && w.proof.verified ? (w.proof.verified.status === 'listed_ok' ? 'Yes ' + String(w.proof.verified.at || '').slice(0, 10) : 'Still differs') : (w.proof ? 'Not yet' : '')), (SUB.filter(function (o) { return o[0] === w.submission; })[0] || [0, ''])[1], w.note]); });
   var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv' })); a.download = 'directory-listings.csv'; a.click();
 };
 $('proj').onchange = function () { loadProject($('proj').value); };
