@@ -110,10 +110,12 @@
     <p class="lede">Load your list of directories once (upload a CSV). For each location of a client, the tool looks for its listing on every directory, checks that the name, address and phone match, and turns the directories it is missing from into a work list: open one, copy the correct details, submit.</p>
 
     <div class="card" id="overviewCard">
-      <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">All clients</h2><span style="flex:1"></span><label style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="ovOnly"> Only clients needing work</label></div>
+      <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">All clients</h2><button class="btn mini go" id="ovTabClients" type="button">Clients</button><button class="btn mini" id="ovTabHealth" type="button">Directory health</button><span style="flex:1"></span><label style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="ovOnly"> <span id="ovOnlyText">Only clients needing work</span></label></div>
       <div class="tiles" id="ovTiles"></div>
-      <div class="tablewrap"><table id="ovTable"></table></div>
+      <div class="tablewrap" id="ovClientsWrap"><table id="ovTable"></table></div>
+      <div class="tablewrap" id="ovHealthWrap" hidden><table id="hlTable"></table></div>
       <div class="msg" id="ovMsg"></div>
+      <div id="ovActivityWrap" style="margin-top:14px"><h2 style="font-size:15px">Recent activity</h2><div id="ovActivity"></div></div>
     </div>
 
     <div class="card">
@@ -581,22 +583,24 @@ function loadProject(id) {
 }
 
 /* ---- the overview: every client at a glance ---- */
-var ovD = null;
+var ovD = null, hlD = null, ovTab = 'clients';
 function loadOverview() {
   api('/directories/overview').then(function (d) {
     if (d.error) { msg('ovMsg', d.error, 'bad'); return; }
-    ovD = d; renderOverview();
+    ovD = d; hlD = null; renderOverview(); if (ovTab === 'health') { loadHealth(); }
   });
 }
 function renderOverview() {
   $('overviewCard').hidden = !!pid; $('ovBack').hidden = !pid;
   if (pid || !ovD) return;
   var t = ovD.totals, tile = function (n, label) { return '<div class="tile" style="cursor:default"><b>' + n + '</b><span>' + label + '</span></div>'; };
-  $('ovTiles').innerHTML = tile(t.clients, 'Clients') + tile(t.locations, 'Locations') + tile(t.missing, 'Missing') + tile(t.update, 'Update needed') + tile(t.fix, 'Fix details') + tile(t.tasks_open, 'Open tasks');
+  var pc = function (v) { return v == null ? '—' : v + '%'; };
+  $('ovTiles').innerHTML = '<div class="tile on" style="cursor:default" title="Of the listings that exist, how many show the right details"><b>' + pc(t.in_sync_pct) + '</b><span>Listings in sync</span></div>' + tile(pc(t.coverage_pct), 'Directories with a listing') + tile(t.clients, 'Clients') + tile(t.locations, 'Locations') + tile(t.missing, 'Missing') + tile(t.update + t.fix, 'Drift: update or fix') + tile(t.tasks_open, 'Open tasks') + (t.failed ? tile(t.failed, 'Searches failed') : '');
   var need = function (c) { return c.missing + c.update + c.fix; };
   var rows = ovD.clients.slice().sort(function (a, b) { return need(b) - need(a) || a.name.localeCompare(b.name); });
   if ($('ovOnly').checked) rows = rows.filter(function (c) { return need(c) > 0 || c.tasks_open > 0; });
   var num = function (n, cls) { return n ? '<span class="chip ' + cls + '" style="font-size:12px;padding:3px 9px">' + n + '</span>' : '<span class="small">0</span>'; };
+  renderActivity();
   $('ovTable').innerHTML = '<tr><th>Client</th><th>Listed</th><th>Missing</th><th>Update needed</th><th>Fix details</th><th>By hand</th><th>Open tasks</th><th>Last checked</th><th>Re-check</th><th></th></tr>' + (rows.map(function (c) {
     if (!c.locations) return '<tr data-id="' + esc(c.id) + '"><td><b>' + esc(c.name) + '</b></td><td colspan="8" class="small">No locations yet.</td><td><button class="btn mini" data-open="' + esc(c.id) + '" type="button">Open</button></td></tr>';
     var pct = c.directories ? Math.round(c.listed / c.directories * 100) : 0;
@@ -609,7 +613,34 @@ function renderOverview() {
       '<td><button class="btn mini" data-open="' + esc(c.id) + '" type="button">Open</button></td></tr>';
   }).join('') || '<tr><td colspan="10" class="small">' + (ovD.clients.length ? 'No client needs work right now.' : 'No projects yet. Create one on the Projects page, then add its locations here.') + '</td></tr>');
 }
-$('ovOnly').onchange = renderOverview;
+function renderActivity() {
+  var a = (ovD && ovD.activity) || [];
+  $('ovActivity').innerHTML = a.length ? a.slice(0, 15).map(function (e) {
+    return '<div class="bar" style="margin:0;padding:6px 0;border-bottom:1px solid #2e2e30;align-items:baseline"><span class="small" style="width:84px;flex:none">' + esc(e.at.slice(0, 10)) + '</span><span style="flex:1"><b>' + esc(e.client) + '</b>' + (e.location ? ' <span class="small">· ' + esc(e.location) + '</span>' : '') + '<br>' + esc(e.text) + '</span></div>';
+  }).join('') : '<p class="small">Nothing yet. Checks, tasks done and re-checks will show here.</p>';
+}
+function loadHealth() {
+  api('/directories/health').then(function (d) { if (d.error) { msg('ovMsg', d.error, 'bad'); return; } hlD = d; renderHealth(); });
+}
+function renderHealth() {
+  if (!hlD) { $('hlTable').innerHTML = '<tr><td class="small">Loading…</td></tr>'; return; }
+  var rows = hlD.directories.slice(); if ($('ovOnly').checked) rows = rows.filter(function (h) { return h.drift + h.missing + h.failed + h.by_hand > 0; });
+  var num = function (n, cls) { return n ? '<span class="chip ' + cls + '" style="font-size:12px;padding:3px 9px">' + n + '</span>' : '<span class="small">0</span>'; };
+  $('hlTable').innerHTML = '<tr><th>Directory</th><th>Locations</th><th>Listed</th><th>Drift</th><th>Missing</th><th>By hand</th><th>Search failed</th><th>Not checked</th><th>In sync</th><th>Last checked</th></tr>' + (rows.map(function (h) {
+    var fail = h.fail_pct == null ? '<span class="small">—</span>' : h.failed ? '<span class="chip ' + (h.fail_pct >= 30 ? 'bad' : 'warn') + '" style="font-size:12px;padding:3px 9px">' + h.failed + ' · ' + Math.round(h.fail_pct) + '%</span>' : '<span class="small">0</span>';
+    return '<tr><td><b>' + esc(h.name) + '</b><br><span class="small">' + esc(h.category) + ' · ' + esc(COUNTRY_NAME[h.country] || 'Any') + '</span></td><td>' + h.cells + '</td><td>' + h.listed + '</td><td>' + num(h.drift, 'warn') + '</td><td>' + num(h.missing, 'bad') + '</td><td>' + num(h.by_hand, 'info') + '</td><td>' + fail + '</td><td>' + (h.unchecked ? h.unchecked : '<span class="small">0</span>') + '</td><td>' + (h.in_sync_pct == null ? '<span class="small">—</span>' : Math.round(h.in_sync_pct) + '%') + '</td><td class="small">' + (h.last_checked ? esc(h.last_checked.slice(0, 10)) : 'never') + '</td></tr>';
+  }).join('') || '<tr><td colspan="10" class="small">' + (hlD.directories.length ? 'No directory has a problem right now.' : 'No directory has been checked for any client yet.') + '</td></tr>');
+}
+function setOvTab(tab) {
+  ovTab = tab; var h = tab === 'health';
+  $('ovClientsWrap').hidden = h; $('ovHealthWrap').hidden = !h; $('ovActivityWrap').hidden = h;
+  $('ovTabClients').classList.toggle('go', !h); $('ovTabHealth').classList.toggle('go', h);
+  $('ovOnlyText').textContent = h ? 'Only directories with a problem' : 'Only clients needing work';
+  if (h) { if (!hlD) loadHealth(); renderHealth(); } else renderOverview();
+}
+$('ovTabClients').onclick = function () { setOvTab('clients'); };
+$('ovTabHealth').onclick = function () { setOvTab('health'); };
+$('ovOnly').onchange = function () { if (ovTab === 'health') renderHealth(); else renderOverview(); };
 $('ovTable').onclick = function (e) { var b = e.target.closest('[data-open]'); if (b) { $('proj').value = b.dataset.open; loadProject(b.dataset.open); } };
 $('ovBack').onclick = function () { $('proj').value = ''; loadProject(''); };
 
