@@ -55,6 +55,7 @@
   .nap b{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block}
   .tablewrap{overflow-x:auto}
   .gate{max-width:560px;margin:40px auto}
+  @media print{body *{visibility:hidden}#cgClient,#cgClient *{visibility:visible}#cgClient{position:absolute;left:0;top:0;width:100%;border:0}.noprint{display:none!important}}
   .prog{height:8px;border:2px solid var(--ink);margin-top:10px}.prog i{display:block;height:100%;background:var(--acc);width:0}
 </style>
 <link rel="stylesheet" href="/assets/theme.css">
@@ -130,7 +131,7 @@
     </div>
 
     <div id="results" hidden>
-      <div class="bar" style="margin:0 0 12px" id="viewBar"><button class="btn mini" id="vList" type="button">One location: work list</button><button class="btn mini" id="vGrid" type="button">All locations: grid</button><button class="btn mini" id="vTasks" type="button">Tasks by directory</button></div>
+      <div class="bar" style="margin:0 0 12px" id="viewBar"><button class="btn mini" id="vList" type="button">One location: work list</button><button class="btn mini" id="vGrid" type="button">All locations: grid</button><button class="btn mini" id="vTasks" type="button">Tasks by directory</button><button class="btn mini" id="vGap" type="button">Competitor gaps</button></div>
       <div id="listView">
         <div class="tiles" id="tiles"></div>
         <div class="card">
@@ -145,6 +146,32 @@
           <div class="bar" style="margin:8px 0 0"><select id="tType" style="width:auto"><option value="">All kinds of task</option><option value="create">Create a listing</option><option value="update">Update a listing</option><option value="fix">Fix details</option><option value="verify">Check by hand</option></select><select id="tCat" style="width:auto"></select><label style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="tHide" checked> Hide ones already submitted</label><span style="flex:1"></span><span class="small" id="tCount"></span></div>
         </div>
         <div id="tasks"></div>
+      </div>
+      <div id="gapView" hidden>
+        <div class="card">
+          <h2>Competitor gaps: <span id="cgLoc"></span></h2>
+          <p class="hint">Which directories this location's competitors are listed on that it is not. Presence on a directory is a signal, not proof of a ranking benefit, so the report says "common among competitors", never "this is why you rank lower". Pick the location above in step 2.</p>
+          <label for="cgKw">Search that finds the competitors (Google Maps, near this location)</label>
+          <div class="bar" style="margin-top:0"><input id="cgKw" style="flex:1;min-width:220px" maxlength="120" placeholder="optometrist Etobicoke"><button class="btn" id="cgFind" type="button">Find competitors</button></div>
+          <div id="cgCand"></div>
+          <div class="bar"><input id="cgManName" style="flex:2;min-width:160px" maxlength="120" placeholder="Add one by hand: business name"><input id="cgManCity" style="flex:1;min-width:120px" maxlength="80" placeholder="City"><button class="btn mini" id="cgManAdd" type="button">Add</button></div>
+          <div id="cgList" style="margin-top:10px"></div>
+          <div class="msg" id="cgMsg"></div>
+        </div>
+        <div class="card" id="cgRunCard">
+          <h2>Check the directories</h2>
+          <p class="hint" id="cgEst">Add competitors first.</p>
+          <label style="display:flex;align-items:center;font-weight:500;margin-top:8px"><input type="checkbox" id="cgRefresh"> Ignore saved results (re-check everything, otherwise results from the last 30 days are reused for free)</label>
+          <div class="bar"><button class="btn go" id="cgRun" type="button">Check competitors</button><span class="msg" id="cgRunMsg" style="margin:0"></span></div>
+          <div class="prog" id="cgProg" hidden><i id="cgProgBar"></i></div>
+        </div>
+        <div class="card" id="cgTableCard" hidden>
+          <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">Where the competitors are listed</h2><span style="flex:1"></span><button class="btn mini" id="cgCsv" type="button">Download CSV</button><button class="btn mini go" id="cgClientBtn" type="button">Client version</button></div>
+          <div class="bar" style="margin:6px 0"><label style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="cgOnly"> Only gaps (client is missing and 2 or more competitors are listed)</label></div>
+          <div class="tablewrap"><table id="cgTable"></table></div>
+          <p class="hint" style="margin-top:8px" id="cgFoot"></p>
+        </div>
+        <div class="card" id="cgClient" hidden></div>
       </div>
       <div id="gridView" class="card" hidden>
         <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">Every directory, every location</h2><span style="flex:1"></span><button class="btn mini" id="exportGrid" type="button">Download CSV</button></div>
@@ -175,7 +202,7 @@ function api(path, body) {
 }
 var msg = function (id, text, cls) { var m = $(id); m.textContent = text || ''; m.className = 'msg' + (cls ? ' ' + cls : ''); };
 
-var watchD = null, lib = [], data = null, suggested = null, pid = '', filter = 'all', openPanel = '', curLoc = '', view = 'list';
+var gapD = null, cands = [], watchD = null, lib = [], data = null, suggested = null, pid = '', filter = 'all', openPanel = '', curLoc = '', view = 'list';
 var SUB = [['todo', 'To do'], ['in_progress', 'In progress'], ['submitted', 'Submitted'], ['live', 'Live'], ['skip', 'Skip']];
 var LABEL = { update_needed: ['warn', 'Update needed'], listed_ok: ['good', 'Listed, details match'], listed_differs: ['bad', 'Listed, details differ'], listed_unchecked: ['warn', 'Listed, check by hand'], not_found: ['bad', 'Not found'], unknown: ['info', 'Could not check'], unchecked: ['info', 'Not checked yet'], manual_listed: ['good', 'Listed (confirmed by hand)'], manual_not: ['bad', 'Not listed (confirmed by hand)'] };
 
@@ -266,6 +293,88 @@ function useResponse(d) { data.locations = d.locations || []; data.loc = d.loc |
 function napFromForm() { return { name: $('nName').value.trim(), phone: $('nPhone').value.trim(), address: $('nAddr').value.trim(), city: $('nCity').value.trim(), postal: $('nPostal').value.trim(), website: $('nSite').value.trim(), country: $('nCountry').value.trim() }; }
 function selectedCats() { return [].filter.call(document.querySelectorAll('#cats input'), function (i) { return i.checked; }).map(function (i) { return i.value; }); }
 
+/* ---- competitor gaps ---- */
+var CLIENT_ON = ['listed_ok', 'manual_listed', 'listed_differs', 'listed_unchecked', 'update_needed'], CLIENT_OFF = ['not_found', 'manual_not'];
+function gapDirs() { var cats = selectedCats(); return lib.filter(function (d) { return !cats.length || cats.indexOf(d.category) >= 0; }); }
+var gapLoading = false;
+function loadGap() {
+  gapD = null; cands = []; var l = curL(); if (!l || gapLoading) return;
+  var id = l.id; gapLoading = true;
+  api('/directories/gap/get', { project_id: pid, location_id: id }).then(function (d) {
+    gapLoading = false;
+    if (d.error || curLoc !== id) { if (curLoc !== id && view === 'gap') loadGap(); return; }
+    d.loc = id; gapD = d; $('cgKw').value = d.keyword || d.default_keyword || ''; renderGap();
+  });
+}
+function saveComps(list) {
+  return api('/directories/gap/set', { project_id: pid, location_id: curLoc, keyword: $('cgKw').value.trim(), competitors: list }).then(function (d) { if (d.error) { msg('cgMsg', d.error, 'bad'); return; } gapD = Object.assign({}, gapD, d); renderGap(); });
+}
+function gapRows() {
+  var comps = (gapD && gapD.competitors) || [], cells = (gapD && gapD.cells) || {};
+  return gapDirs().map(function (d) {
+    var st = statusFor(d, curLoc), found = 0, looked = 0;
+    comps.forEach(function (c) { var x = (cells[c.id] || {})[d.id]; if (x && x.r !== 'unsure') looked++; if (x && x.r === 'found') found++; });
+    return { d: d, st: st, found: found, looked: looked, on: CLIENT_ON.indexOf(st) >= 0, off: CLIENT_OFF.indexOf(st) >= 0, gap: CLIENT_OFF.indexOf(st) >= 0 && found >= 2 };
+  }).sort(function (a, b) { return (b.gap - a.gap) || (b.found - a.found) || a.d.name.localeCompare(b.d.name); });
+}
+function renderGap() {
+  var l = curL(); if (!l) return;
+  if (!gapD || gapD.loc !== curLoc) { loadGap(); $('cgLoc').textContent = l.label || l.nap.city || l.nap.name; return; }
+  $('cgLoc').textContent = l.label || l.nap.city || l.nap.name;
+  var comps = (gapD && gapD.competitors) || [];
+  $('cgCand').innerHTML = cands.length ? '<p class="small" style="margin:10px 0 4px">Maps shows these near the location. Untick any that are not real competitors, then add them.</p>' + cands.map(function (c, i) { var have = comps.some(function (x) { return x.name === c.name; }); return '<label style="display:flex;gap:6px;align-items:flex-start;margin:4px 0;font-weight:500"><input type="checkbox" data-cand="' + i + '"' + (have || i >= 8 ? '' : ' checked') + (have ? ' disabled' : '') + '><span>' + esc(c.name) + ' <span class="small">· ' + esc(c.category || '') + (c.rating ? ' · ' + c.rating + '★' : '') + ' · ' + esc(c.address) + '</span></span></label>'; }).join('') + '<div class="bar" style="margin-top:6px"><button class="btn mini go" id="cgAddTicked" type="button">Add the ticked ones</button></div>' : '';
+  $('cgList').innerHTML = comps.length ? '<b class="small">Competitors (' + comps.length + ' of 10 allowed)</b>' + comps.map(function (c) { return '<div class="bar" style="margin:4px 0"><span>' + esc(c.name) + ' <span class="small">· ' + esc([c.address, c.city].filter(Boolean).join(', ')) + '</span></span><span style="flex:1"></span><button class="btn mini" data-rmcomp="' + esc(c.id) + '" type="button">Remove</button></div>'; }).join('') : '';
+  var dirs = gapDirs(), n = comps.length * dirs.length;
+  $('cgEst').textContent = comps.length ? n + ' lookups at most (' + comps.length + ' competitor' + (comps.length === 1 ? '' : 's') + ' × ' + dirs.length + ' directories, picked in step 3), about $' + (n * 0.002).toFixed(2) + ' if none were looked up recently.' : 'Add competitors first.';
+  $('cgRun').disabled = !comps.length;
+  var rows = gapRows(), cells = (gapD && gapD.cells) || {}, any = rows.some(function (r) { return r.looked; });
+  $('cgTableCard').hidden = !comps.length || !any;
+  if ($('cgTableCard').hidden) return;
+  var shown = $('cgOnly').checked ? rows.filter(function (r) { return r.gap; }) : rows;
+  var head = '<tr><th>Directory</th><th>' + esc(l.label || 'Client') + '</th>' + comps.map(function (c) { return '<th title="' + esc(c.name) + '">' + esc(c.name.length > 16 ? c.name.slice(0, 15) + '…' : c.name) + '</th>'; }).join('') + '<th>Competitors on it</th></tr>';
+  $('cgTable').innerHTML = head + (shown.map(function (r) {
+    var cl = r.on ? '<span class="chip good">Listed</span>' : r.off ? '<span class="chip bad">Missing</span>' : '<span class="chip info">Not checked</span>';
+    return '<tr' + (r.gap ? ' style="background:rgba(212,0,0,.06)"' : '') + '><td><b>' + esc(r.d.name) + '</b><br><span class="small">' + esc(r.d.category) + '</span></td><td>' + cl + '</td>' + comps.map(function (c) {
+      var x = (cells[c.id] || {})[r.d.id]; if (!x) return '<td class="small">·</td>';
+      return '<td>' + (x.r === 'found' ? (x.url ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener" title="' + esc(x.at.slice(0, 10)) + '">✓</a>' : '✓') : x.r === 'unsure' ? '<span class="small" title="The search failed">?</span>' : '<span class="small">–</span>') + '</td>';
+    }).join('') + '<td>' + (r.looked ? '<b>' + r.found + '</b> of ' + r.looked : '<span class="small">not checked</span>') + (r.gap ? ' <span class="chip bad">Gap</span>' : '') + '</td></tr>';
+  }).join('') || '<tr><td colspan="' + (comps.length + 3) + '" class="small">No gaps found.</td></tr>');
+  var all = []; comps.forEach(function (c) { Object.keys(cells[c.id] || {}).forEach(function (k) { all.push(cells[c.id][k].at); }); }); all.sort();
+  $('cgFoot').textContent = '✓ listed · – not found · ? the search failed (not counted) · · not looked up yet. Checked ' + (all[0] ? all[0].slice(0, 10) : '') + (all.length && all[all.length - 1].slice(0, 10) !== all[0].slice(0, 10) ? ' to ' + all[all.length - 1].slice(0, 10) : '') + '. Search can miss a listing that exists.';
+  renderGapClient();
+}
+function renderGapClient() {
+  if ($('cgClient').hidden) return;
+  var l = curL(), comps = gapD.competitors, rows = gapRows(), named = $('cgNamed') ? $('cgNamed').checked : false;
+  var on = rows.filter(function (r) { return r.on; }), gaps = rows.filter(function (r) { return r.gap; }), fix = rows.filter(function (r) { return r.st === 'listed_differs' || r.st === 'update_needed'; });
+  var date = new Date().toISOString().slice(0, 10);
+  var cname = comps.map(function (c, i) { return named ? c.name : 'Competitor ' + (i + 1); });
+  $('cgClient').innerHTML = '<div class="bar noprint" style="margin:0 0 10px"><label style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="cgNamed"' + (named ? ' checked' : '') + '> Name the competitors</label><span style="flex:1"></span><button class="btn mini go" id="cgPrint" type="button">Print / save as PDF</button><button class="btn mini" id="cgCopy" type="button">Copy as text</button><button class="btn mini" id="cgClose" type="button">Close</button></div>' +
+    '<h2 style="font-size:20px">Directory listings: ' + esc(l.nap.name) + (l.label ? ' (' + esc(l.label) + ')' : '') + '</h2><p class="hint">Compared with ' + comps.length + ' local competitors (' + esc(cname.join(', ')) + '). Prepared ' + date + '.</p>' +
+    '<h2 style="margin-top:14px">Where you are listed (' + on.length + ')</h2><p>' + (on.map(function (r) { return esc(r.d.name); }).join(', ') || 'Nowhere checked yet.') + '</p>' +
+    '<h2 style="margin-top:14px">Common among your competitors, but missing for you (' + gaps.length + ')</h2>' + (gaps.length ? '<ul style="margin-left:18px">' + gaps.map(function (r) { return '<li><b>' + esc(r.d.name) + '</b>: ' + r.found + ' of ' + r.looked + ' competitors are listed</li>'; }).join('') + '</ul>' : '<p>No directory is missing where several competitors are listed.</p>') +
+    (fix.length ? '<h2 style="margin-top:14px">Listings that need correcting (' + fix.length + ')</h2><ul style="margin-left:18px">' + fix.map(function (r) { return '<li>' + esc(r.d.name) + '</li>'; }).join('') + '</ul>' : '') +
+    '<h2 style="margin-top:14px">Proposed work</h2><ol style="margin-left:18px">' + gaps.map(function (r) { return '<li>Create a listing on ' + esc(r.d.name) + '</li>'; }).concat(fix.map(function (r) { return '<li>Correct the details on ' + esc(r.d.name) + '</li>'; })).join('') + '</ol>' +
+    '<p class="hint" style="margin-top:14px">Being listed on a directory is a signal, not proof that it helps a business rank. This compares where listings exist as of the check dates; a search can miss a listing that exists.</p>';
+  $('cgClient').dataset.text = ['Directory listings: ' + l.nap.name + (l.label ? ' (' + l.label + ')' : ''), 'Compared with ' + comps.length + ' local competitors. Prepared ' + date, '', 'Where you are listed (' + on.length + '): ' + on.map(function (r) { return r.d.name; }).join(', '), '', 'Common among your competitors, but missing for you (' + gaps.length + '):'].concat(gaps.map(function (r) { return '- ' + r.d.name + ': ' + r.found + ' of ' + r.looked + ' competitors'; })).concat(fix.length ? ['', 'Listings that need correcting:'].concat(fix.map(function (r) { return '- ' + r.d.name; })) : []).join('\n');
+}
+function runGap() {
+  var comps = (gapD && gapD.competitors) || [], dirs = gapDirs(); if (!comps.length || !dirs.length) return;
+  var jobs = []; comps.forEach(function (c) { for (var i = 0; i < dirs.length; i += 12) jobs.push({ c: c, ids: dirs.slice(i, i + 12).map(function (d) { return d.id; }) }); });
+  var total = comps.length * dirs.length, done = 0, cost = 0, cached = 0, k = 0, lid = curLoc;
+  $('cgRun').disabled = true; $('cgProg').hidden = false; $('cgProgBar').style.width = '0';
+  var stop = function (text, cls) { $('cgRun').disabled = false; $('cgProg').hidden = true; msg('cgRunMsg', text, cls); renderGap(); };
+  (function next() {
+    if (k >= jobs.length) { stop('Done. ' + total + ' lookups' + (cached ? ' (' + cached + ' reused)' : '') + ', about $' + cost.toFixed(2) + '.', 'good'); return; }
+    var job = jobs[k]; msg('cgRunMsg', 'Checking ' + job.c.name + '…');
+    api('/directories/gap/run', { project_id: pid, location_id: lid, competitor_id: job.c.id, ids: job.ids, refresh: $('cgRefresh').checked }).then(function (d) {
+      if (d.error) { stop(d.error + (done ? ' (' + done + ' were done.)' : ''), 'bad'); return; }
+      gapD.cells[job.c.id] = Object.assign(gapD.cells[job.c.id] || {}, d.cells);
+      cost += d.cost || 0; cached += d.cached || 0; done += job.ids.length; k++; $('cgProgBar').style.width = Math.round(done / total * 100) + '%'; renderGap(); next();
+    });
+  })();
+}
+
 /* ---- tasks by directory ---- */
 var TASK = { create: ['bad', 'Create listing'], update: ['warn', 'Update listing'], fix: ['bad', 'Fix details'], verify: ['info', 'Check by hand'] };
 function taskOf(d, l) {
@@ -331,9 +440,10 @@ function renderGrid() {
 }
 function renderResults() {
   if (!data) return;
-  $('viewBar').hidden = data.locations.length < 2; if (data.locations.length < 2) view = 'list';
-  $('listView').hidden = view !== 'list'; $('gridView').hidden = view !== 'grid'; $('tasksView').hidden = view !== 'tasks';
-  $('vList').classList.toggle('go', view === 'list'); $('vGrid').classList.toggle('go', view === 'grid'); $('vTasks').classList.toggle('go', view === 'tasks');
+  var multi = data.locations.length > 1; $('vGrid').hidden = !multi; $('vTasks').hidden = !multi; if (!multi && (view === 'grid' || view === 'tasks')) view = 'list';
+  $('listView').hidden = view !== 'list'; $('gridView').hidden = view !== 'grid'; $('tasksView').hidden = view !== 'tasks'; $('gapView').hidden = view !== 'gap';
+  $('vList').classList.toggle('go', view === 'list'); $('vGrid').classList.toggle('go', view === 'grid'); $('vTasks').classList.toggle('go', view === 'tasks'); $('vGap').classList.toggle('go', view === 'gap');
+  if (view === 'gap') { renderGap(); return; }
   if (view === 'tasks') { renderTasks(); return; }
   if (view === 'grid') { renderGrid(); return; }
   var stat = lib.map(function (d) { return statusOf(d); });
@@ -388,7 +498,7 @@ function loadLib() {
   return api('/directories/library/get').then(function (d) { if (d.error) { msg('libMsg', d.error, 'bad'); return; } lib = d.directories || []; renderLib(); if (data) renderResults(); });
 }
 function loadProject(id) {
-  pid = id; data = null; suggested = null; openPanel = ''; curLoc = ''; $('napCard').hidden = !id; $('results').hidden = true; msg('projMsg', id ? 'Loading…' : ''); msg('locMsg', '');
+  pid = id; data = null; suggested = null; openPanel = ''; curLoc = ''; gapD = null; cands = []; $('cgClient').hidden = true; $('napCard').hidden = !id; $('results').hidden = true; msg('projMsg', id ? 'Loading…' : ''); msg('locMsg', '');
   if (!id) { renderLib(); return; }
   api('/directories/get', { project_id: id }).then(function (d) {
     if (d.error) { msg('projMsg', d.error, 'bad'); return; }
@@ -513,7 +623,7 @@ $('napSave').onclick = function () {
   var id = curLoc;
   api('/directories/locations/set', { project_id: pid, locations: data.locations.map(function (l) { return l.id === id ? Object.assign({ id: id, label: label || l.label }, n) : flat(l); }) }).then(function (d) { done(d, false); });
 };
-$('locSel').onchange = function () { curLoc = $('locSel').value; openPanel = ''; msg('napMsg', ''); renderNap(); renderLib(); renderResults(); };
+$('locSel').onchange = function () { gapD = null; cands = []; $('cgClient').hidden = true; curLoc = $('locSel').value; openPanel = ''; msg('napMsg', ''); renderNap(); renderLib(); renderResults(); };
 $('locNew').onclick = function () { curLoc = '__new'; msg('napMsg', 'Fill in the new location, then save.'); renderNap(); renderLib(); renderResults(); };
 $('locDel').onclick = function () {
   var l = curL(); if (!l || !confirm('Delete the location "' + (l.label || l.nap.name) + '" and everything checked or noted for it?')) return;
@@ -557,6 +667,40 @@ $('runCheck').onclick = runCheck;
 $('vList').onclick = function () { view = 'list'; renderResults(); };
 $('vGrid').onclick = function () { view = 'grid'; renderResults(); };
 $('vTasks').onclick = function () { view = 'tasks'; renderResults(); };
+$('vGap').onclick = function () { view = 'gap'; if (!gapD) loadGap(); renderResults(); };
+$('cgFind').onclick = function () {
+  var kw = $('cgKw').value.trim(); $('cgFind').disabled = true; msg('cgMsg', 'Searching Google Maps…');
+  api('/directories/gap/find', { project_id: pid, location_id: curLoc, keyword: kw }).then(function (d) {
+    $('cgFind').disabled = false; if (d.error) { msg('cgMsg', d.error, 'bad'); return; }
+    cands = d.candidates || []; msg('cgMsg', cands.length ? '' : 'Maps showed nothing for that search. Try another.', cands.length ? '' : 'bad'); renderGap();
+  });
+};
+$('cgCand').onclick = function (e) {
+  if (!e.target.closest('#cgAddTicked')) return;
+  var ticked = [].filter.call(document.querySelectorAll('[data-cand]'), function (i) { return i.checked && !i.disabled; }).map(function (i) { return cands[+i.dataset.cand]; });
+  if (!ticked.length) { msg('cgMsg', 'Tick at least one.', 'bad'); return; }
+  saveComps((gapD.competitors || []).concat(ticked)).then(function () { cands = []; renderGap(); });
+};
+$('cgManAdd').onclick = function () {
+  var name = $('cgManName').value.trim(), city = $('cgManCity').value.trim(); if (!name) { msg('cgMsg', 'Enter the business name.', 'bad'); return; }
+  saveComps((gapD.competitors || []).concat([{ name: name, city: city || (curL() || {}).nap.city, source: 'manual' }])).then(function () { $('cgManName').value = ''; $('cgManCity').value = ''; msg('cgMsg', ''); });
+};
+$('cgList').onclick = function (e) { var b = e.target.closest('[data-rmcomp]'); if (b) saveComps(gapD.competitors.filter(function (c) { return c.id !== b.dataset.rmcomp; })); };
+$('cgRun').onclick = runGap;
+$('cgOnly').onchange = function () { renderGap(); };
+$('cgCsv').onclick = function () {
+  var comps = gapD.competitors, cells = gapD.cells, l = curL();
+  var rows = [['Directory', 'Category', l.label || 'Client'].concat(comps.map(function (c) { return c.name; })).concat(['Competitors listed', 'Competitors looked up', 'Gap'])];
+  gapRows().forEach(function (r) { rows.push([r.d.name, r.d.category, LABEL[r.st][1]].concat(comps.map(function (c) { var x = (cells[c.id] || {})[r.d.id]; return x ? (x.r === 'found' ? 'Listed' : x.r === 'unsure' ? 'Unsure' : 'Not found') : ''; })).concat([r.found, r.looked, r.gap ? 'Yes' : ''])); });
+  var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv' })); a.download = 'competitor-gaps.csv'; a.click();
+};
+$('cgClientBtn').onclick = function () { $('cgClient').hidden = false; renderGapClient(); $('cgClient').scrollIntoView(); };
+$('cgClient').onclick = function (e) {
+  if (e.target.closest('#cgPrint')) window.print();
+  else if (e.target.closest('#cgClose')) $('cgClient').hidden = true;
+  else if (e.target.closest('#cgCopy')) { var t = $('cgClient').dataset.text || ''; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { e.target.textContent = 'Copied'; }, function () { prompt('Copy this', t); }); }
+};
+$('cgClient').onchange = function (e) { if (e.target.id === 'cgNamed') renderGapClient(); };
 ['tType', 'tCat', 'tHide'].forEach(function (id) { $(id).onchange = function () { renderTasks(); }; });
 var copied = function (btn, text, label) { (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = label; }, 1200); }, function () { prompt('Copy this', text); }); };
 $('tasks').onclick = function (e) {
