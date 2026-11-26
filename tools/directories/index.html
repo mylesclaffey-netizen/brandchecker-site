@@ -118,10 +118,19 @@
     </div>
 
     <div id="results" hidden>
-      <div class="tiles" id="tiles"></div>
-      <div class="card">
-        <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">Work list</h2><span class="grow" style="flex:1"></span><button class="btn mini" id="exportCsv" type="button">Download CSV</button></div>
-        <div class="tablewrap"><table id="rows"></table></div>
+      <div class="bar" style="margin:0 0 12px" id="viewBar"><button class="btn mini" id="vList" type="button">One location: work list</button><button class="btn mini" id="vGrid" type="button">All locations: grid</button></div>
+      <div id="listView">
+        <div class="tiles" id="tiles"></div>
+        <div class="card">
+          <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">Work list</h2><span class="grow" style="flex:1"></span><button class="btn mini" id="exportCsv" type="button">Download CSV</button></div>
+          <div class="tablewrap"><table id="rows"></table></div>
+        </div>
+      </div>
+      <div id="gridView" class="card" hidden>
+        <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">Every directory, every location</h2><span style="flex:1"></span><button class="btn mini" id="exportGrid" type="button">Download CSV</button></div>
+        <p class="hint">Each cell is one location on one directory. Click a cell to open that listing in the work list.</p>
+        <div class="bar" style="margin:8px 0"><label style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="gGaps"> Only directories with a gap</label><label style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="gSort"> Most gaps first</label><select id="gCat" style="width:auto"></select></div>
+        <div class="tablewrap"><table id="grid"></table></div>
       </div>
     </div>
   </div>
@@ -146,7 +155,7 @@ function api(path, body) {
 }
 var msg = function (id, text, cls) { var m = $(id); m.textContent = text || ''; m.className = 'msg' + (cls ? ' ' + cls : ''); };
 
-var lib = [], data = null, suggested = null, pid = '', filter = 'all', openPanel = '', curLoc = '';
+var lib = [], data = null, suggested = null, pid = '', filter = 'all', openPanel = '', curLoc = '', view = 'list';
 var SUB = [['todo', 'To do'], ['in_progress', 'In progress'], ['submitted', 'Submitted'], ['live', 'Live'], ['skip', 'Skip']];
 var LABEL = { listed_ok: ['good', 'Listed, details match'], listed_differs: ['bad', 'Listed, details differ'], listed_unchecked: ['warn', 'Listed, check by hand'], not_found: ['bad', 'Not found'], unknown: ['info', 'Could not check'], unchecked: ['info', 'Not checked yet'], manual_listed: ['good', 'Listed (confirmed by hand)'], manual_not: ['bad', 'Not listed (confirmed by hand)'] };
 
@@ -180,12 +189,15 @@ function curL() { return data && data.locations.filter(function (l) { return l.i
 function rowsOf() { return (data && curLoc && data.loc[curLoc] && data.loc[curLoc].rows) || {}; }
 function worksOf() { return (data && curLoc && data.loc[curLoc] && data.loc[curLoc].work) || {}; }
 function work(id) { return worksOf()[id] || { submission: 'todo', listing_url: '', note: '', listed: null }; }
-function statusOf(d) {
-  var w = work(d.id), r = rowsOf()[d.id];
+function statusFor(d, lid) {
+  var L = (data && data.loc[lid]) || {}, w = (L.work || {})[d.id] || {}, r = (L.rows || {})[d.id];
   if (w.listed === true) return 'manual_listed';
   if (w.listed === false) return 'manual_not';
   return r ? r.status : 'unchecked';
 }
+function statusOf(d) { return statusFor(d, curLoc); }
+var isGap = function (s) { return s === 'not_found' || s === 'manual_not' || s === 'listed_differs'; };
+var CELL = { listed_ok: ['good', 'Listed'], manual_listed: ['good', 'Listed'], listed_differs: ['bad', 'Fix'], listed_unchecked: ['warn', 'By hand'], unknown: ['info', 'Failed'], not_found: ['bad', 'Missing'], manual_not: ['bad', 'Missing'], unchecked: ['info', '—'] };
 var isListed = function (s) { return s === 'listed_ok' || s === 'listed_differs' || s === 'listed_unchecked' || s === 'manual_listed'; };
 var FILTERS = [
   ['all', 'All', function () { return true; }],
@@ -231,8 +243,35 @@ function useResponse(d) { data.locations = d.locations || []; data.loc = d.loc |
 function napFromForm() { return { name: $('nName').value.trim(), phone: $('nPhone').value.trim(), address: $('nAddr').value.trim(), city: $('nCity').value.trim(), postal: $('nPostal').value.trim(), website: $('nSite').value.trim(), country: $('nCountry').value.trim() }; }
 function selectedCats() { return [].filter.call(document.querySelectorAll('#cats input'), function (i) { return i.checked; }).map(function (i) { return i.value; }); }
 
+function renderGrid() {
+  var ls = data.locations;
+  var cats = {}; lib.forEach(function (d) { cats[d.category] = 1; });
+  var keepCat = $('gCat').value;
+  $('gCat').innerHTML = '<option value="">All categories</option>' + Object.keys(cats).map(function (c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('');
+  $('gCat').value = cats[keepCat] ? keepCat : '';
+  var rows = lib.filter(function (d) { return !$('gCat').value || d.category === $('gCat').value; }).map(function (d) {
+    var st = ls.map(function (l) { return statusFor(d, l.id); });
+    return { d: d, st: st, gaps: st.filter(isGap).length };
+  });
+  if ($('gGaps').checked) rows = rows.filter(function (r) { return r.gaps > 0; });
+  if ($('gSort').checked) rows = rows.slice().sort(function (a, b) { return b.gaps - a.gaps; });
+  var head = '<tr><th>Directory</th>' + ls.map(function (l) {
+    var listed = lib.filter(function (d) { var s = statusFor(d, l.id); return s === 'listed_ok' || s === 'manual_listed'; }).length;
+    return '<th>' + esc(l.label || l.nap.city || l.nap.name) + '<br><span class="small" style="text-transform:none;letter-spacing:0">' + listed + ' of ' + lib.length + ' listed</span></th>';
+  }).join('') + '<th>Gaps</th></tr>';
+  $('grid').innerHTML = head + rows.map(function (r) {
+    return '<tr><td><b>' + esc(r.d.name) + '</b><br><span class="small">' + esc(r.d.category) + '</span></td>' + r.st.map(function (s, i) {
+      var c = CELL[s] || CELL.unchecked, w = ((data.loc[ls[i].id] || {}).work || {})[r.d.id] || {}, sub = w.submission && w.submission !== 'todo' ? '<br><span class="small">' + esc((SUB.filter(function (o) { return o[0] === w.submission; })[0] || [0, ''])[1]) + '</span>' : '';
+      return '<td><button class="chip ' + c[0] + '" data-loc="' + esc(ls[i].id) + '" data-dir="' + esc(r.d.id) + '" type="button" style="border:0;cursor:pointer;font-family:inherit">' + c[1] + '</button>' + sub + '</td>';
+    }).join('') + '<td>' + (r.gaps ? '<b>' + r.gaps + '</b>' : '<span class="small">0</span>') + '</td></tr>';
+  }).join('') || '<tr><td colspan="' + (ls.length + 2) + '" class="small">Nothing matches.</td></tr>';
+}
 function renderResults() {
   if (!data) return;
+  $('viewBar').hidden = data.locations.length < 2; if (data.locations.length < 2) view = 'list';
+  $('listView').hidden = view !== 'list'; $('gridView').hidden = view !== 'grid';
+  $('vList').classList.toggle('go', view === 'list'); $('vGrid').classList.toggle('go', view === 'grid');
+  if (view === 'grid') { renderGrid(); return; }
   var stat = lib.map(function (d) { return statusOf(d); });
   $('tiles').innerHTML = FILTERS.map(function (f) {
     var n = stat.filter(f[2]).length;
@@ -405,6 +444,19 @@ $('locCsv').onchange = function () {
   rd.readAsText(f);
 };
 $('runCheck').onclick = runCheck;
+$('vList').onclick = function () { view = 'list'; renderResults(); };
+$('vGrid').onclick = function () { view = 'grid'; renderResults(); };
+['gGaps', 'gSort', 'gCat'].forEach(function (id) { $(id).onchange = function () { renderGrid(); }; });
+$('grid').onclick = function (e) {
+  var b = e.target.closest('[data-loc]'); if (!b) return;
+  curLoc = b.dataset.loc; view = 'list'; filter = 'all'; openPanel = b.dataset.dir; renderNap(); renderResults();
+  var tr = document.querySelector('#rows tr[data-id="' + b.dataset.dir + '"]'); if (tr) tr.scrollIntoView({ block: 'center' });
+};
+$('exportGrid').onclick = function () {
+  var ls = data.locations, rows = [['Directory', 'Category'].concat(ls.map(function (l) { return l.label || l.nap.city || l.nap.name; })).concat(['Gaps'])];
+  lib.forEach(function (d) { var st = ls.map(function (l) { return statusFor(d, l.id); }); rows.push([d.name, d.category].concat(st.map(function (s) { return LABEL[s][1]; })).concat([st.filter(isGap).length])); });
+  var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv' })); a.download = 'directory-grid.csv'; a.click();
+};
 $('tiles').onclick = function (e) { var b = e.target.closest('[data-f]'); if (b) { filter = b.dataset.f; renderResults(); } };
 $('rows').onclick = function (e) {
   var copy = e.target.closest('[data-copy]'), all = e.target.closest('[data-copy-all]');
