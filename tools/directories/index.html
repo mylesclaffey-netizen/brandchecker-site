@@ -157,7 +157,7 @@ var msg = function (id, text, cls) { var m = $(id); m.textContent = text || ''; 
 
 var lib = [], data = null, suggested = null, pid = '', filter = 'all', openPanel = '', curLoc = '', view = 'list';
 var SUB = [['todo', 'To do'], ['in_progress', 'In progress'], ['submitted', 'Submitted'], ['live', 'Live'], ['skip', 'Skip']];
-var LABEL = { listed_ok: ['good', 'Listed, details match'], listed_differs: ['bad', 'Listed, details differ'], listed_unchecked: ['warn', 'Listed, check by hand'], not_found: ['bad', 'Not found'], unknown: ['info', 'Could not check'], unchecked: ['info', 'Not checked yet'], manual_listed: ['good', 'Listed (confirmed by hand)'], manual_not: ['bad', 'Not listed (confirmed by hand)'] };
+var LABEL = { update_needed: ['warn', 'Update needed'], listed_ok: ['good', 'Listed, details match'], listed_differs: ['bad', 'Listed, details differ'], listed_unchecked: ['warn', 'Listed, check by hand'], not_found: ['bad', 'Not found'], unknown: ['info', 'Could not check'], unchecked: ['info', 'Not checked yet'], manual_listed: ['good', 'Listed (confirmed by hand)'], manual_not: ['bad', 'Not listed (confirmed by hand)'] };
 
 /* ---- the CSV ---- */
 function parseCsv(text) {
@@ -191,16 +191,18 @@ function worksOf() { return (data && curLoc && data.loc[curLoc] && data.loc[curL
 function work(id) { return worksOf()[id] || { submission: 'todo', listing_url: '', note: '', listed: null }; }
 function statusFor(d, lid) {
   var L = (data && data.loc[lid]) || {}, w = (L.work || {})[d.id] || {}, r = (L.rows || {})[d.id];
+  if (w.update) return 'update_needed';
   if (w.listed === true) return 'manual_listed';
   if (w.listed === false) return 'manual_not';
   return r ? r.status : 'unchecked';
 }
 function statusOf(d) { return statusFor(d, curLoc); }
-var isGap = function (s) { return s === 'not_found' || s === 'manual_not' || s === 'listed_differs'; };
-var CELL = { listed_ok: ['good', 'Listed'], manual_listed: ['good', 'Listed'], listed_differs: ['bad', 'Fix'], listed_unchecked: ['warn', 'By hand'], unknown: ['info', 'Failed'], not_found: ['bad', 'Missing'], manual_not: ['bad', 'Missing'], unchecked: ['info', '—'] };
-var isListed = function (s) { return s === 'listed_ok' || s === 'listed_differs' || s === 'listed_unchecked' || s === 'manual_listed'; };
+var isGap = function (s) { return s === 'not_found' || s === 'manual_not' || s === 'listed_differs' || s === 'update_needed'; };
+var CELL = { update_needed: ['warn', 'Update'], listed_ok: ['good', 'Listed'], manual_listed: ['good', 'Listed'], listed_differs: ['bad', 'Fix'], listed_unchecked: ['warn', 'By hand'], unknown: ['info', 'Failed'], not_found: ['bad', 'Missing'], manual_not: ['bad', 'Missing'], unchecked: ['info', '—'] };
+var isListed = function (s) { return s === 'update_needed' || s === 'listed_ok' || s === 'listed_differs' || s === 'listed_unchecked' || s === 'manual_listed'; };
 var FILTERS = [
   ['all', 'All', function () { return true; }],
+  ['update', 'Update needed', function (s) { return s === 'update_needed'; }],
   ['ok', 'Listed, correct', function (s) { return s === 'listed_ok' || s === 'manual_listed'; }],
   ['differs', 'Fix details', function (s) { return s === 'listed_differs'; }],
   ['hand', 'Check by hand', function (s) { return s === 'listed_unchecked' || s === 'unknown'; }],
@@ -285,6 +287,7 @@ function renderResults() {
     var url = w.listing_url || r.listing_url || '';
     var found = [];
     if (url) found.push('<a href="' + esc(url) + '" target="_blank" rel="noopener">Open listing</a>');
+    if (w.update) w.update.fields.forEach(function (f) { found.push('<span class="chip warn">' + esc(f.field) + ': ' + esc(f.old) + ' → ' + esc(f.new) + '</span>'); });
     (r.issues || []).forEach(function (x) { found.push('<span class="chip bad">' + esc(x) + '</span>'); });
     if (r.status === 'listed_ok' && r.nap) found.push('<span class="small">Checked on the ' + (r.source === 'page' ? 'listing page' : 'search result') + '</span>');
     if (r.status === 'listed_unchecked') found.push('<span class="small">Found, but its details could not be read: open it and compare.</span>');
@@ -300,12 +303,13 @@ function renderResults() {
   $('rows').innerHTML = h;
 }
 function panel(d) {
-  var n = (curL() || {}).nap || {};
+  var n = (curL() || {}).nap || {}, u = work(d.id).update;
   var fields = [['Business name', n.name], ['Phone', n.phone], ['Street address', n.address], ['City', n.city], ['Postal code', n.postal], ['Website', n.website]].filter(function (f) { return f[1]; });
   var go = d.submit_url || d.url;
-  return '<p class="small" style="margin-bottom:8px">Add the business to <b>' + esc(d.name) + '</b> with exactly these details. Copy each one, so it is spelled the same everywhere.</p><div class="nap">' +
+  var changed = u ? '<div class="msg bad" style="margin:0 0 10px"><b>Update this listing.</b> These details changed after it was made:<br>' + u.fields.map(function (f) { return esc(f.field) + ': <s>' + esc(f.old) + '</s> → <b>' + esc(f.new) + '</b>'; }).join('<br>') + '<br><span class="small">When it shows the new details, click "I have updated it" (or re-run the check).</span></div>' : '';
+  return changed + '<p class="small" style="margin-bottom:8px">' + (u ? 'Change the listing on <b>' : 'Add the business to <b>') + esc(d.name) + '</b> to show exactly these details. Copy each one, so it is spelled the same everywhere.</p><div class="nap">' +
     fields.map(function (f) { return '<div><span><b>' + f[0] + '</b>' + esc(f[1]) + '</span><button class="btn mini" data-copy="' + esc(f[1]) + '" type="button">Copy</button></div>'; }).join('') + '</div>' +
-    '<div class="acts"><a class="btn mini go" href="' + esc(go) + '" target="_blank" rel="noopener">Open ' + esc(d.submit_url ? 'the submission page' : d.name) + '</a><button class="btn mini" data-copy-all type="button">Copy all details</button><button class="btn mini" data-act="submitted" type="button">I have submitted it</button></div>' +
+    '<div class="acts"><a class="btn mini go" href="' + esc(go) + '" target="_blank" rel="noopener">Open ' + esc(d.submit_url ? 'the submission page' : d.name) + '</a><button class="btn mini" data-copy-all type="button">Copy all details</button><button class="btn mini" data-act="' + (u ? 'updated' : 'submitted') + '" type="button">' + (u ? 'I have updated it' : 'I have submitted it') + '</button></div>' +
     (d.notes ? '<p class="small" style="margin-top:8px">' + esc(d.notes) + '</p>' : '');
 }
 
@@ -396,7 +400,7 @@ $('napSave').onclick = function () {
     $('napSave').disabled = false; if (d.error) { msg('napMsg', d.error, 'bad'); return; }
     useResponse(d);
     if (wantNew) { var hit = data.locations.filter(function (l) { return sameSpot(l.nap, n); })[0] || data.locations[data.locations.length - 1]; curLoc = hit.id; }
-    msg('napMsg', 'Saved.', 'good'); renderNap(); renderLib(); renderResults();
+    msg('napMsg', 'Saved.' + (d.flagged ? ' ' + d.flagged + ' live listing' + (d.flagged === 1 ? '' : 's') + ' now need' + (d.flagged === 1 ? 's' : '') + ' updating: see "Update needed" in the work list.' : ''), 'good'); renderNap(); renderLib(); renderResults();
   };
   if (curLoc === '__new' || !curL()) { api('/directories/locations/set', { project_id: pid, mode: 'merge', locations: [Object.assign({ label: label }, n)] }).then(function (d) { done(d, true); }); return; }
   // one save: the whole list goes back with this location's new details and label
@@ -438,7 +442,7 @@ $('locCsv').onchange = function () {
     api('/directories/locations/set', { project_id: pid, mode: 'merge', locations: rows }).then(function (d) {
       if (d.error) { msg('locMsg', d.error, 'bad'); return; }
       useResponse(d); if (curLoc === '__new' && data.locations.length) curLoc = data.locations[0].id;
-      msg('locMsg', 'Saved. ' + d.added + ' added, ' + d.updated + ' updated.', 'good'); renderNap(); renderLib(); renderResults();
+      msg('locMsg', 'Saved. ' + d.added + ' added, ' + d.updated + ' updated' + (d.flagged ? '; ' + d.flagged + ' live listing' + (d.flagged === 1 ? '' : 's') + ' now need updating' : '') + '.', 'good'); renderNap(); renderLib(); renderResults();
     });
   };
   rd.readAsText(f);
@@ -470,14 +474,15 @@ $('rows').onclick = function (e) {
   if (!d) return;
   if (b.dataset.act === 'start') { openPanel = openPanel === id ? '' : id; renderResults(); }
   if (b.dataset.act === 'submitted') saveWork(id, { submission: 'submitted' });
+  if (b.dataset.act === 'updated') saveWork(id, { update_done: true, submission: 'live', update: null });
   if (b.dataset.act === 'listed') { var u = prompt('Paste the address of the live listing (or leave empty):', work(id).listing_url || ''); if (u !== null) saveWork(id, { listed: true, listing_url: u.trim() }); }
   if (b.dataset.act === 'notlisted') saveWork(id, { listed: false });
   if (b.dataset.act === 'clear') saveWork(id, { listed: null });
 };
 $('rows').onchange = function (e) { var s = e.target.closest('[data-sub]'); if (s) saveWork(s.closest('tr').dataset.id, { submission: s.value }); var n = e.target.closest('[data-note]'); if (n) saveWork(n.closest('tr').dataset.id, { note: n.value }); };
 $('exportCsv').onclick = function () {
-  var rows = [['Location', 'Category', 'Directory Name', 'URL', 'Cost / Access Model', 'Listing status', 'Live Listing URL', 'Details differ', 'Submission Status', 'Note']];
-  var ll = curL() || {}; lib.forEach(function (d) { var r = rowsOf()[d.id] || {}, w = work(d.id), s = statusOf(d); rows.push([ll.label || '', d.category, d.name, d.url, d.cost, LABEL[s][1], w.listing_url || r.listing_url || '', (r.issues || []).join('; '), (SUB.filter(function (o) { return o[0] === w.submission; })[0] || [0, ''])[1], w.note]); });
+  var rows = [['Location', 'Category', 'Directory Name', 'URL', 'Cost / Access Model', 'Listing status', 'Live Listing URL', 'Details differ', 'Changed since listed', 'Submission Status', 'Note']];
+  var ll = curL() || {}; lib.forEach(function (d) { var r = rowsOf()[d.id] || {}, w = work(d.id), s = statusOf(d); rows.push([ll.label || '', d.category, d.name, d.url, d.cost, LABEL[s][1], w.listing_url || r.listing_url || '', (r.issues || []).join('; '), (w.update ? w.update.fields.map(function (f) { return f.field + ': ' + f.old + ' -> ' + f.new; }).join('; ') : ''), (SUB.filter(function (o) { return o[0] === w.submission; })[0] || [0, ''])[1], w.note]); });
   var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv' })); a.download = 'directory-listings.csv'; a.click();
 };
 $('proj').onchange = function () { loadProject($('proj').value); };
