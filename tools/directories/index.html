@@ -111,7 +111,7 @@
 
     <div class="card" id="checkCard" hidden>
       <h2>3. Check the directories</h2>
-      <p class="hint">One Google search per directory, about $0.002 each, then the listing page is read for its details. Directories that refuse automated readers are marked "check by hand" rather than guessed. Search can miss a listing that exists, so "not found" is worth a quick look before submitting.</p>
+      <p class="hint">One Google search per directory, about $0.002 each, then the listing page is read for its details. Directories that refuse automated readers are marked "check by hand" rather than guessed. A doctor's own page (on RateMDs or Healthgrades, say) is not the clinic's listing: it is shown beside the row but the clinic still counts as missing. Search can miss a listing that exists, so "not found" is worth a quick look before submitting.</p>
       <label for="chkLoc">Which location</label><select id="chkLoc"></select>
       <label>Which categories</label><div class="cats" id="cats"></div>
       <label style="display:flex;align-items:center;font-weight:500;margin-top:10px"><input type="checkbox" id="onlyNew"> Only directories not checked yet or that could not be checked</label>
@@ -390,7 +390,7 @@ function taskOf(d, l) {
   if (w.submission === 'skip') return null;
   var kind = st === 'not_found' || st === 'manual_not' ? 'create' : st === 'update_needed' ? 'update' : st === 'listed_differs' ? 'fix' : st === 'listed_unchecked' ? 'verify' : '';
   if (!kind) return null;
-  var detail = kind === 'update' && w.update ? w.update.fields.map(function (f) { return f.field + ': ' + f.old + ' → ' + f.new; }) : kind === 'fix' ? (r.issues || []) : kind === 'verify' ? [r.note || 'Found, but its details could not be read: open it and compare.'] : [];
+  var detail = kind === 'update' && w.update ? w.update.fields.map(function (f) { return f.field + ': ' + f.old + ' → ' + f.new; }) : kind === 'fix' ? (r.issues || []) : kind === 'verify' ? [r.note || 'Found, but its details could not be read: open it and compare.'] : (r.related || []).map(function (x) { return 'A doctor\'s page exists here (not counted as the clinic): ' + (x.title || x.url); });
   return { loc: l, kind: kind, detail: detail, waiting: w.submission === 'submitted', url: w.listing_url || r.listing_url || '' };
 }
 function napText(n) { return [n.name, n.address, [n.city, n.postal].filter(Boolean).join(' '), n.phone, n.website].filter(Boolean).join('\n'); }
@@ -468,6 +468,7 @@ function renderResults() {
     var url = w.listing_url || r.listing_url || '';
     var found = [];
     if (url) found.push('<a href="' + esc(url) + '" target="_blank" rel="noopener">Open listing</a>');
+    (r.related || []).forEach(function (x) { found.push('<span class="small">A doctor\'s page was found here, not counted as the clinic\'s listing: <a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.title || 'open it') + '</a></span>'); });
     if (w.update) w.update.fields.forEach(function (f) { found.push('<span class="chip warn">' + esc(f.field) + ': ' + esc(f.old) + ' → ' + esc(f.new) + '</span>'); });
     (r.issues || []).forEach(function (x) { found.push('<span class="chip bad">' + esc(x) + '</span>'); });
     if (r.status === 'listed_ok' && r.nap) found.push('<span class="small">Checked on the ' + (r.source === 'page' ? 'listing page' : 'search result') + '</span>');
