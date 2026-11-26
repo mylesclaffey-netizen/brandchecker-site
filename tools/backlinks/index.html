@@ -94,6 +94,27 @@
   .sidenav-link.accent{color:var(--you);font-weight:500}
   .sidenav-link.accent:hover{color:#ff3d00}
   body.embed .sidenav{display:none}
+
+  /* every backlink: load, search, download */
+  body.wide .wrap{max-width:1100px}
+  .lkopen{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);background:none;border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer;margin-top:14px}
+  .lkopen:hover{color:var(--ink);border-color:var(--muted)}
+  .linkspanel{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+  .linkspanel.show{display:block}
+  .lkbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+  .lkbar input,.lkbar select{width:auto;flex:1 1 180px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink)}
+  .lkbtn{font-family:'Archivo',sans-serif;font-size:12.5px;font-weight:700;background:var(--you);color:#fff;border:0;border-radius:7px;padding:9px 13px;cursor:pointer}
+  .lkbtn.alt{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+  .lkbtn[disabled]{opacity:.5;cursor:not-allowed}
+  .lknote{font-size:11px;color:var(--muted);line-height:1.5;margin:4px 0}
+  .lkwrap{overflow-x:auto;border:1px solid var(--line);border-radius:9px;max-height:520px;overflow-y:auto}
+  table.lk{width:100%;border-collapse:collapse;font-size:11.5px}
+  table.lk th{position:sticky;top:0;background:var(--paper);text-align:left;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  table.lk td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  table.lk td a{color:var(--you);word-break:break-all}
+  table.lk td .sub{display:block;color:var(--muted);font-size:10.5px;word-break:break-word}
+  .tag{display:inline-block;font-size:10px;border:1px solid var(--line);border-radius:12px;padding:1px 7px;white-space:nowrap}
+  .tag.do{color:var(--ok);border-color:var(--ok)}.tag.no{color:var(--warn);border-color:var(--warn)}
 </style>
 <link rel="stylesheet" href="/assets/theme.css">
 </head>
@@ -180,7 +201,7 @@ $('out').addEventListener('click', e => {
   }
 });
 $('go').onclick = run;
-$('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; };
+$('back').onclick = () => { $('results').style.display = 'none'; $('form').style.display = 'block'; document.body.classList.remove('wide'); };
 
 async function run(){
   const website = $('website').value.trim();
@@ -229,6 +250,7 @@ async function run(){
 }
 
 function renderResults(d){
+  window.__sites = d.sites; Object.keys(LINKS).forEach(k => delete LINKS[k]);
   return d.sites.map((s, i) => renderSite(s, i)).join('') +
     '<p class="foot">Referring domain and backlink counts, dofollow/nofollow split, and domain rank (0–1000, DataForSEO\'s own PageRank-style score) come from DataForSEO\'s Backlinks API. Top referring domains list is capped at 20, sorted by rank. Cached 7 days per domain — backlink profiles don\'t shift day to day.</p>';
 }
@@ -266,8 +288,127 @@ function renderSite(s, i){
     ).join('') + '</div>';
   }
 
+  if (CODE) html += '<button class="lkopen" type="button" data-links="' + i + '" style="margin-left:6px">Download or search every backlink</button>' + linksPanelHtml(s, i);
   return html + '</div>';
 }
+
+/* ---- every backlink: load them, search them, download them ---- */
+const LINKS = {};   // site index -> { domain, rows, total, cost, loading, stop, shown, q, follow, found }
+const STEP = 1000, PAGE_ROWS = 500;
+function linksPanelHtml(s, i){
+  return '<div class="linkspanel" id="lk' + i + '">' +
+    '<p class="lknote">Loads the actual backlinks to <b>' + esc(s.domain) + '</b>, most authoritative first, one request of up to 1,000 links at a time (a few cents each: the cost so far is shown as it loads, and a site you have loaded is saved for a week, so loading it again is free). Then search them here and download them as a CSV.</p>' +
+    '<div class="lkbar"><select id="lkmax' + i + '"><option value="1000">First 1,000 links</option><option value="5000">First 5,000 links</option><option value="10000">First 10,000 links</option><option value="20000">Up to 20,000 links</option></select>' +
+    '<button class="lkbtn" type="button" data-load="' + i + '">Load the links</button><button class="lkbtn alt" type="button" data-stop="' + i + '" style="display:none">Stop</button></div>' +
+    '<p class="lknote" id="lkstatus' + i + '"></p>' +
+    '<div id="lkbody' + i + '"></div>' +
+    '<details style="margin-top:12px"><summary class="lknote" style="cursor:pointer">Look for one specific link on the whole site (without loading them all)</summary>' +
+    '<div class="lkbar"><select id="lkfield' + i + '" style="flex:0 1 190px"><option value="link">Linking page contains</option><option value="anchor">Anchor text contains</option><option value="target">Linked page contains</option></select>' +
+    '<input id="lkfind' + i + '" placeholder="e.g. a domain such as bbc.co.uk, or some anchor text" maxlength="120"><button class="lkbtn" type="button" data-find="' + i + '">Search</button></div>' +
+    '<p class="lknote" id="lkfstatus' + i + '"></p><div id="lkfbody' + i + '"></div></details>' +
+  '</div>';
+}
+const lkLive = u => /^https?:\/\//i.test(u || '');
+function lkRow(r){
+  const when = r.first_seen ? 'first seen ' + esc(r.first_seen) : '';
+  return '<tr><td>' + (lkLive(r.url_from) ? '<a href="' + esc(r.url_from) + '" target="_blank" rel="noopener noreferrer">' + esc(r.url_from) + '</a>' : esc(r.url_from)) + (r.title ? '<span class="sub">' + esc(r.title) + '</span>' : '') + '</td>' +
+    '<td>' + esc(r.anchor || '') + (r.type && r.type !== 'anchor' ? '<span class="sub">' + esc(r.type) + ' link</span>' : '') + '</td>' +
+    '<td>' + (lkLive(r.url_to) ? '<a href="' + esc(r.url_to) + '" target="_blank" rel="noopener noreferrer">' + esc(r.url_to.replace(/^https?:\/\//, '')) + '</a>' : esc(r.url_to)) + '</td>' +
+    '<td><span class="tag ' + (r.dofollow ? 'do' : 'no') + '">' + (r.dofollow ? 'dofollow' : 'nofollow') + '</span></td>' +
+    '<td>' + (r.domain_rank ?? '—') + '</td><td>' + esc(when) + (r.is_lost ? '<span class="sub">lost</span>' : r.is_new ? '<span class="sub">new</span>' : '') + '</td></tr>';
+}
+const lkTable = rows => '<div class="lkwrap"><table class="lk"><tr><th>Linking page</th><th>Anchor</th><th>Links to</th><th>Follow</th><th>Domain rank</th><th>Seen</th></tr>' + rows.map(lkRow).join('') + '</table></div>';
+function lkMatches(st){
+  const q = (st.q || '').toLowerCase();
+  return st.rows.filter(r => (!st.follow || (st.follow === 'do') === r.dofollow) &&
+    (!q || [r.url_from, r.domain_from, r.title, r.anchor, r.url_to].some(v => String(v || '').toLowerCase().includes(q))));
+}
+function lkRender(i){
+  const st = LINKS[i]; if (!st) return;
+  const body = $('lkbody' + i);
+  if (!st.rows.length){ body.innerHTML = ''; return; }
+  const m = lkMatches(st), shown = m.slice(0, st.shown);
+  body.innerHTML =
+    '<div class="lkbar"><input id="lkq' + i + '" value="' + esc(st.q || '') + '" placeholder="Search the loaded links: domain, page, anchor text…">' +
+    '<select id="lkfollow' + i + '" style="flex:0 1 150px"><option value="">Dofollow and nofollow</option><option value="do"' + (st.follow === 'do' ? ' selected' : '') + '>Dofollow only</option><option value="no"' + (st.follow === 'no' ? ' selected' : '') + '>Nofollow only</option></select></div>' +
+    '<div class="lkbar"><button class="lkbtn" type="button" data-dl="all:' + i + '">Download all ' + st.rows.length.toLocaleString() + ' (CSV)</button>' +
+    (m.length !== st.rows.length ? '<button class="lkbtn alt" type="button" data-dl="match:' + i + '">Download the ' + m.length.toLocaleString() + ' matching (CSV)</button>' : '') + '</div>' +
+    '<p class="lknote">' + (m.length === st.rows.length ? m.length.toLocaleString() + ' links' : m.length.toLocaleString() + ' of ' + st.rows.length.toLocaleString() + ' links match') + (shown.length < m.length ? ' · showing the first ' + shown.length.toLocaleString() : '') + '</p>' +
+    (m.length ? lkTable(shown) : '<p class="empty">No loaded link matches that search. If you have not loaded them all, use "Look for one specific link" below.</p>') +
+    (shown.length < m.length ? '<div class="lkbar"><button class="lkbtn alt" type="button" data-more="' + i + '">Show ' + Math.min(PAGE_ROWS, m.length - shown.length).toLocaleString() + ' more</button></div>' : '');
+}
+function lkStatus(i, text, cls){ const el = $('lkstatus' + i); el.textContent = text || ''; el.style.color = cls === 'bad' ? 'var(--bad)' : ''; }
+async function lkCall(domain, extra){
+  const res = await fetch(API + '/backlinks/list', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ code: CODE, website: domain }, extra)) });
+  return res.json();
+}
+async function lkLoad(i){
+  const st = LINKS[i] = LINKS[i] || { rows: [], total: null, cost: 0, shown: PAGE_ROWS, q: '', follow: '' };
+  st.domain = window.__sites[i].domain; st.rows = []; st.cost = 0; st.stop = false; st.loading = true;
+  const max = parseInt($('lkmax' + i).value, 10) || STEP;
+  document.querySelector('[data-load="' + i + '"]').disabled = true; document.querySelector('[data-stop="' + i + '"]').style.display = '';
+  let err = '';
+  for (let offset = 0; offset < max && !st.stop; offset += STEP){
+    lkStatus(i, 'Loading… ' + st.rows.length.toLocaleString() + (st.total ? ' of ' + Math.min(st.total, max).toLocaleString() : '') + ' links · about $' + st.cost.toFixed(2) + ' so far');
+    let d; try { d = await lkCall(st.domain, { offset, limit: Math.min(STEP, max - offset) }); } catch (e) { d = { error: 'could not reach the API' }; }
+    if (d.error){ err = d.error; break; }
+    st.total = d.total; st.cost += d.cost || 0; st.rows = st.rows.concat(d.links);
+    lkRender(i);
+    if (d.links.length < Math.min(STEP, max - offset) || st.rows.length >= d.total) break;
+  }
+  st.loading = false;
+  document.querySelector('[data-load="' + i + '"]').disabled = false; document.querySelector('[data-stop="' + i + '"]').style.display = 'none';
+  lkStatus(i, (err ? 'Stopped: ' + err + ' ' : st.stop ? 'Stopped. ' : 'Done. ') + st.rows.length.toLocaleString() + ' of ' + (st.total ?? 0).toLocaleString() + ' backlinks loaded · cost about $' + st.cost.toFixed(2) + (st.total > st.rows.length && !err ? '. Choose a larger number to load more.' : ''), err ? 'bad' : '');
+  lkRender(i);
+}
+async function lkFind(i){
+  const text = $('lkfind' + i).value.trim(), domain = window.__sites[i].domain;
+  if (!text){ $('lkfstatus' + i).textContent = 'Type what to look for.'; return; }
+  $('lkfstatus' + i).textContent = 'Searching…'; $('lkfbody' + i).innerHTML = '';
+  let d; try { d = await lkCall(domain, { search: text, field: $('lkfield' + i).value, limit: STEP }); } catch (e) { d = { error: 'could not reach the API' }; }
+  if (d.error){ $('lkfstatus' + i).textContent = d.error; return; }
+  (LINKS[i] = LINKS[i] || { rows: [], total: null, cost: 0, shown: PAGE_ROWS, q: '', follow: '' }).found = d.links;
+  $('lkfstatus' + i).textContent = d.total ? d.total.toLocaleString() + ' backlink' + (d.total === 1 ? '' : 's') + ' found' + (d.total > d.links.length ? ' (the first ' + d.links.length.toLocaleString() + ' shown)' : '') + ' · about $' + (d.cost || 0).toFixed(2) : 'No backlink found for that search.';
+  $('lkfbody' + i).innerHTML = d.links.length ? lkTable(d.links) + '<div class="lkbar"><button class="lkbtn alt" type="button" data-dl="found:' + i + '">Download these ' + d.links.length.toLocaleString() + ' (CSV)</button></div>' : '';
+}
+// A CSV a spreadsheet opens cleanly: UTF-8 with a marker, quoted cells, and no cell that starts like a formula.
+function csvCell(v){
+  let t = String(v ?? '');
+  if (/^[=+@\t\r]/.test(t) || (/^-/.test(t) && !/^-?\d/.test(t))) t = "'" + t;
+  return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+}
+function lkDownload(rows, domain, label){
+  const head = ['Linking page', 'Linking domain', 'Page title', 'Links to', 'Anchor text', 'Link type', 'Dofollow', 'Domain rank', 'Page rank', 'First seen', 'Last seen', 'New', 'Lost'];
+  const lines = [head.map(csvCell).join(',')].concat(rows.map(r => [r.url_from, r.domain_from, r.title, r.url_to, r.anchor, r.type, r.dofollow ? 'yes' : 'no', r.domain_rank, r.page_rank, r.first_seen, r.last_seen, r.is_new ? 'yes' : '', r.is_lost ? 'yes' : ''].map(csvCell).join(',')));
+  const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'backlinks-' + domain.replace(/[^a-z0-9.-]/gi, '') + '-' + label + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+$('out').addEventListener('click', e => {
+  const t = e.target.closest('[data-links],[data-load],[data-stop],[data-more],[data-dl],[data-find]'); if (!t) return;
+  if (t.dataset.links !== undefined){
+    const panel = $('lk' + t.dataset.links), show = !panel.classList.contains('show');
+    panel.classList.toggle('show', show); document.body.classList.toggle('wide', show || !!document.querySelector('.linkspanel.show'));
+  }
+  else if (t.dataset.load !== undefined) lkLoad(+t.dataset.load);
+  else if (t.dataset.stop !== undefined) LINKS[+t.dataset.stop].stop = true;
+  else if (t.dataset.more !== undefined){ const st = LINKS[+t.dataset.more]; st.shown += PAGE_ROWS; lkRender(+t.dataset.more); }
+  else if (t.dataset.find !== undefined) lkFind(+t.dataset.find);
+  else if (t.dataset.dl !== undefined){
+    const [kind, idx] = t.dataset.dl.split(':'), st = LINKS[+idx];
+    lkDownload(kind === 'all' ? st.rows : kind === 'match' ? lkMatches(st) : st.found, st.domain || window.__sites[+idx].domain, kind === 'found' ? 'search' : kind === 'match' ? 'filtered' : 'all');
+  }
+});
+$('out').addEventListener('input', e => {
+  const m = /^lk(q|follow)(\d+)$/.exec(e.target.id || ''); if (!m) return;
+  const st = LINKS[+m[2]]; if (!st) return;
+  if (m[1] === 'q') st.q = e.target.value; else st.follow = e.target.value;
+  st.shown = PAGE_ROWS;
+  const pos = e.target.selectionStart; lkRender(+m[2]);
+  const again = $('lk' + m[1] + m[2]); if (again && m[1] === 'q'){ again.focus(); try { again.setSelectionRange(pos, pos); } catch (x) {} }
+});
+$('out').addEventListener('keydown', e => { if (e.key === 'Enter' && /^lkfind\d+$/.test(e.target.id || '')) lkFind(+e.target.id.replace('lkfind', '')); });
 // Inside the Local Search platform: fill in the selected project's website.
 if (window.bcProject) bcProject.on(function (p) {
   if (p.website) $('website').value = p.website.replace(/^https?:\/\//i, '').replace(/\/$/, '');
