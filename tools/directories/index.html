@@ -64,7 +64,7 @@
   <div id="app" hidden>
     <div class="eyebrow">Local search</div>
     <h1>Directory listings</h1>
-    <p class="lede">Load your list of directories once. For each business, the tool looks for its listing on every directory, checks that the name, address and phone match, and turns the directories it is missing from into a work list: open one, copy the correct details, submit.</p>
+    <p class="lede">Load your list of directories once (upload a CSV). For each location of a client, the tool looks for its listing on every directory, checks that the name, address and phone match, and turns the directories it is missing from into a work list: open one, copy the correct details, submit.</p>
 
     <div class="card">
       <label for="proj" style="margin-top:0">Project</label><select id="proj"><option>Loading…</option></select>
@@ -84,8 +84,16 @@
     </div>
 
     <div class="card" id="napCard" hidden>
-      <h2>2. The business's correct details</h2>
-      <p class="hint">Every listing is compared with these, so they must be exactly how the business should appear.</p>
+      <h2>2. The client's locations</h2>
+      <p class="hint">Each location is checked on its own against its own details, so they must be exactly how that location should appear. A client with several locations is matched more strictly: a listing only counts for a location when it shows that location's phone, street or postal code.</p>
+      <div class="grid">
+        <div><label for="locSel">Location</label><select id="locSel"></select></div>
+        <div><label for="nLabel">Label (how you will see it)</label><input id="nLabel" maxlength="80" placeholder="Etobicoke"></div>
+      </div>
+      <div class="bar" style="margin-top:6px"><button class="btn mini" id="locNew" type="button">+ Add a location</button><button class="btn mini" id="locDel" type="button">Delete this location</button><button class="btn mini" id="gbpCopy" type="button">Copy locations from the Business Profile manager</button><label class="small" style="margin:0;font-weight:500;cursor:pointer">Upload locations CSV <input type="file" id="locCsv" accept=".csv,text/csv" style="display:none"></label></div>
+      <div class="grid" id="gbpRow" hidden><div><label for="gbpClient">Client name in the Business Profile manager</label><input id="gbpClient" maxlength="80" placeholder="same as the project name"></div></div>
+      <p class="hint" style="margin-top:6px">CSV columns: <b>Name</b>, <b>Address</b>, <b>City</b>, <b>Postal</b>, <b>Phone</b> (plus optional <b>Label</b>, <b>Website</b>, <b>Country</b>). A row for an address already listed updates it. The copy from the Business Profile manager is read-only and can be run again: it only adds locations that are new there.</p>
+      <div class="msg" id="locMsg"></div>
       <div class="bar" style="margin-top:6px" id="suggestBar" hidden><button class="btn mini" id="suggest" type="button"></button></div>
       <div class="grid">
         <div><label for="nName">Business name</label><input id="nName" maxlength="120"></div>
@@ -96,12 +104,13 @@
         <div><label for="nSite">Website</label><input id="nSite" maxlength="300" placeholder="brighteyes.ca"></div>
         <div><label for="nCountry">Country to search in</label><input id="nCountry" maxlength="60" placeholder="Canada"></div>
       </div>
-      <div class="bar"><button class="btn" id="napSave" type="button">Save details</button><span class="msg" id="napMsg" style="margin:0"></span></div>
+      <div class="bar"><button class="btn" id="napSave" type="button">Save this location</button><span class="msg" id="napMsg" style="margin:0"></span></div>
     </div>
 
     <div class="card" id="checkCard" hidden>
       <h2>3. Check the directories</h2>
       <p class="hint">One Google search per directory, about $0.002 each, then the listing page is read for its details. Directories that refuse automated readers are marked "check by hand" rather than guessed. Search can miss a listing that exists, so "not found" is worth a quick look before submitting.</p>
+      <label for="chkLoc">Which location</label><select id="chkLoc"></select>
       <label>Which categories</label><div class="cats" id="cats"></div>
       <label style="display:flex;align-items:center;font-weight:500;margin-top:10px"><input type="checkbox" id="onlyNew"> Only directories not checked yet or that could not be checked</label>
       <div class="bar"><button class="btn go" id="runCheck" type="button">Check</button><span class="msg" id="checkMsg" style="margin:0"></span></div>
@@ -137,7 +146,7 @@ function api(path, body) {
 }
 var msg = function (id, text, cls) { var m = $(id); m.textContent = text || ''; m.className = 'msg' + (cls ? ' ' + cls : ''); };
 
-var lib = [], data = null, suggested = null, pid = '', filter = 'all', openPanel = '';
+var lib = [], data = null, suggested = null, pid = '', filter = 'all', openPanel = '', curLoc = '';
 var SUB = [['todo', 'To do'], ['in_progress', 'In progress'], ['submitted', 'Submitted'], ['live', 'Live'], ['skip', 'Skip']];
 var LABEL = { listed_ok: ['good', 'Listed, details match'], listed_differs: ['bad', 'Listed, details differ'], listed_unchecked: ['warn', 'Listed, check by hand'], not_found: ['bad', 'Not found'], unknown: ['info', 'Could not check'], unchecked: ['info', 'Not checked yet'], manual_listed: ['good', 'Listed (confirmed by hand)'], manual_not: ['bad', 'Not listed (confirmed by hand)'] };
 
@@ -167,9 +176,12 @@ function csvToRows(text) {
 function toCsv(rows) { return rows.map(function (r) { return r.map(function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(','); }).join('\r\n'); }
 
 /* ---- what a row says now ---- */
-function work(id) { return (data && data.work && data.work[id]) || { submission: 'todo', listing_url: '', note: '', listed: null }; }
+function curL() { return data && data.locations.filter(function (l) { return l.id === curLoc; })[0] || null; }
+function rowsOf() { return (data && curLoc && data.loc[curLoc] && data.loc[curLoc].rows) || {}; }
+function worksOf() { return (data && curLoc && data.loc[curLoc] && data.loc[curLoc].work) || {}; }
+function work(id) { return worksOf()[id] || { submission: 'todo', listing_url: '', note: '', listed: null }; }
 function statusOf(d) {
-  var w = work(d.id), r = data.rows[d.id];
+  var w = work(d.id), r = rowsOf()[d.id];
   if (w.listed === true) return 'manual_listed';
   if (w.listed === false) return 'manual_not';
   return r ? r.status : 'unchecked';
@@ -193,15 +205,29 @@ function renderLib() {
   $('libTable').innerHTML = '<tr><th>Directory</th><th>Category</th><th>Cost</th><th></th></tr>' + lib.map(function (d) { return '<tr><td><a href="' + esc(d.url) + '" target="_blank" rel="noopener">' + esc(d.name) + '</a></td><td>' + esc(d.category) + '</td><td>' + esc(d.cost) + '</td><td><button class="btn mini" data-rm="' + esc(d.id) + '" type="button">Remove</button></td></tr>'; }).join('');
   var keep = {}; [].forEach.call(document.querySelectorAll('#cats input'), function (i) { keep[i.value] = i.checked; });
   $('cats').innerHTML = names.map(function (c) { return '<label><input type="checkbox" value="' + esc(c) + '"' + (keep[c] === false ? '' : ' checked') + '>' + esc(c) + ' (' + cats[c] + ')</label>'; }).join('');
-  $('checkCard').hidden = !lib.length || !pid; $('results').hidden = !lib.length || !pid || !data;
+  $('checkCard').hidden = !lib.length || !pid || !data || !data.locations.length; $('results').hidden = !lib.length || !pid || !data || !curL();
+}
+var BLANK = { name: '', phone: '', address: '', city: '', postal: '', website: '', country: 'Canada' };
+function napOf() { var l = curL(); return (l && l.nap) || BLANK; }
+function renderLocs() {
+  var ls = data.locations;
+  $('locSel').innerHTML = ls.map(function (l) { return '<option value="' + esc(l.id) + '">' + esc(l.label || l.nap.city || l.nap.name) + '</option>'; }).join('') + '<option value="__new">' + (ls.length ? '+ New location…' : 'Add the first location…') + '</option>';
+  $('locSel').value = curLoc;
+  var keepAll = $('chkLoc').value === 'all';
+  $('chkLoc').innerHTML = (ls.length > 1 ? '<option value="all">All ' + ls.length + ' locations</option>' : '') + ls.map(function (l) { return '<option value="' + esc(l.id) + '">' + esc(l.label || l.nap.city || l.nap.name) + '</option>'; }).join('');
+  $('chkLoc').value = keepAll && ls.length > 1 ? 'all' : (curL() ? curLoc : '');
+  $('locDel').hidden = !curL();
 }
 function renderNap() {
-  var n = data.nap || {};
+  var l = curL(), n = l ? l.nap : BLANK;
+  $('nLabel').value = l ? (l.label || '') : '';
   $('nName').value = n.name || ''; $('nPhone').value = n.phone || ''; $('nAddr').value = n.address || ''; $('nCity').value = n.city || ''; $('nPostal').value = n.postal || ''; $('nSite').value = n.website || ''; $('nCountry').value = n.country || 'Canada';
   var s = suggested;
-  $('suggestBar').hidden = !s;
+  $('suggestBar').hidden = !s || !!l;
   if (s) $('suggest').textContent = s.source === 'google' ? 'Fill from the Google Business Profile' : 'Fill from the project details';
+  renderLocs();
 }
+function useResponse(d) { data.locations = d.locations || []; data.loc = d.loc || {}; if (!curL() && curLoc !== '__new') curLoc = data.locations.length ? data.locations[0].id : '__new'; }
 function napFromForm() { return { name: $('nName').value.trim(), phone: $('nPhone').value.trim(), address: $('nAddr').value.trim(), city: $('nCity').value.trim(), postal: $('nPostal').value.trim(), website: $('nSite').value.trim(), country: $('nCountry').value.trim() }; }
 function selectedCats() { return [].filter.call(document.querySelectorAll('#cats input'), function (i) { return i.checked; }).map(function (i) { return i.value; }); }
 
@@ -216,7 +242,7 @@ function renderResults() {
   var h = '<tr><th>Directory</th><th>Status</th><th>What was found</th><th>Progress</th><th></th></tr>';
   lib.forEach(function (d, i) {
     if (!fn(stat[i])) return;
-    var r = data.rows[d.id] || {}, w = work(d.id), l = LABEL[stat[i]];
+    var r = rowsOf()[d.id] || {}, w = work(d.id), l = LABEL[stat[i]];
     var url = w.listing_url || r.listing_url || '';
     var found = [];
     if (url) found.push('<a href="' + esc(url) + '" target="_blank" rel="noopener">Open listing</a>');
@@ -235,7 +261,7 @@ function renderResults() {
   $('rows').innerHTML = h;
 }
 function panel(d) {
-  var n = data.nap || {};
+  var n = (curL() || {}).nap || {};
   var fields = [['Business name', n.name], ['Phone', n.phone], ['Street address', n.address], ['City', n.city], ['Postal code', n.postal], ['Website', n.website]].filter(function (f) { return f[1]; });
   var go = d.submit_url || d.url;
   return '<p class="small" style="margin-bottom:8px">Add the business to <b>' + esc(d.name) + '</b> with exactly these details. Copy each one, so it is spelled the same everywhere.</p><div class="nap">' +
@@ -246,8 +272,9 @@ function panel(d) {
 
 /* ---- saving what the employee does ---- */
 function saveWork(id, patch) {
-  data.work[id] = Object.assign(work(id), patch);
-  return api('/directories/work', Object.assign({ project_id: pid, id: id }, patch)).then(function (d) { if (d.error) msg('checkMsg', d.error, 'bad'); else data.work[id] = d.work; renderResults(); });
+  var lid = curLoc, w = data.loc[lid].work;
+  w[id] = Object.assign(work(id), patch);
+  return api('/directories/work', Object.assign({ project_id: pid, location_id: lid, id: id }, patch)).then(function (d) { if (d.error) msg('checkMsg', d.error, 'bad'); else data.loc[lid].work[id] = d.work; renderResults(); });
 }
 
 /* ---- loading ---- */
@@ -255,32 +282,42 @@ function loadLib() {
   return api('/directories/library/get').then(function (d) { if (d.error) { msg('libMsg', d.error, 'bad'); return; } lib = d.directories || []; renderLib(); if (data) renderResults(); });
 }
 function loadProject(id) {
-  pid = id; data = null; suggested = null; openPanel = ''; $('napCard').hidden = !id; $('results').hidden = true; msg('projMsg', id ? 'Loading…' : '');
+  pid = id; data = null; suggested = null; openPanel = ''; curLoc = ''; $('napCard').hidden = !id; $('results').hidden = true; msg('projMsg', id ? 'Loading…' : ''); msg('locMsg', '');
   if (!id) { renderLib(); return; }
   api('/directories/get', { project_id: id }).then(function (d) {
     if (d.error) { msg('projMsg', d.error, 'bad'); return; }
     if (pid !== id) return;
-    data = { nap: d.nap, rows: d.rows || {}, work: d.work || {} }; suggested = d.suggested; msg('projMsg', '');
+    data = { locations: d.locations || [], loc: d.loc || {} }; suggested = d.suggested; msg('projMsg', '');
+    curLoc = data.locations.length ? data.locations[0].id : '__new';
     renderNap(); renderLib(); renderResults();
-    if (!data.nap.name && suggested) msg('napMsg', 'Details are empty. Use the button above to fill them in, then check them.');
+    if (!data.locations.length && suggested) msg('napMsg', 'No locations yet. Use the button above to fill in the first one, copy them from the Business Profile manager, or upload a CSV.');
   });
 }
 
 /* ---- checking, twelve directories at a time so the page shows progress ---- */
 function runCheck() {
-  var cats = selectedCats(), only = $('onlyNew').checked;
-  var ids = lib.filter(function (d) { return cats.indexOf(d.category) >= 0 && (!only || !data.rows[d.id] || data.rows[d.id].status === 'unknown'); }).map(function (d) { return d.id; });
-  if (!data.nap.name) { msg('checkMsg', 'Save the business details first (step 2).', 'bad'); return; }
-  if (!ids.length) { msg('checkMsg', 'Nothing to check with those choices.', 'bad'); return; }
-  var done = 0, cost = 0; $('runCheck').disabled = true; $('prog').hidden = false; $('progBar').style.width = '0';
+  var cats = selectedCats(), only = $('onlyNew').checked, sel = $('chkLoc').value;
+  var targets = sel === 'all' ? data.locations : data.locations.filter(function (l) { return l.id === sel; });
+  if (!targets.length) { msg('checkMsg', 'Add and save a location first (step 2).', 'bad'); return; }
+  var jobs = [];
+  targets.forEach(function (l) {
+    if (!l.nap.name) return;
+    var rows = (data.loc[l.id] || {}).rows || {};
+    var ids = lib.filter(function (d) { return cats.indexOf(d.category) >= 0 && (!only || !rows[d.id] || rows[d.id].status === 'unknown'); }).map(function (d) { return d.id; });
+    for (var i = 0; i < ids.length; i += 12) jobs.push({ loc: l, ids: ids.slice(i, i + 12) });
+  });
+  if (!jobs.length) { msg('checkMsg', 'Nothing to check with those choices.', 'bad'); return; }
+  var total = jobs.reduce(function (n, j) { return n + j.ids.length; }, 0), done = 0, cost = 0, k = 0;
+  $('runCheck').disabled = true; $('prog').hidden = false; $('progBar').style.width = '0';
+  var stop = function (text, cls) { $('runCheck').disabled = false; $('prog').hidden = true; msg('checkMsg', text, cls); renderResults(); };
   (function next() {
-    var batch = ids.slice(done, done + 12);
-    if (!batch.length) { $('runCheck').disabled = false; $('prog').hidden = true; msg('checkMsg', 'Checked ' + ids.length + ' directories (about $' + cost.toFixed(2) + ').', 'good'); return; }
-    msg('checkMsg', 'Checking ' + (done + 1) + '–' + (done + batch.length) + ' of ' + ids.length + '…');
-    api('/directories/check', { project_id: pid, ids: batch }).then(function (d) {
-      if (d.error) { $('runCheck').disabled = false; $('prog').hidden = true; msg('checkMsg', d.error + (done ? ' (' + done + ' were checked.)' : ''), 'bad'); renderResults(); return; }
-      Object.keys(d.rows).forEach(function (k) { data.rows[k] = d.rows[k]; });
-      cost += d.cost || 0; done += batch.length; $('progBar').style.width = Math.round(done / ids.length * 100) + '%'; renderResults(); next();
+    if (k >= jobs.length) { stop('Checked ' + total + ' listing' + (total === 1 ? '' : 's') + ' (about $' + cost.toFixed(2) + ').', 'good'); return; }
+    var job = jobs[k];
+    msg('checkMsg', 'Checking ' + (job.loc.label || job.loc.nap.city || job.loc.nap.name) + ': ' + (done + 1) + '–' + (done + job.ids.length) + ' of ' + total + '…');
+    api('/directories/check', { project_id: pid, location_id: job.loc.id, ids: job.ids }).then(function (d) {
+      if (d.error) { stop(d.error + (done ? ' (' + done + ' were checked.)' : ''), 'bad'); return; }
+      var rows = data.loc[job.loc.id].rows; Object.keys(d.rows).forEach(function (x) { rows[x] = d.rows[x]; });
+      cost += d.cost || 0; done += job.ids.length; k++; $('progBar').style.width = Math.round(done / total * 100) + '%'; renderResults(); next();
     });
   })();
 }
@@ -311,17 +348,68 @@ $('suggest').onclick = function () {
   $('nName').value = s.name || ''; $('nPhone').value = s.phone || ''; $('nAddr').value = s.address || ''; $('nCity').value = s.city || ''; $('nPostal').value = s.postal || ''; $('nSite').value = s.website || '';
   msg('napMsg', 'Filled in. Check them, then save.');
 };
+var sameSpot = function (a, b) { var c = function (v) { return String(v || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }; return c(a.address) + c(a.postal) === c(b.address) + c(b.postal); };
+var flat = function (l, label) { return Object.assign({ id: l.id, label: label == null ? l.label : label }, l.nap); };
 $('napSave').onclick = function () {
-  var n = napFromForm(); if (!n.name) { msg('napMsg', 'Enter the business name.', 'bad'); return; }
+  var n = napFromForm(), label = $('nLabel').value.trim(); if (!n.name) { msg('napMsg', 'Enter the business name.', 'bad'); return; }
   $('napSave').disabled = true; msg('napMsg', 'Saving…');
-  api('/directories/nap', { project_id: pid, nap: n }).then(function (d) { $('napSave').disabled = false; if (d.error) { msg('napMsg', d.error, 'bad'); return; } data.nap = d.nap; msg('napMsg', 'Saved.', 'good'); renderResults(); });
+  var done = function (d, wantNew) {
+    $('napSave').disabled = false; if (d.error) { msg('napMsg', d.error, 'bad'); return; }
+    useResponse(d);
+    if (wantNew) { var hit = data.locations.filter(function (l) { return sameSpot(l.nap, n); })[0] || data.locations[data.locations.length - 1]; curLoc = hit.id; }
+    msg('napMsg', 'Saved.', 'good'); renderNap(); renderLib(); renderResults();
+  };
+  if (curLoc === '__new' || !curL()) { api('/directories/locations/set', { project_id: pid, mode: 'merge', locations: [Object.assign({ label: label }, n)] }).then(function (d) { done(d, true); }); return; }
+  // one save: the whole list goes back with this location's new details and label
+  var id = curLoc;
+  api('/directories/locations/set', { project_id: pid, locations: data.locations.map(function (l) { return l.id === id ? Object.assign({ id: id, label: label || l.label }, n) : flat(l); }) }).then(function (d) { done(d, false); });
+};
+$('locSel').onchange = function () { curLoc = $('locSel').value; openPanel = ''; msg('napMsg', ''); renderNap(); renderLib(); renderResults(); };
+$('locNew').onclick = function () { curLoc = '__new'; msg('napMsg', 'Fill in the new location, then save.'); renderNap(); renderLib(); renderResults(); };
+$('locDel').onclick = function () {
+  var l = curL(); if (!l || !confirm('Delete the location "' + (l.label || l.nap.name) + '" and everything checked or noted for it?')) return;
+  api('/directories/locations/set', { project_id: pid, locations: data.locations.filter(function (x) { return x.id !== l.id; }).map(function (x) { return flat(x); }) }).then(function (d) {
+    if (d.error) { msg('locMsg', d.error, 'bad'); return; }
+    curLoc = ''; useResponse(d); msg('locMsg', 'Location deleted.', 'good'); renderNap(); renderLib(); renderResults();
+  });
+};
+$('gbpCopy').onclick = function () {
+  $('gbpCopy').disabled = true; msg('locMsg', 'Copying…');
+  api('/directories/locations/import-gbp', { project_id: pid, client: $('gbpClient').value.trim() }).then(function (d) {
+    $('gbpCopy').disabled = false;
+    if (d.error) { $('gbpRow').hidden = false; msg('locMsg', d.error, 'bad'); return; }
+    useResponse(d); if (curLoc === '__new' && data.locations.length) curLoc = data.locations[0].id;
+    msg('locMsg', d.added ? 'Copied ' + d.added + ' location' + (d.added === 1 ? '' : 's') + (d.skipped ? ' (' + d.skipped + ' already here)' : '') + '. Check the details, then run the check.' : 'Nothing new to copy: all ' + d.skipped + ' were already here.', 'good');
+    renderNap(); renderLib(); renderResults();
+  });
+};
+$('locCsv').onchange = function () {
+  var f = this.files[0]; if (!f) return;
+  var rd = new FileReader();
+  rd.onload = function () {
+    var t = parseCsv(String(rd.result)); $('locCsv').value = '';
+    if (t.length < 2) { msg('locMsg', 'No rows found in that file.', 'bad'); return; }
+    var head = t[0].map(function (h) { return h.trim().toLowerCase(); });
+    var col = function (names) { for (var k = 0; k < names.length; k++) { var ix = head.indexOf(names[k]); if (ix >= 0) return ix; } return -1; };
+    var c = { label: col(['label', 'location', 'location name']), name: col(['name', 'business name', 'clinic', 'clinic name']), address: col(['address', 'street', 'street address']), city: col(['city']), postal: col(['postal', 'postal code', 'zip', 'zip code']), phone: col(['phone', 'telephone', 'phone number']), website: col(['website', 'url', 'site']), country: col(['country']) };
+    if (c.name < 0 && c.address < 0) { msg('locMsg', 'The CSV needs a "Name" column or an "Address" column.', 'bad'); return; }
+    var g = function (r, k) { return c[k] >= 0 ? (r[c[k]] || '').trim() : ''; };
+    var rows = t.slice(1).map(function (r) { return { label: g(r, 'label'), name: g(r, 'name') || $('nName').value.trim(), address: g(r, 'address'), city: g(r, 'city'), postal: g(r, 'postal'), phone: g(r, 'phone'), website: g(r, 'website'), country: g(r, 'country') }; });
+    msg('locMsg', 'Saving ' + rows.length + ' rows…');
+    api('/directories/locations/set', { project_id: pid, mode: 'merge', locations: rows }).then(function (d) {
+      if (d.error) { msg('locMsg', d.error, 'bad'); return; }
+      useResponse(d); if (curLoc === '__new' && data.locations.length) curLoc = data.locations[0].id;
+      msg('locMsg', 'Saved. ' + d.added + ' added, ' + d.updated + ' updated.', 'good'); renderNap(); renderLib(); renderResults();
+    });
+  };
+  rd.readAsText(f);
 };
 $('runCheck').onclick = runCheck;
 $('tiles').onclick = function (e) { var b = e.target.closest('[data-f]'); if (b) { filter = b.dataset.f; renderResults(); } };
 $('rows').onclick = function (e) {
   var copy = e.target.closest('[data-copy]'), all = e.target.closest('[data-copy-all]');
   if (copy || all) {
-    var n = data.nap || {}, text = all ? [n.name, n.address, [n.city, n.postal].filter(Boolean).join(' '), n.phone, n.website].filter(Boolean).join('\n') : copy.dataset.copy, btn = copy || all;
+    var n = napOf(), text = all ? [n.name, n.address, [n.city, n.postal].filter(Boolean).join(' '), n.phone, n.website].filter(Boolean).join('\n') : copy.dataset.copy, btn = copy || all;
     (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = all ? 'Copy all details' : 'Copy'; }, 1200); }, function () { prompt('Copy this', text); });
     return;
   }
@@ -336,8 +424,8 @@ $('rows').onclick = function (e) {
 };
 $('rows').onchange = function (e) { var s = e.target.closest('[data-sub]'); if (s) saveWork(s.closest('tr').dataset.id, { submission: s.value }); var n = e.target.closest('[data-note]'); if (n) saveWork(n.closest('tr').dataset.id, { note: n.value }); };
 $('exportCsv').onclick = function () {
-  var rows = [['Category', 'Directory Name', 'URL', 'Cost / Access Model', 'Listing status', 'Live Listing URL', 'Details differ', 'Submission Status', 'Note']];
-  lib.forEach(function (d) { var r = data.rows[d.id] || {}, w = work(d.id), s = statusOf(d); rows.push([d.category, d.name, d.url, d.cost, LABEL[s][1], w.listing_url || r.listing_url || '', (r.issues || []).join('; '), (SUB.filter(function (o) { return o[0] === w.submission; })[0] || [0, ''])[1], w.note]); });
+  var rows = [['Location', 'Category', 'Directory Name', 'URL', 'Cost / Access Model', 'Listing status', 'Live Listing URL', 'Details differ', 'Submission Status', 'Note']];
+  var ll = curL() || {}; lib.forEach(function (d) { var r = rowsOf()[d.id] || {}, w = work(d.id), s = statusOf(d); rows.push([ll.label || '', d.category, d.name, d.url, d.cost, LABEL[s][1], w.listing_url || r.listing_url || '', (r.issues || []).join('; '), (SUB.filter(function (o) { return o[0] === w.submission; })[0] || [0, ''])[1], w.note]); });
   var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv' })); a.download = 'directory-listings.csv'; a.click();
 };
 $('proj').onchange = function () { loadProject($('proj').value); };
