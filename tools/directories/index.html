@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <script src="/assets/visitor.js"></script><script src="/assets/project-context.js"></script>
+<meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Directory listings</title>
 <link rel="canonical" href="https://brandchecker.eu/tools/directories/">
@@ -60,6 +61,45 @@
   .prog{height:8px;border:2px solid var(--ink);margin-top:10px}.prog i{display:block;height:100%;background:var(--acc);width:0}
 </style>
 <link rel="stylesheet" href="/assets/theme.css">
+<style id="dark">
+  /* Dark mode for this page. theme.css (loaded just above) hard-codes light colours, so everything it sets is restated here. */
+  :root{color-scheme:dark;--paper:#0b0b0c;--card:#131315;--card2:#1c1c1e;--soft:#1c1c1e;--ink:#f4f4f2;--muted:#b4b4b0;--line:#9a9a96;--acc:#ff3d00;--you:#ff3d00;--ok:#3ddc97;--warn:#ffb454;--bad:#ff6b5e}
+  body{background:var(--paper);color:var(--ink)}
+  h1,h2,h3{color:var(--ink)}
+  .lede{color:var(--ink)}
+  .eyebrow{color:#0a0a0a}
+  .hint,.small,.after,.foot,.meta,.empty,.note{color:var(--muted)}
+  label{color:var(--ink)}
+  input,select,textarea{background:#101012;color:var(--ink);border-color:var(--line)}
+  input::placeholder,textarea::placeholder{color:#85857f}
+  input:focus,select:focus,textarea:focus{outline-color:var(--acc);border-color:var(--ink)}
+  .card{background:var(--card);border-color:var(--line)}
+  .btn{background:#f4f4f2;color:#0a0a0a;border-color:#f4f4f2;box-shadow:4px 4px 0 var(--acc)}
+  .btn:hover{background:#fff;color:#0a0a0a}
+  .btn.go{background:var(--acc);color:#0a0a0a;border-color:var(--acc);box-shadow:4px 4px 0 #f4f4f2}
+  .btn.go:hover{background:#ff5a26;color:#0a0a0a}
+  .btn.mini{box-shadow:3px 3px 0 var(--acc)}
+  .btn[disabled]{opacity:.4;box-shadow:none}
+  .tile{background:var(--card);color:var(--ink);border-color:var(--line)}
+  .tile span{color:var(--muted)}
+  .tile.on{background:var(--ink);color:#0a0a0a}.tile.on span{color:#444}
+  th{color:var(--muted);border-bottom-color:var(--line)}
+  td,th{border-bottom-color:#2e2e30}
+  th{border-bottom-color:var(--line)}
+  .chip.good{color:var(--ok);background:rgba(61,220,151,.14)}.chip.warn{color:var(--warn);background:rgba(255,180,84,.16)}.chip.bad{color:var(--bad);background:rgba(255,107,94,.16)}.chip.info{color:var(--muted);background:#232325}
+  .sub td{background:var(--soft)}
+  .nap div{background:#19191b;border-color:#3a3a3c}
+  .nap b{color:var(--muted)}
+  .msg.bad{color:var(--bad)}.msg.good{color:var(--ok)}
+  .prog{border-color:var(--line)}
+  td a,.hint a{color:#ff7a4d}
+  details summary{color:var(--muted)}
+  @media print{
+    :root{color-scheme:light}
+    body{background:#fff}
+    #cgClient,#cgClient *{background:transparent!important;color:#0a0a0a!important;border-color:#0a0a0a!important;box-shadow:none!important}
+  }
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -68,8 +108,16 @@
     <h1>Directory listings</h1>
     <p class="lede">Load your list of directories once (upload a CSV). For each location of a client, the tool looks for its listing on every directory, checks that the name, address and phone match, and turns the directories it is missing from into a work list: open one, copy the correct details, submit.</p>
 
+    <div class="card" id="overviewCard">
+      <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">All clients</h2><span style="flex:1"></span><label style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="ovOnly"> Only clients needing work</label></div>
+      <div class="tiles" id="ovTiles"></div>
+      <div class="tablewrap"><table id="ovTable"></table></div>
+      <div class="msg" id="ovMsg"></div>
+    </div>
+
     <div class="card">
-      <label for="proj" style="margin-top:0">Project</label><select id="proj"><option>Loading…</option></select>
+      <div class="bar" style="margin:0 0 6px"><label for="proj" style="margin:0">Project</label><span style="flex:1"></span><button class="btn mini" id="ovBack" type="button" hidden>← All clients</button></div>
+      <select id="proj"><option>Loading…</option></select>
       <div class="msg" id="projMsg"></div>
     </div>
 
@@ -511,7 +559,8 @@ function loadLib() {
 }
 function loadProject(id) {
   pid = id; data = null; suggested = null; openPanel = ''; curLoc = ''; gapD = null; cands = []; $('cgClient').hidden = true; $('napCard').hidden = !id; $('results').hidden = true; msg('projMsg', id ? 'Loading…' : ''); msg('locMsg', '');
-  if (!id) { renderLib(); return; }
+  renderOverview();
+  if (!id) { renderLib(); loadOverview(); return; }
   api('/directories/get', { project_id: id }).then(function (d) {
     if (d.error) { msg('projMsg', d.error, 'bad'); return; }
     if (pid !== id) return;
@@ -521,6 +570,39 @@ function loadProject(id) {
     if (!data.locations.length && suggested) msg('napMsg', 'No locations yet. Use the button above to fill in the first one, copy them from the Business Profile manager, or upload a CSV.');
   });
 }
+
+/* ---- the overview: every client at a glance ---- */
+var ovD = null;
+function loadOverview() {
+  api('/directories/overview').then(function (d) {
+    if (d.error) { msg('ovMsg', d.error, 'bad'); return; }
+    ovD = d; renderOverview();
+  });
+}
+function renderOverview() {
+  $('overviewCard').hidden = !!pid; $('ovBack').hidden = !pid;
+  if (pid || !ovD) return;
+  var t = ovD.totals, tile = function (n, label) { return '<div class="tile" style="cursor:default"><b>' + n + '</b><span>' + label + '</span></div>'; };
+  $('ovTiles').innerHTML = tile(t.clients, 'Clients') + tile(t.locations, 'Locations') + tile(t.missing, 'Missing') + tile(t.update, 'Update needed') + tile(t.fix, 'Fix details') + tile(t.tasks_open, 'Open tasks');
+  var need = function (c) { return c.missing + c.update + c.fix; };
+  var rows = ovD.clients.slice().sort(function (a, b) { return need(b) - need(a) || a.name.localeCompare(b.name); });
+  if ($('ovOnly').checked) rows = rows.filter(function (c) { return need(c) > 0 || c.tasks_open > 0; });
+  var num = function (n, cls) { return n ? '<span class="chip ' + cls + '" style="font-size:12px;padding:3px 9px">' + n + '</span>' : '<span class="small">0</span>'; };
+  $('ovTable').innerHTML = '<tr><th>Client</th><th>Listed</th><th>Missing</th><th>Update needed</th><th>Fix details</th><th>By hand</th><th>Open tasks</th><th>Last checked</th><th>Re-check</th><th></th></tr>' + (rows.map(function (c) {
+    if (!c.locations) return '<tr data-id="' + esc(c.id) + '"><td><b>' + esc(c.name) + '</b></td><td colspan="8" class="small">No locations yet.</td><td><button class="btn mini" data-open="' + esc(c.id) + '" type="button">Open</button></td></tr>';
+    var pct = c.directories ? Math.round(c.listed / c.directories * 100) : 0;
+    return '<tr data-id="' + esc(c.id) + '"><td><b>' + esc(c.name) + '</b><br><span class="small">' + c.locations + ' location' + (c.locations === 1 ? '' : 's') + '</span></td>' +
+      '<td>' + c.listed + ' of ' + c.directories + '<div class="prog" style="height:6px;margin:4px 0 0;width:90px"><i style="width:' + pct + '%"></i></div></td>' +
+      '<td>' + num(c.missing, 'bad') + '</td><td>' + num(c.update, 'warn') + '</td><td>' + num(c.fix, 'bad') + '</td><td>' + num(c.by_hand, 'info') + (c.unchecked ? '<br><span class="small">' + c.unchecked + ' not checked</span>' : '') + '</td>' +
+      '<td>' + (c.tasks_open ? '<b>' + c.tasks_open + '</b>' : '<span class="small">0</span>') + (c.tasks_waiting ? '<br><span class="small">' + c.tasks_waiting + ' submitted</span>' : '') + '</td>' +
+      '<td class="small">' + (c.last_checked ? esc(c.last_checked.slice(0, 10)) : 'never') + '</td>' +
+      '<td class="small">' + (c.watch ? (c.watch.enabled ? 'On · next ' + esc(String(c.watch.next_at || '').slice(0, 10)) : 'Paused') : 'Off') + '</td>' +
+      '<td><button class="btn mini" data-open="' + esc(c.id) + '" type="button">Open</button></td></tr>';
+  }).join('') || '<tr><td colspan="10" class="small">' + (ovD.clients.length ? 'No client needs work right now.' : 'No projects yet. Create one on the Projects page, then add its locations here.') + '</td></tr>');
+}
+$('ovOnly').onchange = renderOverview;
+$('ovTable').onclick = function (e) { var b = e.target.closest('[data-open]'); if (b) { $('proj').value = b.dataset.open; loadProject(b.dataset.open); } };
+$('ovBack').onclick = function () { $('proj').value = ''; loadProject(''); };
 
 /* ---- the schedule ---- */
 function loadWatch() {
@@ -795,7 +877,7 @@ if (!CODE) {
   $('enter').onclick = go; $('manual').onkeydown = function (e) { if (e.key === 'Enter') go(); };
 } else {
   $('app').hidden = false;
-  loadLib();
+  loadLib(); loadOverview();
   api('/projects/list').then(function (d) {
     if (d.error) { $('proj').innerHTML = '<option>' + esc(d.error) + '</option>'; return; }
     var ps = d.projects || [];
