@@ -118,13 +118,21 @@
     </div>
 
     <div id="results" hidden>
-      <div class="bar" style="margin:0 0 12px" id="viewBar"><button class="btn mini" id="vList" type="button">One location: work list</button><button class="btn mini" id="vGrid" type="button">All locations: grid</button></div>
+      <div class="bar" style="margin:0 0 12px" id="viewBar"><button class="btn mini" id="vList" type="button">One location: work list</button><button class="btn mini" id="vGrid" type="button">All locations: grid</button><button class="btn mini" id="vTasks" type="button">Tasks by directory</button></div>
       <div id="listView">
         <div class="tiles" id="tiles"></div>
         <div class="card">
           <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">Work list</h2><span class="grow" style="flex:1"></span><button class="btn mini" id="exportCsv" type="button">Download CSV</button></div>
           <div class="tablewrap"><table id="rows"></table></div>
         </div>
+      </div>
+      <div id="tasksView" hidden>
+        <div class="card">
+          <h2>Tasks by directory</h2>
+          <p class="hint">Everything still to do for this client, grouped by directory so one visit covers every location: open the directory once, copy each location's details, submit, mark it. Busiest directories first.</p>
+          <div class="bar" style="margin:8px 0 0"><select id="tType" style="width:auto"><option value="">All kinds of task</option><option value="create">Create a listing</option><option value="update">Update a listing</option><option value="fix">Fix details</option><option value="verify">Check by hand</option></select><select id="tCat" style="width:auto"></select><label style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="tHide" checked> Hide ones already submitted</label><span style="flex:1"></span><span class="small" id="tCount"></span></div>
+        </div>
+        <div id="tasks"></div>
       </div>
       <div id="gridView" class="card" hidden>
         <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">Every directory, every location</h2><span style="flex:1"></span><button class="btn mini" id="exportGrid" type="button">Download CSV</button></div>
@@ -245,6 +253,46 @@ function useResponse(d) { data.locations = d.locations || []; data.loc = d.loc |
 function napFromForm() { return { name: $('nName').value.trim(), phone: $('nPhone').value.trim(), address: $('nAddr').value.trim(), city: $('nCity').value.trim(), postal: $('nPostal').value.trim(), website: $('nSite').value.trim(), country: $('nCountry').value.trim() }; }
 function selectedCats() { return [].filter.call(document.querySelectorAll('#cats input'), function (i) { return i.checked; }).map(function (i) { return i.value; }); }
 
+/* ---- tasks by directory ---- */
+var TASK = { create: ['bad', 'Create listing'], update: ['warn', 'Update listing'], fix: ['bad', 'Fix details'], verify: ['info', 'Check by hand'] };
+function taskOf(d, l) {
+  var st = statusFor(d, l.id), w = ((data.loc[l.id] || {}).work || {})[d.id] || {}, r = ((data.loc[l.id] || {}).rows || {})[d.id] || {};
+  if (w.submission === 'skip') return null;
+  var kind = st === 'not_found' || st === 'manual_not' ? 'create' : st === 'update_needed' ? 'update' : st === 'listed_differs' ? 'fix' : st === 'listed_unchecked' ? 'verify' : '';
+  if (!kind) return null;
+  var detail = kind === 'update' && w.update ? w.update.fields.map(function (f) { return f.field + ': ' + f.old + ' → ' + f.new; }) : kind === 'fix' ? (r.issues || []) : kind === 'verify' ? [r.note || 'Found, but its details could not be read: open it and compare.'] : [];
+  return { loc: l, kind: kind, detail: detail, waiting: w.submission === 'submitted', url: w.listing_url || r.listing_url || '' };
+}
+function napText(n) { return [n.name, n.address, [n.city, n.postal].filter(Boolean).join(' '), n.phone, n.website].filter(Boolean).join('\n'); }
+function tasksByDirectory() {
+  var type = $('tType').value, cat = $('tCat').value, hide = $('tHide').checked;
+  return lib.filter(function (d) { return !cat || d.category === cat; }).map(function (d) {
+    var ts = data.locations.map(function (l) { return taskOf(d, l); }).filter(function (t) { return t && (!type || t.kind === type) && !(hide && t.waiting); });
+    return { d: d, tasks: ts };
+  }).filter(function (g) { return g.tasks.length; }).sort(function (a, b) { return b.tasks.length - a.tasks.length || a.d.name.localeCompare(b.d.name); });
+}
+function renderTasks() {
+  var cats = {}; lib.forEach(function (d) { cats[d.category] = 1; });
+  var keep = $('tCat').value;
+  $('tCat').innerHTML = '<option value="">All categories</option>' + Object.keys(cats).map(function (c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('');
+  $('tCat').value = cats[keep] ? keep : '';
+  var groups = tasksByDirectory(), total = groups.reduce(function (n, g) { return n + g.tasks.length; }, 0);
+  $('tCount').textContent = total + ' task' + (total === 1 ? '' : 's') + ' across ' + groups.length + ' director' + (groups.length === 1 ? 'y' : 'ies');
+  $('tasks').innerHTML = groups.map(function (g) {
+    var d = g.d, kinds = {}; g.tasks.forEach(function (t) { kinds[t.kind] = (kinds[t.kind] || 0) + 1; });
+    var sum = Object.keys(kinds).map(function (k) { return kinds[k] + ' ' + TASK[k][1].toLowerCase(); }).join(', ');
+    return '<div class="card" data-dir="' + esc(d.id) + '"><div class="bar" style="margin:0 0 8px"><div><h2 style="margin:0">' + esc(d.name) + '</h2><span class="small">' + esc(d.category) + (d.cost ? ' · ' + esc(d.cost) : '') + ' · ' + g.tasks.length + ' location' + (g.tasks.length === 1 ? '' : 's') + ': ' + esc(sum) + '</span></div><span style="flex:1"></span>' +
+      '<a class="btn mini go" href="' + esc(d.submit_url || d.url) + '" target="_blank" rel="noopener">Open ' + esc(d.submit_url ? 'submission page' : d.name) + '</a><button class="btn mini" data-t="table" type="button">Copy all as a table</button><button class="btn mini" data-t="allsub" type="button">Mark all submitted</button></div>' +
+      (d.notes ? '<p class="small" style="margin-bottom:6px">' + esc(d.notes) + '</p>' : '') +
+      '<div class="tablewrap"><table>' + g.tasks.map(function (t) {
+        var c = TASK[t.kind], n = t.loc.nap;
+        return '<tr data-loc="' + esc(t.loc.id) + '"><td style="width:150px"><b>' + esc(t.loc.label || n.city || n.name) + '</b><br><span class="small">' + esc([n.address, n.city].filter(Boolean).join(', ')) + '</span></td>' +
+          '<td style="width:130px"><span class="chip ' + c[0] + '">' + c[1] + '</span>' + (t.waiting ? '<br><span class="small">submitted</span>' : '') + '</td>' +
+          '<td>' + (t.detail.length ? t.detail.map(function (x) { return '<span class="small">' + esc(x) + '</span>'; }).join('<br>') : '<span class="small">' + esc(n.phone || '') + '</span>') + (t.url ? '<br><a href="' + esc(t.url) + '" target="_blank" rel="noopener">Open listing</a>' : '') + '</td>' +
+          '<td><div class="acts"><button class="btn mini" data-t="copy" type="button">Copy details</button><button class="btn mini" data-t="done" type="button">' + (t.kind === 'update' ? 'I have updated it' : t.kind === 'verify' ? 'It is correct' : 'I have submitted it') + '</button><button class="btn mini" data-t="open" type="button">Details</button></div></td></tr>';
+      }).join('') + '</table></div></div>';
+  }).join('') || '<div class="card"><p class="hint">Nothing to do with these choices. Run the check on every location first if you have not.</p></div>';
+}
 function renderGrid() {
   var ls = data.locations;
   var cats = {}; lib.forEach(function (d) { cats[d.category] = 1; });
@@ -271,8 +319,9 @@ function renderGrid() {
 function renderResults() {
   if (!data) return;
   $('viewBar').hidden = data.locations.length < 2; if (data.locations.length < 2) view = 'list';
-  $('listView').hidden = view !== 'list'; $('gridView').hidden = view !== 'grid';
-  $('vList').classList.toggle('go', view === 'list'); $('vGrid').classList.toggle('go', view === 'grid');
+  $('listView').hidden = view !== 'list'; $('gridView').hidden = view !== 'grid'; $('tasksView').hidden = view !== 'tasks';
+  $('vList').classList.toggle('go', view === 'list'); $('vGrid').classList.toggle('go', view === 'grid'); $('vTasks').classList.toggle('go', view === 'tasks');
+  if (view === 'tasks') { renderTasks(); return; }
   if (view === 'grid') { renderGrid(); return; }
   var stat = lib.map(function (d) { return statusOf(d); });
   $('tiles').innerHTML = FILTERS.map(function (f) {
@@ -314,11 +363,12 @@ function panel(d) {
 }
 
 /* ---- saving what the employee does ---- */
-function saveWork(id, patch) {
-  var lid = curLoc, w = data.loc[lid].work;
-  w[id] = Object.assign(work(id), patch);
+function saveWorkFor(lid, id, patch) {
+  var w = data.loc[lid].work, cur = w[id] || { submission: 'todo', listing_url: '', note: '', listed: null };
+  w[id] = Object.assign({}, cur, patch);
   return api('/directories/work', Object.assign({ project_id: pid, location_id: lid, id: id }, patch)).then(function (d) { if (d.error) msg('checkMsg', d.error, 'bad'); else data.loc[lid].work[id] = d.work; renderResults(); });
 }
+function saveWork(id, patch) { return saveWorkFor(curLoc, id, patch); }
 
 /* ---- loading ---- */
 function loadLib() {
@@ -450,6 +500,20 @@ $('locCsv').onchange = function () {
 $('runCheck').onclick = runCheck;
 $('vList').onclick = function () { view = 'list'; renderResults(); };
 $('vGrid').onclick = function () { view = 'grid'; renderResults(); };
+$('vTasks').onclick = function () { view = 'tasks'; renderResults(); };
+['tType', 'tCat', 'tHide'].forEach(function (id) { $(id).onchange = function () { renderTasks(); }; });
+var copied = function (btn, text, label) { (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = label; }, 1200); }, function () { prompt('Copy this', text); }); };
+$('tasks').onclick = function (e) {
+  var b = e.target.closest('[data-t]'); if (!b) return;
+  var card = b.closest('[data-dir]'), did = card.dataset.dir, d = lib.filter(function (x) { return x.id === did; })[0], tr = b.closest('tr'), lid = tr && tr.dataset.loc;
+  var g = tasksByDirectory().filter(function (x) { return x.d.id === did; })[0];
+  var act = b.dataset.t;
+  if (act === 'copy') { copied(b, napText(data.locations.filter(function (l) { return l.id === lid; })[0].nap), 'Copy details'); return; }
+  if (act === 'table' && g) { copied(b, [['Name', 'Address', 'City', 'Postal', 'Phone', 'Website']].concat(g.tasks.map(function (t) { var n = t.loc.nap; return [n.name, n.address, n.city, n.postal, n.phone, n.website]; })).map(function (r) { return r.join('\t'); }).join('\n'), 'Copy all as a table'); return; }
+  if (act === 'done') { var t = taskOf(d, data.locations.filter(function (l) { return l.id === lid; })[0]); saveWorkFor(lid, did, t && t.kind === 'update' ? { update_done: true, submission: 'live', update: null } : t && t.kind === 'verify' ? { listed: true } : { submission: 'submitted' }); return; }
+  if (act === 'allsub' && g) { b.disabled = true; g.tasks.reduce(function (p, t) { return p.then(function () { return saveWorkFor(t.loc.id, did, t.kind === 'update' ? { update_done: true, submission: 'live', update: null } : t.kind === 'verify' ? { listed: true } : { submission: 'submitted' }); }); }, Promise.resolve()); return; }
+  if (act === 'open') { curLoc = lid; view = 'list'; filter = 'all'; openPanel = did; renderNap(); renderResults(); var row = document.querySelector('#rows tr[data-id="' + did + '"]'); if (row) row.scrollIntoView({ block: 'center' }); }
+};
 ['gGaps', 'gSort', 'gCat'].forEach(function (id) { $(id).onchange = function () { renderGrid(); }; });
 $('grid').onclick = function (e) {
   var b = e.target.closest('[data-loc]'); if (!b) return;
