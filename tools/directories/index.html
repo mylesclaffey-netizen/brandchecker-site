@@ -270,7 +270,7 @@ function appliesToLoc(d, l) { var lc = countryCode(l && l.nap && l.nap.country);
 function libFor(l) { return l ? lib.filter(function (d) { return appliesToLoc(d, l); }) : lib; }
 function locOf(id) { return data && data.locations.filter(function (l) { return l.id === id; })[0] || null; }
 var SUB = [['todo', 'To do'], ['in_progress', 'In progress'], ['submitted', 'Submitted'], ['live', 'Live'], ['skip', 'Skip']];
-var LABEL = { na: ['info', 'Not for this country'], update_needed: ['warn', 'Update needed'], listed_ok: ['good', 'Listed, details match'], listed_differs: ['bad', 'Listed, details differ'], listed_unchecked: ['warn', 'Listed, check by hand'], not_found: ['bad', 'Not found'], unknown: ['info', 'Could not check'], unchecked: ['info', 'Not checked yet'], manual_listed: ['good', 'Listed (confirmed by hand)'], manual_not: ['bad', 'Not listed (confirmed by hand)'] };
+var LABEL = { manual_only: ['warn', 'Check by hand (cannot be searched)'], na: ['info', 'Not for this country'], update_needed: ['warn', 'Update needed'], listed_ok: ['good', 'Listed, details match'], listed_differs: ['bad', 'Listed, details differ'], listed_unchecked: ['warn', 'Listed, check by hand'], not_found: ['bad', 'Not found'], unknown: ['info', 'Could not check'], unchecked: ['info', 'Not checked yet'], manual_listed: ['good', 'Listed (confirmed by hand)'], manual_not: ['bad', 'Not listed (confirmed by hand)'] };
 
 /* ---- the CSV ---- */
 function parseCsv(text) {
@@ -308,18 +308,19 @@ function statusFor(d, lid) {
   if (w.update) return 'update_needed';
   if (w.listed === true) return 'manual_listed';
   if (w.listed === false) return 'manual_not';
+  if (r && r.manual_only) return 'manual_only';   // a directory nothing can search: a person has to look
   return r ? r.status : 'unchecked';
 }
 function statusOf(d) { return statusFor(d, curLoc); }
 var isGap = function (s) { return s === 'not_found' || s === 'manual_not' || s === 'listed_differs' || s === 'update_needed'; };
-var CELL = { na: ['info', 'n/a'], update_needed: ['warn', 'Update'], listed_ok: ['good', 'Listed'], manual_listed: ['good', 'Listed'], listed_differs: ['bad', 'Fix'], listed_unchecked: ['warn', 'By hand'], unknown: ['info', 'Failed'], not_found: ['bad', 'Missing'], manual_not: ['bad', 'Missing'], unchecked: ['info', '—'] };
+var CELL = { manual_only: ['info', 'By hand'], na: ['info', 'n/a'], update_needed: ['warn', 'Update'], listed_ok: ['good', 'Listed'], manual_listed: ['good', 'Listed'], listed_differs: ['bad', 'Fix'], listed_unchecked: ['warn', 'By hand'], unknown: ['info', 'Failed'], not_found: ['bad', 'Missing'], manual_not: ['bad', 'Missing'], unchecked: ['info', '—'] };
 var isListed = function (s) { return s === 'update_needed' || s === 'listed_ok' || s === 'listed_differs' || s === 'listed_unchecked' || s === 'manual_listed'; };
 var FILTERS = [
   ['all', 'All', function () { return true; }],
   ['update', 'Update needed', function (s) { return s === 'update_needed'; }],
   ['ok', 'Listed, correct', function (s) { return s === 'listed_ok' || s === 'manual_listed'; }],
   ['differs', 'Fix details', function (s) { return s === 'listed_differs'; }],
-  ['hand', 'Check by hand', function (s) { return s === 'listed_unchecked' || s === 'unknown'; }],
+  ['hand', 'Check by hand', function (s) { return s === 'listed_unchecked' || s === 'unknown' || s === 'manual_only'; }],
   ['missing', 'Not listed', function (s) { return s === 'not_found' || s === 'manual_not'; }],
   ['new', 'Not checked', function (s) { return s === 'unchecked'; }]
 ];
@@ -447,7 +448,7 @@ var TASK = { create: ['bad', 'Create listing'], update: ['warn', 'Update listing
 function taskOf(d, l) {
   var st = statusFor(d, l.id), w = ((data.loc[l.id] || {}).work || {})[d.id] || {}, r = ((data.loc[l.id] || {}).rows || {})[d.id] || {};
   if (w.submission === 'skip') return null;
-  var kind = st === 'not_found' || st === 'manual_not' ? 'create' : st === 'update_needed' ? 'update' : st === 'listed_differs' ? 'fix' : st === 'listed_unchecked' ? 'verify' : '';
+  var kind = st === 'not_found' || st === 'manual_not' ? 'create' : st === 'update_needed' ? 'update' : st === 'listed_differs' ? 'fix' : st === 'listed_unchecked' || st === 'manual_only' ? 'verify' : '';
   if (!kind) return null;
   var detail = kind === 'update' && w.update ? w.update.fields.map(function (f) { return f.field + ': ' + f.old + ' → ' + f.new; }) : kind === 'fix' ? (r.issues || []) : kind === 'verify' ? [r.note || 'Found, but its details could not be read: open it and compare.'] : (r.related || []).map(function (x) { return 'A doctor\'s page exists here (not counted as the clinic): ' + (x.title || x.url); });
   return { loc: l, kind: kind, detail: detail, waiting: w.submission === 'submitted', url: w.listing_url || r.listing_url || '', proof: w.proof || null };
@@ -692,7 +693,7 @@ $('wOff').onclick = function () {
 function failedTargets() {
   var sel = $('chkLoc').value, ls = sel === 'all' ? data.locations : data.locations.filter(function (l) { return l.id === sel; });
   var out = []; ls.forEach(function (l) {
-    var rows = (data.loc[l.id] || {}).rows || {}, ids = libFor(l).filter(function (d) { return rows[d.id] && rows[d.id].status === 'unknown'; }).map(function (d) { return d.id; });
+    var rows = (data.loc[l.id] || {}).rows || {}, ids = libFor(l).filter(function (d) { return rows[d.id] && rows[d.id].status === 'unknown' && !rows[d.id].manual_only; }).map(function (d) { return d.id; });
     if (ids.length) out.push({ loc: l, ids: ids });
   });
   return out;
@@ -710,7 +711,7 @@ function runCheck(onlyFailed) {
   targets.forEach(function (l) {
     if (!l.nap.name) return;
     var rows = (data.loc[l.id] || {}).rows || {};
-    var ids = onlyFailed ? libFor(l).filter(function (d) { return rows[d.id] && rows[d.id].status === 'unknown'; }).map(function (d) { return d.id; }) : libFor(l).filter(function (d) { return cats.indexOf(d.category) >= 0 && (!only || !rows[d.id] || rows[d.id].status === 'unknown'); }).map(function (d) { return d.id; });
+    var ids = onlyFailed ? libFor(l).filter(function (d) { return rows[d.id] && rows[d.id].status === 'unknown' && !rows[d.id].manual_only; }).map(function (d) { return d.id; }) : libFor(l).filter(function (d) { return cats.indexOf(d.category) >= 0 && (!only || !rows[d.id] || rows[d.id].status === 'unknown'); }).map(function (d) { return d.id; });
     var step = onlyFailed ? 4 : 12;   // a retry goes gently, so fewer per request keeps each one short
     for (var i = 0; i < ids.length; i += step) jobs.push({ loc: l, ids: ids.slice(i, i + step) });
   });
@@ -724,7 +725,7 @@ function runCheck(onlyFailed) {
     msg('checkMsg', 'Checking ' + (job.loc.label || job.loc.nap.city || job.loc.nap.name) + ': ' + (done + 1) + '–' + (done + job.ids.length) + ' of ' + total + '…');
     api('/directories/check', { project_id: pid, location_id: job.loc.id, ids: job.ids, gentle: onlyFailed === true }).then(function (d) {
       if (d.error) { stop(d.error + (done ? ' (' + done + ' were checked.)' : ''), 'bad'); return; }
-      var rows = data.loc[job.loc.id].rows; Object.keys(d.rows).forEach(function (x) { rows[x] = d.rows[x]; if (d.rows[x].status === 'unknown') failedNow++; });
+      var rows = data.loc[job.loc.id].rows; Object.keys(d.rows).forEach(function (x) { rows[x] = d.rows[x]; if (d.rows[x].status === 'unknown' && !d.rows[x].manual_only) failedNow++; });
       cost += d.cost || 0; done += job.ids.length; k++; $('progBar').style.width = Math.round(done / total * 100) + '%'; renderResults(); next();
     });
   })();
