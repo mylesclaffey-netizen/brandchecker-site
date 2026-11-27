@@ -131,18 +131,18 @@
     </nav>
 
     <div class="card">
-      <div class="bar" style="margin:0 0 6px"><label for="proj" style="margin:0">Client</label><span style="flex:1"></span><button class="btn mini" id="ovBack" type="button" hidden>All clients</button></div>
+      <div class="bar" style="margin:0 0 6px"><label for="proj" style="margin:0">Client</label><span style="flex:1"></span><button class="btn mini" id="ovBack" type="button" hidden>All clients</button><a class="btn mini" id="newClient" style="margin-left:6px" href="../projects/" target="_blank" rel="noopener">+ New client</a></div>
       <select id="proj"><option>Loading…</option></select>
       <div class="msg" id="projMsg"></div>
     </div>
 
     <div class="card" id="overviewCard" data-pane="overview">
       <div id="ovAll">
-        <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">All clients</h2><span style="flex:1"></span><label style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="ovOnly"> <span>Only clients needing work</span></label></div>
-        <div class="tiles" id="ovTiles"></div>
-        <div class="tablewrap" id="ovClientsWrap"><table id="ovTable"></table></div>
-        <details id="hlDet" style="margin-top:14px"><summary class="small" style="cursor:pointer"><b>Which directories cause the most work</b></summary><div class="tablewrap"><table id="hlTable"></table></div></details>
-        <details style="margin-top:8px"><summary class="small" style="cursor:pointer"><b>Recent activity</b></summary><div id="ovActivity"></div></details>
+        <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">All clients</h2><button class="btn mini go" id="ovBtnClients" type="button">Clients</button><button class="btn mini" id="ovBtnHealth" type="button">Directory health</button><button class="btn mini" id="ovBtnAct" type="button">Recent activity</button><span style="flex:1"></span><label id="ovOnlyLbl" style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="ovOnly"> <span>Only clients needing work</span></label></div>
+        <div id="ovClientsSec"><div class="tiles" id="ovTiles"></div>
+        <div class="tablewrap" id="ovClientsWrap"><table id="ovTable"></table></div></div>
+        <div id="hlSec" hidden><p class="hint">Which directories cause the most work across all clients.</p><div class="tablewrap"><table id="hlTable"></table></div></div>
+        <div id="actSec" hidden><div id="ovActivity"></div></div>
       </div>
       <div id="ovOne" hidden></div>
       <div class="msg" id="ovMsg"></div>
@@ -227,6 +227,11 @@
       <p class="hint" id="wPlan" style="margin-top:8px"></p>
       <div class="bar"><button class="btn go" id="wSave" type="button">Turn on</button><button class="btn" id="wRun" type="button" hidden>Re-check now</button><button class="btn" id="wOff" type="button" hidden>Turn off</button><span class="msg" id="wMsg" style="margin:0"></span></div>
       <div id="wStatus" class="hint" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card" id="detNone" data-pane="results">
+      <div class="bar" style="margin:0 0 8px"><button class="btn mini" type="button" disabled>Listings</button><button class="btn mini" type="button" disabled>Grid</button><button class="btn mini" type="button" disabled>Record &amp; history</button><button class="btn mini" type="button" disabled>Competitors</button><span style="flex:1"></span><button class="btn mini" type="button" disabled>Check now…</button><button class="btn mini" type="button" disabled>Edit locations</button></div>
+      <p class="hint">Choose a client above to use these. Listings is the work list (or the by-directory tasks across all locations), Grid shows every directory against every location, Record &amp; history is the location's details and versions, Competitors is the gap report, Check now runs the directory check and the schedule, and Edit locations adds or changes a client's locations.</p>
     </div>
 
     <div id="results" data-pane="results" hidden>
@@ -736,7 +741,7 @@ var ovD = null, hlD = null, rvD = null, ovTab = 'clients';
 function loadOverview() {
   api('/directories/overview').then(function (d) {
     if (d.error) { msg('ovMsg', d.error, 'bad'); return; }
-    ovD = d; hlD = null; $('tbRev').textContent = d.totals.pending_reviews ? '(' + d.totals.pending_reviews + ')' : ''; renderOverview(); if ($('hlDet').open) { loadHealth(); }
+    ovD = d; hlD = null; $('tbRev').textContent = d.totals.pending_reviews ? '(' + d.totals.pending_reviews + ')' : ''; renderOverview(); if (ovTab === 'health') { loadHealth(); }
   });
 }
 function renderClientOverview() {
@@ -803,23 +808,28 @@ function renderHealth() {
   }).join('') || '<tr><td colspan="11" class="small">' + (hlD.directories.length ? 'No directory has a problem right now.' : 'No directory has been checked for any client yet.') + '</td></tr>');
 }
 function setOvTab(tab) {
-  ovTab = tab;
-  if (tab === 'health') { $('hlDet').open = true; if (!hlD) loadHealth(); else renderHealth(); }
+  ovTab = tab; var h = tab === 'health', a = tab === 'activity';
+  $('ovClientsSec').hidden = h || a; $('hlSec').hidden = !h; $('actSec').hidden = !a; $('ovOnlyLbl').hidden = h || a;
+  $('ovBtnClients').classList.toggle('go', !h && !a); $('ovBtnHealth').classList.toggle('go', h); $('ovBtnAct').classList.toggle('go', a);
+  if (h) { if (!hlD) loadHealth(); else renderHealth(); }
   renderOverview();
-  if (TAB_PANE[topTab] === 'overview') { topTab = tab === 'health' ? 'health' : 'overview'; applyTop(); }
+  if (TAB_PANE[topTab] === 'overview') { topTab = h ? 'health' : 'overview'; applyTop(); }
 }
-$('hlDet').ontoggle = function () { if ($('hlDet').open) { if (!hlD) loadHealth(); else renderHealth(); } };
+$('ovBtnClients').onclick = function () { setOvTab('clients'); };
+$('ovBtnHealth').onclick = function () { setOvTab('health'); };
+$('ovBtnAct').onclick = function () { setOvTab('activity'); };
 /* ---- the tabs ---- */
 function applyTop() {
   var pane = TAB_PANE[topTab], multi = !!(data && data.locations.length > 1);
-  document.body.setAttribute('data-pane-on', pane); document.body.setAttribute('data-top', topTab);
+  $('detNone').hidden = !!pid; document.body.setAttribute('data-pane-on', pane); document.body.setAttribute('data-top', topTab);
   [].forEach.call(document.querySelectorAll('#topTabs [data-tab]'), function (b) {
-    var t = b.dataset.tab; b.classList.toggle('on', t === topTab || (t === 'list' && (pane === 'results' || pane === 'setup' || pane === 'check')) || (t === 'overview' && topTab === 'health')); b.classList.toggle('dim', !!NEEDS_CLIENT[t] && (!pid || (t !== 'setup' && !!data && !data.locations.length)));
+    var t = b.dataset.tab; b.classList.toggle('on', t === topTab || (t === 'list' && (pane === 'results' || pane === 'setup' || pane === 'check')) || (t === 'overview' && topTab === 'health')); b.classList.toggle('dim', !!NEEDS_CLIENT[t] && t !== 'list' && (!pid || (t !== 'setup' && !!data && !data.locations.length)));
   });
 }
 function setTop(tab, silent) {
   if (!TAB_PANE[tab]) tab = 'overview';
-  if (NEEDS_CLIENT[tab] && !pid) { wantTab = tab; msg('projMsg', 'Choose a client first, then open ' + TAB_NAME[tab] + '.', 'bad'); tab = 'overview'; }
+  if (tab === 'list' && !pid) { msg('projMsg', 'Choose a client to open its listings.'); }
+  else if (NEEDS_CLIENT[tab] && !pid) { wantTab = tab; msg('projMsg', 'Choose a client first, then open ' + TAB_NAME[tab] + '.', 'bad'); tab = 'overview'; }
   else if (NEEDS_CLIENT[tab] && tab !== 'setup' && data && !data.locations.length) { msg('projMsg', 'Add this client\'s first location to use ' + TAB_NAME[tab] + '.', 'bad'); tab = 'setup'; }
   else if (NEEDS_CLIENT[tab]) msg('projMsg', '');
   topTab = tab;
@@ -1237,6 +1247,7 @@ if (!CODE) {
   $('enter').onclick = go; $('manual').onkeydown = function (e) { if (e.key === 'Enter') go(); };
 } else {
   $('app').hidden = false; applyTop();
+  $('newClient').href = '../projects/?k=' + encodeURIComponent(CODE);
   loadLib(); loadOverview();
   api('/projects/list').then(function (d) {
     if (d.error) { $('proj').innerHTML = '<option>' + esc(d.error) + '</option>'; return; }
