@@ -67,8 +67,8 @@
   .tab b{font-weight:800;color:var(--warn)}.tab.on b{color:#0a0a0a}
   [data-pane]{display:none!important}
   body[data-pane-on="overview"] [data-pane="overview"]:not([hidden]),body[data-pane-on="library"] [data-pane="library"]:not([hidden]),body[data-pane-on="setup"] [data-pane="setup"]:not([hidden]),
-  body[data-pane-on="check"] [data-pane="check"]:not([hidden]),body[data-pane-on="portal"] [data-pane="portal"]:not([hidden]),body[data-pane-on="results"] [data-pane="results"]:not([hidden]){display:block!important}
-  #viewBar{display:none!important}   /* its buttons are now tabs at the top */
+  body[data-pane-on="check"] [data-pane="check"]:not([hidden]),body[data-pane-on="reviews"] [data-pane="reviews"]:not([hidden]),body[data-pane-on="portal"] [data-pane="portal"]:not([hidden]),body[data-pane-on="results"] [data-pane="results"]:not([hidden]){display:block!important}
+  #viewBar{align-items:center}
   .proofdlg{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:50;overflow:auto;padding:0 16px}
   @media print{body *{visibility:hidden}#cgClient,#cgClient *{visibility:visible}#cgClient{position:absolute;left:0;top:0;width:100%;border:0}.noprint{display:none!important}}
   .prog{height:8px;border:2px solid var(--ink);margin-top:10px}.prog i{display:block;height:100%;background:var(--acc);width:0}
@@ -119,46 +119,46 @@
   <div id="app" hidden>
     <div class="eyebrow">Local search</div>
     <h1>Directory listings</h1>
-    <p class="lede">Load your list of directories once (upload a CSV). For each location of a client, the tool looks for its listing on every directory, checks that the name, address and phone match, and turns the directories it is missing from into a work list: open one, copy the correct details, submit.</p>
+    <p class="lede">Where each clinic location is listed, whether the details match, and what to fix.</p>
 
     <nav class="tabs" id="topTabs" aria-label="Sections">
-      <span class="tabgroup">All clients</span>
       <button class="tab" type="button" data-tab="overview">Overview</button>
       <button class="tab" type="button" data-tab="reviews">Review queue <b id="tbRev"></b></button>
-      <button class="tab" type="button" data-tab="health">Directory health</button>
-      <span class="tabgroup">This client</span>
-      <button class="tab" type="button" data-tab="list">Work list</button>
-      <button class="tab" type="button" data-tab="tasks" id="tabTasks">Tasks</button>
-      <button class="tab" type="button" data-tab="grid" id="tabGrid">Grid</button>
-      <button class="tab" type="button" data-tab="detail">Location detail</button>
-      <button class="tab" type="button" data-tab="gap">Competitor gaps</button>
-      <button class="tab" type="button" data-tab="setup">Locations</button>
-      <button class="tab" type="button" data-tab="check">Check &amp; schedule</button>
+      <button class="tab" type="button" data-tab="list">Location detail</button>
       <button class="tab" type="button" data-tab="portal">Clinic portal</button>
-      <span class="tabgroup">Setup</span>
-      <button class="tab" type="button" data-tab="library">Directory list</button>
+      <span style="flex:1"></span>
+      <button class="tab" type="button" data-tab="library">Settings</button>
     </nav>
 
     <div class="card">
-      <div class="bar" style="margin:0 0 6px"><label for="proj" style="margin:0">Project</label><span style="flex:1"></span><button class="btn mini" id="ovBack" type="button" hidden>← All clients</button></div>
+      <div class="bar" style="margin:0 0 6px"><label for="proj" style="margin:0">Client</label><span style="flex:1"></span><button class="btn mini" id="ovBack" type="button" hidden>All clients</button></div>
       <select id="proj"><option>Loading…</option></select>
       <div class="msg" id="projMsg"></div>
     </div>
 
     <div class="card" id="overviewCard" data-pane="overview">
-      <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">All clients</h2><button class="btn mini go" id="ovTabClients" type="button">Clients</button><button class="btn mini" id="ovTabHealth" type="button">Directory health</button><button class="btn mini" id="ovTabReviews" type="button">Review queue</button><span style="flex:1"></span><label style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="ovOnly"> <span id="ovOnlyText">Only clients needing work</span></label></div>
-      <div class="tiles" id="ovTiles"></div>
-      <div class="tablewrap" id="ovClientsWrap"><table id="ovTable"></table></div>
-      <div class="tablewrap" id="ovHealthWrap" hidden><table id="hlTable"></table></div>
-      <div id="ovReviewWrap" hidden></div>
+      <div id="ovAll">
+        <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">All clients</h2><span style="flex:1"></span><label style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="ovOnly"> <span>Only clients needing work</span></label></div>
+        <div class="tiles" id="ovTiles"></div>
+        <div class="tablewrap" id="ovClientsWrap"><table id="ovTable"></table></div>
+        <details id="hlDet" style="margin-top:14px"><summary class="small" style="cursor:pointer"><b>Which directories cause the most work</b></summary><div class="tablewrap"><table id="hlTable"></table></div></details>
+        <details style="margin-top:8px"><summary class="small" style="cursor:pointer"><b>Recent activity</b></summary><div id="ovActivity"></div></details>
+      </div>
+      <div id="ovOne" hidden></div>
       <div class="msg" id="ovMsg"></div>
-      <div id="ovActivityWrap" style="margin-top:14px"><h2 style="font-size:15px">Recent activity</h2><div id="ovActivity"></div></div>
+    </div>
+
+    <div class="card" id="reviewCard" data-pane="reviews">
+      <h2>Review queue</h2>
+      <p class="hint">Changes a clinic asked for in its portal. Name, address, phone, website and category wait here until you approve them. Approving updates the record and flags the live listings for staff to update. Nothing is sent to a directory.</p>
+      <div id="ovReviewWrap"></div>
+      <div class="msg" id="rvMsg"></div>
     </div>
 
 
 
     <div class="card" id="libCard" data-pane="library">
-      <h2>1. Your directory list</h2>
+      <h2>Settings: your directory list</h2>
       <p class="hint" id="libInfo">Loading…</p>
       <div class="grid">
         <div><label for="csv">Upload a CSV</label><input type="file" id="csv" accept=".csv,text/csv"></div>
@@ -171,7 +171,8 @@
     </div>
 
     <div class="card" id="napCard" data-pane="setup" hidden>
-      <h2>2. The client's locations</h2>
+      <div class="bar" style="margin:0 0 8px"><button class="btn mini" data-tab="list" type="button">← Location detail</button></div>
+      <h2>The client's locations</h2>
       <p class="hint">Each location is checked on its own against its own details, so they must be exactly how that location should appear. A client with several locations is matched more strictly: a listing only counts for a location when it shows that location's phone, street or postal code.</p>
       <div class="grid">
         <div><label for="locSel">Location</label><select id="locSel"></select></div>
@@ -206,7 +207,8 @@
     </div>
 
     <div class="card" id="checkCard" data-pane="check" hidden>
-      <h2>3. Check the directories</h2>
+      <div class="bar" style="margin:0 0 8px"><button class="btn mini" data-tab="list" type="button">← Location detail</button></div>
+      <h2>Check the directories</h2>
       <p class="hint">One Google search per directory, about $0.002 each, then the listing page is read for its details. Directories that refuse automated readers are marked "check by hand" rather than guessed. A doctor's own page (on RateMDs or Healthgrades, say) is not the clinic's listing: it is shown beside the row but the clinic still counts as missing. When the main search fails, a backup search is tried (up to 60 a day across all clients). Search can miss a listing that exists, so "not found" is worth a quick look before submitting.</p>
       <label for="chkLoc">Which location</label><select id="chkLoc"></select>
       <label>Which categories</label><div class="cats" id="cats"></div>
@@ -216,7 +218,7 @@
     </div>
 
     <div class="card" id="watchCard" data-pane="check" hidden>
-      <h2>4. Re-check on a schedule</h2>
+      <h2>Re-check on a schedule</h2>
       <p class="hint">Re-checks the directories already checked, for every location, and emails you <b>only when something changed</b>: a listing that has disappeared, details that now differ, a new listing found, an update that is now confirmed, or a submitted listing that is now live. A failed search never counts as a change, and a listing is only reported gone after two misses in a row.</p>
       <div class="grid">
         <div><label for="wEmail">Send changes to</label><input id="wEmail" type="email" maxlength="120" placeholder="you@agency.com"></div>
@@ -228,7 +230,7 @@
     </div>
 
     <div id="results" data-pane="results" hidden>
-      <div class="bar" style="margin:0 0 12px" id="viewBar"><button class="btn mini" id="vList" type="button">One location: work list</button><button class="btn mini" id="vGrid" type="button">All locations: grid</button><button class="btn mini" id="vTasks" type="button">Tasks by directory</button><button class="btn mini" id="vGap" type="button">Competitor gaps</button><button class="btn mini" id="vDetail" type="button">Location detail</button></div>
+      <div class="bar" style="margin:0 0 12px" id="viewBar"><select id="resLoc" style="width:auto"></select><button class="btn mini" id="vList" type="button">Listings</button><button class="btn mini" id="vGrid" type="button">Grid</button><button class="btn mini" id="vDetail" type="button">Record &amp; history</button><button class="btn mini" id="vGap" type="button">Competitors</button><button class="btn mini" id="vTasks" type="button" hidden>By directory</button><span style="flex:1"></span><button class="btn mini go" id="vCheck" type="button">Check now…</button><button class="btn mini" id="vSetup" type="button">Edit locations</button></div>
       <div id="listView">
         <div class="tiles" id="tiles"></div>
         <div class="card">
@@ -472,7 +474,7 @@ $('vDetail').onclick = function () { view = 'detail'; renderResults(); };
 $('dtEdit').onclick = function () { $('napCard').scrollIntoView(); };
 $('dtListings').onclick = function (e) {
   var b = e.target.closest('[data-det]'); if (!b) return;
-  view = 'list'; filter = 'all'; openPanel = b.dataset.det; renderResults();
+  view = 'list'; scopeAll = false; filter = 'all'; openPanel = b.dataset.det; renderResults();
   var row = document.querySelector('#rows tr[data-id="' + b.dataset.det + '"]'); if (row) row.scrollIntoView({ block: 'center' });
 };
 $('dtVersions').onclick = function (e) {
@@ -638,9 +640,15 @@ function renderResults() {
   if (!data) return;
   refreshRetry();
   if (TAB_PANE[topTab] === 'results' && topTab !== view) { topTab = view; }
-  var multi = data.locations.length > 1; $('vGrid').hidden = !multi; $('vTasks').hidden = !multi; if (!multi && (view === 'grid' || view === 'tasks')) view = 'list';
+  var multi = data.locations.length > 1; if (!multi) scopeAll = false;
+  if (!multi && view === 'grid') view = 'list';
+  if (scopeAll && (view === 'list' || view === 'detail' || view === 'gap')) view = view === 'list' ? 'tasks' : 'grid';
+  if (!scopeAll && view === 'tasks') view = 'list';
+  $('vGrid').hidden = !multi; $('vDetail').hidden = scopeAll; $('vGap').hidden = scopeAll; $('resLoc').hidden = !multi;
+  $('resLoc').innerHTML = (multi ? '<option value="__all">All locations</option>' : '') + data.locations.map(function (l) { return '<option value="' + esc(l.id) + '">' + esc(l.label || l.nap.city || l.nap.name) + '</option>'; }).join('');
+  $('resLoc').value = scopeAll ? '__all' : curLoc;
   $('listView').hidden = view !== 'list'; $('gridView').hidden = view !== 'grid'; $('tasksView').hidden = view !== 'tasks'; $('gapView').hidden = view !== 'gap'; $('detailView').hidden = view !== 'detail';
-  $('vList').classList.toggle('go', view === 'list'); $('vGrid').classList.toggle('go', view === 'grid'); $('vTasks').classList.toggle('go', view === 'tasks'); $('vGap').classList.toggle('go', view === 'gap'); $('vDetail').classList.toggle('go', view === 'detail');
+  $('vList').classList.toggle('go', view === 'list' || view === 'tasks'); $('vGrid').classList.toggle('go', view === 'grid'); $('vTasks').classList.toggle('go', view === 'tasks'); $('vGap').classList.toggle('go', view === 'gap'); $('vDetail').classList.toggle('go', view === 'detail');
   applyTop();
   if (view === 'detail') { renderDetail(); return; }
   if (view === 'gap') { renderGap(); return; }
@@ -719,7 +727,8 @@ function loadProject(id) {
 }
 
 /* ---- the overview: every client at a glance ---- */
-var TAB_PANE = { overview: 'overview', reviews: 'overview', health: 'overview', list: 'results', tasks: 'results', grid: 'results', detail: 'results', gap: 'results', setup: 'setup', check: 'check', portal: 'portal', library: 'library' };
+var scopeAll = false;
+var TAB_PANE = { overview: 'overview', reviews: 'reviews', health: 'overview', list: 'results', tasks: 'results', grid: 'results', detail: 'results', gap: 'results', setup: 'setup', check: 'check', portal: 'portal', library: 'library' };
 var TAB_NAME = { overview: 'Overview', reviews: 'Review queue', health: 'Directory health', list: 'Work list', tasks: 'Tasks', grid: 'Grid', detail: 'Location detail', gap: 'Competitor gaps', setup: 'Locations', check: 'Check & schedule', portal: 'Clinic portal', library: 'Directory list' };
 var NEEDS_CLIENT = { list: 1, tasks: 1, grid: 1, detail: 1, gap: 1, setup: 1, check: 1, portal: 1 }, FROM_OVERVIEW = { overview: 1, reviews: 1, health: 1 };
 var topTab = 'overview', wantTab = '';
@@ -727,11 +736,33 @@ var ovD = null, hlD = null, rvD = null, ovTab = 'clients';
 function loadOverview() {
   api('/directories/overview').then(function (d) {
     if (d.error) { msg('ovMsg', d.error, 'bad'); return; }
-    ovD = d; hlD = null; $('ovTabReviews').textContent = 'Review queue' + (d.totals.pending_reviews ? ' (' + d.totals.pending_reviews + ')' : ''); $('tbRev').textContent = d.totals.pending_reviews ? '(' + d.totals.pending_reviews + ')' : ''; renderOverview(); if (ovTab === 'health') { loadHealth(); }
+    ovD = d; hlD = null; $('tbRev').textContent = d.totals.pending_reviews ? '(' + d.totals.pending_reviews + ')' : ''; renderOverview(); if ($('hlDet').open) { loadHealth(); }
   });
 }
+function renderClientOverview() {
+  var box = $('ovOne'), nm = $('proj').selectedOptions[0] ? $('proj').selectedOptions[0].text : '';
+  if (!data) { box.innerHTML = '<p class="small">Loading…</p>'; return; }
+  var c = ovD && ovD.clients.filter(function (x) { return x.id === pid; })[0] || null, ls = data.locations;
+  if (!ls.length) { box.innerHTML = '<h2>' + esc(nm) + '</h2><p class="hint">No locations yet. Add the first one (or copy them from the Business Profile manager, or upload a CSV) and the tool can start checking.</p><div class="bar"><button class="btn go" data-tab="setup" type="button">Add the first location</button></div>'; return; }
+  var rowsH = '', tot = { listed: 0, all: 0, gaps: 0 };
+  ls.forEach(function (l) {
+    var LL = libFor(l), st = LL.map(function (d) { return statusFor(d, l.id); });
+    var listed = st.filter(function (s) { return s === 'listed_ok' || s === 'manual_listed'; }).length, gaps = st.filter(isGap).length;
+    tot.listed += listed; tot.all += LL.length; tot.gaps += gaps;
+    rowsH += '<tr><td><b>' + esc(l.label || l.nap.city || l.nap.name) + '</b><br><span class="small">' + esc([l.nap.address, l.nap.city].filter(Boolean).join(', ')) + '</span></td><td>' + listed + ' of ' + LL.length + '</td><td>' + (gaps ? '<span class="chip warn" style="font-size:12px;padding:3px 9px">' + gaps + '</span>' : '<span class="small">0</span>') + '</td><td><button class="btn mini" data-openloc="' + esc(l.id) + '" type="button">Open</button></td></tr>';
+  });
+  var tile = function (n, label) { return '<div class="tile" style="cursor:default"><b>' + n + '</b><span>' + label + '</span></div>'; };
+  var act = ((ovD && ovD.activity) || []).filter(function (e) { return c && e.client === c.name; }).slice(0, 8);
+  box.innerHTML = '<div class="bar" style="margin:0 0 8px"><h2 style="margin:0">' + esc(nm) + '</h2><span style="flex:1"></span><button class="btn mini go" data-tab="list" type="button">Open the listings</button></div>' +
+    '<div class="tiles">' + tile(tot.listed + ' of ' + tot.all, 'Listed') + tile(tot.gaps, 'Need attention') + (c ? tile(c.tasks_open, 'Open tasks') + tile(c.pending_reviews || 0, 'Waiting for review') : '') + '</div>' +
+    (c && c.pending_reviews ? '<div class="bar"><button class="btn mini" data-tab="reviews" type="button">Open the review queue</button></div>' : '') +
+    '<div class="tablewrap"><table><tr><th>Location</th><th>Listed</th><th>Need attention</th><th></th></tr>' + rowsH + '</table></div>' +
+    '<details style="margin-top:12px"><summary class="small" style="cursor:pointer"><b>Recent activity</b></summary>' + (act.length ? act.map(function (e) { return '<div class="bar" style="margin:0;padding:6px 0;border-bottom:1px solid #2e2e30;align-items:baseline"><span class="small" style="width:84px;flex:none">' + esc(e.at.slice(0, 10)) + '</span><span style="flex:1">' + (e.location ? '<span class="small">' + esc(e.location) + '</span><br>' : '') + esc(e.text) + '</span></div>'; }).join('') : '<p class="small">Nothing yet.</p>') + '</details>';
+}
 function renderOverview() {
-  $('ovBack').hidden = true;
+  $('ovBack').hidden = !pid;
+  $('ovAll').hidden = !!pid; $('ovOne').hidden = !pid;
+  if (pid) { renderClientOverview(); return; }
   if (!ovD) return;
   var t = ovD.totals, tile = function (n, label) { return '<div class="tile" style="cursor:default"><b>' + n + '</b><span>' + label + '</span></div>'; };
   var pc = function (v) { return v == null ? '—' : v + '%'; };
@@ -764,7 +795,7 @@ function loadHealth() {
 }
 function renderHealth() {
   if (!hlD) { $('hlTable').innerHTML = '<tr><td class="small">Loading…</td></tr>'; return; }
-  var rows = hlD.directories.slice(); if ($('ovOnly').checked) rows = rows.filter(function (h) { return h.drift + h.missing + h.failed + h.by_hand > 0; });
+  var rows = hlD.directories.slice();
   var num = function (n, cls) { return n ? '<span class="chip ' + cls + '" style="font-size:12px;padding:3px 9px">' + n + '</span>' : '<span class="small">0</span>'; };
   $('hlTable').innerHTML = '<tr><th>Directory</th><th>Locations</th><th>Listed</th><th>Drift</th><th>Missing</th><th>Duplicates</th><th>By hand</th><th>Search failed</th><th>Not checked</th><th>In sync</th><th>Last checked</th></tr>' + (rows.map(function (h) {
     var fail = h.fail_pct == null ? '<span class="small">—</span>' : h.failed ? '<span class="chip ' + (h.fail_pct >= 30 ? 'bad' : 'warn') + '" style="font-size:12px;padding:3px 9px">' + h.failed + ' · ' + Math.round(h.fail_pct) + '%</span>' : '<span class="small">0</span>';
@@ -772,20 +803,18 @@ function renderHealth() {
   }).join('') || '<tr><td colspan="11" class="small">' + (hlD.directories.length ? 'No directory has a problem right now.' : 'No directory has been checked for any client yet.') + '</td></tr>');
 }
 function setOvTab(tab) {
-  ovTab = tab; var h = tab === 'health', rv = tab === 'reviews';
-  $('ovClientsWrap').hidden = h || rv; $('ovHealthWrap').hidden = !h; $('ovReviewWrap').hidden = !rv; $('ovActivityWrap').hidden = h || rv;
-  $('ovTabClients').classList.toggle('go', !h && !rv); $('ovTabHealth').classList.toggle('go', h); $('ovTabReviews').classList.toggle('go', rv);
-  $('ovOnlyText').textContent = h ? 'Only directories with a problem' : 'Only clients needing work'; $('ovOnly').parentNode.hidden = rv;
-  if (rv) loadReviews(); else if (h) { if (!hlD) loadHealth(); renderHealth(); } else renderOverview();
-  if (TAB_PANE[topTab] === 'overview') { topTab = rv ? 'reviews' : h ? 'health' : 'overview'; applyTop(); }
+  ovTab = tab;
+  if (tab === 'health') { $('hlDet').open = true; if (!hlD) loadHealth(); else renderHealth(); }
+  renderOverview();
+  if (TAB_PANE[topTab] === 'overview') { topTab = tab === 'health' ? 'health' : 'overview'; applyTop(); }
 }
+$('hlDet').ontoggle = function () { if ($('hlDet').open) { if (!hlD) loadHealth(); else renderHealth(); } };
 /* ---- the tabs ---- */
 function applyTop() {
   var pane = TAB_PANE[topTab], multi = !!(data && data.locations.length > 1);
   document.body.setAttribute('data-pane-on', pane); document.body.setAttribute('data-top', topTab);
   [].forEach.call(document.querySelectorAll('#topTabs [data-tab]'), function (b) {
-    var t = b.dataset.tab; b.classList.toggle('on', t === topTab); b.classList.toggle('dim', !!NEEDS_CLIENT[t] && (!pid || (t !== 'setup' && !!data && !data.locations.length)));
-    if (t === 'tasks' || t === 'grid') b.hidden = !multi;   // they only mean something with two or more locations
+    var t = b.dataset.tab; b.classList.toggle('on', t === topTab || (t === 'list' && (pane === 'results' || pane === 'setup' || pane === 'check')) || (t === 'overview' && topTab === 'health')); b.classList.toggle('dim', !!NEEDS_CLIENT[t] && (!pid || (t !== 'setup' && !!data && !data.locations.length)));
   });
 }
 function setTop(tab, silent) {
@@ -794,7 +823,7 @@ function setTop(tab, silent) {
   else if (NEEDS_CLIENT[tab] && tab !== 'setup' && data && !data.locations.length) { msg('projMsg', 'Add this client\'s first location to use ' + TAB_NAME[tab] + '.', 'bad'); tab = 'setup'; }
   else if (NEEDS_CLIENT[tab]) msg('projMsg', '');
   topTab = tab;
-  if (tab === 'reviews' || tab === 'health') setOvTab(tab); else if (tab === 'overview') setOvTab('clients');
+  if (tab === 'reviews') loadReviews(); else if (tab === 'health') setOvTab('health'); else if (tab === 'overview') setOvTab('clients');
   if (TAB_PANE[tab] === 'results') { view = tab; renderResults(); }
   applyTop();
   if (!silent) { try { history.replaceState(null, '', '#' + tab); } catch (e) { /* no history API: the tab still works */ } }
@@ -804,16 +833,16 @@ function setTop(tab, silent) {
 function afterProject() {
   if (!data) return;
   var t = wantTab || topTab; wantTab = '';
-  if (FROM_OVERVIEW[t]) t = data.locations.length ? 'list' : 'setup';
+  if (FROM_OVERVIEW[t]) { renderOverview(); applyTop(); return; }
   setTop(t, true);
 }
 document.addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (b) setTop(b.dataset.tab); });
 
 /* ---- the review queue: what clinics asked to change ---- */
-function loadReviews() { api('/directories/reviews/list').then(function (d) { if (d.error) { msg('ovMsg', d.error, 'bad'); return; } rvD = d; renderReviews(); }); }
+function loadReviews() { api('/directories/reviews/list').then(function (d) { if (d.error) { msg('rvMsg', d.error, 'bad'); return; } rvD = d; renderReviews(); }); }
 function renderReviews() {
   var box = $('ovReviewWrap'), q = (rvD && rvD.requests) || [];
-  $('ovTabReviews').textContent = 'Review queue' + (rvD && rvD.pending ? ' (' + rvD.pending + ')' : ''); $('tbRev').textContent = rvD && rvD.pending ? '(' + rvD.pending + ')' : '';
+  $('tbRev').textContent = rvD && rvD.pending ? '(' + rvD.pending + ')' : '';
   if (!rvD) { box.innerHTML = '<p class="small">Loading…</p>'; return; }
   if (!q.length) { box.innerHTML = '<p class="small">Nothing is waiting. When a clinic changes its name, address, phone, website or category in its portal, the change waits here until you approve it.</p>'; return; }
   box.innerHTML = q.map(function (r) {
@@ -829,17 +858,15 @@ $('ovReviewWrap').onclick = function (e) {
   var card = b.closest('[data-rv]'), dec = b.dataset.dec, note = '';
   if (dec === 'reject') { note = prompt('Why is it not approved? The clinic will see this.', ''); if (note === null) return; }
   if (dec === 'ask') { note = prompt('What do you want to ask the clinic?', ''); if (!note) return; }
-  b.disabled = true; msg('ovMsg', 'Saving…');
+  b.disabled = true; msg('rvMsg', 'Saving…');
   api('/directories/reviews/decide', { project_id: card.dataset.proj, request_id: card.dataset.rv, decision: dec, note: note }).then(function (d) {
-    if (d.error) { b.disabled = false; msg('ovMsg', d.error, 'bad'); return; }
-    msg('ovMsg', dec === 'approve' ? 'Approved: the record is updated.' + (d.flagged ? ' ' + d.flagged + ' live listing' + (d.flagged === 1 ? '' : 's') + ' now need updating.' : '') : dec === 'reject' ? 'Rejected. The clinic can see why.' : 'Question sent. The clinic will see it.', 'good');
+    if (d.error) { b.disabled = false; msg('rvMsg', d.error, 'bad'); return; }
+    msg('rvMsg', dec === 'approve' ? 'Approved: the record is updated.' + (d.flagged ? ' ' + d.flagged + ' live listing' + (d.flagged === 1 ? '' : 's') + ' now need updating.' : '') : dec === 'reject' ? 'Rejected. The clinic can see why.' : 'Question sent. The clinic will see it.', 'good');
     loadReviews(); loadOverview();
   });
 };
-$('ovTabClients').onclick = function () { setOvTab('clients'); };
-$('ovTabHealth').onclick = function () { setOvTab('health'); };
-$('ovTabReviews').onclick = function () { setOvTab('reviews'); };
-$('ovOnly').onchange = function () { if (ovTab === 'health') renderHealth(); else renderOverview(); };
+$('ovOnly').onchange = function () { renderOverview(); };
+$('ovOne').onclick = function (e) { var b = e.target.closest('[data-openloc]'); if (!b) return; curLoc = b.dataset.openloc; scopeAll = false; renderNap(); renderLib(); setTop('list'); };
 $('ovTable').onclick = function (e) { var b = e.target.closest('[data-open]'); if (b) { $('proj').value = b.dataset.open; loadProject(b.dataset.open); } };
 $('ovBack').onclick = function () { $('proj').value = ''; loadProject(''); };
 
@@ -1102,9 +1129,16 @@ $('blCheck').onclick = function () {
     });
   })();
 };
-$('vList').onclick = function () { view = 'list'; renderResults(); };
+$('vList').onclick = function () { view = scopeAll ? 'tasks' : 'list'; renderResults(); };
 $('vGrid').onclick = function () { view = 'grid'; renderResults(); };
 $('vTasks').onclick = function () { view = 'tasks'; renderResults(); };
+$('vCheck').onclick = function () { setTop('check'); };
+$('vSetup').onclick = function () { setTop('setup'); };
+$('resLoc').onchange = function () {
+  var v = $('resLoc').value; gapD = null; cands = []; $('cgClient').hidden = true; openPanel = '';
+  if (v === '__all') { scopeAll = true; } else { scopeAll = false; curLoc = v; renderNap(); renderLib(); }
+  renderResults();
+};
 $('vGap').onclick = function () { view = 'gap'; if (!gapD) loadGap(); renderResults(); };
 $('cgFind').onclick = function () {
   var kw = $('cgKw').value.trim(); $('cgFind').disabled = true; msg('cgMsg', 'Searching Google Maps…');
@@ -1156,12 +1190,12 @@ $('tasks').onclick = function (e) {
     return;
   }
   if (act === 'allsub' && g) { b.disabled = true; g.tasks.reduce(function (p, t) { return p.then(function () { return saveWorkFor(t.loc.id, did, t.kind === 'update' ? { update_done: true, submission: 'live', update: null } : t.kind === 'verify' ? { listed: true } : { submission: 'submitted' }); }); }, Promise.resolve()); return; }
-  if (act === 'open') { curLoc = lid; view = 'list'; filter = 'all'; openPanel = did; renderNap(); renderResults(); var row = document.querySelector('#rows tr[data-id="' + did + '"]'); if (row) row.scrollIntoView({ block: 'center' }); }
+  if (act === 'open') { curLoc = lid; view = 'list'; scopeAll = false; filter = 'all'; openPanel = did; renderNap(); renderResults(); var row = document.querySelector('#rows tr[data-id="' + did + '"]'); if (row) row.scrollIntoView({ block: 'center' }); }
 };
 ['gGaps', 'gSort', 'gCat'].forEach(function (id) { $(id).onchange = function () { renderGrid(); }; });
 $('grid').onclick = function (e) {
   var b = e.target.closest('[data-loc]'); if (!b) return;
-  curLoc = b.dataset.loc; view = 'list'; filter = 'all'; openPanel = b.dataset.dir; renderNap(); renderResults();
+  curLoc = b.dataset.loc; view = 'list'; scopeAll = false; filter = 'all'; openPanel = b.dataset.dir; renderNap(); renderResults();
   var tr = document.querySelector('#rows tr[data-id="' + b.dataset.dir + '"]'); if (tr) tr.scrollIntoView({ block: 'center' });
 };
 $('exportGrid').onclick = function () {
