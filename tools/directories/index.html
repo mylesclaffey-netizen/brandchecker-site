@@ -529,6 +529,7 @@ function renderResults() {
     var url = w.listing_url || r.listing_url || '';
     var found = [];
     if (url) found.push('<a href="' + esc(url) + '" target="_blank" rel="noopener">Open listing</a>');
+    if (r.last_attempt_failed) found.push('<span class="small">The latest check could not run (the search failed), so this is the result from ' + esc(String(r.checked_at || '').slice(0, 10)) + '. Check again later.</span>');
     (r.related || []).forEach(function (x) { found.push('<span class="small">A doctor\'s page was found here, not counted as the clinic\'s listing: <a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.title || 'open it') + '</a></span>'); });
     if (w.proof) found.push(proofHtml(w));
     if (w.update) w.update.fields.forEach(function (f) { found.push('<span class="chip warn">' + esc(f.field) + ': ' + esc(f.old) + ' → ' + esc(f.new) + '</span>'); });
