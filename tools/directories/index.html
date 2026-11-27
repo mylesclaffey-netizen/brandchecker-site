@@ -163,7 +163,7 @@
 
     <div class="card" id="checkCard" hidden>
       <h2>3. Check the directories</h2>
-      <p class="hint">One Google search per directory, about $0.002 each, then the listing page is read for its details. Directories that refuse automated readers are marked "check by hand" rather than guessed. A doctor's own page (on RateMDs or Healthgrades, say) is not the clinic's listing: it is shown beside the row but the clinic still counts as missing. Search can miss a listing that exists, so "not found" is worth a quick look before submitting.</p>
+      <p class="hint">One Google search per directory, about $0.002 each, then the listing page is read for its details. Directories that refuse automated readers are marked "check by hand" rather than guessed. A doctor's own page (on RateMDs or Healthgrades, say) is not the clinic's listing: it is shown beside the row but the clinic still counts as missing. When the main search fails, a backup search is tried (up to 60 a day across all clients). Search can miss a listing that exists, so "not found" is worth a quick look before submitting.</p>
       <label for="chkLoc">Which location</label><select id="chkLoc"></select>
       <label>Which categories</label><div class="cats" id="cats"></div>
       <label style="display:flex;align-items:center;font-weight:500;margin-top:10px"><input type="checkbox" id="onlyNew"> Only directories not checked yet or that could not be checked</label>
@@ -614,6 +614,7 @@ function renderResults() {
     var url = w.listing_url || r.listing_url || '';
     var found = [];
     if (url) found.push('<a href="' + esc(url) + '" target="_blank" rel="noopener">Open listing</a>');
+    if (r.via === 'serpapi') found.push('<span class="small">Checked with the backup search, because the main one was failing.</span>');
     if (r.last_attempt_failed) found.push('<span class="small">The latest check could not run (the search failed), so this is the result from ' + esc(String(r.checked_at || '').slice(0, 10)) + '. Check again later.</span>');
     activeDups(r, w).forEach(function (x) { found.push('<span class="chip warn">Possible duplicate</span> <a href="' + esc(x.url) + '" target="_blank" rel="noopener">second page</a> <button class="btn mini" data-act="dupok" type="button">Not a duplicate</button>'); });
     (r.related || []).forEach(function (x) { found.push('<span class="small">A doctor\'s page was found here, not counted as the clinic\'s listing: <a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.title || 'open it') + '</a></span>'); });
