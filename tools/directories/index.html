@@ -57,6 +57,18 @@
   .nap b{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block}
   .tablewrap{overflow-x:auto}
   .gate{max-width:560px;margin:40px auto}
+  /* the tabs: one section at a time, chosen by the tab bar */
+  .tabs{display:flex;flex-wrap:wrap;gap:6px 6px;align-items:center;margin:0 0 14px;padding:0 0 12px;border-bottom:2px solid var(--line)}
+  .tabgroup{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 4px 0 10px}.tabgroup:first-child{margin-left:0}
+  .tab{font-family:'Archivo',sans-serif;font-size:12.5px;font-weight:700;color:var(--ink);background:transparent;border:2px solid var(--line);padding:6px 11px;cursor:pointer}
+  .tab:hover{border-color:var(--ink)}
+  .tab.on{background:var(--acc);border-color:var(--acc);color:#0a0a0a}
+  .tab.dim{opacity:.55}
+  .tab b{font-weight:800;color:var(--warn)}.tab.on b{color:#0a0a0a}
+  [data-pane]{display:none!important}
+  body[data-pane-on="overview"] [data-pane="overview"]:not([hidden]),body[data-pane-on="library"] [data-pane="library"]:not([hidden]),body[data-pane-on="setup"] [data-pane="setup"]:not([hidden]),
+  body[data-pane-on="check"] [data-pane="check"]:not([hidden]),body[data-pane-on="portal"] [data-pane="portal"]:not([hidden]),body[data-pane-on="results"] [data-pane="results"]:not([hidden]){display:block!important}
+  #viewBar{display:none!important}   /* its buttons are now tabs at the top */
   .proofdlg{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:50;overflow:auto;padding:0 16px}
   @media print{body *{visibility:hidden}#cgClient,#cgClient *{visibility:visible}#cgClient{position:absolute;left:0;top:0;width:100%;border:0}.noprint{display:none!important}}
   .prog{height:8px;border:2px solid var(--ink);margin-top:10px}.prog i{display:block;height:100%;background:var(--acc);width:0}
@@ -109,7 +121,7 @@
     <h1>Directory listings</h1>
     <p class="lede">Load your list of directories once (upload a CSV). For each location of a client, the tool looks for its listing on every directory, checks that the name, address and phone match, and turns the directories it is missing from into a work list: open one, copy the correct details, submit.</p>
 
-    <div class="card" id="overviewCard">
+    <div class="card" id="overviewCard" data-pane="overview">
       <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">All clients</h2><button class="btn mini go" id="ovTabClients" type="button">Clients</button><button class="btn mini" id="ovTabHealth" type="button">Directory health</button><button class="btn mini" id="ovTabReviews" type="button">Review queue</button><span style="flex:1"></span><label style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="ovOnly"> <span id="ovOnlyText">Only clients needing work</span></label></div>
       <div class="tiles" id="ovTiles"></div>
       <div class="tablewrap" id="ovClientsWrap"><table id="ovTable"></table></div>
@@ -125,7 +137,25 @@
       <div class="msg" id="projMsg"></div>
     </div>
 
-    <div class="card">
+    <nav class="tabs" id="topTabs" aria-label="Sections">
+      <span class="tabgroup">All clients</span>
+      <button class="tab" type="button" data-tab="overview">Overview</button>
+      <button class="tab" type="button" data-tab="reviews">Review queue <b id="tbRev"></b></button>
+      <button class="tab" type="button" data-tab="health">Directory health</button>
+      <span class="tabgroup">This client</span>
+      <button class="tab" type="button" data-tab="list">Work list</button>
+      <button class="tab" type="button" data-tab="tasks" id="tabTasks">Tasks</button>
+      <button class="tab" type="button" data-tab="grid" id="tabGrid">Grid</button>
+      <button class="tab" type="button" data-tab="detail">Location detail</button>
+      <button class="tab" type="button" data-tab="gap">Competitor gaps</button>
+      <button class="tab" type="button" data-tab="setup">Locations</button>
+      <button class="tab" type="button" data-tab="check">Check &amp; schedule</button>
+      <button class="tab" type="button" data-tab="portal">Clinic portal</button>
+      <span class="tabgroup">Setup</span>
+      <button class="tab" type="button" data-tab="library">Directory list</button>
+    </nav>
+
+    <div class="card" id="libCard" data-pane="library">
       <h2>1. Your directory list</h2>
       <p class="hint" id="libInfo">Loading…</p>
       <div class="grid">
@@ -138,7 +168,7 @@
       <details id="libList" hidden><summary class="small" style="cursor:pointer">Show the list (remove any that are not real directories)</summary><div class="tablewrap"><table id="libTable"></table></div></details>
     </div>
 
-    <div class="card" id="napCard" hidden>
+    <div class="card" id="napCard" data-pane="setup" hidden>
       <h2>2. The client's locations</h2>
       <p class="hint">Each location is checked on its own against its own details, so they must be exactly how that location should appear. A client with several locations is matched more strictly: a listing only counts for a location when it shows that location's phone, street or postal code.</p>
       <div class="grid">
@@ -165,15 +195,15 @@
       <div class="bar"><button class="btn" id="napSave" type="button">Save this location</button><span class="msg" id="napMsg" style="margin:0"></span></div>
     </div>
 
-    <div class="card" id="portalCard" hidden>
+    <div class="card" id="portalCard" data-pane="portal" hidden>
       <h2>Clinic portal</h2>
       <p class="hint">A private link for this client's clinic to see and edit its own details. Hours and description change the record at once. Name, address, phone, website and category wait in the Review queue until you approve them. Nothing is sent to a directory: approved changes flag the listings for staff to update. Anyone with the link can use it, so send it only to the clinic, and revoke it if it gets out.</p>
       <div id="portalNone"><div class="grid"><div><label for="pEmail">Email me when a clinic sends an edit to review (optional)</label><input id="pEmail" type="email" maxlength="120" placeholder="you@agency.com"></div></div><div class="bar"><button class="btn go" id="pCreate" type="button">Create the clinic's link</button></div></div>
-      <div id="portalHave" hidden><label for="pUrl">The clinic's link</label><div class="bar" style="margin-top:0"><input id="pUrl" readonly style="flex:1;min-width:240px"><button class="btn" id="pCopy" type="button">Copy</button></div><p class="small" id="pNote"></p><div class="bar"><button class="btn mini" id="pNew" type="button">Make a new link (the old one stops working)</button><button class="btn mini" id="pRevoke" type="button">Revoke</button></div></div>
+      <div id="portalHave" hidden><label for="pUrl">The clinic's link</label><div class="bar" style="margin-top:0"><input id="pUrl" readonly style="flex:1;min-width:240px"><button class="btn" id="pCopy" type="button">Copy</button></div><p class="small" id="pNote"></p><div class="bar" style="margin:0 0 8px"><a class="btn go" id="pOpen" target="_blank" rel="noopener">Open the clinic's page</a><span class="small">Exactly what the clinic sees. Saving there changes this client's record, so look without saving unless you mean it.</span></div><p class="small" id="pRev"></p><div class="bar"><button class="btn mini" id="pNew" type="button">Make a new link (the old one stops working)</button><button class="btn mini" id="pRevoke" type="button">Revoke</button></div></div>
       <div class="msg" id="pMsg"></div>
     </div>
 
-    <div class="card" id="checkCard" hidden>
+    <div class="card" id="checkCard" data-pane="check" hidden>
       <h2>3. Check the directories</h2>
       <p class="hint">One Google search per directory, about $0.002 each, then the listing page is read for its details. Directories that refuse automated readers are marked "check by hand" rather than guessed. A doctor's own page (on RateMDs or Healthgrades, say) is not the clinic's listing: it is shown beside the row but the clinic still counts as missing. When the main search fails, a backup search is tried (up to 60 a day across all clients). Search can miss a listing that exists, so "not found" is worth a quick look before submitting.</p>
       <label for="chkLoc">Which location</label><select id="chkLoc"></select>
@@ -183,7 +213,7 @@
       <div class="prog" id="prog" hidden><i id="progBar"></i></div>
     </div>
 
-    <div class="card" id="watchCard" hidden>
+    <div class="card" id="watchCard" data-pane="check" hidden>
       <h2>4. Re-check on a schedule</h2>
       <p class="hint">Re-checks the directories already checked, for every location, and emails you <b>only when something changed</b>: a listing that has disappeared, details that now differ, a new listing found, an update that is now confirmed, or a submitted listing that is now live. A failed search never counts as a change, and a listing is only reported gone after two misses in a row.</p>
       <div class="grid">
@@ -195,7 +225,7 @@
       <div id="wStatus" class="hint" style="margin-top:10px"></div>
     </div>
 
-    <div id="results" hidden>
+    <div id="results" data-pane="results" hidden>
       <div class="bar" style="margin:0 0 12px" id="viewBar"><button class="btn mini" id="vList" type="button">One location: work list</button><button class="btn mini" id="vGrid" type="button">All locations: grid</button><button class="btn mini" id="vTasks" type="button">Tasks by directory</button><button class="btn mini" id="vGap" type="button">Competitor gaps</button><button class="btn mini" id="vDetail" type="button">Location detail</button></div>
       <div id="listView">
         <div class="tiles" id="tiles"></div>
@@ -605,9 +635,11 @@ function renderGrid() {
 function renderResults() {
   if (!data) return;
   refreshRetry();
+  if (TAB_PANE[topTab] === 'results' && topTab !== view) { topTab = view; }
   var multi = data.locations.length > 1; $('vGrid').hidden = !multi; $('vTasks').hidden = !multi; if (!multi && (view === 'grid' || view === 'tasks')) view = 'list';
   $('listView').hidden = view !== 'list'; $('gridView').hidden = view !== 'grid'; $('tasksView').hidden = view !== 'tasks'; $('gapView').hidden = view !== 'gap'; $('detailView').hidden = view !== 'detail';
   $('vList').classList.toggle('go', view === 'list'); $('vGrid').classList.toggle('go', view === 'grid'); $('vTasks').classList.toggle('go', view === 'tasks'); $('vGap').classList.toggle('go', view === 'gap'); $('vDetail').classList.toggle('go', view === 'detail');
+  applyTop();
   if (view === 'detail') { renderDetail(); return; }
   if (view === 'gap') { renderGap(); return; }
   if (view === 'tasks') { renderTasks(); return; }
@@ -672,28 +704,33 @@ function loadLib() {
 function loadProject(id) {
   pid = id; data = null; suggested = null; openPanel = ''; curLoc = ''; gapD = null; cands = []; $('cgClient').hidden = true; $('napCard').hidden = !id; $('results').hidden = true; msg('projMsg', id ? 'Loading…' : ''); msg('locMsg', '');
   renderOverview();
-  if (!id) { renderLib(); loadOverview(); return; }
+  try { if (id) localStorage.setItem('bc-dir-client:' + CODE, id); } catch (e) { /* nothing remembered */ }
+  if (!id) { renderLib(); loadOverview(); if (NEEDS_CLIENT[topTab]) setTop('overview', true); applyTop(); return; }
   api('/directories/get', { project_id: id }).then(function (d) {
     if (d.error) { msg('projMsg', d.error, 'bad'); return; }
     if (pid !== id) return;
     data = { locations: d.locations || [], loc: d.loc || {} }; suggested = d.suggested; msg('projMsg', '');
     curLoc = data.locations.length ? data.locations[0].id : '__new';
-    renderNap(); renderLib(); renderResults(); loadWatch(); loadPortal();
+    renderNap(); renderLib(); renderResults(); loadWatch(); loadPortal(); afterProject();
     if (!data.locations.length && suggested) msg('napMsg', 'No locations yet. Use the button above to fill in the first one, copy them from the Business Profile manager, or upload a CSV.');
   });
 }
 
 /* ---- the overview: every client at a glance ---- */
+var TAB_PANE = { overview: 'overview', reviews: 'overview', health: 'overview', list: 'results', tasks: 'results', grid: 'results', detail: 'results', gap: 'results', setup: 'setup', check: 'check', portal: 'portal', library: 'library' };
+var TAB_NAME = { overview: 'Overview', reviews: 'Review queue', health: 'Directory health', list: 'Work list', tasks: 'Tasks', grid: 'Grid', detail: 'Location detail', gap: 'Competitor gaps', setup: 'Locations', check: 'Check & schedule', portal: 'Clinic portal', library: 'Directory list' };
+var NEEDS_CLIENT = { list: 1, tasks: 1, grid: 1, detail: 1, gap: 1, setup: 1, check: 1, portal: 1 }, FROM_OVERVIEW = { overview: 1, reviews: 1, health: 1 };
+var topTab = 'overview', wantTab = '';
 var ovD = null, hlD = null, rvD = null, ovTab = 'clients';
 function loadOverview() {
   api('/directories/overview').then(function (d) {
     if (d.error) { msg('ovMsg', d.error, 'bad'); return; }
-    ovD = d; hlD = null; $('ovTabReviews').textContent = 'Review queue' + (d.totals.pending_reviews ? ' (' + d.totals.pending_reviews + ')' : ''); renderOverview(); if (ovTab === 'health') { loadHealth(); }
+    ovD = d; hlD = null; $('ovTabReviews').textContent = 'Review queue' + (d.totals.pending_reviews ? ' (' + d.totals.pending_reviews + ')' : ''); $('tbRev').textContent = d.totals.pending_reviews ? '(' + d.totals.pending_reviews + ')' : ''; renderOverview(); if (ovTab === 'health') { loadHealth(); }
   });
 }
 function renderOverview() {
-  $('overviewCard').hidden = !!pid; $('ovBack').hidden = !pid;
-  if (pid || !ovD) return;
+  $('ovBack').hidden = true;
+  if (!ovD) return;
   var t = ovD.totals, tile = function (n, label) { return '<div class="tile" style="cursor:default"><b>' + n + '</b><span>' + label + '</span></div>'; };
   var pc = function (v) { return v == null ? '—' : v + '%'; };
   $('ovTiles').innerHTML = '<div class="tile on" style="cursor:default" title="Of the listings that exist, how many show the right details"><b>' + pc(t.in_sync_pct) + '</b><span>Listings in sync</span></div>' + tile(pc(t.coverage_pct), 'Directories with a listing') + tile(t.clients, 'Clients') + tile(t.locations, 'Locations') + tile(t.missing, 'Missing') + tile(t.update + t.fix, 'Drift: update or fix') + tile(t.tasks_open, 'Open tasks') + (t.pending_reviews ? tile(t.pending_reviews, 'Edits awaiting review') : '') + (t.duplicates ? tile(t.duplicates, 'Possible duplicates') : '') + (t.failed ? tile(t.failed, 'Searches failed') : '');
@@ -738,12 +775,43 @@ function setOvTab(tab) {
   $('ovTabClients').classList.toggle('go', !h && !rv); $('ovTabHealth').classList.toggle('go', h); $('ovTabReviews').classList.toggle('go', rv);
   $('ovOnlyText').textContent = h ? 'Only directories with a problem' : 'Only clients needing work'; $('ovOnly').parentNode.hidden = rv;
   if (rv) loadReviews(); else if (h) { if (!hlD) loadHealth(); renderHealth(); } else renderOverview();
+  if (TAB_PANE[topTab] === 'overview') { topTab = rv ? 'reviews' : h ? 'health' : 'overview'; applyTop(); }
 }
+/* ---- the tabs ---- */
+function applyTop() {
+  var pane = TAB_PANE[topTab], multi = !!(data && data.locations.length > 1);
+  document.body.setAttribute('data-pane-on', pane); document.body.setAttribute('data-top', topTab);
+  [].forEach.call(document.querySelectorAll('#topTabs [data-tab]'), function (b) {
+    var t = b.dataset.tab; b.classList.toggle('on', t === topTab); b.classList.toggle('dim', !!NEEDS_CLIENT[t] && (!pid || (t !== 'setup' && !!data && !data.locations.length)));
+    if (t === 'tasks' || t === 'grid') b.hidden = !multi;   // they only mean something with two or more locations
+  });
+}
+function setTop(tab, silent) {
+  if (!TAB_PANE[tab]) tab = 'overview';
+  if (NEEDS_CLIENT[tab] && !pid) { wantTab = tab; msg('projMsg', 'Choose a client first, then open ' + TAB_NAME[tab] + '.', 'bad'); tab = 'overview'; }
+  else if (NEEDS_CLIENT[tab] && tab !== 'setup' && data && !data.locations.length) { msg('projMsg', 'Add this client\'s first location to use ' + TAB_NAME[tab] + '.', 'bad'); tab = 'setup'; }
+  else if (NEEDS_CLIENT[tab]) msg('projMsg', '');
+  topTab = tab;
+  if (tab === 'reviews' || tab === 'health') setOvTab(tab); else if (tab === 'overview') setOvTab('clients');
+  if (TAB_PANE[tab] === 'results') { view = tab; renderResults(); }
+  applyTop();
+  if (!silent) { try { history.replaceState(null, '', '#' + tab); } catch (e) { /* no history API: the tab still works */ } }
+  window.scrollTo(0, 0);
+}
+// After a client's data has loaded: leave the overview for the client's own work list, or its setup when it has no locations yet.
+function afterProject() {
+  if (!data) return;
+  var t = wantTab || topTab; wantTab = '';
+  if (FROM_OVERVIEW[t]) t = data.locations.length ? 'list' : 'setup';
+  setTop(t, true);
+}
+document.addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (b) setTop(b.dataset.tab); });
+
 /* ---- the review queue: what clinics asked to change ---- */
 function loadReviews() { api('/directories/reviews/list').then(function (d) { if (d.error) { msg('ovMsg', d.error, 'bad'); return; } rvD = d; renderReviews(); }); }
 function renderReviews() {
   var box = $('ovReviewWrap'), q = (rvD && rvD.requests) || [];
-  $('ovTabReviews').textContent = 'Review queue' + (rvD && rvD.pending ? ' (' + rvD.pending + ')' : '');
+  $('ovTabReviews').textContent = 'Review queue' + (rvD && rvD.pending ? ' (' + rvD.pending + ')' : ''); $('tbRev').textContent = rvD && rvD.pending ? '(' + rvD.pending + ')' : '';
   if (!rvD) { box.innerHTML = '<p class="small">Loading…</p>'; return; }
   if (!q.length) { box.innerHTML = '<p class="small">Nothing is waiting. When a clinic changes its name, address, phone, website or category in its portal, the change waits here until you approve it.</p>'; return; }
   box.innerHTML = q.map(function (r) {
@@ -781,7 +849,9 @@ function loadPortal() {
 }
 function renderPortal(link) {
   $('portalNone').hidden = !!link; $('portalHave').hidden = !link;
-  if (link) { $('pUrl').value = link.url; $('pNote').textContent = 'Made ' + String(link.created_at || '').slice(0, 10) + (link.notify_email ? ' · you are emailed at ' + link.notify_email + ' when a clinic sends an edit to review' : ''); }
+  var cl = ovD && ovD.clients.filter(function (x) { return x.id === pid; })[0];
+  $('pRev').innerHTML = cl && cl.pending_reviews ? '<b>' + cl.pending_reviews + ' edit' + (cl.pending_reviews === 1 ? '' : 's') + ' from this clinic ' + (cl.pending_reviews === 1 ? 'is' : 'are') + ' waiting.</b> <button class="btn mini" data-tab="reviews" type="button">Open the Review queue</button>' : '';
+  if (link) { $('pOpen').href = link.url; $('pUrl').value = link.url; $('pNote').textContent = 'Made ' + String(link.created_at || '').slice(0, 10) + (link.notify_email ? ' · you are emailed at ' + link.notify_email + ' when a clinic sends an edit to review' : ''); }
 }
 function portalCall(action) {
   msg('pMsg', 'Working…');
@@ -1130,11 +1200,13 @@ if (!CODE) {
   var go = function () { var v = $('manual').value.trim().toLowerCase().replace(/\s+/g, ''); if (v) location.search = '?k=' + encodeURIComponent(v); };
   $('enter').onclick = go; $('manual').onkeydown = function (e) { if (e.key === 'Enter') go(); };
 } else {
-  $('app').hidden = false;
+  $('app').hidden = false; applyTop();
   loadLib(); loadOverview();
   api('/projects/list').then(function (d) {
     if (d.error) { $('proj').innerHTML = '<option>' + esc(d.error) + '</option>'; return; }
     var ps = d.projects || [];
+    var h = (location.hash || '').slice(1);
+    if (TAB_PANE[h]) { if (NEEDS_CLIENT[h]) { wantTab = h; var last = ''; try { last = localStorage.getItem('bc-dir-client:' + CODE) || ''; } catch (e) { /* none */ } if (last && ps.some(function (x) { return x.id === last; })) setTimeout(function () { $('proj').value = last; loadProject(last); }, 0); } else setTop(h, true); }
     $('proj').innerHTML = '<option value="">Choose a project</option>' + ps.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + '</option>'; }).join('');
     if (window.bcProject) bcProject.on(function (p) { if (p.id && $('proj').value !== p.id && ps.some(function (x) { return x.id === p.id; })) { $('proj').value = p.id; loadProject(p.id); } });
   });
