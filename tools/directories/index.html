@@ -198,7 +198,7 @@
         <div><label for="nHours">Hours</label><input id="nHours" maxlength="200" placeholder="Mon–Fri 8:00 AM–5:30 PM; Sat 9:00 AM–1:00 PM; Sun Closed"></div>
         <div style="grid-column:1/-1"><label for="nDesc">Description</label><textarea id="nDesc" maxlength="600" rows="2" placeholder="What the clinic does, in a sentence or two"></textarea></div>
       </div>
-      <div class="bar"><button class="btn" id="napSave" type="button">Save this location</button><span class="msg" id="napMsg" style="margin:0"></span></div>
+      <div class="bar"><button class="btn" id="napSave" type="button">Save this location</button><button class="btn go" id="quickCheck" type="button" hidden>Run the basic check</button><span class="msg" id="napMsg" style="margin:0"></span></div>
     </div>
 
     <div class="card" id="portalCard" data-pane="portal" hidden>
@@ -238,7 +238,7 @@
     </div>
 
     <div id="results" data-pane="results" hidden>
-      <div class="bar" style="margin:0 0 12px" id="viewBar"><select id="resLoc" style="width:auto"></select><button class="btn mini" id="vList" type="button">Listings</button><button class="btn mini" id="vGrid" type="button">Grid</button><button class="btn mini" id="vDetail" type="button">Record &amp; history</button><button class="btn mini" id="vGap" type="button">Competitors</button><button class="btn mini" id="vTasks" type="button" hidden>By directory</button><span style="flex:1"></span><button class="btn mini go" id="vCheck" type="button">Check now…</button><button class="btn mini" id="vSetup" type="button">Edit locations</button></div>
+      <div class="bar" style="margin:0 0 12px" id="viewBar"><select id="resLoc" style="width:auto"></select><button class="btn mini" id="vList" type="button">Listings</button><button class="btn mini" id="vGrid" type="button">Grid</button><button class="btn mini" id="vDetail" type="button">Record &amp; history</button><button class="btn mini" id="vGap" type="button">Competitors</button><button class="btn mini" id="vTasks" type="button" hidden>By directory</button><span style="flex:1"></span><button class="btn mini go" id="vQuick" type="button">Basic check</button><button class="btn mini" id="vCheck" type="button">Check now…</button><button class="btn mini" id="vSetup" type="button">Edit locations</button></div>
       <div id="listView">
         <div class="tiles" id="tiles"></div>
         <div class="card">
@@ -646,6 +646,7 @@ function renderGrid() {
 }
 function renderResults() {
   if (!data) return;
+  $('quickCheck').hidden = !data.locations.length;
   refreshRetry();
   if (TAB_PANE[topTab] === 'results' && topTab !== view) { topTab = view; }
   var multi = data.locations.length > 1; if (!multi) scopeAll = false;
@@ -755,7 +756,7 @@ function renderClientOverview() {
     var step = function (n, title, body, on) { return '<div class="card" style="margin:0 0 10px;' + (on ? '' : 'opacity:.55') + '"><div class="bar" style="margin:0 0 6px"><b style="font-size:15px">' + n + '. ' + title + '</b></div>' + body + '</div>'; };
     box.innerHTML = '<div class="bar" style="margin:0 0 4px"><h2 style="margin:0">Set up ' + esc(nm) + '</h2></div><p class="hint">A client is a set of locations. Add them once and the rest follows. Pick whichever way is quickest for this client.</p>' +
       step(1, 'Add the clinic\'s locations', '<div class="bar" style="margin:0"><button class="btn go" data-setup="google" type="button">Find it on Google</button><button class="btn" data-setup="gbp" type="button">Copy from the Business Profile manager</button><button class="btn" data-setup="csv" type="button">Upload a CSV of locations</button><button class="btn" data-setup="hand" type="button">Type the details in</button></div><p class="small" style="margin-top:8px">Several locations? Add each one: they are checked separately, each against its own address and phone.</p>', true) +
-      step(2, 'Check the directories', '<p class="small">Looks for each location on every directory in your list and compares the name, address and phone. Available once there is a location.</p>', false) +
+      step(2, 'Check the directories', '<p class="small">A basic check looks for each location on Google Business Profile, Apple Maps, Bing, Facebook, Yelp and the main directories, and compares the name, address and phone. One click once there is a location. The full check covers your whole directory list.</p>', false) +
       step(3, 'Fix what is wrong', '<p class="small">A work list of what is missing or different, with the correct details ready to copy. Also a grid, by-directory tasks and a competitor gap report.</p>', false) +
       step(4, 'Keep it right', '<p class="small">Send the clinic its private link to update its own details, and turn on a monthly re-check that emails only when something changed.</p>', false);
     return;
@@ -769,7 +770,7 @@ function renderClientOverview() {
   });
   var tile = function (n, label) { return '<div class="tile" style="cursor:default"><b>' + n + '</b><span>' + label + '</span></div>'; };
   var act = ((ovD && ovD.activity) || []).filter(function (e) { return c && e.client === c.name; }).slice(0, 8);
-  box.innerHTML = '<div class="bar" style="margin:0 0 8px"><h2 style="margin:0">' + esc(nm) + '</h2><span style="flex:1"></span><button class="btn mini go" data-tab="list" type="button">Open the listings</button></div>' +
+  box.innerHTML = '<div class="bar" style="margin:0 0 8px"><h2 style="margin:0">' + esc(nm) + '</h2><span style="flex:1"></span><button class="btn mini go" data-quick type="button">Run the basic check</button><button class="btn mini" data-tab="list" type="button">Open the listings</button></div>' +
     '<div class="tiles">' + tile(tot.listed + ' of ' + tot.all, 'Listed') + tile(tot.gaps, 'Need attention') + (c ? tile(c.tasks_open, 'Open tasks') + tile(c.pending_reviews || 0, 'Waiting for review') : '') + '</div>' +
     (c && c.pending_reviews ? '<div class="bar"><button class="btn mini" data-tab="reviews" type="button">Open the review queue</button></div>' : '') +
     '<div class="tablewrap"><table><tr><th>Location</th><th>Listed</th><th>Need attention</th><th></th></tr>' + rowsH + '</table></div>' +
@@ -888,6 +889,7 @@ $('ovReviewWrap').onclick = function (e) {
 };
 $('ovOnly').onchange = function () { renderOverview(); };
 $('ovOne').onclick = function (e) {
+  if (e.target.closest('[data-quick]')) { quickCheck(); return; }
   var g = e.target.closest('[data-setup]');
   if (g) { setTop('setup'); var k = g.dataset.setup; setTimeout(function () { if (k === 'google') $('gpFind').focus(); else if (k === 'gbp') $('gbpCopy').click(); else if (k === 'csv') $('locCsv').click(); else $('nName').focus(); }, 50); return; }
   var b = e.target.closest('[data-openloc]'); if (!b) return; curLoc = b.dataset.openloc; scopeAll = false; renderNap(); renderLib(); setTop('list'); };
@@ -973,22 +975,23 @@ function refreshRetry() {
   var n = failedTargets().reduce(function (t, x) { return t + x.ids.length; }, 0);
   $('retryFailed').hidden = !n; $('retryFailed').textContent = 'Retry ' + n + ' failed search' + (n === 1 ? '' : 'es');
 }
-function runCheck(onlyFailed) {
-  var cats = selectedCats(), only = $('onlyNew').checked, sel = $('chkLoc').value;
+var CORE = /google business|apple|bing|facebook|yelp|yellow ?pages|better business|bbb|foursquare|mapquest/i;
+function runCheck(onlyFailed, quick) {
+  var cats = selectedCats(), only = $('onlyNew').checked, sel = quick ? 'all' : $('chkLoc').value;
   var targets = sel === 'all' ? data.locations : data.locations.filter(function (l) { return l.id === sel; });
   if (!targets.length) { msg('checkMsg', 'Add and save a location first (step 2).', 'bad'); return; }
   var jobs = [];
   targets.forEach(function (l) {
     if (!l.nap.name) return;
     var rows = (data.loc[l.id] || {}).rows || {};
-    var ids = onlyFailed ? libFor(l).filter(function (d) { return rows[d.id] && rows[d.id].status === 'unknown' && !rows[d.id].manual_only; }).map(function (d) { return d.id; }) : libFor(l).filter(function (d) { return cats.indexOf(d.category) >= 0 && (!only || !rows[d.id] || rows[d.id].status === 'unknown'); }).map(function (d) { return d.id; });
+    var ids = quick ? libFor(l).filter(function (d) { return CORE.test(d.name); }).map(function (d) { return d.id; }) : onlyFailed ? libFor(l).filter(function (d) { return rows[d.id] && rows[d.id].status === 'unknown' && !rows[d.id].manual_only; }).map(function (d) { return d.id; }) : libFor(l).filter(function (d) { return cats.indexOf(d.category) >= 0 && (!only || !rows[d.id] || rows[d.id].status === 'unknown'); }).map(function (d) { return d.id; });
     var step = onlyFailed ? 4 : 12;   // a retry goes gently, so fewer per request keeps each one short
     for (var i = 0; i < ids.length; i += step) jobs.push({ loc: l, ids: ids.slice(i, i + step) });
   });
-  if (!jobs.length) { msg('checkMsg', onlyFailed ? 'No failed searches to retry.' : 'Nothing to check with those choices.', onlyFailed ? '' : 'bad'); return; }
+  if (!jobs.length) { if (quick) { msg('checkMsg', 'None of the basic directories (Google Business Profile, Apple, Bing, Facebook, Yelp…) are in your directory list. Add them in Settings, or run the full check.', 'bad'); return; } msg('checkMsg', onlyFailed ? 'No failed searches to retry.' : 'Nothing to check with those choices.', onlyFailed ? '' : 'bad'); return; }
   var failedNow = 0, total = jobs.reduce(function (n, j) { return n + j.ids.length; }, 0), done = 0, cost = 0, k = 0;
   $('runCheck').disabled = true; $('retryFailed').disabled = true; $('prog').hidden = false; $('progBar').style.width = '0';
-  var stop = function (text, cls) { $('runCheck').disabled = false; $('retryFailed').disabled = false; $('prog').hidden = true; msg('checkMsg', text, cls); renderResults(); refreshRetry(); loadWatch(); };
+  var stop = function (text, cls) { $('runCheck').disabled = false; $('retryFailed').disabled = false; $('prog').hidden = true; msg('checkMsg', text, cls); renderResults(); refreshRetry(); loadWatch(); if (quick) { setTop('list'); msg('projMsg', text, cls); } };
   (function next() {
     if (k >= jobs.length) { stop((onlyFailed ? 'Retried ' : 'Checked ') + total + ' listing' + (total === 1 ? '' : 's') + ' (about $' + cost.toFixed(2) + ').' + (failedNow ? ' ' + failedNow + (onlyFailed ? ' still' : '') + ' could not be checked: the search provider errored. Use "Retry" (or try later), or look those up by hand.' : ''), failedNow ? '' : 'good'); return; }
     var job = jobs[k];
@@ -1134,6 +1137,8 @@ $('locCsv').onchange = function () {
   rd.readAsText(f);
 };
 $('runCheck').onclick = function () { runCheck(false); };
+function quickCheck() { if (!data || !data.locations.length) return; setTop('check'); runCheck(false, true); }
+$('quickCheck').onclick = quickCheck; $('vQuick').onclick = quickCheck;
 $('retryFailed').onclick = function () { runCheck(true); };
 $('chkLoc').onchange = refreshRetry;
 // A directory that links to the client's website very likely holds its listing: this finds listings the Google search missed or failed on.
