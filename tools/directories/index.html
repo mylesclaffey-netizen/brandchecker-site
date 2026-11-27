@@ -69,6 +69,8 @@
   body[data-pane-on="overview"] [data-pane="overview"]:not([hidden]),body[data-pane-on="library"] [data-pane="library"]:not([hidden]),body[data-pane-on="setup"] [data-pane="setup"]:not([hidden]),
   body[data-pane-on="check"] [data-pane="check"]:not([hidden]),body[data-pane-on="reviews"] [data-pane="reviews"]:not([hidden]),body[data-pane-on="portal"] [data-pane="portal"]:not([hidden]),body[data-pane-on="results"] [data-pane="results"]:not([hidden]){display:block!important}
   #viewBar{align-items:center}
+  .gplist{position:absolute;left:0;right:0;top:100%;z-index:20;background:var(--paper);border:2px solid var(--ink);max-height:260px;overflow:auto}
+  .gplist div{padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--line)}.gplist div:hover,.gplist div.on{background:var(--acc);color:#0a0a0a}.gplist .small{display:block}.gplist div:hover .small{color:#0a0a0a}
   .proofdlg{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:50;overflow:auto;padding:0 16px}
   @media print{body *{visibility:hidden}#cgClient,#cgClient *{visibility:visible}#cgClient{position:absolute;left:0;top:0;width:100%;border:0}.noprint{display:none!important}}
   .prog{height:8px;border:2px solid var(--ink);margin-top:10px}.prog i{display:block;height:100%;background:var(--acc);width:0}
@@ -182,6 +184,7 @@
       <div class="grid" id="gbpRow" hidden><div><label for="gbpClient">Client name in the Business Profile manager</label><input id="gbpClient" maxlength="80" placeholder="same as the project name"></div></div>
       <p class="hint" style="margin-top:6px">CSV columns: <b>Name</b>, <b>Address</b>, <b>City</b>, <b>Postal</b>, <b>Phone</b> (plus optional <b>Label</b>, <b>Website</b>, <b>Country</b>). A row for an address already listed updates it. The copy from the Business Profile manager is read-only and can be run again: it only adds locations that are new there.</p>
       <div class="msg" id="locMsg"></div>
+      <div style="position:relative;margin:10px 0 4px"><label for="gpFind">Find the clinic on Google (fills in the details below)</label><input id="gpFind" autocomplete="off" maxlength="120" placeholder="Start typing the business name"><div id="gpList" class="gplist" hidden></div><div class="msg" id="gpMsg"></div></div>
       <div class="bar" style="margin-top:6px" id="suggestBar" hidden><button class="btn mini" id="suggest" type="button"></button></div>
       <div class="grid">
         <div><label for="nName">Business name</label><input id="nName" maxlength="120"></div>
@@ -1239,6 +1242,50 @@ $('exportCsv').onclick = function () {
   var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv' })); a.download = 'directory-listings.csv'; a.click();
 };
 $('proj').onchange = function () { loadProject($('proj').value); };
+
+/* ---- find the clinic on Google (Places API, the same public key the other tools use) ---- */
+var GOOGLE_PLACES_KEY = 'AIzaSyBgbllzncdzD9xG3ZhJMnyQtWxb5hKp440', placesLib = null, gpToken = null, gpItems = [], gpTimer = null, gpLoading = false;
+function ensurePlaces() {
+  if (placesLib) return Promise.resolve(placesLib);
+  if (!window.google || !google.maps || !google.maps.importLibrary) {
+    if (!gpLoading) { gpLoading = true; var sc = document.createElement('script'); sc.async = true; sc.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_PLACES_KEY + '&libraries=places&loading=async&v=weekly'; document.head.appendChild(sc); }
+    return new Promise(function (res) { var n = 0, t = setInterval(function () { if (window.google && google.maps && google.maps.importLibrary) { clearInterval(t); google.maps.importLibrary('places').then(function (l) { placesLib = l; res(l); }, function () { res(null); }); } else if (++n > 40) { clearInterval(t); res(null); } }, 150); });
+  }
+  return google.maps.importLibrary('places').then(function (l) { placesLib = l; return l; }, function () { return null; });
+}
+function gpClose() { $('gpList').hidden = true; $('gpList').innerHTML = ''; gpItems = []; }
+$('gpFind').oninput = function () {
+  clearTimeout(gpTimer); msg('gpMsg', '');
+  var q = $('gpFind').value.trim(); if (q.length < 3) { gpClose(); return; }
+  gpTimer = setTimeout(function () {
+    ensurePlaces().then(function (lib) {
+      if (!lib) { msg('gpMsg', 'Google search is not available here. Type the details in by hand.', 'bad'); return; }
+      if (!gpToken) gpToken = new lib.AutocompleteSessionToken();
+      lib.AutocompleteSuggestion.fetchAutocompleteSuggestions({ input: q, sessionToken: gpToken, includedPrimaryTypes: ['establishment'] }).then(function (r) {
+        gpItems = (r && r.suggestions) || [];
+        $('gpList').innerHTML = gpItems.map(function (x, i) { var pp = x.placePrediction; return '<div data-i="' + i + '">' + esc(pp.mainText ? pp.mainText.text : pp.text.text) + '<span class="small">' + esc(pp.secondaryText ? pp.secondaryText.text : '') + '</span></div>'; }).join('');
+        $('gpList').hidden = !gpItems.length;
+      }, function () { msg('gpMsg', 'Google search is not available here. Type the details in by hand.', 'bad'); });
+    });
+  }, 250);
+};
+$('gpList').onmousedown = function (e) {
+  var d = e.target.closest('[data-i]'); if (!d) return; e.preventDefault();
+  var pp = gpItems[+d.dataset.i].placePrediction; gpClose(); $('gpFind').value = pp.mainText ? pp.mainText.text : '';
+  msg('gpMsg', 'Reading the details…');
+  var place = pp.toPlace();
+  place.fetchFields({ fields: ['displayName', 'addressComponents', 'nationalPhoneNumber', 'websiteURI', 'primaryTypeDisplayName'] }).then(function () {
+    gpToken = null;
+    var c = {}; (place.addressComponents || []).forEach(function (a) { (a.types || []).forEach(function (t) { if (!c[t]) c[t] = a.longText; }); });
+    var street = [c.street_number, c.route].filter(Boolean).join(' '); if (c.subpremise) street = 'Unit ' + c.subpremise + ', ' + street;
+    var site = ''; try { site = new URL(place.websiteURI).hostname.replace(/^www\./, ''); } catch (e) { /* none */ }
+    var set = function (id, v) { if (v) $(id).value = v; };
+    set('nName', place.displayName); set('nPhone', place.nationalPhoneNumber); set('nAddr', street); set('nCity', c.locality || c.postal_town || c.sublocality || ''); set('nPostal', c.postal_code); set('nSite', site); set('nCountry', c.country); set('nCat', place.primaryTypeDisplayName);
+    if (!$('nLabel').value) set('nLabel', c.locality || c.postal_town || '');
+    msg('gpMsg', 'Filled in from Google. Check the details, then save this location.', 'good');
+  }, function () { msg('gpMsg', 'Could not read that place. Type the details in by hand.', 'bad'); });
+};
+$('gpFind').onblur = function () { setTimeout(gpClose, 150); };
 
 /* ---- start ---- */
 if (!CODE) {
