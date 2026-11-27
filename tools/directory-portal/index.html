@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Your clinic information</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2370c8cc'/%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0c1118;--card:#131a24;--line:#2a3441;--ink:#f1f4f8;--muted:#9aa7b8;--acc:#6fc4c8;--accInk:#08201f;--warn:#f2c14e;--warnBg:#3b2f0f;--ok:#7fd8a0;--okBg:#12301f;--bad:#ff8d82;--badBg:#3a1714;--info:#9fb7ff;--infoBg:#16203a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:'Archivo',system-ui,sans-serif;line-height:1.5;padding:22px 16px 60px}
+  .wrap{max-width:640px;margin:0 auto}
+  h1{font-size:26px;font-weight:700;letter-spacing:-.01em;margin:4px 0 6px}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:16px}
+  .client{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .banner{border-radius:8px;padding:11px 14px;font-size:14px;margin-bottom:12px;border:1px solid transparent}
+  .banner b{font-weight:700}
+  .banner.warn{background:var(--warnBg);color:var(--warn);border-color:#5a4713}
+  .banner.ok{background:var(--okBg);color:var(--ok);border-color:#1f4b32}
+  .banner.bad{background:var(--badBg);color:var(--bad);border-color:#5a2723}
+  .banner.info{background:var(--infoBg);color:var(--info);border-color:#27365f}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 16px}
+  label{display:block;font-size:12.5px;color:var(--muted);margin:14px 0 5px}
+  label:first-child{margin-top:0}
+  input,textarea,select{width:100%;font:inherit;font-size:15px;color:var(--ink);background:#0d141d;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  textarea{min-height:92px;resize:vertical}
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--acc);outline-offset:1px}
+  input.bad{border-color:var(--bad)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .three{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px}
+  @media(max-width:560px){.two,.three{grid-template-columns:1fr}}
+  .hours{display:grid;grid-template-columns:76px 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px}
+  .hours span{font-size:14px}
+  .note{background:var(--infoBg);color:var(--info);border-radius:8px;padding:11px 13px;font-size:13.5px;margin:16px 0 4px}
+  .bar{display:flex;gap:10px;margin-top:14px}
+  button{font:inherit;font-weight:600;font-size:14.5px;border-radius:8px;padding:10px 16px;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--ink)}
+  button.go{background:var(--acc);border-color:var(--acc);color:var(--accInk)}
+  button[disabled]{opacity:.5;cursor:default}
+  .err{color:var(--bad);font-size:13px;margin-top:8px;min-height:18px}
+  .hist{margin-top:22px}
+  .hist h2{font-size:15px;margin-bottom:8px}
+  .req{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:14px}
+  .req .when{color:var(--muted);font-size:12px}
+  .chip{display:inline-block;font-size:11px;font-weight:700;border-radius:20px;padding:2px 9px;margin-left:6px}
+  .chip.pending{background:var(--warnBg);color:var(--warn)}.chip.approved{background:var(--okBg);color:var(--ok)}.chip.rejected{background:var(--badBg);color:var(--bad)}.chip.question{background:var(--infoBg);color:var(--info)}
+  .gate{text-align:center;padding:60px 10px}
+  .foot{color:var(--muted);font-size:12px;margin-top:28px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><p class="sub">Loading…</p></div>
+<script>
+(function () {
+'use strict';
+var API = 'https://mc2seo-tools-api.mylesclaffey.workers.dev/api';
+var TOKEN = new URLSearchParams(location.search).get('t') || '';
+var $ = function (id) { return document.getElementById(id); };
+var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+var state = null, curLoc = '', banners = [];
+
+function call(path, body) {
+  return fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ token: TOKEN }, body || {})) })
+    .then(function (r) { return r.json(); }).catch(function () { return { error: 'Could not reach the server. Check your connection and try again.' }; });
+}
+
+/* ---- hours: three rows when the record uses the usual format, one box when it does not ---- */
+var ROWS = [['Mon–Fri', 'wk'], ['Sat', 'sat'], ['Sun', 'sun']];
+function parseHours(text) {
+  var out = {}, ok = !!text;
+  String(text || '').split(';').forEach(function (part) {
+    var m = /^\s*(Mon–Fri|Sat|Sun)\s+(.*?)\s*$/.exec(part); if (!m) { ok = false; return; }
+    var key = m[1] === 'Mon–Fri' ? 'wk' : m[1] === 'Sat' ? 'sat' : 'sun', t = m[2];
+    if (/^closed$/i.test(t)) out[key] = ['Closed', 'Closed']; else { var x = /^(.+?)\s*[–-]\s*(.+)$/.exec(t); if (!x) { ok = false; return; } out[key] = [x[1], x[2]]; }
+  });
+  return ok && out.wk && out.sat && out.sun ? out : null;
+}
+function hoursText(vals) {
+  return ROWS.map(function (r) { var v = vals[r[1]]; return r[0] + ' ' + (/^closed$/i.test(v[0]) || !v[0] ? 'Closed' : v[0] + '–' + v[1]); }).join('; ');
+}
+
+function cap(t) { return t ? t.charAt(0).toUpperCase() + t.slice(1) : t; }
+function when(iso) { try { return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return String(iso || '').slice(0, 10); } }
+function mine(l) { return state.requests.filter(function (q) { return q.location_id === l.id; }); }
+
+function render() {
+  var l = state.locations.filter(function (x) { return x.id === curLoc; })[0] || state.locations[0]; curLoc = l.id;
+  var r = l.record, reqs = mine(l), latest = reqs[0], hrs = parseHours(r.hours);
+  var h = '<div class="client">' + esc(state.client) + '</div><h1>Your clinic information</h1><p class="sub">What you change here updates your listings on the sites patients use to find you.</p>';
+  if (state.locations.length > 1) h += '<label for="loc" style="margin-top:0">Location</label><select id="loc" style="margin-bottom:14px">' + state.locations.map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === l.id ? ' selected' : '') + '>' + esc(x.label) + '</option>'; }).join('') + '</select>';
+  banners.forEach(function (b) { h += '<div class="banner ' + b[0] + '">' + b[1] + '</div>'; });
+  var open = reqs.filter(function (q) { return q.status === 'pending' || q.status === 'question'; })[0];
+  if (open && open.status === 'pending') h += '<div class="banner warn"><b>' + esc(cap(open.fields.map(function (f) { return f.field.toLowerCase(); }).join(' and '))) + ' change is being checked.</b> It will go live after our team reviews it, usually within one business day. Your current details stay until then.</div>';
+  if (open && open.status === 'question') h += '<div class="banner info"><b>Our team has a question about your change:</b> ' + esc(open.reviewer_note || '') + ' Send your answer by changing the details below again, or write it in the note box.</div>';
+  if (latest && latest.status === 'rejected') h += '<div class="banner bad"><b>A change was not approved.</b> ' + esc(latest.reviewer_note || '') + '</div>';
+  h += '<div class="card" id="form">' +
+    '<label for="f_name">Clinic name</label><input id="f_name" maxlength="120" value="' + esc(r.name) + '">' +
+    '<div class="two"><div><label for="f_phone">Phone</label><input id="f_phone" maxlength="40" value="' + esc(r.phone) + '"></div><div><label for="f_website">Website</label><input id="f_website" maxlength="300" value="' + esc(r.website) + '"></div></div>' +
+    '<label for="f_address">Street address</label><input id="f_address" maxlength="200" value="' + esc(r.address) + '">' +
+    '<div class="two"><div><label for="f_city">City</label><input id="f_city" maxlength="80" value="' + esc(r.city) + '"></div><div><label for="f_postal">Postal or ZIP code</label><input id="f_postal" maxlength="12" value="' + esc(r.postal) + '"></div></div>' +
+    '<label for="f_category">Main service</label><input id="f_category" maxlength="80" value="' + esc(r.category) + '">' +
+    '<label>Hours</label>' + (hrs ? ROWS.map(function (row) { return '<div class="hours"><span>' + row[0] + '</span><input id="h_' + row[1] + '_o" maxlength="20" value="' + esc(hrs[row[1]][0]) + '" aria-label="' + row[0] + ' opens"><input id="h_' + row[1] + '_c" maxlength="20" value="' + esc(hrs[row[1]][1]) + '" aria-label="' + row[0] + ' closes"></div>'; }).join('') : '<input id="f_hours_text" maxlength="200" value="' + esc(r.hours) + '" placeholder="Mon–Fri 8:00 AM–5:30 PM; Sat 9:00 AM–1:00 PM; Sun Closed">') +
+    '<label for="f_description">Description</label><textarea id="f_description" maxlength="600">' + esc(r.description) + '</textarea>' +
+    '<label for="f_message">Note for our team (optional)</label><input id="f_message" maxlength="300" placeholder="For example: we moved last week">' +
+    '<div class="note">Changes to name, address, phone, website and main service are reviewed first. Hours and description update right away.</div>' +
+    '<div class="err" id="err"></div><div class="bar"><button class="go" id="save" type="button">Save changes</button><button id="discard" type="button">Discard</button></div></div>';
+  if (reqs.length) h += '<div class="hist"><h2>Your recent changes</h2>' + reqs.slice(0, 5).map(function (q) {
+    return '<div class="req"><span class="when">' + esc(when(q.at)) + '</span><span class="chip ' + esc(q.status) + '">' + ({ pending: 'Being checked', approved: 'Approved', rejected: 'Not approved', question: 'Question from our team', superseded: 'Replaced by a newer change' }[q.status] || esc(q.status)) + '</span><br>' + q.fields.map(function (f) { return esc(f.field) + ': ' + esc(f.old || 'blank') + ' → ' + esc(f.new || 'blank'); }).join('<br>') + '</div>';
+  }).join('') + '</div>';
+  h += '<p class="foot">This page is private to your clinic. Anyone with the link can change your details, so do not share it.</p>';
+  $('app').innerHTML = h;
+  if ($('loc')) $('loc').onchange = function () { curLoc = this.value; banners = []; render(); };
+  $('discard').onclick = function () { banners = []; render(); };
+  $('save').onclick = save;
+}
+
+function values() {
+  var v = { name: $('f_name').value, phone: $('f_phone').value, website: $('f_website').value, address: $('f_address').value, city: $('f_city').value, postal: $('f_postal').value, category: $('f_category').value, description: $('f_description').value };
+  if ($('f_hours_text')) v.hours = $('f_hours_text').value;
+  else { var hv = {}; ROWS.forEach(function (r) { hv[r[1]] = [$('h_' + r[1] + '_o').value.trim(), $('h_' + r[1] + '_c').value.trim()]; }); v.hours = hoursText(hv); }
+  return v;
+}
+function save() {
+  $('err').textContent = ''; [].forEach.call(document.querySelectorAll('input.bad'), function (i) { i.classList.remove('bad'); });
+  $('save').disabled = true;
+  call('/portal/submit', { location_id: curLoc, values: values(), message: $('f_message').value }).then(function (d) {
+    $('save').disabled = false;
+    if (d.error) { $('err').textContent = d.error; if (d.field && $('f_' + d.field)) { $('f_' + d.field).classList.add('bad'); $('f_' + d.field).focus(); } return; }
+    banners = [];
+    if (d.applied && d.applied.length) banners.push(['ok', '<b>' + esc(d.applied.join(' and ')) + ' saved.</b> It is being updated on your listings now.']);
+    call('/portal/get').then(function (g) { if (!g.error) state = g; render(); window.scrollTo(0, 0); });
+  });
+}
+
+if (!/^[a-f0-9]{48}$/.test(TOKEN)) $('app').innerHTML = '<div class="gate"><h1>This link is not complete</h1><p class="sub">Open the link exactly as it was sent to you, or ask for a new one.</p></div>';
+else call('/portal/get').then(function (d) {
+  if (d.error) { $('app').innerHTML = '<div class="gate"><h1>This link is not active</h1><p class="sub">' + esc(d.error) + '</p></div>'; return; }
+  if (!d.locations.length) { $('app').innerHTML = '<div class="gate"><h1>Nothing to show yet</h1><p class="sub">Your clinic has not been set up yet. Please check back soon.</p></div>'; return; }
+  state = d; curLoc = d.locations[0].id; render();
+});
+})();
+</script>
+</body>
+</html>
