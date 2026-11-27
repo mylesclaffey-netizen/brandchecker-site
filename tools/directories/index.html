@@ -737,7 +737,7 @@ function loadProject(id) {
 /* ---- the overview: every client at a glance ---- */
 var scopeAll = false;
 var TAB_PANE = { overview: 'overview', reviews: 'reviews', health: 'overview', list: 'results', tasks: 'results', grid: 'results', detail: 'results', gap: 'results', setup: 'setup', check: 'check', portal: 'portal', library: 'library' };
-var TAB_NAME = { overview: 'Overview', reviews: 'Review queue', health: 'Directory health', list: 'Work list', tasks: 'Tasks', grid: 'Grid', detail: 'Location detail', gap: 'Competitor gaps', setup: 'Locations', check: 'Check & schedule', portal: 'Clinic portal', library: 'Directory list' };
+var TAB_NAME = { overview: 'Overview', reviews: 'Review queue', health: 'Directory health', list: 'Location detail', tasks: 'Tasks', grid: 'Grid', detail: 'Location detail', gap: 'Competitor gaps', setup: 'Locations', check: 'Check & schedule', portal: 'Clinic portal', library: 'Directory list' };
 var NEEDS_CLIENT = { list: 1, tasks: 1, grid: 1, detail: 1, gap: 1, setup: 1, check: 1, portal: 1 }, FROM_OVERVIEW = { overview: 1, reviews: 1, health: 1 };
 var topTab = 'overview', wantTab = '';
 var ovD = null, hlD = null, rvD = null, ovTab = 'clients';
@@ -751,7 +751,15 @@ function renderClientOverview() {
   var box = $('ovOne'), nm = $('proj').selectedOptions[0] ? $('proj').selectedOptions[0].text : '';
   if (!data) { box.innerHTML = '<p class="small">Loading…</p>'; return; }
   var c = ovD && ovD.clients.filter(function (x) { return x.id === pid; })[0] || null, ls = data.locations;
-  if (!ls.length) { box.innerHTML = '<h2>' + esc(nm) + '</h2><p class="hint">No locations yet. Add the first one (or copy them from the Business Profile manager, or upload a CSV) and the tool can start checking.</p><div class="bar"><button class="btn go" data-tab="setup" type="button">Add the first location</button></div>'; return; }
+  if (!ls.length) {
+    var step = function (n, title, body, on) { return '<div class="card" style="margin:0 0 10px;' + (on ? '' : 'opacity:.55') + '"><div class="bar" style="margin:0 0 6px"><b style="font-size:15px">' + n + '. ' + title + '</b></div>' + body + '</div>'; };
+    box.innerHTML = '<div class="bar" style="margin:0 0 4px"><h2 style="margin:0">Set up ' + esc(nm) + '</h2></div><p class="hint">A client is a set of locations. Add them once and the rest follows. Pick whichever way is quickest for this client.</p>' +
+      step(1, 'Add the clinic\'s locations', '<div class="bar" style="margin:0"><button class="btn go" data-setup="google" type="button">Find it on Google</button><button class="btn" data-setup="gbp" type="button">Copy from the Business Profile manager</button><button class="btn" data-setup="csv" type="button">Upload a CSV of locations</button><button class="btn" data-setup="hand" type="button">Type the details in</button></div><p class="small" style="margin-top:8px">Several locations? Add each one: they are checked separately, each against its own address and phone.</p>', true) +
+      step(2, 'Check the directories', '<p class="small">Looks for each location on every directory in your list and compares the name, address and phone. Available once there is a location.</p>', false) +
+      step(3, 'Fix what is wrong', '<p class="small">A work list of what is missing or different, with the correct details ready to copy. Also a grid, by-directory tasks and a competitor gap report.</p>', false) +
+      step(4, 'Keep it right', '<p class="small">Send the clinic its private link to update its own details, and turn on a monthly re-check that emails only when something changed.</p>', false);
+    return;
+  }
   var rowsH = '', tot = { listed: 0, all: 0, gaps: 0 };
   ls.forEach(function (l) {
     var LL = libFor(l), st = LL.map(function (d) { return statusFor(d, l.id); });
@@ -879,7 +887,10 @@ $('ovReviewWrap').onclick = function (e) {
   });
 };
 $('ovOnly').onchange = function () { renderOverview(); };
-$('ovOne').onclick = function (e) { var b = e.target.closest('[data-openloc]'); if (!b) return; curLoc = b.dataset.openloc; scopeAll = false; renderNap(); renderLib(); setTop('list'); };
+$('ovOne').onclick = function (e) {
+  var g = e.target.closest('[data-setup]');
+  if (g) { setTop('setup'); var k = g.dataset.setup; setTimeout(function () { if (k === 'google') $('gpFind').focus(); else if (k === 'gbp') $('gbpCopy').click(); else if (k === 'csv') $('locCsv').click(); else $('nName').focus(); }, 50); return; }
+  var b = e.target.closest('[data-openloc]'); if (!b) return; curLoc = b.dataset.openloc; scopeAll = false; renderNap(); renderLib(); setTop('list'); };
 $('ovTable').onclick = function (e) { var b = e.target.closest('[data-open]'); if (b) { $('proj').value = b.dataset.open; loadProject(b.dataset.open); } };
 $('ovBack').onclick = function () { $('proj').value = ''; loadProject(''); };
 
