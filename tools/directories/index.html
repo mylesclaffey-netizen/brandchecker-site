@@ -58,7 +58,7 @@
   .tablewrap{overflow-x:auto}
   .gate{max-width:560px;margin:40px auto}
   /* the tabs: one section at a time, chosen by the tab bar */
-  .tabs{display:flex;flex-wrap:wrap;gap:6px 6px;align-items:center;margin:0 0 14px;padding:0 0 12px;border-bottom:2px solid var(--line)}
+  .tabs{position:sticky;top:0;z-index:30;background:var(--paper);display:flex;flex-wrap:wrap;gap:6px 6px;align-items:center;margin:0 0 14px;padding:10px 0 12px;border-bottom:2px solid var(--line)}
   .tabgroup{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 4px 0 10px}.tabgroup:first-child{margin-left:0}
   .tab{font-family:'Archivo',sans-serif;font-size:12.5px;font-weight:700;color:var(--ink);background:transparent;border:2px solid var(--line);padding:6px 11px;cursor:pointer}
   .tab:hover{border-color:var(--ink)}
@@ -121,22 +121,6 @@
     <h1>Directory listings</h1>
     <p class="lede">Load your list of directories once (upload a CSV). For each location of a client, the tool looks for its listing on every directory, checks that the name, address and phone match, and turns the directories it is missing from into a work list: open one, copy the correct details, submit.</p>
 
-    <div class="card" id="overviewCard" data-pane="overview">
-      <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">All clients</h2><button class="btn mini go" id="ovTabClients" type="button">Clients</button><button class="btn mini" id="ovTabHealth" type="button">Directory health</button><button class="btn mini" id="ovTabReviews" type="button">Review queue</button><span style="flex:1"></span><label style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="ovOnly"> <span id="ovOnlyText">Only clients needing work</span></label></div>
-      <div class="tiles" id="ovTiles"></div>
-      <div class="tablewrap" id="ovClientsWrap"><table id="ovTable"></table></div>
-      <div class="tablewrap" id="ovHealthWrap" hidden><table id="hlTable"></table></div>
-      <div id="ovReviewWrap" hidden></div>
-      <div class="msg" id="ovMsg"></div>
-      <div id="ovActivityWrap" style="margin-top:14px"><h2 style="font-size:15px">Recent activity</h2><div id="ovActivity"></div></div>
-    </div>
-
-    <div class="card">
-      <div class="bar" style="margin:0 0 6px"><label for="proj" style="margin:0">Project</label><span style="flex:1"></span><button class="btn mini" id="ovBack" type="button" hidden>← All clients</button></div>
-      <select id="proj"><option>Loading…</option></select>
-      <div class="msg" id="projMsg"></div>
-    </div>
-
     <nav class="tabs" id="topTabs" aria-label="Sections">
       <span class="tabgroup">All clients</span>
       <button class="tab" type="button" data-tab="overview">Overview</button>
@@ -154,6 +138,24 @@
       <span class="tabgroup">Setup</span>
       <button class="tab" type="button" data-tab="library">Directory list</button>
     </nav>
+
+    <div class="card">
+      <div class="bar" style="margin:0 0 6px"><label for="proj" style="margin:0">Project</label><span style="flex:1"></span><button class="btn mini" id="ovBack" type="button" hidden>← All clients</button></div>
+      <select id="proj"><option>Loading…</option></select>
+      <div class="msg" id="projMsg"></div>
+    </div>
+
+    <div class="card" id="overviewCard" data-pane="overview">
+      <div class="bar" style="margin:0 0 8px"><h2 style="margin:0">All clients</h2><button class="btn mini go" id="ovTabClients" type="button">Clients</button><button class="btn mini" id="ovTabHealth" type="button">Directory health</button><button class="btn mini" id="ovTabReviews" type="button">Review queue</button><span style="flex:1"></span><label style="display:flex;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="ovOnly"> <span id="ovOnlyText">Only clients needing work</span></label></div>
+      <div class="tiles" id="ovTiles"></div>
+      <div class="tablewrap" id="ovClientsWrap"><table id="ovTable"></table></div>
+      <div class="tablewrap" id="ovHealthWrap" hidden><table id="hlTable"></table></div>
+      <div id="ovReviewWrap" hidden></div>
+      <div class="msg" id="ovMsg"></div>
+      <div id="ovActivityWrap" style="margin-top:14px"><h2 style="font-size:15px">Recent activity</h2><div id="ovActivity"></div></div>
+    </div>
+
+
 
     <div class="card" id="libCard" data-pane="library">
       <h2>1. Your directory list</h2>
